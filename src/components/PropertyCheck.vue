@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { 
-  RiExchangeLine, 
-  RiFileWordLine, 
-  RiCheckDoubleLine, 
-  RiCloseCircleLine, 
+import {
+  RiExchangeLine,
+  RiFileWordLine,
+  RiCheckDoubleLine,
+  RiCloseCircleLine,
   RiAlertLine,
   RiFileExcelLine,
   RiArrowLeftSLine,
-  RiArrowRightSLine
+  RiArrowRightSLine,
+  RiQuestionLine,
+  RiSearchLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx'
 import { useFileParser } from '../composables/useFileParser'
@@ -699,11 +701,21 @@ const generateWordReport = () => {
 
 <template>
   <div class="property-check-container">
-    <!-- 移除了上传文件进行属性检查标题 -->
+    <!-- 页面标题区 -->
+    <div class="page-header">
+      <div class="title-section">
+        <h1 class="main-title">属性检查</h1>
+        <p class="sub-title">对比两个文件的基础属性信息，快速识别差异</p>
+      </div>
+      <button class="help-btn" title="帮助">
+        <RiQuestionLine class="help-icon" />
+      </button>
+      <div class="decorative-line"></div>
+    </div>
 
     <!-- 文件上传区域 -->
     <div v-if="!showResults" class="upload-section">
-      <!-- 左侧文件上传 -->
+      <!-- 文件A上传 -->
       <FileUpload
         side="left"
         :file-info="leftFileInfo"
@@ -713,14 +725,7 @@ const generateWordReport = () => {
         :on-clear-file="handleClearFile"
       />
 
-      <!-- 检查按钮 -->
-      <div class="check-btn-container">
-        <button class="check-btn" @click="handleCheck" :disabled="isParsing">
-          <RiExchangeLine class="check-icon" :class="{ 'rotating': isParsing }" />
-        </button>
-      </div>
-
-      <!-- 右侧文件上传 -->
+      <!-- 文件B上传 -->
       <FileUpload
         side="right"
         :file-info="rightFileInfo"
@@ -731,9 +736,29 @@ const generateWordReport = () => {
       />
     </div>
 
-    <!-- 解析错误显示 -->
-    <div v-if="parseError" class="error-message">
-      {{ parseError }}
+    <!-- 操作按钮区 -->
+    <div v-if="!showResults" class="action-section">
+      <button class="start-check-btn" @click="handleCheck" :disabled="isParsing">
+        <RiExchangeLine class="check-icon" :class="{ 'rotating': isParsing }" />
+        <span class="check-text">{{ isParsing ? '检查中...' : '开始检查' }}</span>
+      </button>
+    </div>
+
+    <!-- 检查项目说明区 -->
+    <div v-if="!showResults" class="check-items-section">
+      <div class="check-items-content">
+        <RiSearchLine class="check-items-icon" />
+        <div class="check-items-text">
+          <h3 class="check-items-title">检查项目</h3>
+          <div class="check-items-list">
+            <span class="check-item">文件类型</span>
+            <span class="check-item">文件大小</span>
+            <span class="check-item">作者信息</span>
+            <span class="check-item">创建时间</span>
+            <span class="check-item">修改时间</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 最近对比记录 -->
@@ -744,6 +769,11 @@ const generateWordReport = () => {
       :on-view-record="viewHistoricalRecord"
       :on-delete-record="deleteRecord"
     />
+
+    <!-- 解析错误显示 -->
+    <div v-if="parseError" class="error-message">
+      {{ parseError }}
+    </div>
 
     <!-- 属性检查结果 -->
     <div v-if="showResults" class="results-section">
@@ -829,133 +859,234 @@ const generateWordReport = () => {
 .property-check-container {
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  background-color: rgba(255, 255, 255, 0.7);
-}
-
-/* 属性检查结果 */
-.results-section {
-  flex: 1;
-  overflow: hidden;
-  background-color: rgba(255, 255, 255, 0.7);
-  border-radius: 20px;
-  border: 0.6667px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* 结果显示时才显示滚动条 */
-.results-section:has(> *:not(.no-results)) {
   overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(64, 158, 255, 0.5) transparent;
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(248, 244, 233, 1);
+  padding: 32px;
+  gap: 32px;
+  font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* 自定义滚动条样式 */
-.results-section::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* 页面标题区 */
+.page-header {
+  width: 100%;
+  position: relative;
 }
 
-.results-section::-webkit-scrollbar-track {
-  background: transparent;
+.title-section {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
 }
 
-.results-section::-webkit-scrollbar-thumb {
-  background-color: rgba(64, 158, 255, 0.5);
-  border-radius: 3px;
+.main-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-Bold;
+  margin: 0;
 }
 
-.results-section::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(64, 158, 255, 0.8);
+.sub-title {
+  font-size: 16px;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-Regular;
+  margin: 8px 0 0 0;
 }
 
-.page-title {
-  font-size: 22px;
-  line-height: 28px;
-  font-weight: SemiBold;
-  color: #1A1A1A;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 0.6667px solid rgba(255, 255, 255, 0.5);
-  font-family: SourceHanSans;
+.help-btn {
+  width: 40px;
+  height: 40px;
+  border: 0.7px solid rgba(216, 191, 156, 1);
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.help-btn:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+}
+
+.help-icon {
+  font-size: 20px;
+  color: rgba(107, 79, 52, 1);
+}
+
+.decorative-line {
+  width: 100%;
+  height: 3px;
+  margin-top: 24px;
+  background: linear-gradient(90deg, rgba(216,191,156,1) 0%, rgba(230,215,191,1) 50%, rgba(216,191,156,1) 100%);
+  border-radius: 2px;
 }
 
 /* 文件上传区域 */
 .upload-section {
   display: flex;
-  gap: 16px;
-  align-items: center;
-  margin-bottom: 16px;
-  padding: 24px;
-  background-color: rgba(255, 255, 255, 0.7);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  flex-wrap: nowrap;
+  gap: 32px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+/* 操作按钮区 */
+.action-section {
+  display: flex;
+  justify-content: center;
+}
+
+.start-check-btn {
   width: 100%;
-  box-sizing: border-box;
+  height: 62px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  box-shadow: 0 4px 20px rgba(139, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.start-check-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 24px rgba(139, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.start-check-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.check-icon {
+  font-size: 24px;
+  transition: all 0.3s ease;
+}
+
+.check-icon.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.check-text {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* 检查项目说明区 */
+.check-items-section {
+  display: flex;
+  justify-content: center;
+}
+
+.check-items-content {
+  width: 1078px;
+  padding: 24px;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  border: 0.7px solid rgba(216, 191, 156, 0.5);
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.check-items-icon {
+  font-size: 36px;
+  color: rgba(139, 0, 0, 1);
+  flex-shrink: 0;
+}
+
+.check-items-text {
+  flex: 1;
+}
+
+.check-items-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-SemiBold;
+  margin: 0 0 12px 0;
+}
+
+.check-items-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.check-item {
+  font-size: 14px;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-Regular;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.check-item::before {
+  content: '•';
+  color: rgba(139, 0, 0, 1);
+  font-size: 16px;
 }
 
 .upload-box {
   flex: 1;
   min-width: 300px;
-  height: 185.33px;
-  border: 2px dashed #E5E7EB;
-  border-radius: 12px;
-  background-color: rgba(255, 255, 255, 0.6);
+  height: 180px;
+  border: 2px dashed rgba(166, 124, 82, 0.4);
+  border-radius: 8px;
+  background-color: rgba(248, 244, 233, 0.5);
   cursor: pointer;
   transition: all 0.3s;
   position: relative;
   overflow: hidden;
   padding: 32px;
-  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .upload-box:hover {
-  border-color: #3B82F6;
-  background-color: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.15);
+  border-color: rgba(139, 0, 0, 1);
+  background-color: rgba(139, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.15);
 }
 
 .upload-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 16px;
-  transition: all 0.3s;
-  position: relative;
-}
-
-/* 上传状态 */
-.upload-status {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  transition: all 0.3s;
+  gap: 12px;
 }
 
 .upload-icon {
   font-size: 36px;
-  color: #D1D5DB;
+  color: rgba(166, 124, 82, 1);
   transition: all 0.3s;
 }
 
 .upload-box:hover .upload-icon {
-  color: #3B82F6;
+  color: rgba(139, 0, 0, 1);
 }
 
 .upload-text {
-  font-size: 15px;
-  color: #555555;
+  font-size: 14px;
+  color: rgba(166, 124, 82, 1);
   font-family: SourceHanSans-Regular;
 }
 
@@ -964,21 +1095,25 @@ const generateWordReport = () => {
 }
 
 .select-btn {
-  width: 122.33px;
-  height: 37.33px;
-  padding: 8px 16px;
-  background-color: #3B82F6;
+  padding: 10px 20px;
+  background-color: rgba(139, 0, 0, 1);
   color: white;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.3s;
-  border: 0.6667px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0px 4px 16px rgba(31, 38, 135, 0.08);
+  border: none;
+  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.2);
   font-family: SourceHanSans-Medium;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
+}
+
+.select-btn:hover {
+  background-color: rgba(120, 0, 0, 1);
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
 }
 
 /* 已上传文件信息 */
@@ -987,66 +1122,58 @@ const generateWordReport = () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
   gap: 12px;
-  transition: all 0.3s;
-  position: relative;
   padding: 20px;
   text-align: center;
   width: 100%;
-  box-sizing: border-box;
 }
 
 .file-name {
   font-size: 14px;
-  color: #1A1A1A;
-  font-weight: Medium;
-  background-color: rgba(255, 255, 255, 0.7);
+  color: rgba(44, 24, 16, 1);
+  font-weight: 500;
+  background-color: rgba(255, 255, 255, 0.9);
   padding: 8px 16px;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(44, 24, 16, 0.08);
   font-family: SourceHanSans-Medium;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  border: 1px solid rgba(166, 124, 82, 0.2);
 }
 
 .file-meta {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   font-size: 12px;
-  color: #888888;
+  color: rgba(166, 124, 82, 1);
   font-family: SourceHanSans-Regular;
 }
 
 .file-type, .file-size {
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: rgba(255, 255, 255, 0.9);
   padding: 4px 12px;
-  border-radius: 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
 }
 
 /* 更换文件按钮 */
 .replace-btn {
   position: absolute;
-  bottom: 20px;
+  bottom: 16px;
   opacity: 0;
   visibility: hidden;
-  width: 122.33px;
-  height: 37.33px;
   padding: 8px 16px;
-  background-color: rgba(59, 130, 246, 0.8);
+  background-color: rgba(139, 0, 0, 0.9);
   color: white;
-  border-radius: 12px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.3s;
-  border: 0.6667px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0px 4px 16px rgba(31, 38, 135, 0.08);
+  border: none;
   font-family: SourceHanSans-Medium;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 10;
 }
 
@@ -1056,36 +1183,19 @@ const generateWordReport = () => {
 }
 
 .replace-btn:hover {
-  background-color: #2563eb;
-  box-shadow: 0 4px 8px rgba(64, 158, 255, 0.3);
+  background-color: rgba(120, 0, 0, 1);
 }
 
 /* 错误信息样式 */
 .error-message {
-  color: #EF4444;
+  color: rgba(139, 0, 0, 1);
   font-size: 14px;
   text-align: center;
   margin: 16px 0;
   padding: 12px;
-  background-color: rgba(239, 68, 68, 0.1);
-  border-radius: 12px;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  font-family: SourceHanSans-Regular;
-}
-
-.select-btn:hover {
-  background-color: #2563eb;
-  box-shadow: 0 4px 8px rgba(64, 158, 255, 0.3);
-}
-
-.file-name {
-  font-size: 13px;
-  color: #555555;
-  margin-top: 8px;
-  background-color: rgba(255, 255, 255, 0.7);
-  padding: 6px 16px;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  background-color: rgba(139, 0, 0, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(139, 0, 0, 0.2);
   font-family: SourceHanSans-Regular;
 }
 
@@ -1093,33 +1203,28 @@ const generateWordReport = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(90deg, #3B82F6 0%, #4F46E5 100%);
-  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  border-radius: 50%;
   width: 64px;
   height: 64px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 0;
-  z-index: 10;
-  position: relative;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  flex-shrink: 0;
 }
 
 .check-btn {
   width: 64px;
   height: 64px;
   border: none;
-  border-radius: 9999px;
+  border-radius: 50%;
   background: transparent;
   color: #FFFFFF;
   font-size: 24px;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  margin: 0;
 }
 
 .check-icon {
@@ -1133,27 +1238,22 @@ const generateWordReport = () => {
 }
 
 @keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .check-btn:hover {
   transform: rotate(90deg);
-  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.3);
+  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
 }
 
 /* 最近对比记录 */
 .recent-records {
-  background-color: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 24px;
-  margin-top: 24px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(166, 124, 82, 0.2);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  padding: 20px;
 }
 
 .records-header {
@@ -1161,18 +1261,20 @@ const generateWordReport = () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
 }
 
 .records-title {
   font-size: 16px;
-  font-weight: 500;
-  color: #1A1A1A;
-  font-family: SourceHanSans-Medium;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-SemiBold;
 }
 
 .view-all {
-  font-size: 14px;
-  color: #3B82F6;
+  font-size: 13px;
+  color: rgba(139, 0, 0, 1);
   font-family: SourceHanSans-Regular;
   cursor: pointer;
 }
@@ -1187,14 +1289,16 @@ const generateWordReport = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #F9FAFB;
+  background-color: rgba(248, 244, 233, 0.5);
   border-radius: 8px;
-  padding: 12px;
+  padding: 12px 16px;
+  border: 1px solid rgba(166, 124, 82, 0.15);
   transition: all 0.3s ease;
 }
 
 .record-item:hover {
-  background-color: rgba(239, 246, 255, 0.5);
+  background-color: rgba(248, 244, 233, 0.8);
+  border-color: rgba(166, 124, 82, 0.3);
 }
 
 .record-info {
@@ -1205,7 +1309,7 @@ const generateWordReport = () => {
 
 .record-icon {
   font-size: 16px;
-  color: #9CA3AF;
+  color: rgba(166, 124, 82, 1);
 }
 
 .record-details {
@@ -1216,13 +1320,13 @@ const generateWordReport = () => {
 
 .record-filename {
   font-size: 14px;
-  color: #333333;
+  color: rgba(44, 24, 16, 1);
   font-family: SourceHanSans-Regular;
 }
 
 .record-timestamp {
   font-size: 12px;
-  color: #888888;
+  color: rgba(166, 124, 82, 1);
   font-family: SourceHanSans-Regular;
 }
 
@@ -1234,35 +1338,34 @@ const generateWordReport = () => {
 .record-action-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid #E5E7EB;
-  border-radius: 9999px;
-  background-color: white;
+  border: 1px solid rgba(166, 124, 82, 0.3);
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.9);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  color: #666666;
+  color: rgba(166, 124, 82, 1);
   font-size: 14px;
 }
 
 .record-action-btn:hover {
-  background-color: #3B82F6;
+  background-color: rgba(139, 0, 0, 1);
   color: white;
-  border-color: #3B82F6;
+  border-color: rgba(139, 0, 0, 1);
 }
 
 /* 属性检查结果 */
 .results-section {
-  background-color: rgba(255, 255, 255, 0.7);
-  border-radius: 20px;
-  border: 0.6667px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0px 8px 32px rgba(31, 38, 135, 0.05);
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
   padding: 24px;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  box-sizing: border-box;
+  gap: 20px;
 }
 
 /* 属性统计 */
@@ -1270,63 +1373,56 @@ const generateWordReport = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0;
-  padding: 16px;
-  background-color: rgba(255, 255, 255, 0.7);
-  border-radius: 20px;
-  border: 0.6667px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 16px 20px;
+  background-color: rgba(248, 244, 233, 0.5);
+  border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
   flex-wrap: wrap;
   gap: 16px;
-  box-sizing: border-box;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-direction: row;
-  padding: 0;
-  border-radius: 0;
-  background-color: transparent;
 }
 
 /* 统计图标容器 */
 .stat-icon-container {
   width: 40px;
   height: 40px;
-  border-radius: 9999px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .stat-icon-container.match {
-  background-color: #DCFCE7;
+  background-color: rgba(34, 139, 34, 0.1);
 }
 
 .stat-icon-container.mismatch {
-  background-color: #FEE2E2;
+  background-color: rgba(139, 0, 0, 0.1);
 }
 
 .stat-icon-container.warning {
-  background-color: #FEF9C3;
+  background-color: rgba(255, 165, 0, 0.1);
 }
 
 .stat-icon {
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .stat-icon-container.match .stat-icon {
-  color: #10B981;
+  color: rgba(34, 139, 34, 1);
 }
 
 .stat-icon-container.mismatch .stat-icon {
-  color: #EF4444;
+  color: rgba(139, 0, 0, 1);
 }
 
 .stat-icon-container.warning .stat-icon {
-  color: #F59E0B;
+  color: rgba(255, 165, 0, 1);
 }
 
 .stat-content {
@@ -1337,29 +1433,27 @@ const generateWordReport = () => {
 
 .stat-label {
   font-size: 12px;
-  color: #888888;
+  color: rgba(166, 124, 82, 1);
   font-family: SourceHanSans-Regular;
 }
 
 .stat-value {
-  font-size: 16px;
-  font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-size: 18px;
+  font-weight: 700;
+  font-family: SourceHanSans-Bold;
 }
 
 .stat-value.match {
-  color: #10B981;
+  color: rgba(34, 139, 34, 1);
 }
 
 .stat-value.mismatch {
-  color: #EF4444;
+  color: rgba(139, 0, 0, 1);
 }
 
 .stat-value.warning {
-  color: #F59E0B;
+  color: rgba(255, 165, 0, 1);
 }
-
-
 
 .export-section {
   display: flex;
@@ -1371,54 +1465,43 @@ const generateWordReport = () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  border-radius: 12px;
+  padding: 10px 20px;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
   font-family: SourceHanSans-Medium;
   cursor: pointer;
-  transition: background-color;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
   border: none;
 }
 
 .export-btn {
-  background-color: white;
-  color: #1A1A1A;
-  border: 1px solid #E5E7EB;
-  width: auto;
-  height: auto;
+  background-color: rgba(139, 0, 0, 1);
+  color: white;
 }
-
-
 
 .export-btn:hover {
-  background-color: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background-color: rgba(120, 0, 0, 1);
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
 }
 
-/* 为属性检查添加与文件对比一致的按钮样式 */
 .issue-tracking-btn {
-  background-color: #2563EB;
+  background-color: rgba(166, 124, 82, 1);
   color: white;
 }
 
-.issue-tracking-btn .btn-icon {
-  color: white;
-  font-size: 16px;
+.issue-tracking-btn:hover {
+  background-color: rgba(145, 108, 70, 1);
+  box-shadow: 0 4px 12px rgba(166, 124, 82, 0.3);
 }
 
 /* 属性差异详情 */
 .property-details-section {
-  background-color: rgba(255, 255, 255, 0.7);
-  border-radius: 20px;
-  border: 0.6667px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 16px;
-  flex: 1;
-  box-sizing: border-box;
-  margin-top: 0;
-  overflow: visible;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  overflow: hidden;
 }
 
 /* 区域标题 */
@@ -1426,15 +1509,16 @@ const generateWordReport = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  padding: 16px 20px;
+  background-color: rgba(248, 244, 233, 0.5);
+  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
 }
 
 .section-title {
   font-size: 16px;
-  line-height: 22px;
-  font-weight: 500;
-  color: #1A1A1A;
-  font-family: SourceHanSans-Medium;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-SemiBold;
   margin: 0;
 }
 
@@ -1444,55 +1528,39 @@ const generateWordReport = () => {
 }
 
 .view-btn {
-  padding: 6px 12px;
-  border-radius: 12px;
-  border: 1px solid #E5E7EB;
-  background-color: white;
-  color: #555555;
-  font-size: 14px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(166, 124, 82, 0.3);
+  background-color: rgba(255, 255, 255, 0.9);
+  color: rgba(166, 124, 82, 1);
+  font-size: 13px;
   font-family: SourceHanSans-Regular;
   cursor: pointer;
-  transition: background-color;
+  transition: all 0.3s;
 }
 
 .view-btn.active {
-  background-color: #3B82F6;
+  background-color: rgba(139, 0, 0, 1);
   color: white;
-  border-color: #3B82F6;
+  border-color: rgba(139, 0, 0, 1);
 }
 
-/* 属性分组 */
-.property-group {
-  margin-bottom: 24px;
-}
-
-.group-title {
-  font-size: 16px;
-  line-height: 22px;
-  font-weight: 500;
-  color: #1A1A1A;
-  font-family: SourceHanSans-Medium;
-  margin-bottom: 16px;
-}
-
-/* 表格控件 */
+/* 属性表格 */
 .property-table {
-  background-color: white;
-  border-radius: 20px;
-  border: 0.6667px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
   overflow: hidden;
 }
 
 .table-header {
   display: grid;
-  grid-template-columns: 150px 1fr 1fr 100px;
+  grid-template-columns: 150px 1fr 1fr 120px;
   padding: 12px 16px;
-  background-color: rgba(255, 255, 255, 0.7);
-  border-bottom: 1px solid #F3F4F6;
+  background-color: rgba(248, 244, 233, 0.8);
+  border-bottom: 2px solid rgba(166, 124, 82, 0.3);
   font-family: SourceHanSans-SemiBold;
-  font-size: 14px;
-  color: #888888;
+  font-size: 13px;
+  color: rgba(44, 24, 16, 1);
 }
 
 .table-body {
@@ -1502,106 +1570,83 @@ const generateWordReport = () => {
 
 .table-row {
   display: grid;
-  grid-template-columns: 150px 1fr 1fr 100px;
-  padding: 16px;
-  border-bottom: 1px solid #E5E7EB;
-  height: 57px;
-  box-sizing: border-box;
-  transition: background-color;
+  grid-template-columns: 150px 1fr 1fr 120px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.15);
+  transition: background-color 0.2s;
   align-items: center;
 }
 
 .table-row:hover {
-  background-color: rgba(249, 250, 251, 0.5);
-  border-radius: 8px;
+  background-color: rgba(248, 244, 233, 0.3);
+}
+
+.table-row.status-mismatch {
+  background-color: rgba(139, 0, 0, 0.05);
+}
+
+.table-row.status-mismatch:hover {
+  background-color: rgba(139, 0, 0, 0.1);
 }
 
 .table-col {
-  font-size: 14px;
+  font-size: 13px;
   font-family: SourceHanSans-Regular;
+  color: rgba(44, 24, 16, 1);
 }
 
 .prop-name {
-  color: #555555;
+  color: rgba(44, 24, 16, 1);
   font-weight: 500;
 }
 
 .prop-value-left,
 .prop-value-right {
-  color: #333333;
+  color: rgba(166, 124, 82, 1);
 }
 
 /* 状态标签 */
 .status-tag {
   display: inline-block;
   padding: 4px 12px;
-  border-radius: 9999px;
+  border-radius: 12px;
   font-size: 12px;
-  font-weight: 500;
-  font-family: SourceHanSans-Medium;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
   white-space: nowrap;
 }
 
 .status-match {
-  background-color: #DCFCE7;
-  color: #15803D;
+  background-color: rgba(34, 139, 34, 0.1);
+  color: rgba(34, 139, 34, 1);
 }
 
 .status-mismatch {
-  background-color: #FEE2E2;
-  color: #B91C1C;
+  background-color: rgba(139, 0, 0, 0.1);
+  color: rgba(139, 0, 0, 1);
 }
 
 .status-warning {
-  background-color: #FEF9C3;
-  color: #A16207;
+  background-color: rgba(255, 165, 0, 0.1);
+  color: rgba(255, 165, 0, 1);
 }
 
-/* 移除分页控件样式 */
-
-/* 文件信息栏 */
-.file-info-bar {
-  background: rgba(255, 255, 255, 0.7);
-  border: 0.6667px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-  padding: 20px;
-  backdrop-filter: blur(4px);
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.file-info-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1A1A1A;
-  font-family: SourceHanSans-SemiBold;
-  margin-bottom: 16px;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.file-paths {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+::-webkit-scrollbar-thumb {
+  background-color: rgba(166, 124, 82, 0.5);
+  border-radius: 3px;
 }
 
-.file-path-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #F9FAFB;
-  border-radius: 12px;
-  padding: 12px;
-  font-family: SourceHanSans-Regular;
-}
-
-.file-icon {
-  color: #3B82F6;
-  font-size: 16px;
-}
-
-.file-path {
-  font-size: 14px;
-  color: #333333;
-  font-family: SourceHanSans-Regular;
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(166, 124, 82, 0.8);
 }
 </style>

@@ -2,30 +2,28 @@ import { reactive, onMounted } from 'vue'
 
 // 定义设置类型
 export interface FileCompareSettings {
+  ngramSize: number
   minDuplicateWords: number
   textSimilarityThreshold: number
   imageSimilarityThreshold: number
+  maxResults: number
   ignorePunctuation: boolean
   ignoreWhitespace: boolean
   ignoreCase: boolean
-  // AI模型设置
-  selectedModel: string
-  apiKey: string
-  apiEndpoint: string
+  ignoreInvisibleChars: boolean
 }
 
 // 定义默认设置
 export const defaultSettings: FileCompareSettings = {
+  ngramSize: 3,
   minDuplicateWords: 8,
   textSimilarityThreshold: 75,
   imageSimilarityThreshold: 80,
+  maxResults: 100,
   ignorePunctuation: true,
   ignoreWhitespace: true,
   ignoreCase: false,
-  // AI模型默认设置
-  selectedModel: 'gpt-3.5',
-  apiKey: '',
-  apiEndpoint: ''
+  ignoreInvisibleChars: true
 }
 
 // 导出设置组合式函数

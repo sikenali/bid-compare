@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import {
+import { 
   RiExchangeLine,
   RiFileWordLine,
   RiArrowRightLine,
@@ -12,11 +12,7 @@ import {
   RiFilterLine,
   RiArrowLeftSLine,
   RiArrowRightSLine,
-  RiBrainLine,
-  RiQuestionLine,
-  RiSearchLine,
-  RiEditLine,
-  RiInformationLine
+  RiBrainLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx'
 import { useFileParser } from '../composables/useFileParser'
@@ -1106,18 +1102,6 @@ const generateWordReport = () => {
 
 <template>
   <div class="file-compare-container">
-    <!-- 页面标题区 -->
-    <div class="page-header">
-      <div class="title-section">
-        <h1 class="main-title">文档比对中心</h1>
-        <p class="sub-title">精准识别两个版本文档之间的内容差异、相似片段和结构变更</p>
-      </div>
-      <button class="help-btn" title="帮助">
-        <RiQuestionLine class="help-icon" />
-      </button>
-      <div class="decorative-line"></div>
-    </div>
-
     <!-- 文件上传区域 -->
     <div v-if="!showResults" class="upload-section">
       <!-- 左侧文件上传 -->
@@ -1130,6 +1114,13 @@ const generateWordReport = () => {
         :on-clear-file="handleClearFile"
       />
 
+      <!-- 对比按钮 -->
+  <div class="compare-btn-container" :class="{ 'rotating-bg': isParsing }">
+    <button class="compare-btn" @click="handleCompare" :disabled="isParsing">
+      <RiExchangeLine class="compare-icon" :class="{ 'rotating': isParsing }" />
+    </button>
+  </div>
+
       <!-- 右侧文件上传 -->
       <FileUpload
         side="right"
@@ -1139,57 +1130,6 @@ const generateWordReport = () => {
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
-    </div>
-
-    <!-- 功能说明区 -->
-    <div v-if="!showResults" class="features-section">
-      <div class="feature-cards">
-        <!-- 精确对比 -->
-        <div class="feature-card">
-          <div class="card-icon">
-            <RiSearchLine class="icon" />
-          </div>
-          <h3 class="card-title">精确对比</h3>
-          <p class="card-desc">采用智能算法，精确识别文本内容的每一处差异</p>
-        </div>
-        <!-- 高亮展示 -->
-        <div class="feature-card">
-          <div class="card-icon">
-            <RiEditLine class="icon" />
-          </div>
-          <h3 class="card-title">高亮展示</h3>
-          <p class="card-desc">相似内容以醒目标记高亮显示，快速定位关键信息</p>
-        </div>
-        <!-- 报告导出 -->
-        <div class="feature-card">
-          <div class="card-icon">
-            <RiFileExcelLine class="icon" />
-          </div>
-          <h3 class="card-title">报告导出</h3>
-          <p class="card-desc">一键生成详细对比报告，支持多种格式导出</p>
-        </div>
-      </div>
-
-      <!-- 对比按钮 -->
-      <div class="compare-btn-wrapper">
-        <button class="compare-main-btn" @click="handleCompare" :disabled="isParsing">
-          <RiExchangeLine class="compare-icon" :class="{ 'rotating': isParsing }" />
-          <span class="compare-text">{{ isParsing ? '对比中...' : '一键对比' }}</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- 使用说明区 -->
-    <div v-if="!showResults" class="instructions-section">
-      <div class="instructions-content">
-        <RiInformationLine class="instructions-icon" />
-        <div class="instructions-text">
-          <h3 class="instructions-title">使用说明</h3>
-          <p class="instruction-item">1. 分别上传源文件和修订版文件</p>
-          <p class="instruction-item">2. 点击"一键对比"按钮开始分析</p>
-          <p class="instruction-item">3. 查看详细的对比结果和高亮标记</p>
-        </div>
-      </div>
     </div>
 
     <!-- 最近对比记录 -->
@@ -1266,12 +1206,7 @@ const generateWordReport = () => {
                 <th class="table-header">序号</th>
                 <th class="table-header">{{ leftFileInfo.name }}</th>
                 <th class="table-header">页码</th>
-                <th class="table-header sortable" @click="toggleSort">
-                  相似度
-                  <span class="sort-icon" :class="sortAscending ? 'asc' : 'desc'">
-                    {{ sortAscending ? '↑' : '↓' }}
-                  </span>
-                </th>
+                <th class="table-header">相似度</th>
                 <th class="table-header">页码</th>
                 <th class="table-header">{{ rightFileInfo.name }}</th>
               </tr>
@@ -1406,232 +1341,71 @@ const generateWordReport = () => {
   display: flex;
   flex-direction: column;
   background-color: rgba(248, 244, 233, 1);
-  padding: 32px;
-  gap: 32px;
+  padding: 24px;
+  gap: 20px;
   font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* 页面标题区 */
-.page-header {
-  width: 100%;
-  position: relative;
-}
-
-.title-section {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
-.main-title {
-  font-size: 36px;
-  font-weight: 700;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Bold;
-  margin: 0;
-}
-
-.sub-title {
-  font-size: 16px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
-  margin: 8px 0 0 0;
-}
-
-.help-btn {
-  width: 40px;
-  height: 40px;
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 9999px;
-  background-color: rgba(255, 255, 255, 1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.help-btn:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
-}
-
-.help-icon {
-  font-size: 20px;
-  color: rgba(107, 79, 52, 1);
-}
-
-.decorative-line {
-  width: 100%;
-  height: 3px;
-  margin-top: 24px;
-  background: linear-gradient(90deg, rgba(216,191,156,1) 0%, rgba(230,215,191,1) 50%, rgba(216,191,156,1) 100%);
-  border-radius: 2px;
 }
 
 /* 文件上传区域 */
 .upload-section {
   display: flex;
-  gap: 32px;
-  align-items: flex-start;
-  justify-content: center;
-}
-
-/* 功能说明区 */
-.features-section {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.feature-cards {
-  display: flex;
-  gap: 24px;
-  justify-content: center;
-}
-
-.feature-card {
-  width: 360px;
-  height: 196px;
-  padding: 48px;
-  background-color: rgba(255, 255, 255, 1);
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
+  gap: 16px;
   align-items: center;
-  text-align: center;
-  transition: all 0.3s ease;
+  padding: 24px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
 }
 
-.feature-card:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
-}
-
-.card-icon {
-  width: 48px;
-  height: 48px;
-  margin-bottom: 16px;
-}
-
-.card-icon .icon {
-  font-size: 36px;
-  color: rgba(139, 0, 0, 1);
-}
-
-.card-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
-  margin: 0 0 12px 0;
-}
-
-.card-desc {
-  font-size: 14px;
-  color: rgba(139, 115, 85, 1);
-  font-family: SourceHanSans-Regular;
-  margin: 0;
-  line-height: 1.6;
-}
-
-/* 对比按钮 */
-.compare-btn-wrapper {
+.compare-btn-container {
   display: flex;
+  align-items: center;
   justify-content: center;
-}
-
-.compare-main-btn {
-  width: 100%;
-  height: 58px;
-  border: none;
-  border-radius: 12px;
   background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
-  color: white;
-  font-size: 18px;
-  font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.compare-btn {
+  width: 64px;
+  height: 64px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #FFFFFF;
+  font-size: 24px;
   cursor: pointer;
+  transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  box-shadow: 0 4px 20px rgba(139, 0, 0, 0.3);
-  transition: all 0.3s ease;
-}
-
-.compare-main-btn:hover:not(:disabled) {
-  box-shadow: 0 6px 24px rgba(139, 0, 0, 0.4);
-  transform: translateY(-2px);
-}
-
-.compare-main-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
 }
 
 .compare-icon {
+  color: #FFFFFF;
   font-size: 24px;
   transition: all 0.3s ease;
 }
 
 .compare-icon.rotating {
-  animation: rotate 1s linear infinite;
+  animation: pulse-move 1s ease-in-out infinite;
 }
 
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes pulse-move {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(5px, 0) rotate(10deg); }
+  50% { transform: translate(0, 5px) rotate(0deg); }
+  75% { transform: translate(-5px, 0) rotate(-10deg); }
 }
 
-.compare-text {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-/* 使用说明区 */
-.instructions-section {
-  display: flex;
-  justify-content: center;
-}
-
-.instructions-content {
-  width: 1078px;
-  padding: 24px;
-  background-color: rgba(255, 255, 255, 0.6);
-  border-radius: 12px;
-  border: 0.7px solid rgba(216, 191, 156, 0.5);
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.instructions-icon {
-  font-size: 36px;
-  color: rgba(139, 0, 0, 1);
-  flex-shrink: 0;
-}
-
-.instructions-text {
-  flex: 1;
-}
-
-.instructions-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
-  margin: 0 0 12px 0;
-}
-
-.instruction-item {
-  font-size: 14px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
-  margin: 0 0 8px 0;
-  line-height: 1.6;
+.compare-btn:hover {
+  transform: rotate(90deg);
+  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
 }
 
 /* 最近对比记录 */
@@ -2044,27 +1818,6 @@ const generateWordReport = () => {
   background-color: rgba(248, 244, 233, 0.8);
 }
 
-.table-header.sortable {
-  cursor: pointer;
-  user-select: none;
-  transition: background-color 0.2s;
-}
-
-.table-header.sortable:hover {
-  background-color: rgba(248, 244, 233, 1);
-}
-
-.sort-icon {
-  display: inline-block;
-  margin-left: 4px;
-  font-size: 12px;
-  color: rgba(166, 124, 82, 1);
-}
-
-.table-header.sortable:hover .sort-icon {
-  color: rgba(139, 0, 0, 1);
-}
-
 .table-row {
   border-bottom: 1px solid rgba(166, 124, 82, 0.15);
   cursor: pointer;
@@ -2323,5 +2076,823 @@ const generateWordReport = () => {
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(166, 124, 82, 0.8);
+}
+</style>
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin-top: 24px;
+}
+
+.records-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.records-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1A1A1A;
+  font-family: SourceHanSans-Medium;
+}
+
+.view-all .clear-all-btn {
+  font-size: 14px;
+  color: #3B82F6;
+  font-family: SourceHanSans-Regular;
+  cursor: pointer;
+}
+
+/* 添加select-btn样式，与PropertyCheck.vue保持一致 */
+.select-btn {
+  width: 122.33px;
+  height: 37.33px;
+  padding: 8px 16px;
+  background-color: #3B82F6;
+  color: white;
+  border-radius: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 0.6667px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0px 4px 16px rgba(31, 38, 135, 0.08);
+  font-family: SourceHanSans-Medium;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: auto;
+}
+
+.select-btn:hover {
+  background-color: #2563eb;
+  box-shadow: 0 4px 8px rgba(64, 158, 255, 0.3);
+}
+
+.records-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.record-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #F9FAFB;
+  border-radius: 8px;
+  padding: 12px;
+  transition: all 0.3s ease;
+}
+
+.record-item:hover {
+  background-color: rgba(239, 246, 255, 0.5);
+}
+
+.record-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.record-icon {
+  font-size: 16px;
+  color: #9CA3AF;
+}
+
+.record-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.record-filename {
+  font-size: 14px;
+  color: #333333;
+  font-family: SourceHanSans-Regular;
+}
+
+.record-timestamp {
+  font-size: 12px;
+  color: #888888;
+  font-family: SourceHanSans-Regular;
+}
+
+.record-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.record-action-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #E5E7EB;
+  border-radius: 9999px;
+  background-color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  color: #666666;
+  font-size: 14px;
+}
+
+.record-action-btn:hover {
+  background-color: #3B82F6;
+  color: white;
+  border-color: #3B82F6;
+}
+
+.error-message {
+  color: #EF4444;
+  font-size: 14px;
+  text-align: center;
+  margin: 16px 0;
+  padding: 12px;
+  background-color: rgba(239, 68, 68, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  font-family: SourceHanSans-Regular;
+}
+
+/* 对比结果 */
+.results-section {
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 20px;
+  border: 0.6667px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0px 8px 32px rgba(31, 38, 135, 0.05);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  gap: 24px;
+  overflow-y: auto;
+}
+
+/* 文件信息栏 */
+.file-info-bar {
+  background: rgba(255, 255, 255, 0.7);
+  border: 0.6667px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.file-info-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1A1A1A;
+  font-family: SourceHanSans-SemiBold;
+  margin-bottom: 16px;
+}
+
+.file-paths {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.file-path-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #F9FAFB;
+  border-radius: 12px;
+  padding: 12px;
+  font-family: SourceHanSans-Regular;
+  font-size: 14px;
+  color: #333333;
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-icon {
+  color: #3B82F6;
+  font-size: 16px;
+}
+
+.file-path-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.divider-icon {
+  color: #9CA3AF;
+  font-size: 16px;
+}
+
+/* 结果统计 */
+.result-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 20px;
+  border: 0.6667px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0px 8px 32px rgba(31, 38, 135, 0.05);
+  box-sizing: border-box;
+}
+
+/* 统计信息卡片 */
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  border: 0.6667px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0px 4px 16px rgba(31, 38, 135, 0.05);
+}
+
+.stat-icon-container {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon-container.text-similarity {
+  background-color: #DBEAFE;
+}
+
+.stat-icon-container.image-similarity {
+  background-color: #FFEDD5;
+}
+
+.stat-icon-container.similar-segments {
+  background-color: #DCFCE7;
+}
+
+.stat-icon {
+  font-size: 18px;
+  color: #333333;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #888888;
+  font-family: SourceHanSans-Regular;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+}
+
+.text-similarity-value {
+  color: #E53E3E;
+}
+
+.image-similarity-value {
+  color: #DD6B20;
+}
+
+.similar-segments-value {
+  color: #3182CE;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: SourceHanSans-Medium;
+  cursor: pointer;
+  transition: background-color;
+  border: none;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn.small {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.export-btn {
+  background-color: white;
+  color: #1A1A1A;
+  border: 1px solid #E5E7EB;
+}
+
+.export-btn .btn-icon {
+  color: #4B5563;
+  font-size: 16px;
+}
+
+.issue-tracking-btn {
+  background-color: #2563EB;
+  color: white;
+}
+
+.issue-tracking-btn .btn-icon {
+  color: white;
+  font-size: 16px;
+}
+
+/* 雷同片段列表 */
+.segment-details-section {
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 20px;
+  border: 0.6667px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0px 8px 32px rgba(31, 38, 135, 0.05);
+  box-sizing: border-box;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-bottom: 0.6667px solid rgba(255, 255, 255, 0.5);
+}
+
+.segment-title {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 500;
+  color: #1A1A1A;
+  font-family: SourceHanSans-Medium;
+  margin: 0;
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 移除显示计数 */
+
+/* 表格控件 */
+.table-container {
+  padding: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+  overflow-y: auto;
+  max-height: 500px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pagination-container {
+  margin-top: 16px;
+  padding: 12px;
+  background-color: rgba(243, 244, 246, 0.5);
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 更多按钮容器 */
+.more-row {
+  position: sticky;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 100;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.more-cell {
+  padding: 12px;
+  text-align: center;
+  border: none;
+}
+
+/* 表格 */
+.similarity-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0;
+  font-size: 12px;
+  table-layout: auto;
+}
+
+/* 更多按钮样式 */
+.more-row {
+  background: transparent;
+  border: none;
+}
+
+.more-cell {
+  text-align: center;
+  padding: 12px;
+  border: none;
+}
+
+.more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: #3B82F6;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: background-color 0.3s;
+}
+
+.more-btn:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.more-btn svg {
+  transition: transform 0.3s;
+}
+
+.more-btn:hover svg {
+  transform: translateY(2px);
+}
+
+
+
+.table-header {
+  text-align: center;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #888888;
+  font-family: SourceHanSans-SemiBold;
+  border-bottom: 1px solid #E5E7EB;
+  background-color: rgba(243, 244, 246, 0.3);
+}
+
+/* 设置序号列宽度为50px */
+.table-header:nth-child(1) {
+  width: 50px;
+}
+
+.table-row {
+  height: auto;
+  border-bottom: 1px solid #E5E7EB;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.table-row:hover {
+  background-color: rgba(239, 246, 255, 0.5);
+}
+
+.table-cell {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-family: SourceHanSans-Regular;
+  color: #333333;
+  vertical-align: top;
+  line-height: 16px;
+}
+
+.table-cell.index {
+  font-weight: 500;
+  color: #6B7280;
+  text-align: center;
+  background-color: rgba(243, 244, 246, 0.3);
+  white-space: nowrap;
+  width: 50px;
+}
+
+.table-cell.file-content {
+  overflow: hidden;
+  background-color: rgba(240, 248, 255, 0.5);
+}
+
+.file-content-inner {
+  max-height: none;
+  overflow: visible;
+  text-overflow: clip;
+  display: block;
+  line-height: 16px;
+  /* 确保高亮文本能够正确显示 */
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  /* 确保高亮样式不被覆盖 */
+  position: relative;
+  z-index: 1;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.table-cell.page {
+  text-align: center;
+  background-color: rgba(243, 244, 246, 0.3);
+  font-family: SourceHanSans-Medium;
+  white-space: nowrap;
+}
+
+.page-number {
+  font-size: 12px;
+  color: #555555;
+  font-family: SourceHanSans-Regular;
+}
+
+.table-cell.similarity {
+  text-align: center;
+  background-color: rgba(243, 244, 246, 0.3);
+  white-space: nowrap;
+}
+
+/* 相似度标签 */
+.similarity-label {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: SourceHanSans-Medium;
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: center;
+}
+
+.similarity-label.high {
+  background-color: rgba(74, 222, 128, 0.3);
+  color: #166534;
+}
+
+.similarity-label.medium {
+  background-color: rgba(96, 165, 250, 0.3);
+  color: #1E40AF;
+}
+
+.similarity-label.low {
+  background-color: rgba(251, 191, 36, 0.3);
+  color: #92400E;
+}
+
+/* 分页控件样式 */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding: 12px;
+  background-color: rgba(243, 244, 246, 0.5);
+  border-radius: 8px;
+  height: 50px;
+  box-sizing: border-box;
+}
+
+.pagination-info {
+  font-size: 12px;
+  color: #666666;
+  font-family: SourceHanSans-Regular;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #333333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: SourceHanSans-Regular;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #F3F4F6;
+  border-color: #9CA3AF;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-btn svg {
+  font-size: 10px;
+}
+
+.page-numbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  background-color: #FFFFFF;
+  color: #333333;
+  font-size: 12px;
+  font-family: SourceHanSans-Regular;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-btn:hover:not(:disabled) {
+  background-color: #F3F4F6;
+  border-color: #9CA3AF;
+}
+
+.page-btn.active {
+  background-color: #3B82F6;
+  border-color: #3B82F6;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-ellipsis {
+  color: #9CA3AF;
+  font-size: 12px;
+  margin: 0 4px;
+}
+
+/* 全局高亮样式 - 使用蓝色方案 */
+.highlighted-text {
+  background-color: rgba(135, 206, 250, 0.9) !important;
+  color: #000080 !important;
+  padding: 3px 6px !important;
+  border-radius: 4px !important;
+  font-weight: 700 !important;
+  display: inline-block !important;
+  line-height: 1.2 !important;
+  box-sizing: border-box !important;
+  background-image: none !important;
+  z-index: 1000 !important;
+  position: relative !important;
+  text-transform: none !important;
+  text-decoration: none !important;
+}
+
+/* file-content-inner中的高亮文本 - 使用黄色方案 */
+.file-content-inner .highlighted-text {
+  background-color: rgba(255, 215, 0, 0.9) !important;
+  color: #8B0000 !important;
+  padding: 3px 6px !important;
+  border-radius: 4px !important;
+  font-weight: 700 !important;
+  display: inline-block !important;
+  background-image: none !important;
+  z-index: 1000 !important;
+  position: relative !important;
+  text-transform: none !important;
+  text-decoration: none !important;
+}
+
+/* 设置file-content-inner的字体颜色为#333333 */
+.file-content-inner {
+  color: #333333;
+}
+
+/* 匹配分隔符样式 */
+.match-separator {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  margin: 8px 0;
+}
+
+/* 移除分页控件样式 */
+
+
+
+
+
+.content-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1A1A1A;
+  font-family: SourceHanSans-Medium;
+  margin: 0;
+}
+
+/* 内容标签导航样式 */
+.content-tabs {
+  display: flex;
+  border-bottom: 1px solid #E5E7EB;
+  margin-bottom: 24px;
+}
+
+.tab-item {
+  padding: 12px 20px;
+  font-size: 15px;
+  font-family: SourceHanSans-Regular;
+  color: #6B7280;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tab-item:hover {
+  color: #2563EB;
+}
+
+.tab-item.active {
+  color: #2563EB;
+  font-family: SourceHanSans-Medium;
+  border-bottom-color: #2563EB;
+}
+
+
+
+/* 辅助文本 */
+.auxiliary-text {
+  font-size: 12px;
+  color: #888888;
+  font-family: SourceHanSans-Regular;
+}
+
+/* 箭头图标旋转动画 */
+.compare-icon {
+  color: #FFFFFF;
+  font-size: 24px;
+  transition: all 0.3s ease;
+}
+
+.compare-icon.rotating {
+  animation: pulse-move 1s ease-in-out infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.compare-btn:hover {
+  transform: rotate(90deg);
+  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.3);
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.7);
 }
 </style>

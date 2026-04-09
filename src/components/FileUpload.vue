@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { RiUploadCloud2Line, RiFileWordLine, RiFilePptLine, RiFileExcelLine, RiRefreshLine, RiCloseLine } from '@remixicon/vue';
-import { FiFileText } from 'vue-icons-plus/fi';
-import { FaFilePdf } from 'vue-icons-plus/fa';
+import { ref } from 'vue'
+import { RiUploadCloud2Line, RiRefreshLine, RiCloseLine } from '@remixicon/vue';
 
 interface Props {
   side: 'left' | 'right';
@@ -18,61 +17,70 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+const titleText = props.side === 'left' ? '源文件' : '修订版文件';
+const titleColor = props.side === 'left' ? 'rgba(139,0,0,1)' : 'rgba(46,89,132,1)';
+
+// 声明文件输入框引用
+const fileInput = ref<HTMLInputElement | null>(null);
+
+// 触发文件选择
+const triggerFileInput = () => {
+  fileInput.value?.click();
+};
 </script>
 
 <template>
-  <div 
-    class="file-upload"
-    @dragover="onDragOver"
-    @drop="(e) => onDrop(e, props.side)"
-  >
-    <div class="file-upload-content">
-      <input 
-        type="file" 
-        :id="`${props.side}-file`" 
-        class="file-input" 
+  <div class="file-upload-container">
+    <!-- 上传标题 -->
+    <div class="upload-title">
+      <span class="title-decoration" :style="{ backgroundColor: titleColor }"></span>
+      <span class="title-text">{{ titleText }}</span>
+    </div>
+
+    <!-- 上传区域 -->
+    <div
+      class="upload-area"
+      @dragover="onDragOver"
+      @drop="(e) => onDrop(e, props.side)"
+    >
+      <input
+        type="file"
+        :id="`${props.side}-file`"
+        ref="fileInput"
+        class="file-input"
         @change="(e) => onFileChange(e, props.side)"
         accept=".doc,.docx,.pdf,.txt,.ppt,.pptx,.xls,.xlsx"
       />
-      
+
       <!-- 未上传状态 -->
-      <div v-if="!fileInfo.name" class="upload-status">
-        <RiUploadCloud2Line class="upload-icon" />
-        <div class="upload-text">拖放文件此处或点击上传</div>
-        <label :for="`${props.side}-file`" class="select-btn">选择文件</label>
-        <!-- 支持的文件类型 -->
-        <div class="supported-formats">
-          <div class="format-tag">
-            <RiFileWordLine class="format-icon" /> Word
-          </div>
-          <div class="format-tag">
-            <RiFilePptLine class="format-icon" /> PPT
-          </div>
-          <div class="format-tag">
-            <RiFileExcelLine class="format-icon" /> Excel
-          </div>
-          <div class="format-tag">
-            <FaFilePdf class="format-icon" /> PDF
-          </div>
-          <div class="format-tag">
-            <FiFileText class="format-icon" /> TXT
-          </div>
+      <div v-if="!fileInfo.name" class="upload-placeholder" @click="triggerFileInput">
+        <div class="upload-icon-wrapper">
+          <RiUploadCloud2Line class="upload-icon" />
         </div>
+        <div class="upload-main-text">拖拽文件到此处或点击上传</div>
+        <div class="upload-format-text">支持 .doc, .docx, .pdf, .txt, .ppt, .pptx, .xls, .xlsx</div>
+        <div class="upload-size-text">单个文件大小不超过 50MB</div>
       </div>
-      
+
       <!-- 已上传状态 -->
       <div v-else class="file-info">
+        <div class="upload-icon-wrapper">
+          <RiUploadCloud2Line class="upload-icon uploaded" />
+        </div>
         <div class="file-name">{{ fileInfo.name }}</div>
         <div class="file-meta">
           <span class="file-type">{{ fileInfo.type }}</span>
           <span class="file-size">{{ fileInfo.size }}</span>
         </div>
         <div class="file-actions">
-          <label :for="`${props.side}-file`" class="action-icon-btn replace-icon" title="更换文件">
-            <RiRefreshLine class="icon" />
+          <label :for="`${props.side}-file`" class="action-btn replace-btn" title="更换文件">
+            <RiRefreshLine class="btn-icon" />
+            <span>更换文件</span>
           </label>
-          <button class="action-icon-btn clear-icon" @click="onClearFile(props.side)" title="清除文件">
-            <RiCloseLine class="icon" />
+          <button class="action-btn clear-btn" @click="onClearFile(props.side)" title="清除文件">
+            <RiCloseLine class="btn-icon" />
+            <span>清除文件</span>
           </button>
         </div>
       </div>
@@ -81,214 +89,193 @@ const props = defineProps<Props>();
 </template>
 
 <style scoped>
-.file-upload {
+.file-upload-container {
+  display: flex;
+  flex-direction: column;
+  width: 547px;
+  height: 344px;
+}
+
+/* 上传标题 */
+.upload-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.title-decoration {
+  width: 5px;
+  height: 24px;
+  border-radius: 2px;
+}
+
+.title-text {
+  font-size: 20px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-SemiBold;
+}
+
+/* 上传区域 */
+.upload-area {
   flex: 1;
-  width: 448px;
-  height: 228px;
-  border: 2px dashed #E5E7EB;
+  border: 0.7px solid rgba(216, 191, 156, 1);
   border-radius: 12px;
-  background-color: white;
+  background-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  padding: 32px;
-  box-sizing: border-box;
 }
 
-.file-upload:hover {
-  border-color: #3B82F6;
-  background-color: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.file-upload-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 16px;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-/* 上传状态 */
-.upload-status {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  transition: all 0.3s ease;
-}
-
-.upload-icon {
-  font-size: 36px;
-  color: #D1D5DB;
-  transition: all 0.3s ease;
-}
-
-.file-upload:hover .upload-icon {
-  color: #3B82F6;
-}
-
-.upload-text {
-  font-size: 15px;
-  color: #555555;
-  font-family: SourceHanSans-Regular;
-  transition: all 0.3s ease;
+.upload-area:hover {
+  border-color: rgba(139, 0, 0, 1);
+  box-shadow: 0 6px 24px rgba(139, 0, 0, 0.12);
 }
 
 .file-input {
   display: none;
 }
 
-.select-btn {
-  padding: 12px 24px;
-  background-color: #3B82F6;
-  color: white;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  font-family: SourceHanSans-Medium;
+/* 未上传状态 */
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+  gap: 8px;
+}
+
+.upload-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 9999px;
+  background-color: rgba(245, 238, 226, 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 24px;
+  transition: all 0.3s ease;
 }
 
-.select-btn:hover {
-  background-color: #2563eb;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.upload-area:hover .upload-icon-wrapper {
+  background-color: rgba(245, 238, 226, 0.8);
+  transform: scale(1.05);
 }
 
-/* 已上传文件信息 */
+.upload-icon {
+  font-size: 40px;
+  color: rgba(166, 124, 82, 1);
+}
+
+.upload-icon.uploaded {
+  color: rgba(34, 139, 34, 1);
+}
+
+.upload-main-text {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-Medium;
+  margin-bottom: 8px;
+}
+
+.upload-format-text {
+  font-size: 14px;
+  color: rgba(139, 115, 85, 1);
+  font-family: SourceHanSans-Regular;
+  margin-bottom: 16px;
+}
+
+.upload-size-text {
+  font-size: 12px;
+  color: rgba(166, 124, 82, 1);
+  font-family: SourceHanSans-Regular;
+}
+
+/* 已上传状态 */
 .file-info {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
+  padding: 24px;
   gap: 12px;
-  transition: all 0.3s ease;
-  position: relative;
-  padding: 20px;
-  text-align: center;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .file-name {
-  font-size: 14px;
-  color: #1A1A1A;
+  font-size: 16px;
   font-weight: 500;
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 10px 20px;
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: rgba(44, 24, 16, 1);
   font-family: SourceHanSans-Medium;
-  max-width: 100%;
-  overflow: visible;
-  text-overflow: clip;
-  white-space: normal;
-  transition: all 0.3s ease;
   text-align: center;
-  line-height: 1.4;
-  min-height: auto;
+  word-break: break-all;
+  margin-bottom: 8px;
 }
 
 .file-meta {
   display: flex;
   gap: 16px;
-  font-size: 12px;
-  color: #888888;
+  font-size: 13px;
+  color: rgba(166, 124, 82, 1);
   font-family: SourceHanSans-Regular;
+  margin-bottom: 16px;
 }
 
 .file-type, .file-size {
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: rgba(245, 238, 226, 0.5);
   padding: 4px 12px;
-  border-radius: 10px;
-  transition: all 0.3s ease;
-}
-
-/* 支持的文件类型 */
-.supported-formats {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.format-tag {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  background-color: #F3F4F6;
-  border-radius: 9999px;
-  padding: 3px 8px;
-  font-size: 8px;
-  color: #666666;
-  font-family: SourceHanSans-Regular;
-}
- 
-.format-tag svg {
-  font-size: 4px !important;
-  color: #9CA3AF !important;
-}
-
-.format-icon {
-  font-size: 4px !important;
-  color: #9CA3AF !important;
+  border-radius: 6px;
 }
 
 /* 文件操作按钮 */
 .file-actions {
   display: flex;
   gap: 12px;
-  margin-top: 16px;
 }
 
-.action-icon-btn {
-  width: 36px;
-  height: 36px;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  border-radius: 8px;
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #3B82F6;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.action-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: SourceHanSans-Medium;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid;
 }
 
-.action-icon-btn:hover {
-  background-color: rgba(59, 130, 246, 0.2);
-  border-color: #3B82F6;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+.btn-icon {
+  font-size: 16px;
 }
 
-.action-icon-btn .icon {
-  font-size: 18px;
+.replace-btn {
+  background-color: rgba(139, 0, 0, 0.1);
+  border-color: rgba(139, 0, 0, 0.3);
+  color: rgba(139, 0, 0, 1);
 }
 
-.replace-icon {
-  background-color: rgba(59, 130, 246, 0.1);
+.replace-btn:hover {
+  background-color: rgba(139, 0, 0, 0.2);
+  border-color: rgba(139, 0, 0, 1);
 }
 
-.clear-icon {
+.clear-btn {
   background-color: rgba(239, 68, 68, 0.1);
   border-color: rgba(239, 68, 68, 0.3);
-  color: #EF4444;
+  color: rgba(239, 68, 68, 1);
 }
 
-.clear-icon:hover {
+.clear-btn:hover {
   background-color: rgba(239, 68, 68, 0.2);
-  border-color: #EF4444;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 1);
 }
 </style>

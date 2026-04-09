@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { RiExchangeLine, RiFileLine, RiSearchLine, RiSettings3Line } from '@remixicon/vue'
+import { RiExchangeLine, RiFileLine, RiSearchLine, RiSettings3Line, RiCpuLine } from '@remixicon/vue'
 
 const route = useRoute()
 const router = useRouter()
 
 // 计算当前激活的菜单
 const activeMenu = computed(() => {
-  if (route.path === '/') return 'file-compare'
-  if (route.path === '/property-check') return 'property-check'
+  if (route.path === '/file-compare' || route.path === '/file-compare-result') return 'file-compare'
+  if (route.path === '/property-check' || route.path === '/property-check-result') return 'property-check'
+  if (route.path === '/hardware-info') return 'hardware-info'
   if (route.path === '/settings') return 'system-settings'
   return 'file-compare'
 })
@@ -23,6 +24,9 @@ const handleMenuClick = (menu: string) => {
     case 'property-check':
       router.push('/property-check')
       break
+    case 'hardware-info':
+      router.push('/hardware-info')
+      break
     case 'system-settings':
       router.push('/settings')
       break
@@ -32,60 +36,73 @@ const handleMenuClick = (menu: string) => {
 
 <template>
   <div class="app-container">
-    <!-- 顶部导航栏 -->
-    <header class="header">
-      <div class="header-left">
-        <div class="logo">
-          <div class="logo-icon-container">
-            <RiExchangeLine class="logo-icon" />
+    <!-- 侧边导航栏 -->
+    <aside class="sidebar">
+      <!-- Logo区域 -->
+      <div class="logo-section">
+        <div class="logo-icon">
+          <div class="logo-seal">
+            <span class="seal-text">对对碰</span>
           </div>
-          <span class="logo-text">文件对对碰</span>
-          <span class="logo-subtitle">专业文档对比工具</span>
         </div>
+        <h1 class="logo-title">文件对对碰</h1>
+        <p class="logo-subtitle">智能文档比对工具</p>
       </div>
-      <div class="header-right">
-        <!-- 移除了右上角图标 -->
-      </div>
-    </header>
 
-    <!-- 主内容区域 -->
-    <main class="main-content">
-      <!-- 左侧功能导航 -->
-      <aside class="sidebar">
-        <nav class="nav-menu">
-          <!-- 移除了功能导航标题 -->
-          <button 
-            class="nav-item" 
+      <!-- 导航菜单 -->
+      <nav class="nav-menu">
+        <!-- 核心功能 -->
+        <div class="nav-group">
+          <div class="nav-group-title">核心功能</div>
+          <button
+            class="nav-item"
             :class="{ active: activeMenu === 'file-compare' }"
             @click="handleMenuClick('file-compare')"
           >
-            <span class="nav-icon"><RiFileLine /></span>
+            <RiFileLine class="nav-icon" />
             <span class="nav-text">文件对比</span>
           </button>
-          <button 
-            class="nav-item" 
+          <button
+            class="nav-item"
             :class="{ active: activeMenu === 'property-check' }"
             @click="handleMenuClick('property-check')"
           >
-            <span class="nav-icon"><RiSearchLine /></span>
+            <RiSearchLine class="nav-icon" />
             <span class="nav-text">属性检查</span>
           </button>
-          <button 
-            class="nav-item" 
+        </div>
+
+        <!-- 系统功能 -->
+        <div class="nav-group">
+          <div class="nav-group-title">系统功能</div>
+          <button
+            class="nav-item"
+            :class="{ active: activeMenu === 'hardware-info' }"
+            @click="handleMenuClick('hardware-info')"
+          >
+            <RiCpuLine class="nav-icon" />
+            <span class="nav-text">硬件信息</span>
+          </button>
+          <button
+            class="nav-item"
             :class="{ active: activeMenu === 'system-settings' }"
             @click="handleMenuClick('system-settings')"
           >
-            <span class="nav-icon"><RiSettings3Line /></span>
+            <RiSettings3Line class="nav-icon" />
             <span class="nav-text">系统设置</span>
           </button>
-        </nav>
-        <div class="version">V1.0.0</div>
-      </aside>
+        </div>
+      </nav>
 
-      <!-- 右侧内容区域 -->
-      <section class="content-area">
-        <router-view />
-      </section>
+      <!-- 底部版本信息 -->
+      <div class="version-info">
+        <p>V1.0.0</p>
+      </div>
+    </aside>
+
+    <!-- 主内容区域 -->
+    <main class="main-content">
+      <router-view />
     </main>
   </div>
 </template>
@@ -93,139 +110,109 @@ const handleMenuClick = (menu: string) => {
 <style scoped>
 .app-container {
   display: flex;
-  flex-direction: column;
-  width: 1440px;
-  height: 800px;
-  margin: 0 auto;
+  width: 100%;
+  height: 100vh;
   font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background: linear-gradient(180deg, rgba(239,246,255,1) 0%, rgba(224,231,255,1) 100%);
+  background-color: rgba(248, 244, 233, 1);
   overflow: hidden;
 }
 
-/* 顶部导航栏 */
-.header {
+/* 侧边导航栏 */
+.sidebar {
+  width: 250px;
+  height: 100%;
+  background-color: rgba(44, 24, 16, 1);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 24px;
-  height: 70x;
-  background-color: rgba(255, 255, 255, 0.7);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 100;
-  margin: 8px;
-  width: calc(100% - 16px);
-  box-sizing: border-box;
+  flex-direction: column;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  overflow-y: auto;
 }
 
-.header-left {
+/* Logo区域 */
+.logo-section {
+  padding: 32px 24px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.logo-icon-container {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: linear-gradient(90deg, #3B82F6 0%, #4F46E5 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
 }
 
 .logo-icon {
-  font-size: 16px;
-  color: white;
+  margin-bottom: 12px;
 }
 
-.logo-text {
-  font-size: 20px;
+.logo-seal {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(196, 30, 58, 1) 0%, rgba(139, 0, 0, 1) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  position: relative;
+}
+
+.logo-seal::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+}
+
+.seal-text {
+  font-size: 14px;
   font-weight: 600;
-  color: #1A1A1A;
-  font-family: SourceHanSans-SemiBold;
+  color: rgba(255, 255, 255, 1);
+  font-family: SourceHanSans-Bold;
+}
+
+.logo-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 1);
+  margin: 0 0 4px 0;
+  font-family: SourceHanSans-Bold;
+  letter-spacing: 2px;
 }
 
 .logo-subtitle {
   font-size: 12px;
-  color: #888888;
-  margin-left: 8px;
-  padding-left: 12px;
-  border-left: 1px solid rgba(255, 255, 255, 0.5);
+  color: rgba(216, 191, 156, 1);
+  margin: 0;
+  font-family: SourceHanSans-Regular;
+  letter-spacing: 1px;
 }
 
-.header-right {
-  display: flex;
-  gap: 16px;
-}
-
-.header-btn {
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
-  font-size: 16px;
-  transition: all 0.3s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  color: #4B5563;
-}
-
-.header-btn:hover {
-  background-color: #3B82F6;
-  color: white;
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
-}
-
-/* 主内容区域 */
-.main-content {
-  display: flex;
+/* 导航菜单 */
+.nav-menu {
   flex: 1;
-  overflow: hidden;
-  margin: 0 8px 8px;
-  gap: 16px;
-  /* 确保子元素不超出边界 */
-  box-sizing: border-box;
-}
-
-/* 左侧导航栏 */
-.sidebar {
-  width: 256px;
-  height: 700px;
-  background-color: rgba(255, 255, 255, 0.7);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 16px 0;
   display: flex;
   flex-direction: column;
-  padding: 24px 16px;
-  box-sizing: border-box;
-  /* 修复圆角显示问题 */
-  overflow: hidden;
-  /* 单独设置滚动 */
-  overflow-y: auto;
+  gap: 24px;
 }
 
-.nav-menu {
-  padding: 0;
+.nav-group {
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.nav-title {
-  padding: 0 0 12px;
+.nav-group-title {
+  padding: 0 8px 8px;
   font-size: 12px;
-  color: #888888;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: rgba(166, 124, 82, 1);
   font-family: SourceHanSans-SemiBold;
+  letter-spacing: 1px;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+  margin-bottom: 4px;
 }
 
 .nav-item {
@@ -233,43 +220,34 @@ const handleMenuClick = (menu: string) => {
   align-items: center;
   gap: 12px;
   width: 100%;
-  height: 44px;
-  padding: 12px;
+  padding: 12px 16px;
   border: none;
-  background: transparent;
+  border-radius: 8px;
+  background-color: transparent;
   cursor: pointer;
-  font-size: 15px;
-  color: #555555;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
   transition: all 0.3s ease;
   text-align: left;
-  border-radius: 12px;
-  margin-bottom: 8px;
-  font-family: SourceHanSans-Regular;
+  font-family: SourceHanSans-Medium;
 }
 
 .nav-item:hover {
-  background-color: rgba(249, 250, 251, 0.5);
-  color: #3B82F6;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 1);
 }
 
 .nav-item.active {
-  background-color: rgba(239, 246, 255, 0.5);
-  border: 1px solid #DBEAFE;
-  color: #1A1A1A;
-  border-radius: 12px;
+  background-color: rgba(139, 0, 0, 1);
+  color: rgba(255, 255, 255, 1);
+  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.3);
 }
 
 .nav-icon {
   font-size: 20px;
-  color: #6B7280;
   width: 20px;
   height: 20px;
-  display: inline-block;
-  text-align: center;
-}
-
-.nav-item.active .nav-icon {
-  color: #3B82F6;
+  flex-shrink: 0;
 }
 
 .nav-text {
@@ -277,31 +255,26 @@ const handleMenuClick = (menu: string) => {
   font-weight: 500;
 }
 
-.version {
-  margin-top: auto;
-  margin-right: 20px;
-  margin-bottom: 20px;
-  margin-left: 20px;
-  padding: 12px 20px;
-  font-size: 12px;
-  color: #888888;
+/* 底部版本信息 */
+.version-info {
+  padding: 20px;
+  border-top: 1px solid rgba(166, 124, 82, 0.2);
   text-align: center;
-  border-top: 0.6667px solid rgba(255, 255, 255, 0.5);
+}
+
+.version-info p {
+  font-size: 12px;
+  color: rgba(166, 124, 82, 1);
+  margin: 0;
   font-family: SourceHanSans-Regular;
 }
 
-/* 右侧内容区域 */
-.content-area {
+/* 主内容区域 */
+.main-content {
   flex: 1;
-  background-color: rgba(255, 255, 255, 0.7);
-  border-radius: 20px;
-  border: 0.6667px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0px 8px 32px rgba(31, 38, 135, 0.05);
+  height: 100%;
   overflow: hidden;
-  padding: 0;
-  box-sizing: border-box;
-  height: 700px;
-  /* 确保内容区域不超出边界 */
-  width: calc(100% - 16px);
+  background-color: rgba(248, 244, 233, 1);
+  position: relative;
 }
 </style>
