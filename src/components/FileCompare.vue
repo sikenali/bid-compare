@@ -724,20 +724,36 @@ const generateWordReport = () => {
     <div v-if="showHelp" class="help-modal-overlay" @click="toggleHelp">
       <div class="help-modal" @click.stop>
         <div class="help-modal-header">
-          <h3>使用说明</h3>
+          <h3>功能介绍</h3>
           <button class="help-close-btn" @click="toggleHelp">×</button>
         </div>
         <div class="help-modal-body">
-          <h4>文件对比功能</h4>
-          <p>1. 分别上传源文件和修订版文件（支持拖拽或点击上传）</p>
-          <p>2. 点击"一键对比"按钮开始分析</p>
-          <p>3. 查看详细的对比结果和高亮标记的相似内容</p>
-          <p>4. 点击雷同片段可查看详细内容</p>
-          <p>5. 支持导出 Word 格式报告</p>
-          <h4>支持的格式</h4>
-          <p>.doc, .docx, .pdf, .txt, .ppt, .pptx, .xls, .xlsx</p>
-          <h4>注意事项</h4>
-          <p>单个文件大小不超过 50MB</p>
+          <div class="help-feature-cards">
+            <!-- 取证级精确对比 -->
+            <div class="help-feature-card">
+              <div class="card-icon accuracy">
+                <RiSearchLine class="icon" />
+              </div>
+              <h3 class="card-title">取证级精确对比</h3>
+              <p class="card-desc">采用行业领先的文本比对算法，精确识别每一处内容差异，支持多格式文档智能解析。</p>
+            </div>
+            <!-- 差异高亮展示 -->
+            <div class="help-feature-card">
+              <div class="card-icon highlight">
+                <RiEditLine class="icon" />
+              </div>
+              <h3 class="card-title">差异高亮展示</h3>
+              <p class="card-desc">相同内容以金色背景高亮标注，差异内容清晰区分，支持分页查看所有相似片段。</p>
+            </div>
+            <!-- 一键导出报告 -->
+            <div class="help-feature-card">
+              <div class="card-icon export">
+                <RiFileExcelLine class="icon" />
+              </div>
+              <h3 class="card-title">一键导出报告</h3>
+              <p class="card-desc">支持导出完整的对比分析报告，包含统计数据和详细对比结果，方便存档与分享。</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -765,35 +781,8 @@ const generateWordReport = () => {
       />
     </div>
 
-    <!-- 功能说明区 -->
-    <div v-if="!showResults" class="features-section">
-      <div class="feature-cards">
-        <!-- 取证级精确对比 -->
-        <div class="feature-card">
-          <div class="card-icon accuracy">
-            <RiSearchLine class="icon" />
-          </div>
-          <h3 class="card-title">取证级精确对比</h3>
-          <p class="card-desc">采用行业领先的文本比对算法，精确识别每一处内容差异，支持多格式文档智能解析。</p>
-        </div>
-        <!-- 差异高亮展示 -->
-        <div class="feature-card">
-          <div class="card-icon highlight">
-            <RiEditLine class="icon" />
-          </div>
-          <h3 class="card-title">差异高亮展示</h3>
-          <p class="card-desc">相同内容以金色背景高亮标注，差异内容清晰区分，支持分页查看所有相似片段。</p>
-        </div>
-        <!-- 一键导出报告 -->
-        <div class="feature-card">
-          <div class="card-icon export">
-            <RiFileExcelLine class="icon" />
-          </div>
-          <h3 class="card-title">一键导出报告</h3>
-          <p class="card-desc">支持导出完整的对比分析报告，包含统计数据和详细对比结果，方便存档与分享。</p>
-        </div>
-      </div>
-
+    <!-- 对比按钮区 -->
+    <div v-if="!showResults" class="compare-section">
       <!-- 对比按钮 -->
       <div class="compare-btn-wrapper">
         <button class="compare-main-btn" @click="handleCompare" :disabled="isProcessing">
@@ -811,19 +800,6 @@ const generateWordReport = () => {
           {{ progressMessage }} {{ Math.round(progress * 100) }}%
         </span>
         <button class="cancel-btn" @click="handleCancel">取消</button>
-      </div>
-    </div>
-
-    <!-- 使用说明区 -->
-    <div v-if="!showResults" class="instructions-section">
-      <div class="instructions-content">
-        <RiInformationLine class="instructions-icon" />
-        <div class="instructions-text">
-          <h3 class="instructions-title">使用说明</h3>
-          <p class="instruction-item">1. 分别上传源文件和修订版文件</p>
-          <p class="instruction-item">2. 点击"一键对比"按钮开始分析</p>
-          <p class="instruction-item">3. 查看详细的对比结果和高亮标记</p>
-        </div>
       </div>
     </div>
 
@@ -1041,7 +1017,6 @@ const generateWordReport = () => {
   display: flex;
   flex-direction: column;
   background-color: rgba(248, 244, 233, 1);
-  padding: 24px;
   gap: 20px;
   font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -1114,6 +1089,7 @@ const generateWordReport = () => {
   gap: 20px;
   align-items: flex-start;
   justify-content: center;
+  padding: 0 24px;
 }
 
 /* 功能说明区 */
@@ -1121,6 +1097,7 @@ const generateWordReport = () => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding: 0 24px;
 }
 
 .feature-cards {
@@ -2005,7 +1982,7 @@ const generateWordReport = () => {
 .help-modal {
   background-color: rgba(255, 255, 255, 1);
   border-radius: 12px;
-  width: 480px;
+  width: 900px;
   max-height: 80vh;
   overflow: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
@@ -2050,24 +2027,81 @@ const generateWordReport = () => {
   padding: 24px;
 }
 
-.help-modal-body h4 {
-  font-size: 15px;
+.help-feature-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+}
+
+.help-feature-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 20px;
+  background-color: rgba(248, 244, 233, 0.5);
+  border-radius: 12px;
+  border: 0.7px solid rgba(216, 191, 156, 0.3);
+  transition: all 0.3s ease;
+}
+
+.help-feature-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.help-feature-card .card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.help-feature-card .card-icon .icon {
+  font-size: 24px;
+}
+
+.help-feature-card .card-icon.accuracy {
+  background-color: rgba(254, 243, 199, 1);
+}
+
+.help-feature-card .card-icon.accuracy .icon {
+  color: rgba(217, 119, 6, 1);
+}
+
+.help-feature-card .card-icon.highlight {
+  background-color: rgba(219, 234, 254, 1);
+}
+
+.help-feature-card .card-icon.highlight .icon {
+  color: rgba(37, 99, 235, 1);
+}
+
+.help-feature-card .card-icon.export {
+  background-color: rgba(252, 231, 243, 1);
+}
+
+.help-feature-card .card-icon.export .icon {
+  color: rgba(219, 39, 119, 1);
+}
+
+.help-feature-card .card-title {
+  font-size: 16px;
   font-weight: 600;
   color: rgba(44, 24, 16, 1);
-  margin: 16px 0 8px 0;
   font-family: SourceHanSans-SemiBold;
+  margin: 0 0 8px 0;
 }
 
-.help-modal-body h4:first-child {
-  margin-top: 0;
-}
-
-.help-modal-body p {
-  font-size: 14px;
+.help-feature-card .card-desc {
+  font-size: 13px;
   color: rgba(107, 79, 52, 1);
-  margin: 4px 0;
   font-family: SourceHanSans-Regular;
-  line-height: 1.6;
+  margin: 0;
+  line-height: 1.4;
 }
 
 ::-webkit-scrollbar-thumb:hover {

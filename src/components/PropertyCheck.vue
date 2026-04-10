@@ -10,7 +10,10 @@ import {
   RiArrowLeftSLine,
   RiArrowRightSLine,
   RiQuestionLine,
-  RiSearchLine
+  RiSearchLine,
+  RiFileLine,
+  RiUserLine,
+  RiCalendarLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx'
 import { useFileParser } from '../composables/useFileParser'
@@ -729,19 +732,33 @@ const generateWordReport = () => {
     <div v-if="showHelp" class="help-modal-overlay" @click="toggleHelp">
       <div class="help-modal" @click.stop>
         <div class="help-modal-header">
-          <h3>属性检查说明</h3>
+          <h3>功能介绍</h3>
           <button class="help-close-btn" @click="toggleHelp">×</button>
         </div>
         <div class="help-modal-body">
-          <h4>属性检查功能</h4>
-          <p>对比两个文件的基础属性信息，快速识别差异</p>
-          <h4>检查项目</h4>
-          <p>文件类型、文件大小、作者信息、创建时间、修改时间</p>
-          <h4>使用说明</h4>
-          <p>1. 上传两个待比较文件</p>
-          <p>2. 点击"开始检查"按钮</p>
-          <p>3. 查看属性对比结果</p>
-          <p>4. 支持导出 Word 格式报告</p>
+          <div class="help-feature-cards">
+            <div class="help-feature-card">
+              <div class="card-icon accuracy">
+                <RiFileLine class="icon" />
+              </div>
+              <h3 class="card-title">文件类型检查</h3>
+              <p class="card-desc">自动识别并对比两个文件的类型和大小，快速发现基本差异。</p>
+            </div>
+            <div class="help-feature-card">
+              <div class="card-icon highlight">
+                <RiUserLine class="icon" />
+              </div>
+              <h3 class="card-title">作者信息比对</h3>
+              <p class="card-desc">提取文档作者和最后保存者信息，确保文档来源可靠。</p>
+            </div>
+            <div class="help-feature-card">
+              <div class="card-icon export">
+                <RiCalendarLine class="icon" />
+              </div>
+              <h3 class="card-title">时间戳验证</h3>
+              <p class="card-desc">对比创建时间和修改时间，发现文档是否被篡改。</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -775,23 +792,6 @@ const generateWordReport = () => {
         <RiExchangeLine class="check-icon" :class="{ 'rotating': isParsing }" />
         <span class="check-text">{{ isParsing ? '检查中...' : '开始检查' }}</span>
       </button>
-    </div>
-
-    <!-- 检查项目说明区 -->
-    <div v-if="!showResults" class="check-items-section">
-      <div class="check-items-content">
-        <RiSearchLine class="check-items-icon" />
-        <div class="check-items-text">
-          <h3 class="check-items-title">检查项目</h3>
-          <div class="check-items-list">
-            <span class="check-item">文件类型</span>
-            <span class="check-item">文件大小</span>
-            <span class="check-item">作者信息</span>
-            <span class="check-item">创建时间</span>
-            <span class="check-item">修改时间</span>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- 最近对比记录 -->
@@ -896,7 +896,6 @@ const generateWordReport = () => {
   display: flex;
   flex-direction: column;
   background-color: rgba(248, 244, 233, 1);
-  padding: 24px;
   gap: 20px;
   font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -968,6 +967,7 @@ const generateWordReport = () => {
   gap: 20px;
   align-items: flex-start;
   justify-content: center;
+  padding: 0 24px;
 }
 
 /* 操作按钮区 */
@@ -1022,62 +1022,6 @@ const generateWordReport = () => {
 .check-text {
   font-size: 18px;
   font-weight: 600;
-}
-
-/* 检查项目说明区 */
-.check-items-section {
-  display: flex;
-  justify-content: center;
-}
-
-.check-items-content {
-  width: 1078px;
-  padding: 24px;
-  background-color: rgba(255, 255, 255, 0.6);
-  border-radius: 12px;
-  border: 0.7px solid rgba(216, 191, 156, 0.5);
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.check-items-icon {
-  font-size: 36px;
-  color: rgba(139, 0, 0, 1);
-  flex-shrink: 0;
-}
-
-.check-items-text {
-  flex: 1;
-}
-
-.check-items-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
-  margin: 0 0 12px 0;
-}
-
-.check-items-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.check-item {
-  font-size: 14px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.check-item::before {
-  content: '•';
-  color: rgba(139, 0, 0, 1);
-  font-size: 16px;
 }
 
 .upload-box {
@@ -1703,7 +1647,7 @@ const generateWordReport = () => {
 .help-modal {
   background-color: rgba(255, 255, 255, 1);
   border-radius: 12px;
-  width: 480px;
+  width: 900px;
   max-height: 80vh;
   overflow: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
@@ -1748,23 +1692,80 @@ const generateWordReport = () => {
   padding: 24px;
 }
 
-.help-modal-body h4 {
-  font-size: 15px;
+.help-feature-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+}
+
+.help-feature-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 20px;
+  background-color: rgba(248, 244, 233, 0.5);
+  border-radius: 12px;
+  border: 0.7px solid rgba(216, 191, 156, 0.3);
+  transition: all 0.3s ease;
+}
+
+.help-feature-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.help-feature-card .card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.help-feature-card .card-icon .icon {
+  font-size: 24px;
+}
+
+.help-feature-card .card-icon.accuracy {
+  background-color: rgba(254, 243, 199, 1);
+}
+
+.help-feature-card .card-icon.accuracy .icon {
+  color: rgba(217, 119, 6, 1);
+}
+
+.help-feature-card .card-icon.highlight {
+  background-color: rgba(219, 234, 254, 1);
+}
+
+.help-feature-card .card-icon.highlight .icon {
+  color: rgba(37, 99, 235, 1);
+}
+
+.help-feature-card .card-icon.export {
+  background-color: rgba(252, 231, 243, 1);
+}
+
+.help-feature-card .card-icon.export .icon {
+  color: rgba(219, 39, 119, 1);
+}
+
+.help-feature-card .card-title {
+  font-size: 16px;
   font-weight: 600;
   color: rgba(44, 24, 16, 1);
-  margin: 16px 0 8px 0;
   font-family: SourceHanSans-SemiBold;
+  margin: 0 0 8px 0;
 }
 
-.help-modal-body h4:first-child {
-  margin-top: 0;
-}
-
-.help-modal-body p {
-  font-size: 14px;
+.help-feature-card .card-desc {
+  font-size: 13px;
   color: rgba(107, 79, 52, 1);
-  margin: 4px 0;
   font-family: SourceHanSans-Regular;
-  line-height: 1.6;
+  margin: 0;
+  line-height: 1.4;
 }
 </style>

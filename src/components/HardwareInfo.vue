@@ -122,7 +122,6 @@ const sections = ref<InfoSection[]>([systemInfo.value, networkInfo.value, finger
   height: 100%;
   overflow: auto;
   background-color: rgba(248, 244, 233, 1);
-  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 20px;

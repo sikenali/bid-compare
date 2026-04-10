@@ -211,7 +211,6 @@ const handleReset = () => {
   display: flex;
   flex-direction: column;
   background-color: rgba(248, 244, 233, 1);
-  padding: 24px;
   gap: 20px;
   font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }

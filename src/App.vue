@@ -273,8 +273,8 @@ const handleMenuClick = (menu: string) => {
 .main-content {
   flex: 1;
   height: 100%;
-  overflow: hidden;
+  overflow: auto;
   background-color: rgba(248, 244, 233, 1);
-  position: relative;
+  padding: 32px;
 }
 </style>
