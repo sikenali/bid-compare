@@ -383,7 +383,10 @@ export function findSimilarSegmentsBlockMatch(
 export type ComparisonStrategy = 'lcs' | 'rabin-karp' | 'block-match'
 
 export function selectStrategy(textLength: number): ComparisonStrategy {
-  if (textLength < 20_000) return 'lcs'
+  // LCS 暴力匹配仅用于极小文件（< 5000 字符），避免 O(m*n) 性能灾难
+  // Rabin-Karp 滚动哈希用于中小文件（5K-100K），性能 O(m+n)
+  // 分块匹配用于大文件（> 100K），避免内存溢出
+  if (textLength < 5_000) return 'lcs'
   if (textLength < 100_000) return 'rabin-karp'
   return 'block-match'
 }
