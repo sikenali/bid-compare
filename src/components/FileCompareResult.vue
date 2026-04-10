@@ -155,11 +155,8 @@ const getSimilarityLevel = (value: number): string => {
       <div class="title-section">
         <button class="back-btn" @click="handleBack">
           <RiArrowLeftLine class="back-icon" />
+          <span class="back-text">返回</span>
         </button>
-        <div class="title-text">
-          <h1 class="page-title">文件对比结果</h1>
-          <p class="page-subtitle">{{ leftFileName }} vs {{ rightFileName }}</p>
-        </div>
       </div>
       <button class="export-btn" @click="handleExport">
         <RiFileExcelLine class="export-icon" />
@@ -252,11 +249,6 @@ const getSimilarityLevel = (value: number): string => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
 }
 
 .title-section {
@@ -266,54 +258,43 @@ const getSimilarityLevel = (value: number): string => {
 }
 
 .back-btn {
-  width: 40px;
-  height: 40px;
-  border: 1px solid rgba(166, 124, 82, 0.3);
+  height: 53px;
+  border: 0.7px solid rgba(216, 191, 156, 1);
   border-radius: 8px;
-  background-color: transparent;
+  background-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 12px 24px;
+  gap: 8px;
   transition: all 0.3s;
-  color: rgba(139, 0, 0, 1);
 }
 
 .back-btn:hover {
-  background-color: rgba(139, 0, 0, 0.1);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
 }
 
 .back-icon {
-  font-size: 20px;
+  font-size: 18px;
+  color: rgba(107, 79, 52, 1);
 }
 
-.title-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.page-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: rgba(44, 24, 16, 1);
-  margin: 0;
-  font-family: SourceHanSans-Bold;
-}
-
-.page-subtitle {
-  font-size: 12px;
-  color: rgba(166, 124, 82, 1);
-  margin: 0;
-  font-family: SourceHanSans-Regular;
+.back-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-Medium;
 }
 
 .export-btn {
+  height: 53px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  background-color: rgba(139, 0, 0, 1);
+  padding: 12px 24px;
+  background-color: rgba(46, 89, 132, 1);
   color: white;
   border: none;
   border-radius: 8px;
@@ -325,13 +306,13 @@ const getSimilarityLevel = (value: number): string => {
 }
 
 .export-btn:hover {
-  background-color: rgba(139, 0, 0, 0.9);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  background-color: rgba(46, 89, 132, 0.9);
+  box-shadow: 0 4px 12px rgba(46, 89, 132, 0.3);
 }
 
 .export-icon {
   font-size: 18px;
+  color: rgba(255, 255, 255, 1);
 }
 
 /* 统计卡片 */
