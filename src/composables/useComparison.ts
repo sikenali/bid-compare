@@ -44,7 +44,7 @@ export function useComparison() {
 
     try {
       if (strategy === 'lcs') {
-        // 小文件：主线程
+        // 小文件：使用暴力 LCS 算法，结果最准确
         progressMessage.value = '正在对比...'
         const segments = findSimilarSegments(text1, text2, settings, 15, totalPages1, totalPages2)
         const similarity = calculateTextSimilarity(text1, text2, settings)

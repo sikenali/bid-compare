@@ -111,12 +111,8 @@ const getFileIconComponent = (name: string): any => {
 
 <style scoped>
 .recent-records {
-  background-color: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 24px;
-  margin-top: 24px;
+  padding: 0;
+  margin-top: 0;
 }
 
 .records-header {
@@ -128,34 +124,33 @@ const getFileIconComponent = (name: string): any => {
 
 .records-title {
   font-size: 16px;
-  font-weight: 500;
-  color: #1A1A1A;
-  font-family: SourceHanSans-Medium;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-SemiBold;
   margin: 0;
 }
 
-/* 确保清除按钮宽度和高度一致 */
 .select-btn {
-  width: 120px;
-  height: 36px;
-  padding: 8px 16px;
-  background-color: #3B82F6;
+  height: 40px;
+  padding: 0 20px;
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
   color: white;
-  border-radius: 12px;
+  border: none;
+  border-radius: 10px;
   font-size: 14px;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
   cursor: pointer;
-  transition: all 0.3s;
-  border: 0.6667px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0px 4px 16px rgba(31, 38, 135, 0.08);
-  font-family: SourceHanSans-Medium;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .select-btn:hover {
-  background-color: #2563eb;
-  box-shadow: 0 4px 8px rgba(64, 158, 255, 0.3);
+  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
+  transform: translateY(-2px);
 }
 
 .records-list {
@@ -168,7 +163,6 @@ const getFileIconComponent = (name: string): any => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #F9FAFB;
   border-radius: 8px;
   padding: 12px;
   transition: all 0.3s ease;
@@ -228,9 +222,9 @@ const getFileIconComponent = (name: string): any => {
 }
 
 .record-action-btn:hover {
-  background-color: #3B82F6;
-  color: white;
-  border-color: #3B82F6;
+  background-color: rgba(139, 0, 0, 0.05);
+  color: rgba(139, 0, 0, 1);
+  border-color: rgba(139, 0, 0, 0.3);
 }
 
 .no-records {

@@ -23,7 +23,14 @@ const estimatePage = (charPosition: number, totalPages: number = 1): string => {
   // 假设平均每页约 1000 字符
   const CHARS_PER_PAGE = 1000
   const estimatedPage = Math.floor(charPosition / CHARS_PER_PAGE) + 1
-  return `第${Math.min(estimatedPage, totalPages)}页/共${totalPages}页`
+  
+  // 如果总页数已知，限制不超过总页数
+  // 如果总页数为 1（未知），则直接显示估算页码
+  if (totalPages > 1) {
+    return `第${Math.min(estimatedPage, totalPages)}页/共${totalPages}页`
+  } else {
+    return `约第${estimatedPage}页`
+  }
 }
 
 // HTML 转义工具函数（纯字符串实现，避免 DOM 创建开销）
@@ -74,8 +81,8 @@ export function preprocessText(
   return { processed, indexMap }
 }
 
-// 基于最长公共子串的相似片段查找
-// 注：matchedPositions 使用 Set 存储，空间复杂度 O(m*n)，适用于小文件（<2万字）场景
+// 基于最长公共子串的相似片段查找（暴力 LCS 算法）
+// 适用于小文件（< 5000 字符），结果最准确
 export function findSimilarSegments(
   text1: string,
   text2: string,
@@ -84,38 +91,38 @@ export function findSimilarSegments(
   totalPages1: number = 1,
   totalPages2: number = 1
 ): SimilarSegment[] {
-  const { processed: preprocessed1, indexMap: indexMap1 } = preprocessText(text1, settings)
-  const { processed: preprocessed2, indexMap: indexMap2 } = preprocessText(text2, settings)
-  const m = preprocessed1.length
-  const n = preprocessed2.length
+  const preprocessed1 = preprocessText(text1, settings)
+  const preprocessed2 = preprocessText(text2, settings)
+  const m = preprocessed1.processed.length
+  const n = preprocessed2.processed.length
   const minMatchLength = settings.minDuplicateWords
 
   const matchedPositions = new Set<string>()
   const segments: SimilarSegment[] = []
+  let segmentId = 0
 
+  // 暴力双层循环 - O(m*n) 时间复杂度
   for (let i = 0; i < m; i++) {
     for (let j = 0; j < n; j++) {
       const key = `${i},${j}`
       if (matchedPositions.has(key)) continue
 
       let k = 0
-      while (i + k < m && j + k < n && preprocessed1[i + k] === preprocessed2[j + k]) {
+      while (i + k < m && j + k < n && preprocessed1.processed[i + k] === preprocessed2.processed[j + k]) {
         k++
       }
 
       if (k >= minMatchLength) {
+        // 标记已匹配位置
         for (let l = 0; l < k; l++) {
           matchedPositions.add(`${i + l},${j + l}`)
         }
 
-        // 使用索引映射表获取原文本中的正确位置
-        const origStart1 = indexMap1[i]
-        const origEnd1 = indexMap1[i + k - 1] + 1
-        const origStart2 = indexMap2[j]
-        const origEnd2 = indexMap2[j + k - 1] + 1
-
-        const originalMatch1 = text1.substring(origStart1, origEnd1)
-        const originalMatch2 = text2.substring(origStart2, origEnd2)
+        // 通过索引映射获取原文本位置
+        const origStart1 = preprocessed1.indexMap[i]
+        const origEnd1 = preprocessed1.indexMap[i + k - 1] + 1
+        const origStart2 = preprocessed2.indexMap[j]
+        const origEnd2 = preprocessed2.indexMap[j + k - 1] + 1
 
         const leftStart = Math.max(0, origStart1 - contextLength)
         const leftEnd = Math.min(text1.length, origEnd1 + contextLength)
@@ -124,8 +131,8 @@ export function findSimilarSegments(
 
         const safeLeft = escapeHtml(text1.substring(leftStart, leftEnd))
         const safeRight = escapeHtml(text2.substring(rightStart, rightEnd))
-        const safeMatch1 = escapeHtml(originalMatch1)
-        const safeMatch2 = escapeHtml(originalMatch2)
+        const safeMatch1 = escapeHtml(text1.substring(origStart1, origEnd1))
+        const safeMatch2 = escapeHtml(text2.substring(origStart2, origEnd2))
 
         const highlightedLeft = safeLeft.replace(
           new RegExp(escapeRegExp(safeMatch1), 'g'),
@@ -395,10 +402,11 @@ export function findSimilarSegmentsBlockMatch(
 
 export type ComparisonStrategy = 'lcs' | 'rabin-karp' | 'block-match'
 
+// 选择对比策略
 export function selectStrategy(textLength: number): ComparisonStrategy {
-  // LCS 暴力匹配仅用于极小文件（< 5000 字符），避免 O(m*n) 性能灾难
-  // Rabin-Karp 滚动哈希用于中小文件（5K-100K），性能 O(m+n)
-  // 分块匹配用于大文件（> 100K），避免内存溢出
+  // 小文件（< 5000 字符）：使用暴力 LCS，结果最准确
+  // 中文件（5K-100K）：使用 Rabin-Karp 滚动哈希，性能 O(m+n)
+  // 大文件（> 100K）：使用分块匹配，避免内存溢出
   if (textLength < 5_000) return 'lcs'
   if (textLength < 100_000) return 'rabin-karp'
   return 'block-match'

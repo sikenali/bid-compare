@@ -4,9 +4,13 @@ import { useSettings } from '../composables/useSettings'
 import {
   RiSettings3Line,
   RiText,
-  RiFilterLine,
   RiFileDownloadLine,
-  RiRobot2Line
+  RiRobot2Line,
+  RiFileWordLine,
+  RiMarkdownLine,
+  RiSparklingFill,
+  RiChat1Line,
+  RiRobotLine
 } from '@remixicon/vue'
 
 const {
@@ -25,10 +29,26 @@ const handleReset = () => {
   settings.ignorePunctuation = true
   settings.ignoreWhitespace = true
   settings.ignoreInvisibleChars = true
-  settings.selectedModel = 'gpt-3.5'
+  settings.selectedModel = 'deepseek'
   settings.apiKey = ''
   settings.apiEndpoint = ''
+  settings.exportFormat = 'word'
+  settings.includeHighlight = true
+  settings.includeCharts = true
 }
+
+// 导出格式选项
+const exportFormats = [
+  { value: 'word', label: 'Word (.docx)', icon: RiFileWordLine },
+  { value: 'markdown', label: 'Markdown (.md)', icon: RiMarkdownLine }
+]
+
+// AI 模型选项
+const aiModels = [
+  { value: 'deepseek', label: 'DeepSeek', icon: RiSparklingFill },
+  { value: 'kimi', label: 'Kimi', icon: RiChat1Line },
+  { value: 'doubao', label: '豆包', icon: RiRobotLine }
+]
 </script>
 
 <template>
@@ -146,12 +166,46 @@ const handleReset = () => {
           <h2 class="card-title">导出设置</h2>
         </div>
         <div class="card-content">
+          <!-- 默认导出格式 -->
           <div class="setting-row">
             <div class="setting-label-group">
-              <label class="setting-label">导出格式</label>
-              <p class="setting-desc">当前仅支持 Word 文档格式 (.docx)</p>
+              <label class="setting-label">默认导出格式</label>
+              <p class="setting-desc">导出报告时默认使用的文件格式</p>
             </div>
-            <span class="format-badge">.docx</span>
+            <div class="radio-group">
+              <label
+                v-for="format in exportFormats"
+                :key="format.value"
+                class="radio-item"
+                :class="{ 'active': settings.exportFormat === format.value }"
+              >
+                <input type="radio" v-model="settings.exportFormat" :value="format.value" />
+                <component :is="format.icon" class="radio-icon" />
+                <span class="radio-tooltip">{{ format.label }}</span>
+              </label>
+            </div>
+          </div>
+          <!-- 包含高亮样式 -->
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <label class="setting-label">包含高亮样式</label>
+              <p class="setting-desc">导出的报告中包含内容高亮样式</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" v-model="settings.includeHighlight" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <!-- 包含统计图表 -->
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <label class="setting-label">包含统计图表</label>
+              <p class="setting-desc">导出的报告中包含统计图表</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" v-model="settings.includeCharts" />
+              <span class="slider"></span>
+            </label>
           </div>
         </div>
       </div>
@@ -165,17 +219,24 @@ const handleReset = () => {
           <h2 class="card-title">AI 模型设置</h2>
         </div>
         <div class="card-content">
+          <!-- AI 模型选择 -->
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">AI 模型</label>
               <p class="setting-desc">选择用于分析的 AI 模型</p>
             </div>
-            <select v-model="settings.selectedModel" class="setting-select">
-              <option value="gpt-3.5">GPT-3.5 Turbo</option>
-              <option value="gpt-4">GPT-4</option>
-              <option value="gemini">Google Gemini</option>
-              <option value="claude">Anthropic Claude</option>
-            </select>
+            <div class="radio-group">
+              <label
+                v-for="model in aiModels"
+                :key="model.value"
+                class="radio-item"
+                :class="{ 'active': settings.selectedModel === model.value }"
+              >
+                <input type="radio" v-model="settings.selectedModel" :value="model.value" />
+                <component :is="model.icon" class="radio-icon" />
+                <span class="radio-tooltip">{{ model.label }}</span>
+              </label>
+            </div>
           </div>
           <div class="setting-row">
             <div class="setting-label-group">
@@ -324,7 +385,7 @@ const handleReset = () => {
 .card-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 /* 设置行 */
@@ -333,7 +394,7 @@ const handleReset = () => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  height: 45px;
+  min-height: 32px;
   box-sizing: border-box;
 }
 
@@ -357,67 +418,137 @@ const handleReset = () => {
   line-height: 1.3;
 }
 
-/* 输入框 */
+/* 输入框 - 按照设计图样式 */
 .setting-input {
-  width: 80px;
-  height: 32px;
-  padding: 6px 10px;
-  border: 1px solid rgba(216, 191, 156, 0.5);
+  width: 120px;
+  height: 28px;
+  padding: 4px 8px;
+  border: 2px solid transparent;
   border-radius: 8px;
   font-size: 13px;
+  font-weight: 500;
   color: rgba(44, 24, 16, 1);
-  background-color: rgba(255, 255, 255, 0.8);
-  font-family: SourceHanSans-Regular;
+  background-color: rgba(245, 238, 226, 1);
+  font-family: SourceHanSans-Medium;
   text-align: center;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.setting-input:hover {
+  background-color: rgba(235, 228, 216, 1);
+  border-color: rgba(139, 0, 0, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .setting-input.api-input {
-  width: 180px;
+  width: 160px;
   text-align: left;
 }
 
 .setting-input:focus {
   outline: none;
   border-color: rgba(139, 0, 0, 1);
-  box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
+  background-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 0 0 4px rgba(139, 0, 0, 0.1);
+  transform: translateY(0);
 }
 
-/* 下拉选择框 */
-.setting-select {
-  width: 140px;
-  height: 32px;
-  padding: 6px 10px;
-  border: 1px solid rgba(216, 191, 156, 0.5);
-  border-radius: 8px;
-  font-size: 13px;
-  color: rgba(44, 24, 16, 1);
-  background-color: rgba(255, 255, 255, 0.8);
-  font-family: SourceHanSans-Regular;
-  cursor: pointer;
-  transition: all 0.3s ease;
+/* Radio 按钮组 */
+.radio-group {
+  display: flex;
+  gap: 8px;
   flex-shrink: 0;
 }
 
-.setting-select:focus {
-  outline: none;
-  border-color: rgba(139, 0, 0, 1);
-  box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
-}
-
-.format-badge {
-  display: inline-flex;
+.radio-item {
+  position: relative;
+  width: 40px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background-color: rgba(245, 238, 226, 1);
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 16px;
-  background-color: rgba(245, 238, 226, 1);
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Medium;
-  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.radio-item input[type="radio"] {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.radio-item:hover {
+  background-color: rgba(235, 228, 216, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.radio-item.active {
+  background-color: rgba(139, 0, 0, 1);
+  color: white;
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+}
+
+.radio-item.active:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
+}
+
+.radio-item.active .radio-icon {
+  color: white;
+}
+
+.radio-item.active::after {
+  content: "✓";
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 12px;
+  height: 12px;
+  background-color: white;
+  color: rgba(139, 0, 0, 1);
+  font-size: 8px;
+  line-height: 12px;
+  text-align: center;
+  border-radius: 50%;
+  font-weight: bold;
+}
+
+.radio-item:not(.active) .radio-icon {
+  color: rgba(44, 24, 16, 1);
+}
+
+.radio-icon {
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+.radio-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background-color: rgba(44, 24, 16, 0.9);
+  color: white;
+  font-size: 11px;
+  font-family: SourceHanSans-Regular;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.radio-item:hover .radio-tooltip {
+  opacity: 1;
 }
 
 /* 开关按钮 */

@@ -15,6 +15,10 @@ export interface FileCompareSettings {
   selectedModel: string
   apiKey: string
   apiEndpoint: string
+  // 导出设置
+  exportFormat: string
+  includeHighlight: boolean
+  includeCharts: boolean
 }
 
 // 定义默认设置
@@ -30,7 +34,10 @@ export const defaultSettings: FileCompareSettings = {
   ignoreInvisibleChars: true,
   selectedModel: 'gpt-3.5',
   apiKey: '',
-  apiEndpoint: ''
+  apiEndpoint: '',
+  exportFormat: 'excel',
+  includeHighlight: true,
+  includeCharts: true
 }
 
 // 导出设置组合式函数

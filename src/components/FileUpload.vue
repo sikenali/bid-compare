@@ -18,7 +18,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const titleText = props.side === 'left' ? 'File A' : 'File B';
+const titleText = props.side === 'left' ? 'DOCUMENT SOURCE' : 'DOCUMENT MODIFY';
 const titleColor = props.side === 'left' ? 'rgba(139,0,0,1)' : 'rgba(46,89,132,1)';
 
 // 声明文件输入框引用
@@ -76,11 +76,26 @@ const fileTypeInfo = computed(() => {
         </div>
         <div class="upload-main-text">拖拽文件到此处或点击上传</div>
         <div class="upload-format-icons">
-          <div class="format-icon" title="Word"><RiFileWord2Line class="format-icon-svg" /></div>
-          <div class="format-icon" title="Excel"><RiFileExcel2Line class="format-icon-svg" /></div>
-          <div class="format-icon" title="PPT"><RiSlideshow2Line class="format-icon-svg" /></div>
-          <div class="format-icon" title="PDF"><RiFilePdf2Line class="format-icon-svg" /></div>
-          <div class="format-icon" title="TXT"><RiFileTextLine class="format-icon-svg" /></div>
+          <div class="format-icon-wrapper">
+            <RiFileWord2Line class="format-icon-svg" />
+            <span class="format-tooltip">Word</span>
+          </div>
+          <div class="format-icon-wrapper">
+            <RiFileExcel2Line class="format-icon-svg" />
+            <span class="format-tooltip">Excel</span>
+          </div>
+          <div class="format-icon-wrapper">
+            <RiSlideshow2Line class="format-icon-svg" />
+            <span class="format-tooltip">PPT</span>
+          </div>
+          <div class="format-icon-wrapper">
+            <RiFilePdf2Line class="format-icon-svg" />
+            <span class="format-tooltip">PDF</span>
+          </div>
+          <div class="format-icon-wrapper">
+            <RiFileTextLine class="format-icon-svg" />
+            <span class="format-tooltip">TXT</span>
+          </div>
         </div>
       </div>
 
@@ -219,7 +234,8 @@ const fileTypeInfo = computed(() => {
   margin-bottom: 16px;
 }
 
-.format-icon {
+.format-icon-wrapper {
+  position: relative;
   width: 40px;
   height: 40px;
   border-radius: 8px;
@@ -230,7 +246,7 @@ const fileTypeInfo = computed(() => {
   transition: all 0.3s ease;
 }
 
-.format-icon:hover {
+.format-icon-wrapper:hover {
   background-color: rgba(245, 238, 226, 1);
   transform: translateY(-2px);
 }
@@ -238,6 +254,28 @@ const fileTypeInfo = computed(() => {
 .format-icon-svg {
   font-size: 20px;
   color: rgba(166, 124, 82, 1);
+}
+
+.format-tooltip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background-color: rgba(44, 24, 16, 0.9);
+  color: white;
+  font-size: 11px;
+  font-family: SourceHanSans-Regular;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.format-icon-wrapper:hover .format-tooltip {
+  opacity: 1;
 }
 
 .upload-size-text {

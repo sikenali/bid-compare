@@ -461,7 +461,11 @@ const handleCompare = async () => {
       ignoreWhitespace: settings.ignoreWhitespace
     }
 
-    const result = await runComparison(leftResult.content, rightResult.content, comparisonSettings)
+    // 获取文件页数（从解析结果中提取）
+    const leftPages = leftResult.pages || 1
+    const rightPages = rightResult.pages || 1
+
+    const result = await runComparison(leftResult.content, rightResult.content, comparisonSettings, leftPages, rightPages)
 
     textSimilarity.value = `${result.similarity}%`
     similarSegmentsList.value = result.segments
@@ -536,23 +540,69 @@ const handleReturn = () => {
   showResults.value = false;
 };
 
-// 导出对比报告为Word格式
+// 导出对比报告
 const handleExportReport = async () => {
-  // 生成Word文档
-  const doc = generateWordReport();
+  const leftName = leftFileInfo.value.name.replace(/\.[^/.]+$/, '') || '文件A';
+  const rightName = rightFileInfo.value.name.replace(/\.[^/.]+$/, '') || '文件B';
+  const fileName = `${leftName}_vs_${rightName}_文件对比报告`;
+
+  if (settings.exportFormat === 'markdown') {
+    // 导出 Markdown 格式
+    const markdown = generateMarkdownReport();
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${fileName}.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } else {
+    // 导出 Word 格式
+    const doc = generateWordReport();
+    const blob = await Packer.toBlob(doc);
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${fileName}.docx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+};
+
+// 生成 Markdown 报告
+const generateMarkdownReport = (): string => {
+  let markdown = '# 文件对比报告\n\n';
   
-  // 生成Blob对象
-  const blob = await Packer.toBlob(doc);
+  // 添加相似度统计
+  markdown += '## 相似度统计\n\n';
+  markdown += `- 文本重复率：${textSimilarity.value}\n`;
+  markdown += `- 相似片段数：${similarSegmentsList.value.length}\n\n`;
   
-  // 创建下载链接
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = '文件对比报告.docx';
+  // 添加文件信息
+  markdown += '## 文件信息\n\n';
+  markdown += `- 左侧文件：${leftFileInfo.value.name}\n`;
+  markdown += `- 右侧文件：${rightFileInfo.value.name}\n\n`;
   
-  // 触发下载
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  // 添加详细对比结果
+  markdown += '## 详细对比结果\n\n';
+  similarSegmentsList.value.forEach((segment, index) => {
+    markdown += `### 片段 ${index + 1}\n\n`;
+    markdown += `- 相似度：${segment.similarity}\n`;
+    markdown += `- 左侧页码：${segment.leftPage}\n`;
+    markdown += `- 右侧页码：${segment.rightPage}\n\n`;
+    
+    // 清理 HTML 标签
+    const leftClean = segment.leftContent.replace(/<[^>]*>/g, '');
+    const rightClean = segment.rightContent.replace(/<[^>]*>/g, '');
+    
+    markdown += '**左侧内容：**\n\n';
+    markdown += leftClean + '\n\n';
+    markdown += '**右侧内容：**\n\n';
+    markdown += rightClean + '\n\n';
+    markdown += '---\n\n';
+  });
+  
+  return markdown;
 };
 
 // 生成Word报告内容
@@ -760,19 +810,15 @@ const generateWordReport = () => {
           <p class="page-subtitle">精准识别两个版本文档之间的内容差异、相似片段和结构变更</p>
         </div>
         <div class="header-actions">
-          <button v-if="showResults" class="header-back-btn" @click="handleBack" title="返回">
-            <RiArrowLeftSLine class="header-btn-icon" />
-            <span class="header-btn-text">返回</span>
-          </button>
-          <button v-if="showResults" class="header-export-btn" @click="handleExportReport" title="导出报告">
-            <RiDownloadLine class="header-btn-icon" />
-            <span class="header-btn-text">导出报告</span>
-          </button>
-          <button v-if="!showResults" class="icon-btn" title="历史记录" @click="toggleHistory">
+          <button v-if="showResults" class="header-back-btn" @click="handleBack">返回</button>
+          <button v-if="showResults" class="header-export-btn" @click="handleExportReport">导出报告</button>
+          <button v-if="!showResults" class="icon-btn-wrapper" @click="toggleHistory">
             <RiHistoryLine class="icon-btn-svg" />
+            <span class="icon-btn-tooltip">历史记录</span>
           </button>
-          <button class="help-btn" v-if="!showResults" title="帮助" @click="toggleHelp">
-            <RiQuestionLine class="help-icon" />
+          <button v-if="!showResults" class="icon-btn-wrapper" @click="toggleHelp">
+            <RiQuestionLine class="icon-btn-svg" />
+            <span class="icon-btn-tooltip">帮助</span>
           </button>
         </div>
       </div>
@@ -852,8 +898,9 @@ const generateWordReport = () => {
 
       <!-- 对比按钮 -->
       <div class="compare-btn-wrapper">
-        <button class="compare-main-btn" @click="handleCompare" :disabled="isProcessing" title="一键对比">
+        <button class="compare-main-btn" @click="handleCompare" :disabled="isProcessing">
           <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
+          <span class="compare-btn-tooltip">一键对比</span>
         </button>
       </div>
 
@@ -1117,20 +1164,6 @@ const generateWordReport = () => {
   font-family: SourceHanSans-Regular;
 }
 
-.help-btn {
-  width: 40px;
-  height: 40px;
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 9999px;
-  background-color: rgba(255, 255, 255, 1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-}
-
 .header-actions {
   display: flex;
   align-items: center;
@@ -1139,18 +1172,15 @@ const generateWordReport = () => {
 
 .header-back-btn {
   height: 40px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 16px;
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 8px;
+  padding: 0 20px;
   background-color: rgba(255, 255, 255, 1);
-  color: rgba(107, 79, 52, 1);
+  color: rgba(139, 0, 0, 1);
+  border: 1px solid rgba(139, 0, 0, 0.3);
+  border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
-  font-family: SourceHanSans-Medium;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
   transition: all 0.3s ease;
 }
 
@@ -1161,65 +1191,83 @@ const generateWordReport = () => {
 
 .header-export-btn {
   height: 40px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 16px;
-  background-color: rgba(46, 89, 132, 1);
+  padding: 0 20px;
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
-  font-family: SourceHanSans-Medium;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
   transition: all 0.3s ease;
 }
 
 .header-export-btn:hover {
-  background-color: rgba(46, 89, 132, 0.9);
-  box-shadow: 0 4px 12px rgba(46, 89, 132, 0.3);
+  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
+  transform: translateY(-2px);
 }
 
-.header-btn-icon {
-  font-size: 18px;
-}
-
-.header-back-btn .header-btn-icon {
-  color: rgba(107, 79, 52, 1);
-}
-
-.header-export-btn .header-btn-icon {
-  color: rgba(255, 255, 255, 1);
-}
-
-.header-btn-text {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.icon-btn {
+/* 图标按钮容器 */
+.icon-btn-wrapper {
+  position: relative;
   width: 40px;
   height: 40px;
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 9999px;
-  background-color: rgba(255, 255, 255, 1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: none;
+  border-radius: 12px;
+  background: rgba(139, 0, 0, 1);
+  color: rgba(255, 255, 255, 1);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.icon-btn:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
-  background-color: rgba(139, 0, 0, 0.05);
+.icon-btn-wrapper:hover {
+  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
+  transform: translateY(-2px);
+  background: rgba(165, 0, 0, 1);
+}
+
+.icon-btn-wrapper:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.3);
 }
 
 .icon-btn-svg {
   font-size: 20px;
-  color: rgba(107, 79, 52, 1);
+  width: 20px;
+  height: 20px;
+  color: rgba(255, 255, 255, 1);
+  fill: currentColor;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+/* Tooltip 样式 */
+.icon-btn-tooltip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background-color: rgba(44, 24, 16, 0.9);
+  color: white;
+  font-size: 11px;
+  font-family: SourceHanSans-Regular;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 100;
+}
+
+.icon-btn-wrapper:hover .icon-btn-tooltip {
+  opacity: 1;
 }
 
 .history-modal {
@@ -1243,11 +1291,6 @@ const generateWordReport = () => {
   color: rgba(166, 124, 82, 1);
   font-size: 14px;
   font-family: SourceHanSans-Regular;
-}
-
-.help-icon {
-  font-size: 20px;
-  color: rgba(107, 79, 52, 1);
 }
 
 .decorative-line {
@@ -1364,6 +1407,7 @@ const generateWordReport = () => {
 }
 
 .compare-main-btn {
+  position: relative;
   width: 60px;
   height: 60px;
   border: none;
@@ -1386,6 +1430,28 @@ const generateWordReport = () => {
 .compare-main-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.compare-btn-tooltip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background-color: rgba(44, 24, 16, 0.9);
+  color: white;
+  font-size: 11px;
+  font-family: SourceHanSans-Regular;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 100;
+}
+
+.compare-main-btn:hover:not(:disabled) .compare-btn-tooltip {
+  opacity: 1;
 }
 
 .compare-icon {
@@ -1471,23 +1537,36 @@ const generateWordReport = () => {
 }
 
 .view-all .clear-all-btn {
+  padding: 6px 16px;
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
   font-size: 13px;
-  color: rgba(139, 0, 0, 1);
-  font-family: SourceHanSans-Regular;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
   cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.2);
+}
+
+.view-all .clear-all-btn:hover {
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  transform: translateY(-1px);
 }
 
 .select-btn {
   padding: 10px 20px;
-  background-color: rgba(139, 0, 0, 1);
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
   color: white;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 14px;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   border: none;
-  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.2);
-  font-family: SourceHanSans-Medium;
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1495,8 +1574,8 @@ const generateWordReport = () => {
 }
 
 .select-btn:hover {
-  background-color: rgba(120, 0, 0, 1);
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
+  transform: translateY(-2px);
 }
 
 .records-list {
@@ -2132,8 +2211,9 @@ const generateWordReport = () => {
   border-radius: 3px;
 }
 
-/* 帮助弹窗 */
-.help-modal-overlay {
+/* 历史记录弹窗 - 使用统一样式 */
+.help-modal-overlay,
+.history-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -2146,52 +2226,63 @@ const generateWordReport = () => {
   z-index: 1000;
 }
 
-.help-modal {
-  background-color: rgba(255, 255, 255, 1);
+.help-modal,
+.history-modal {
+  background-color: rgba(248, 244, 233, 1);
   border-radius: 12px;
-  width: 900px;
+  width: 600px;
   max-height: 80vh;
   overflow: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(166, 124, 82, 0.2);
 }
 
-.help-modal-header {
+.help-modal-header,
+.history-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(216, 191, 156, 0.3);
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+  background-color: rgba(255, 255, 255, 0.9);
 }
 
-.help-modal-header h3 {
-  font-size: 18px;
+.help-modal-header h3,
+.history-modal-header h3 {
+  font-size: 16px;
   font-weight: 600;
   color: rgba(44, 24, 16, 1);
   margin: 0;
   font-family: SourceHanSans-SemiBold;
 }
 
-.help-close-btn {
+.help-close-btn,
+.history-close-btn {
   width: 32px;
   height: 32px;
   border: none;
   border-radius: 8px;
   background-color: transparent;
   cursor: pointer;
-  font-size: 24px;
+  font-size: 20px;
   color: rgba(107, 79, 52, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
-.help-close-btn:hover {
+.help-close-btn:hover,
+.history-close-btn:hover {
   background-color: rgba(139, 0, 0, 0.1);
+  color: rgba(139, 0, 0, 1);
 }
 
-.help-modal-body {
-  padding: 24px;
+.help-modal-body,
+.history-modal-body {
+  padding: 20px 24px;
+  max-height: 60vh;
+  overflow-y: auto;
 }
 
 .help-feature-cards {

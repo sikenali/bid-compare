@@ -51,8 +51,8 @@ function handleComparison(data: ComparisonMessage) {
 
     switch (strategy) {
       case 'lcs':
+        // 小文件：使用暴力 LCS 算法
         segments = findSimilarSegments(text1, text2, settings, 15, totalPages1, totalPages2)
-        // LCS 同时计算了所有匹配，相似度可从片段估算
         similarity = segments.length > 0 ? 100 : 0
         break
       case 'rabin-karp':
