@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { RiUploadCloud2Line, RiRefreshLine, RiCloseLine, RiFileWord2Line, RiFileExcel2Line, RiSlideshow2Line, RiFilePdf2Line, RiFileTextLine } from '@remixicon/vue';
+import { ref, computed } from 'vue'
+import { RiUploadCloud2Line, RiRefreshLine, RiCloseLine, RiFileWord2Line, RiFileExcel2Line, RiSlideshow2Line, RiFilePdf2Line, RiFileTextLine, RiDeleteBinLine } from '@remixicon/vue';
 
 interface Props {
   side: 'left' | 'right';
@@ -28,6 +28,22 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const triggerFileInput = () => {
   fileInput.value?.click();
 };
+
+// 根据文件类型获取图标和颜色
+const fileTypeInfo = computed(() => {
+  const ext = props.fileInfo.name.split('.').pop()?.toLowerCase() || '';
+  const typeMap: Record<string, { icon: any; color: string; bg: string; label: string }> = {
+    doc: { icon: RiFileWord2Line, color: 'rgba(37,99,235,1)', bg: 'rgba(219,234,254,1)', label: 'Word 文档' },
+    docx: { icon: RiFileWord2Line, color: 'rgba(37,99,235,1)', bg: 'rgba(219,234,254,1)', label: 'Word 文档' },
+    xls: { icon: RiFileExcel2Line, color: 'rgba(34,139,34,1)', bg: 'rgba(220,252,231,1)', label: 'Excel 表格' },
+    xlsx: { icon: RiFileExcel2Line, color: 'rgba(34,139,34,1)', bg: 'rgba(220,252,231,1)', label: 'Excel 表格' },
+    ppt: { icon: RiSlideshow2Line, color: 'rgba(217,119,6,1)', bg: 'rgba(254,243,199,1)', label: 'PPT 演示' },
+    pptx: { icon: RiSlideshow2Line, color: 'rgba(217,119,6,1)', bg: 'rgba(254,243,199,1)', label: 'PPT 演示' },
+    pdf: { icon: RiFilePdf2Line, color: 'rgba(220,38,38,1)', bg: 'rgba(254,242,242,1)', label: 'PDF 文档' },
+    txt: { icon: RiFileTextLine, color: 'rgba(107,114,128,1)', bg: 'rgba(243,244,246,1)', label: '文本文件' }
+  };
+  return typeMap[ext] || { icon: RiFileTextLine, color: 'rgba(107,114,128,1)', bg: 'rgba(243,244,246,1)', label: '未知类型' };
+});
 </script>
 
 <template>
@@ -70,22 +86,25 @@ const triggerFileInput = () => {
 
       <!-- 已上传状态 -->
       <div v-else class="file-info">
-        <div class="upload-icon-wrapper">
-          <RiUploadCloud2Line class="upload-icon uploaded" />
+        <div class="file-info-content">
+          <div class="file-icon" :style="{ backgroundColor: fileTypeInfo.bg }">
+            <component :is="fileTypeInfo.icon" class="file-icon-svg" :style="{ color: fileTypeInfo.color }" />
+          </div>
+          <div class="file-details">
+            <div class="file-name">{{ fileInfo.name }}</div>
+            <div class="file-meta-line">
+              <span>{{ fileTypeInfo.label }}</span>
+              <span class="meta-dot">·</span>
+              <span>{{ fileInfo.size }}</span>
+            </div>
+          </div>
         </div>
-        <div class="file-name">{{ fileInfo.name }}</div>
-        <div class="file-meta">
-          <span class="file-type">{{ fileInfo.type }}</span>
-          <span class="file-size">{{ fileInfo.size }}</span>
-        </div>
-        <div class="file-actions">
-          <label :for="`${props.side}-file`" class="action-btn replace-btn" title="更换文件">
-            <RiRefreshLine class="btn-icon" />
-            <span>更换文件</span>
+        <div class="file-actions-row">
+          <label :for="`${props.side}-file`" class="icon-btn" title="更换文件">
+            <RiRefreshLine class="icon-btn-svg" />
           </label>
-          <button class="action-btn clear-btn" @click="onClearFile(props.side)" title="清除文件">
-            <RiCloseLine class="btn-icon" />
-            <span>清除文件</span>
+          <button class="icon-btn delete-btn" @click="onClearFile(props.side)" title="清除文件">
+            <RiDeleteBinLine class="icon-btn-svg delete" />
           </button>
         </div>
       </div>
@@ -230,12 +249,38 @@ const triggerFileInput = () => {
 /* 已上传状态 */
 .file-info {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+}
+
+.file-info-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  padding: 24px;
-  gap: 12px;
+  flex-shrink: 0;
+}
+
+.file-icon-svg {
+  font-size: 24px;
+}
+
+.file-details {
+  flex: 1;
+  min-width: 0;
 }
 
 .file-name {
@@ -243,70 +288,59 @@ const triggerFileInput = () => {
   font-weight: 500;
   color: rgba(44, 24, 16, 1);
   font-family: SourceHanSans-Medium;
-  text-align: center;
-  word-break: break-all;
-  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
 }
 
-.file-meta {
-  display: flex;
-  gap: 16px;
-  font-size: 13px;
-  color: rgba(166, 124, 82, 1);
+.file-meta-line {
+  font-size: 14px;
+  color: rgba(107, 114, 128, 1);
   font-family: SourceHanSans-Regular;
-  margin-bottom: 16px;
-}
-
-.file-type, .file-size {
-  background-color: rgba(245, 238, 226, 0.5);
-  padding: 4px 12px;
-  border-radius: 6px;
-}
-
-/* 文件操作按钮 */
-.file-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.action-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: SourceHanSans-Medium;
+}
+
+.meta-dot {
+  font-size: 14px;
+}
+
+.file-actions-row {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: all 0.3s ease;
-  border: 1px solid;
+  transition: all 0.2s ease;
+  border: none;
+  background-color: transparent;
 }
 
-.btn-icon {
-  font-size: 16px;
-}
-
-.replace-btn {
+.icon-btn:hover {
   background-color: rgba(139, 0, 0, 0.1);
-  border-color: rgba(139, 0, 0, 0.3);
-  color: rgba(139, 0, 0, 1);
 }
 
-.replace-btn:hover {
-  background-color: rgba(139, 0, 0, 0.2);
-  border-color: rgba(139, 0, 0, 1);
+.icon-btn-svg {
+  font-size: 18px;
+  color: rgba(107, 114, 128, 1);
 }
 
-.clear-btn {
-  background-color: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: rgba(239, 68, 68, 1);
+.icon-btn-svg.delete {
+  color: rgba(220, 38, 38, 1);
 }
 
-.clear-btn:hover {
-  background-color: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 1);
+.delete-btn:hover {
+  background-color: rgba(220, 38, 38, 0.1);
 }
 
 /* 中心操作按钮 */
