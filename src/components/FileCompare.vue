@@ -411,6 +411,11 @@ const handleCompare = async () => {
   comparisonParseError.value = ''
 
   try {
+    // 显示解析中状态
+    isProcessing.value = true
+    progressMessage.value = '正在解析文件...'
+    progress.value = 0
+
     // 解析左侧文件
     const leftResult = await parseFile(leftFileInfo.value.file)
     if (leftResult.error) throw new Error(leftResult.error)
@@ -427,7 +432,7 @@ const handleCompare = async () => {
       comparisonParseError.value = `文件内容较大（${(totalChars / 10000).toFixed(1)} 万字），对比可能需要较长时间，请耐心等待...`
     }
 
-    // 执行对比
+    // 执行对比（runComparison 会接管 isProcessing 状态）
     const comparisonSettings: ComparisonSettings = {
       minDuplicateWords: settings.minDuplicateWords,
       textSimilarityThreshold: settings.textSimilarityThreshold,
@@ -463,6 +468,7 @@ const handleCompare = async () => {
 
     showResults.value = true
   } catch (error) {
+    isProcessing.value = false
     comparisonParseError.value = (error as Error).message
   }
 }
