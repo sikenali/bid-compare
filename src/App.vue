@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { RiExchangeLine, RiFileLine, RiSearchLine, RiSettings3Line, RiCpuLine } from '@remixicon/vue'
+import { RiExchangeLine, RiFileLine, RiFileInfoLine, RiSettings3Line, RiCpuLine } from '@remixicon/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -66,7 +66,7 @@ const handleMenuClick = (menu: string) => {
             :class="{ active: activeMenu === 'property-check' }"
             @click="handleMenuClick('property-check')"
           >
-            <RiSearchLine class="nav-icon" />
+            <RiFileInfoLine class="nav-icon" />
             <span class="nav-text">属性检查</span>
           </button>
         </div>
