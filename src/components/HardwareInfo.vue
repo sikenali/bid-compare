@@ -172,9 +172,14 @@ const sections = ref<InfoSection[]>([systemInfo.value, networkInfo.value, finger
 
 /* 信息卡片 */
 .info-cards {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
+}
+
+/* 指纹信息卡片占满整行 */
+.info-card:last-child {
+  grid-column: 1 / -1;
 }
 
 .info-card {
