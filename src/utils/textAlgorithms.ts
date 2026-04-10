@@ -78,7 +78,6 @@ export function findSimilarSegments(
 
   const matchedPositions = new Set<string>()
   const segments: SimilarSegment[] = []
-  let segmentId = 0
 
   for (let i = 0; i < m; i++) {
     for (let j = 0; j < n; j++) {
@@ -144,6 +143,9 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// 全局 segmentId 计数器
+let segmentId = 0
+
 // 滚动数组实现——空间 O(min(m,n))
 export function calculateTextSimilarity(
   text1: string,
@@ -177,3 +179,209 @@ export function calculateTextSimilarity(
   if (minLength === 0) return 0
   return Math.round((maxLength / minLength) * 100)
 }
+
+// Rabin-Karp 双哈希——用于减少哈希冲突
+const HASH1_BASE = 31
+const HASH1_MOD = 1_000_000_007
+const HASH2_BASE = 37
+const HASH2_MOD = 1_000_000_009
+
+function computeDoubleHash(str: string): [number, number] {
+  let h1 = 0, h2 = 0
+  for (let i = 0; i < str.length; i++) {
+    h1 = (h1 * HASH1_BASE + str.charCodeAt(i)) % HASH1_MOD
+    h2 = (h2 * HASH2_BASE + str.charCodeAt(i)) % HASH2_MOD
+  }
+  return [h1, h2]
+}
+
+// Rabin-Karp 滚动哈希匹配
+export function findSimilarSegmentsRabinKarp(
+  text1: string,
+  text2: string,
+  settings: ComparisonSettings,
+  contextLength: number = 8,
+  onProgress?: (progress: number) => void
+): SimilarSegment[] {
+  const { processed: preprocessed1 } = preprocessText(text1, settings)
+  const { processed: preprocessed2 } = preprocessText(text2, settings)
+  const m = preprocessed1.length
+  const n = preprocessed2.length
+  const windowSize = settings.minDuplicateWords
+
+  if (windowSize > m || windowSize > n) return []
+
+  // 构建 text1 的所有窗口哈希 → 位置映射
+  const hashToPositions = new Map<string, number[]>()
+  let hash1 = 0, hash2 = 0
+
+  // 计算第一个窗口
+  for (let i = 0; i < windowSize; i++) {
+    hash1 = (hash1 * HASH1_BASE + preprocessed1.charCodeAt(i)) % HASH1_MOD
+    hash2 = (hash2 * HASH2_BASE + preprocessed1.charCodeAt(i)) % HASH2_MOD
+  }
+
+  // 计算最高位乘数
+  let high1 = 1, high2 = 1
+  for (let i = 0; i < windowSize - 1; i++) {
+    high1 = (high1 * HASH1_BASE) % HASH1_MOD
+    high2 = (high2 * HASH2_BASE) % HASH2_MOD
+  }
+
+  // 滑动窗口记录哈希
+  for (let i = 0; i <= m - windowSize; i++) {
+    if (i > 0) {
+      hash1 = ((hash1 - preprocessed1.charCodeAt(i - 1) * high1) * HASH1_BASE + preprocessed1.charCodeAt(i + windowSize - 1)) % HASH1_MOD
+      hash2 = ((hash2 - preprocessed2.charCodeAt(i - 1) * high2) * HASH2_BASE + preprocessed2.charCodeAt(i + windowSize - 1)) % HASH2_MOD
+      if (hash1 < 0) hash1 += HASH1_MOD
+      if (hash2 < 0) hash2 += HASH2_MOD
+    }
+
+    const key = `${hash1},${hash2}`
+    if (!hashToPositions.has(key)) hashToPositions.set(key, [])
+    hashToPositions.get(key)!.push(i)
+  }
+
+  // 在 text2 中滚动查找
+  hash1 = 0; hash2 = 0
+  for (let i = 0; i < windowSize; i++) {
+    hash1 = (hash1 * HASH1_BASE + preprocessed2.charCodeAt(i)) % HASH1_MOD
+    hash2 = (hash2 * HASH2_BASE + preprocessed2.charCodeAt(i)) % HASH2_MOD
+  }
+
+  const matchedPairs = new Set<string>()
+  const segments: SimilarSegment[] = []
+  let processed = 0
+
+  for (let j = 0; j <= n - windowSize; j++) {
+    if (j > 0) {
+      hash1 = ((hash1 - preprocessed2.charCodeAt(j - 1) * high1) * HASH1_BASE + preprocessed2.charCodeAt(j + windowSize - 1)) % HASH1_MOD
+      hash2 = ((hash2 - preprocessed2.charCodeAt(j - 1) * high2) * HASH2_BASE + preprocessed2.charCodeAt(j + windowSize - 1)) % HASH2_MOD
+      if (hash1 < 0) hash1 += HASH1_MOD
+      if (hash2 < 0) hash2 += HASH2_MOD
+    }
+
+    const key = `${hash1},${hash2}`
+    const positions = hashToPositions.get(key)
+    if (positions) {
+      for (const i of positions) {
+        const pairKey = `${i},${j}`
+        if (matchedPairs.has(pairKey)) continue
+
+        // 验证实际内容
+        let matchLen = windowSize
+        while (i + matchLen < m && j + matchLen < n && preprocessed1[i + matchLen] === preprocessed2[j + matchLen]) {
+          matchLen++
+        }
+
+        if (matchLen >= settings.minDuplicateWords) {
+          matchedPairs.add(pairKey)
+
+          const leftStart = Math.max(0, i - contextLength)
+          const leftEnd = Math.min(text1.length, i + matchLen + contextLength)
+          const rightStart = Math.max(0, j - contextLength)
+          const rightEnd = Math.min(text2.length, j + matchLen + contextLength)
+
+          const safeLeft = escapeHtml(text1.substring(leftStart, leftEnd))
+          const safeRight = escapeHtml(text2.substring(rightStart, rightEnd))
+          const safeMatch1 = escapeHtml(text1.substring(i, i + matchLen))
+          const safeMatch2 = escapeHtml(text2.substring(j, j + matchLen))
+
+          const highlightedLeft = safeLeft.replace(
+            new RegExp(escapeRegExp(safeMatch1), 'g'),
+            `<span class="highlighted-text" style="background-color: rgba(255,215,0,0.9);color:#8B0000;padding:3px 6px;border-radius:4px;font-weight:700;">${safeMatch1}</span>`
+          )
+          const highlightedRight = safeRight.replace(
+            new RegExp(escapeRegExp(safeMatch2), 'g'),
+            `<span class="highlighted-text" style="background-color: rgba(255,215,0,0.9);color:#8B0000;padding:3px 6px;border-radius:4px;font-weight:700;">${safeMatch2}</span>`
+          )
+
+          segments.push({
+            id: ++segmentId,
+            similarity: '100%',
+            similarityValue: 100,
+            leftContent: highlightedLeft,
+            rightContent: highlightedRight,
+            leftPage: `第${Math.floor(i / 1000) + 1}页`,
+            rightPage: `第${Math.floor(j / 1000) + 1}页`,
+            level: 'high'
+          })
+        }
+      }
+    }
+
+    processed++
+    if (onProgress && processed % 5000 === 0) {
+      onProgress(processed / (n - windowSize + 1))
+    }
+  }
+
+  return segments
+}
+
+// 分块匹配——按段落切分后匹配
+export function findSimilarSegmentsBlockMatch(
+  text1: string,
+  text2: string,
+  settings: ComparisonSettings,
+  onProgress?: (progress: number) => void
+): SimilarSegment[] {
+  // 按段落/空行切分
+  const blocks1 = text1.split(/\n\s*\n|\r\n\s*\r\n/).filter(b => b.trim().length > 10)
+  const blocks2 = text2.split(/\n\s*\n|\r\n\s*\r\n/).filter(b => b.trim().length > 10)
+
+  if (blocks1.length === 0 || blocks2.length === 0) {
+    // 如果无法分块，降级为 Rabin-Karp
+    return findSimilarSegmentsRabinKarp(text1, text2, settings, 8, onProgress)
+  }
+
+  const segments: SimilarSegment[] = []
+  const matchedBlocks = new Set<string>()
+  let completedBlocks = 0
+  const totalBlocks = blocks1.length
+
+  for (let i = 0; i < blocks1.length; i++) {
+    const block1 = blocks1[i].trim()
+    const hash1 = computeDoubleHash(preprocessText(block1, settings).processed)
+
+    for (let j = 0; j < blocks2.length; j++) {
+      const block2 = blocks2[j].trim()
+      const hash2 = computeDoubleHash(preprocessText(block2, settings).processed)
+
+      const pairKey = `${i},${j}`
+      if (matchedBlocks.has(pairKey)) continue
+
+      // 如果块哈希匹配
+      if (hash1[0] === hash2[0] && hash1[1] === hash2[1]) {
+        matchedBlocks.add(pairKey)
+
+        // 在块内做精细对比
+        const blockSegments = findSimilarSegmentsRabinKarp(
+          block1, block2, settings, 8
+        )
+
+        // 调整片段 ID
+        for (const seg of blockSegments) {
+          seg.id = ++segmentId
+          segments.push(seg)
+        }
+      }
+    }
+
+    completedBlocks++
+    if (onProgress && completedBlocks % 10 === 0) {
+      onProgress(completedBlocks / totalBlocks)
+    }
+  }
+
+  return segments
+}
+
+export type ComparisonStrategy = 'lcs' | 'rabin-karp' | 'block-match'
+
+export function selectStrategy(textLength: number): ComparisonStrategy {
+  if (textLength < 20_000) return 'lcs'
+  if (textLength < 100_000) return 'rabin-karp'
+  return 'block-match'
+}
+
