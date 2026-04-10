@@ -1088,7 +1088,7 @@ const generateWordReport = () => {
   display: flex;
   gap: 20px;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 0 24px;
 }
 
