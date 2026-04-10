@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import {
   RiExchangeLine,
   RiFileWordLine,
@@ -133,6 +133,32 @@ const currentLeftPage = ref('第1页/共1页')
 const currentRightPage = ref('第1页/共1页')
 // 雷同片段列表
 const similarSegmentsList = ref<SimilarSegment[]>([])
+
+// 组件挂载时恢复 sessionStorage 中保存的结果
+onMounted(() => {
+  const saved = sessionStorage.getItem('fileCompareResult')
+  if (saved) {
+    try {
+      const data = JSON.parse(saved)
+      textSimilarity.value = data.textSimilarity
+      similarSegmentsList.value = data.similarSegments || []
+      similarSegments.value = data.similarSegmentsCount || 0
+      leftFileInfo.value.name = data.leftFileName || ''
+      rightFileInfo.value.name = data.rightFileName || ''
+      if (similarSegmentsList.value.length > 0) {
+        currentContent.value = {
+          left: similarSegmentsList.value[0].leftContent,
+          right: similarSegmentsList.value[0].rightContent
+        }
+        currentLeftPage.value = similarSegmentsList.value[0].leftPage
+        currentRightPage.value = similarSegmentsList.value[0].rightPage
+      }
+      showResults.value = true
+    } catch {
+      sessionStorage.removeItem('fileCompareResult')
+    }
+  }
+})
 
 // 排序状态
 const sortAscending = ref(false)
@@ -466,6 +492,15 @@ const handleCompare = async () => {
       rightFileName: rightFileInfo.value.name,
       similarSegments: similarSegmentsList.value
     })
+
+    // 持久化结果到 sessionStorage，防止页面刷新或组件重新挂载时丢失
+    sessionStorage.setItem('fileCompareResult', JSON.stringify({
+      textSimilarity: textSimilarity.value,
+      similarSegments: result.segments,
+      similarSegmentsCount: result.segments.length,
+      leftFileName: leftFileInfo.value.name,
+      rightFileName: rightFileInfo.value.name
+    }))
 
     showResults.value = true
   } catch (error) {

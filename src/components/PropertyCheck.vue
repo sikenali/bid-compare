@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import {
   RiExchangeLine,
   RiFileWordLine,
@@ -223,6 +223,25 @@ const warningProperties = ref(0)
       status: 'match'
     }
   ])
+
+// 组件挂载时恢复 sessionStorage 中保存的结果
+onMounted(() => {
+  const saved = sessionStorage.getItem('propertyCheckResult')
+  if (saved) {
+    try {
+      const data = JSON.parse(saved)
+      propertyDetails.value = data.propertyDetails || []
+      matchingProperties.value = data.matchCount || 0
+      nonMatchingProperties.value = data.mismatchCount || 0
+      warningProperties.value = data.warningCount || 0
+      leftFileInfo.value.name = data.leftFileName || ''
+      rightFileInfo.value.name = data.rightFileName || ''
+      showResults.value = true
+    } catch {
+      sessionStorage.removeItem('propertyCheckResult')
+    }
+  }
+})
 
 // 格式化文件大小
 const formatFileSize = (size: number): string => {
@@ -499,6 +518,16 @@ const handleCheck = async () => {
     
     // 显示结果
     showResults.value = true;
+
+    // 持久化结果到 sessionStorage
+    sessionStorage.setItem('propertyCheckResult', JSON.stringify({
+      matchCount: matchingProperties.value,
+      mismatchCount: nonMatchingProperties.value,
+      warningCount: warningProperties.value,
+      propertyDetails: propertyDetails.value,
+      leftFileName: leftFileInfo.value.name,
+      rightFileName: rightFileInfo.value.name
+    }))
   } catch (error) {
     parseError.value = (error as Error).message;
   } finally {
