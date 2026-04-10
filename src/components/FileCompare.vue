@@ -709,14 +709,15 @@ const generateWordReport = () => {
   <div class="file-compare-container">
     <!-- 页面标题区 -->
     <div class="page-header">
-      <div class="title-section">
-        <h1 class="main-title">文档比对中心</h1>
-        <p class="sub-title">精准识别两个版本文档之间的内容差异、相似片段和结构变更</p>
+      <div class="title-row">
+        <div>
+          <h1 class="page-title">文档比对中心</h1>
+          <p class="page-subtitle">精准识别两个版本文档之间的内容差异、相似片段和结构变更</p>
+        </div>
+        <button class="help-btn" title="帮助" @click="toggleHelp">
+          <RiQuestionLine class="help-icon" />
+        </button>
       </div>
-      <button class="help-btn" title="帮助" @click="toggleHelp">
-        <RiQuestionLine class="help-icon" />
-      </button>
-      <div class="decorative-line"></div>
     </div>
 
     <!-- 帮助弹窗 -->
@@ -1047,29 +1048,32 @@ const generateWordReport = () => {
 
 /* 页面标题区 */
 .page-header {
-  width: 100%;
-  position: relative;
+  padding: 16px 24px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
 }
 
-.title-section {
+.title-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
 }
 
-.main-title {
-  font-size: 36px;
+.page-title {
+  font-size: 20px;
   font-weight: 700;
   color: rgba(44, 24, 16, 1);
+  margin: 0 0 4px 0;
   font-family: SourceHanSans-Bold;
-  margin: 0;
 }
 
-.sub-title {
-  font-size: 16px;
-  color: rgba(107, 79, 52, 1);
+.page-subtitle {
+  font-size: 12px;
+  color: rgba(166, 124, 82, 1);
+  margin: 0;
   font-family: SourceHanSans-Regular;
-  margin: 8px 0 0 0;
 }
 
 .help-btn {

@@ -35,9 +35,12 @@ const handleReset = () => {
   <div class="system-settings-container">
     <!-- 页面标题区 -->
     <div class="page-header">
-      <h1 class="main-title">系统设置</h1>
-      <p class="sub-title">配置对比算法参数和系统功能选项</p>
-      <div class="decorative-line"></div>
+      <div class="title-row">
+        <div>
+          <h1 class="page-title">系统设置</h1>
+          <p class="page-subtitle">配置对比算法参数和系统功能选项</p>
+        </div>
+      </div>
     </div>
 
     <!-- 设置表单区 -->
@@ -215,30 +218,32 @@ const handleReset = () => {
 
 /* 页面标题区 */
 .page-header {
-  width: 100%;
+  padding: 16px 24px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
 }
 
-.main-title {
-  font-size: 36px;
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-title {
+  font-size: 20px;
   font-weight: 700;
   color: rgba(44, 24, 16, 1);
+  margin: 0 0 4px 0;
   font-family: SourceHanSans-Bold;
+}
+
+.page-subtitle {
+  font-size: 12px;
+  color: rgba(166, 124, 82, 1);
   margin: 0;
-}
-
-.sub-title {
-  font-size: 16px;
-  color: rgba(107, 79, 52, 1);
   font-family: SourceHanSans-Regular;
-  margin: 8px 0 0 0;
-}
-
-.decorative-line {
-  width: 100%;
-  height: 3px;
-  margin-top: 24px;
-  background: linear-gradient(90deg, rgba(216,191,156,1) 0%, rgba(230,215,191,1) 50%, rgba(216,191,156,1) 100%);
-  border-radius: 2px;
 }
 
 /* 设置表单区 */
