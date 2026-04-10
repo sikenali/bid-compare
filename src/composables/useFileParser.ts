@@ -1,4 +1,6 @@
 import mammoth from 'mammoth';
+// @ts-expect-error Vite worker import
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 // 文件属性类型
 export interface FileProperties {
@@ -249,7 +251,7 @@ export function useFileParser() {
       const pdfjsLib = await import('pdfjs-dist');
       
       // 设置worker路径
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@latest/build/pdf.worker.min.js';
+      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
       
       // 读取文件为ArrayBuffer
       const dataBuffer = await file.arrayBuffer();
