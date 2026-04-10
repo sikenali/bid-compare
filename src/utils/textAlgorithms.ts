@@ -17,33 +17,68 @@ export interface ComparisonSettings {
   ignoreWhitespace: boolean
 }
 
-// 一次性预处理文本
+// HTML 转义工具函数（提取到循环外，避免重复创建）
+const escapeHtml = (str: string): string => {
+  const div = document.createElement('div')
+  div.textContent = str
+  return div.innerHTML
+}
+
+// 预处理文本，同时返回预处理后的文本和索引映射表
+// indexMap[preprocessedIndex] = originalIndex，用于在截取时定位到原文本位置
 export function preprocessText(
   text: string,
   settings: ComparisonSettings
-): string {
-  let processed = text
-  if (settings.ignoreCase) processed = processed.toLowerCase()
-  if (settings.ignorePunctuation) processed = processed.replace(/[\p{P}\p{S}]/gu, '')
-  if (settings.ignoreWhitespace) processed = processed.replace(/\s+/g, ' ').trim()
-  return processed
+): { processed: string; indexMap: number[] } {
+  const indexMap: number[] = []
+  let processed = ''
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i]
+    let skip = false
+
+    if (settings.ignoreCase) {
+      // 小写转换不影响索引映射
+    }
+    if (settings.ignorePunctuation && /[\p{P}\p{S}]/u.test(char)) {
+      skip = true
+    }
+    if (settings.ignoreWhitespace && /\s/.test(char)) {
+      skip = true
+    }
+
+    if (!skip) {
+      indexMap.push(i)
+      processed += settings.ignoreCase ? char.toLowerCase() : char
+    }
+  }
+
+  if (settings.ignoreWhitespace) {
+    processed = processed.trim()
+    // trim 后索引映射需要同步调整（这里简化处理：trim 只影响首尾空白，
+    // 由于空白已被跳过，indexMap 已不包含空白字符的索引，无需额外调整）
+  }
+
+  return { processed, indexMap }
 }
 
-// LCS 滚动数组实现——空间 O(min(m,n))
-export function findSimilarSegmentsLCS(
+// 基于最长公共子串的相似片段查找
+// 注：matchedPositions 使用 Set 存储，空间复杂度 O(m*n)，适用于小文件（<2万字）场景
+export function findSimilarSegments(
   text1: string,
   text2: string,
   settings: ComparisonSettings,
   contextLength: number = 15
 ): SimilarSegment[] {
-  const preprocessed1 = preprocessText(text1, settings)
-  const preprocessed2 = preprocessText(text2, settings)
+  const { processed: preprocessed1, indexMap: indexMap1 } = preprocessText(text1, settings)
+  const { processed: preprocessed2, indexMap: indexMap2 } = preprocessText(text2, settings)
   const m = preprocessed1.length
   const n = preprocessed2.length
   const minMatchLength = settings.minDuplicateWords
 
   const matchedPositions = new Set<string>()
   const segments: SimilarSegment[] = []
+  let segmentId = 0
 
   for (let i = 0; i < m; i++) {
     for (let j = 0; j < n; j++) {
@@ -60,19 +95,19 @@ export function findSimilarSegmentsLCS(
           matchedPositions.add(`${i + l},${j + l}`)
         }
 
-        const originalMatch1 = text1.substring(i, i + k)
-        const originalMatch2 = text2.substring(j, j + k)
+        // 使用索引映射表获取原文本中的正确位置
+        const origStart1 = indexMap1[i]
+        const origEnd1 = indexMap1[i + k - 1] + 1
+        const origStart2 = indexMap2[j]
+        const origEnd2 = indexMap2[j + k - 1] + 1
 
-        const leftStart = Math.max(0, i - contextLength)
-        const leftEnd = Math.min(text1.length, i + k + contextLength)
-        const rightStart = Math.max(0, j - contextLength)
-        const rightEnd = Math.min(text2.length, j + k + contextLength)
+        const originalMatch1 = text1.substring(origStart1, origEnd1)
+        const originalMatch2 = text2.substring(origStart2, origEnd2)
 
-        const escapeHtml = (str: string) => {
-          const div = document.createElement('div')
-          div.textContent = str
-          return div.innerHTML
-        }
+        const leftStart = Math.max(0, origStart1 - contextLength)
+        const leftEnd = Math.min(text1.length, origEnd1 + contextLength)
+        const rightStart = Math.max(0, origStart2 - contextLength)
+        const rightEnd = Math.min(text2.length, origEnd2 + contextLength)
 
         const safeLeft = escapeHtml(text1.substring(leftStart, leftEnd))
         const safeRight = escapeHtml(text2.substring(rightStart, rightEnd))
@@ -89,13 +124,13 @@ export function findSimilarSegmentsLCS(
         )
 
         segments.push({
-          id: segments.length + 1,
+          id: ++segmentId,
           similarity: '100%',
           similarityValue: 100,
           leftContent: highlightedLeft,
           rightContent: highlightedRight,
-          leftPage: `第${Math.floor(i / 1000) + 1}页`,
-          rightPage: `第${Math.floor(j / 1000) + 1}页`,
+          leftPage: `第${Math.floor(origStart1 / 1000) + 1}页`,
+          rightPage: `第${Math.floor(origStart2 / 1000) + 1}页`,
           level: 'high'
         })
       }
@@ -109,14 +144,15 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// 滚动数组实现——空间 O(min(m,n))
 export function calculateTextSimilarity(
   text1: string,
   text2: string,
   settings: ComparisonSettings
 ): number {
   if (!text1 || !text2) return 0
-  const p1 = preprocessText(text1, settings)
-  const p2 = preprocessText(text2, settings)
+  const { processed: p1 } = preprocessText(text1, settings)
+  const { processed: p2 } = preprocessText(text2, settings)
   const m = p1.length
   const n = p2.length
 
