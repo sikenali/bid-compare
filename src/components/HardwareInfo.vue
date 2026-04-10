@@ -9,7 +9,7 @@ import {
 interface InfoItem {
   label: string;
   value: string;
-  fullWidth?: boolean;
+  isWide?: boolean;
 }
 
 interface InfoSection {
@@ -54,20 +54,11 @@ const fingerprintInfo = ref<InfoSection>({
   iconBg: 'rgba(252, 231, 243, 1)',
   iconColor: 'rgba(219, 39, 119, 1)',
   items: [
-    { label: '设备唯一标识', value: '8a7f9d2e-3c5b-7a1f-9d4e-2b8c7a9f3e1d', fullWidth: true }
+    { label: '设备唯一标识', value: '8a7f9d2e-3c5b-7a1f-9d4e-2b8c7a9f3e1d', isWide: true }
   ]
 })
 
 const sections = ref<InfoSection[]>([systemInfo.value, networkInfo.value, fingerprintInfo.value])
-
-// 将数据项分组（每组两个）
-const getGroupedItems = (items: InfoItem[]) => {
-  const groups: InfoItem[][] = []
-  for (let i = 0; i < items.length; i += 2) {
-    groups.push(items.slice(i, i + 2))
-  }
-  return groups
-}
 </script>
 
 <template>
@@ -96,8 +87,18 @@ const getGroupedItems = (items: InfoItem[]) => {
 
         <!-- 信息项列表 -->
         <div class="card-body">
-          <!-- 两列布局 -->
-          <div class="info-grid" v-if="!section.items[0]?.fullWidth">
+          <!-- 全宽布局（指纹信息） -->
+          <div v-if="section.items[0]?.isWide" class="info-full-width">
+            <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="info-field-full">
+              <span class="field-label">{{ item.label }}</span>
+              <div class="field-value-box wide">
+                <span class="field-value mono">{{ item.value }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 多列布局（系统信息/网络信息） -->
+          <div v-else class="info-multi-columns">
             <div
               v-for="(item, itemIndex) in section.items"
               :key="itemIndex"
@@ -106,16 +107,6 @@ const getGroupedItems = (items: InfoItem[]) => {
               <span class="field-label">{{ item.label }}</span>
               <div class="field-value-box">
                 <span class="field-value">{{ item.value }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 全宽布局（指纹信息） -->
-          <div v-else class="info-full-width">
-            <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="info-field-full">
-              <span class="field-label">{{ item.label }}</span>
-              <div class="field-value-box large">
-                <span class="field-value mono">{{ item.value }}</span>
               </div>
             </div>
           </div>
@@ -227,14 +218,14 @@ const getGroupedItems = (items: InfoItem[]) => {
   margin-top: 24px;
 }
 
-/* 两列网格布局 */
-.info-grid {
+/* 多列布局（系统信息/网络信息） */
+.info-multi-columns {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 24px;
 }
 
-/* 全宽布局 */
+/* 全宽布局（指纹信息） */
 .info-full-width {
   display: flex;
   flex-direction: column;
@@ -261,7 +252,7 @@ const getGroupedItems = (items: InfoItem[]) => {
   padding: 12px;
 }
 
-.field-value-box.large {
+.field-value-box.wide {
   padding: 16px;
 }
 
