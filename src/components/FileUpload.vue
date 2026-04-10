@@ -86,7 +86,7 @@ const fileTypeInfo = computed(() => {
 
       <!-- 已上传状态 -->
       <div v-else class="file-info">
-        <div class="file-info-content">
+        <div class="file-info-right">
           <div class="file-icon" :style="{ backgroundColor: fileTypeInfo.bg }">
             <component :is="fileTypeInfo.icon" class="file-icon-svg" :style="{ color: fileTypeInfo.color }" />
           </div>
@@ -98,14 +98,14 @@ const fileTypeInfo = computed(() => {
               <span>{{ fileInfo.size }}</span>
             </div>
           </div>
-        </div>
-        <div class="file-actions-row">
-          <label :for="`${props.side}-file`" class="icon-btn" title="更换文件">
-            <RiRefreshLine class="icon-btn-svg" />
-          </label>
-          <button class="icon-btn delete-btn" @click="onClearFile(props.side)" title="清除文件">
-            <RiDeleteBinLine class="icon-btn-svg delete" />
-          </button>
+          <div class="file-actions-inline">
+            <label :for="`${props.side}-file`" class="icon-btn" title="更换文件">
+              <RiRefreshLine class="icon-btn-svg" />
+            </label>
+            <button class="icon-btn delete-btn" @click="onClearFile(props.side)" title="清除文件">
+              <RiDeleteBinLine class="icon-btn-svg delete" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -250,18 +250,20 @@ const fileTypeInfo = computed(() => {
 .file-info {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
   height: 100%;
   padding: 16px;
+  overflow: hidden;
 }
 
-.file-info-content {
+.file-info-right {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
-  flex: 1;
-  min-width: 0;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
 }
 
 .file-icon {
@@ -279,8 +281,8 @@ const fileTypeInfo = computed(() => {
 }
 
 .file-details {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
+  text-align: center;
 }
 
 .file-name {
@@ -300,6 +302,7 @@ const fileTypeInfo = computed(() => {
   font-family: SourceHanSans-Regular;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
@@ -307,10 +310,11 @@ const fileTypeInfo = computed(() => {
   font-size: 14px;
 }
 
-.file-actions-row {
+.file-actions-inline {
   display: flex;
   gap: 8px;
-  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
 }
 
 .icon-btn {
@@ -324,6 +328,7 @@ const fileTypeInfo = computed(() => {
   transition: all 0.2s ease;
   border: none;
   background-color: transparent;
+  flex-shrink: 0;
 }
 
 .icon-btn:hover {

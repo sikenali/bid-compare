@@ -16,7 +16,8 @@ import {
   RiQuestionLine,
   RiSearchLine,
   RiEditLine,
-  RiInformationLine
+  RiInformationLine,
+  RiHistoryLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx'
 import { useFileParser } from '../composables/useFileParser'
@@ -236,9 +237,14 @@ const {
 
 // 帮助弹窗
 const showHelp = ref(false)
+const showHistory = ref(false)
 
 const toggleHelp = () => {
   showHelp.value = !showHelp.value
+}
+
+const toggleHistory = () => {
+  showHistory.value = !showHistory.value
 }
 
 // 查看历史对比记录
@@ -714,9 +720,36 @@ const generateWordReport = () => {
           <h1 class="page-title">文件对比</h1>
           <p class="page-subtitle">精准识别两个版本文档之间的内容差异、相似片段和结构变更</p>
         </div>
-        <button class="help-btn" title="帮助" @click="toggleHelp">
-          <RiQuestionLine class="help-icon" />
-        </button>
+        <div class="header-actions">
+          <button class="icon-btn" title="历史记录" @click="toggleHistory">
+            <RiHistoryLine class="icon-btn-svg" />
+          </button>
+          <button class="help-btn" title="帮助" @click="toggleHelp">
+            <RiQuestionLine class="help-icon" />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 历史记录弹窗 -->
+    <div v-if="showHistory" class="help-modal-overlay" @click="toggleHistory">
+      <div class="history-modal" @click.stop>
+        <div class="help-modal-header">
+          <h3>历史记录</h3>
+          <button class="help-close-btn" @click="toggleHistory">×</button>
+        </div>
+        <div class="history-modal-body">
+          <RecentRecords
+            v-if="recentRecords.length > 0"
+            :recent-records="recentRecords"
+            :on-clear-all="clearAllRecords"
+            :on-view-record="(record) => { viewHistoricalRecord(record); toggleHistory(); }"
+            :on-delete-record="deleteRecord"
+          />
+          <div v-else class="empty-history">
+            <p>暂无历史记录</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -759,7 +792,7 @@ const generateWordReport = () => {
     </div>
 
     <!-- 文件上传区域 -->
-    <div v-if="!showResults" class="upload-section">
+    <div v-if="!showResults" class="upload-section" :class="{ 'processing': isProcessing }">
       <!-- 左侧文件上传 -->
       <FileUpload
         side="left"
@@ -786,6 +819,16 @@ const generateWordReport = () => {
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
+
+      <!-- 处理中遮罩 -->
+      <div v-if="isProcessing" class="processing-overlay">
+        <div class="processing-content">
+          <div class="processing-spinner"></div>
+          <p class="processing-text">{{ progressMessage || '正在处理中...' }}</p>
+          <p v-if="progress > 0" class="processing-percent">{{ Math.round(progress * 100) }}%</p>
+          <button class="cancel-btn-overlay" @click="handleCancel">取消</button>
+        </div>
+      </div>
     </div>
 
     <!-- 进度条容器 -->
@@ -798,15 +841,6 @@ const generateWordReport = () => {
       </span>
       <button class="cancel-btn" @click="handleCancel">取消</button>
     </div>
-
-    <!-- 最近对比记录 -->
-    <RecentRecords
-      v-if="showRecentRecords && !showResults"
-      :recent-records="recentRecords"
-      :on-clear-all="clearAllRecords"
-      :on-view-record="viewHistoricalRecord"
-      :on-delete-record="deleteRecord"
-    />
 
     <!-- 解析错误显示 -->
     <div v-if="comparisonParseError" class="error-message">
@@ -1061,9 +1095,57 @@ const generateWordReport = () => {
   transition: all 0.3s ease;
 }
 
-.help-btn:hover {
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border: 0.7px solid rgba(216, 191, 156, 1);
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.icon-btn:hover {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
   background-color: rgba(139, 0, 0, 0.05);
+}
+
+.icon-btn-svg {
+  font-size: 20px;
+  color: rgba(107, 79, 52, 1);
+}
+
+.history-modal {
+  background-color: rgba(255, 255, 255, 1);
+  border-radius: 12px;
+  width: 600px;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.history-modal-body {
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.empty-history {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(166, 124, 82, 1);
+  font-size: 14px;
+  font-family: SourceHanSans-Regular;
 }
 
 .help-icon {
@@ -2094,6 +2176,80 @@ const generateWordReport = () => {
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(166, 124, 82, 0.8);
+}
+
+/* 处理中遮罩 */
+.upload-section.processing {
+  position: relative;
+}
+
+.processing-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(248, 244, 233, 0.9);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 12px;
+}
+
+.processing-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px;
+}
+
+.processing-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(216, 191, 156, 0.3);
+  border-top-color: rgba(139, 0, 0, 1);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.processing-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-Medium;
+  margin: 0;
+}
+
+.processing-percent {
+  font-size: 14px;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-Regular;
+  margin: 0;
+}
+
+.cancel-btn-overlay {
+  padding: 8px 24px;
+  background-color: transparent;
+  border: 1px solid rgba(139, 0, 0, 1);
+  color: rgba(139, 0, 0, 1);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: SourceHanSans-Medium;
+  transition: all 0.2s;
+}
+
+.cancel-btn-overlay:hover {
+  background-color: rgba(139, 0, 0, 0.1);
 }
 
 /* 进度条 */

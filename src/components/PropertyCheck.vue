@@ -13,7 +13,8 @@ import {
   RiSearchLine,
   RiFileLine,
   RiUserLine,
-  RiCalendarLine
+  RiCalendarLine,
+  RiHistoryLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx'
 import { useFileParser } from '../composables/useFileParser'
@@ -316,8 +317,14 @@ const handleClearFile = (side: 'left' | 'right') => {
 
 // 帮助弹窗
 const showHelp = ref(false)
+const showHistory = ref(false)
+
 const toggleHelp = () => {
   showHelp.value = !showHelp.value
+}
+
+const toggleHistory = () => {
+  showHistory.value = !showHistory.value
 }
 
 // 文本预处理（根据设置调整）
@@ -722,9 +729,36 @@ const generateWordReport = () => {
           <h1 class="page-title">属性检查</h1>
           <p class="page-subtitle">对比两个文件的基础属性信息，快速识别差异</p>
         </div>
-        <button class="help-btn" title="帮助" @click="toggleHelp">
-          <RiQuestionLine class="help-icon" />
-        </button>
+        <div class="header-actions">
+          <button class="icon-btn" title="历史记录" @click="toggleHistory">
+            <RiHistoryLine class="icon-btn-svg" />
+          </button>
+          <button class="help-btn" title="帮助" @click="toggleHelp">
+            <RiQuestionLine class="help-icon" />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 历史记录弹窗 -->
+    <div v-if="showHistory" class="help-modal-overlay" @click="toggleHistory">
+      <div class="history-modal" @click.stop>
+        <div class="help-modal-header">
+          <h3>历史记录</h3>
+          <button class="help-close-btn" @click="toggleHistory">×</button>
+        </div>
+        <div class="history-modal-body">
+          <RecentRecords
+            v-if="recentRecords.length > 0"
+            :recent-records="recentRecords"
+            :on-clear-all="clearAllRecords"
+            :on-view-record="(record) => { viewHistoricalRecord(record); toggleHistory(); }"
+            :on-delete-record="deleteRecord"
+          />
+          <div v-else class="empty-history">
+            <p>暂无历史记录</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -764,7 +798,7 @@ const generateWordReport = () => {
     </div>
 
     <!-- 文件上传区域 -->
-    <div v-if="!showResults" class="upload-section">
+    <div v-if="!showResults" class="upload-section" :class="{ 'processing': isParsing }">
       <!-- 文件A上传 -->
       <FileUpload
         side="left"
@@ -791,16 +825,15 @@ const generateWordReport = () => {
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
-    </div>
 
-    <!-- 最近对比记录 -->
-    <RecentRecords
-      v-if="showRecentRecords && !showResults"
-      :recent-records="recentRecords"
-      :on-clear-all="clearAllRecords"
-      :on-view-record="viewHistoricalRecord"
-      :on-delete-record="deleteRecord"
-    />
+      <!-- 处理中遮罩 -->
+      <div v-if="isParsing" class="processing-overlay">
+        <div class="processing-content">
+          <div class="processing-spinner"></div>
+          <p class="processing-text">正在检查文件...</p>
+        </div>
+      </div>
+    </div>
 
     <!-- 解析错误显示 -->
     <div v-if="parseError" class="error-message">
@@ -943,6 +976,59 @@ const generateWordReport = () => {
   transition: all 0.3s ease;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border: 0.7px solid rgba(216, 191, 156, 1);
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.icon-btn:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  background-color: rgba(139, 0, 0, 0.05);
+}
+
+.icon-btn-svg {
+  font-size: 20px;
+  color: rgba(107, 79, 52, 1);
+}
+
+.history-modal {
+  background-color: rgba(255, 255, 255, 1);
+  border-radius: 12px;
+  width: 600px;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.history-modal-body {
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.empty-history {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(166, 124, 82, 1);
+  font-size: 14px;
+  font-family: SourceHanSans-Regular;
+}
+
 .help-btn:hover {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
 }
@@ -967,6 +1053,57 @@ const generateWordReport = () => {
   align-items: center;
   justify-content: center;
   padding: 0 24px;
+  position: relative;
+}
+
+.upload-section.processing {
+  pointer-events: none;
+}
+
+/* 处理中遮罩 */
+.processing-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(248, 244, 233, 0.9);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 12px;
+}
+
+.processing-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px;
+}
+
+.processing-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(216, 191, 156, 0.3);
+  border-top-color: rgba(139, 0, 0, 1);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.processing-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-Medium;
+  margin: 0;
 }
 
 .check-btn-wrapper {
