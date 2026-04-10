@@ -1,64 +1,19 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import {
   RiWindowsLine,
   RiWifiLine,
   RiFingerprintLine
 } from '@remixicon/vue'
+import { useHardwareInfo } from '../composables/useHardwareInfo'
 
-interface InfoItem {
-  label: string;
-  value: string;
-  isWide?: boolean;
-}
-
-interface InfoSection {
-  title: string;
-  icon: any;
-  iconBg: string;
-  iconColor: string;
-  items: InfoItem[];
-}
-
-const systemInfo = ref<InfoSection>({
-  title: '操作系统信息',
-  icon: RiWindowsLine,
-  iconBg: 'rgba(219, 234, 254, 1)',
-  iconColor: 'rgba(37, 99, 235, 1)',
-  items: [
-    { label: '用户名', value: 'administrator' },
-    { label: '操作系统版本', value: 'Windows 11 专业版 22H2' },
-    { label: '处理器', value: 'Intel(R) Core(TM) i7-12700H CPU @ 2.30GHz' },
-    { label: '内存', value: '16.0 GB (15.7 GB 可用)' },
-    { label: '系统类型', value: '64 位操作系统, 基于 x64 的处理器' },
-    { label: '计算机名称', value: 'DESKTOP-8V7X9Z2' }
-  ]
-})
-
-const networkInfo = ref<InfoSection>({
-  title: '网络信息',
-  icon: RiWifiLine,
-  iconBg: 'rgba(254, 243, 199, 1)',
-  iconColor: 'rgba(217, 119, 6, 1)',
-  items: [
-    { label: 'IP 地址', value: '192.168.1.105' },
-    { label: 'MAC 地址', value: '00:1A:2B:3C:4D:5E' },
-    { label: '子网掩码', value: '255.255.255.0' },
-    { label: '网关', value: '192.168.1.1' }
-  ]
-})
-
-const fingerprintInfo = ref<InfoSection>({
-  title: '设备指纹信息',
-  icon: RiFingerprintLine,
-  iconBg: 'rgba(252, 231, 243, 1)',
-  iconColor: 'rgba(219, 39, 119, 1)',
-  items: [
-    { label: '设备唯一标识', value: '8a7f9d2e-3c5b-7a1f-9d4e-2b8c7a9f3e1d', isWide: true }
-  ]
-})
-
-const sections = ref<InfoSection[]>([systemInfo.value, networkInfo.value, fingerprintInfo.value])
+const {
+  systemInfo,
+  networkInfo,
+  fingerprintInfo,
+  isLoading,
+  error,
+  refresh
+} = useHardwareInfo()
 </script>
 
 <template>
@@ -70,43 +25,95 @@ const sections = ref<InfoSection[]>([systemInfo.value, networkInfo.value, finger
           <h1 class="page-title">硬件信息</h1>
           <p class="page-subtitle">查看系统硬件和网络信息</p>
         </div>
-        <span class="sample-badge">示例数据</span>
+        <div class="header-actions">
+          <button class="refresh-btn" @click="refresh" :disabled="isLoading" title="刷新">
+            <RiWifiLine class="refresh-icon" :class="{ spinning: isLoading }" />
+          </button>
+          <span v-if="!isLoading" class="sample-badge">实时数据</span>
+        </div>
       </div>
     </div>
 
+    <!-- 加载状态 -->
+    <div v-if="isLoading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">正在获取硬件信息...</p>
+    </div>
+
+    <!-- 错误状态 -->
+    <div v-else-if="error" class="error-container">
+      <p class="error-text">获取硬件信息失败：{{ error }}</p>
+      <button class="retry-btn" @click="refresh">重试</button>
+    </div>
+
     <!-- 信息卡片列表 -->
-    <div class="info-cards">
-      <div v-for="(section, index) in sections" :key="index" class="info-card">
-        <!-- 卡片头部 -->
+    <div v-else class="info-cards">
+      <!-- 操作系统信息 -->
+      <div v-if="systemInfo" class="info-card">
         <div class="card-header">
-          <div class="icon-container" :style="{ backgroundColor: section.iconBg }">
-            <component :is="section.icon" class="card-icon" :style="{ color: section.iconColor }" />
+          <div class="icon-container" :style="{ backgroundColor: systemInfo.iconBg }">
+            <RiWindowsLine class="card-icon" :style="{ color: systemInfo.iconColor }" />
           </div>
-          <h2 class="card-title">{{ section.title }}</h2>
+          <h2 class="card-title">{{ systemInfo.title }}</h2>
         </div>
-
-        <!-- 信息项列表 -->
         <div class="card-body">
-          <!-- 全宽布局（指纹信息） -->
-          <div v-if="section.items[0]?.isWide" class="info-full-width">
-            <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="info-field-full">
-              <span class="field-label">{{ item.label }}</span>
-              <div class="field-value-box wide">
-                <span class="field-value mono">{{ item.value }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 多列布局（系统信息/网络信息） -->
-          <div v-else class="info-multi-columns">
+          <div class="info-multi-columns">
             <div
-              v-for="(item, itemIndex) in section.items"
+              v-for="(item, itemIndex) in systemInfo.items"
               :key="itemIndex"
               class="info-field"
             >
               <span class="field-label">{{ item.label }}</span>
               <div class="field-value-box">
                 <span class="field-value">{{ item.value }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 网络信息 -->
+      <div v-if="networkInfo" class="info-card">
+        <div class="card-header">
+          <div class="icon-container" :style="{ backgroundColor: networkInfo.iconBg }">
+            <RiWifiLine class="card-icon" :style="{ color: networkInfo.iconColor }" />
+          </div>
+          <h2 class="card-title">{{ networkInfo.title }}</h2>
+        </div>
+        <div class="card-body">
+          <div class="info-multi-columns">
+            <div
+              v-for="(item, itemIndex) in networkInfo.items"
+              :key="itemIndex"
+              class="info-field"
+            >
+              <span class="field-label">{{ item.label }}</span>
+              <div class="field-value-box">
+                <span class="field-value">{{ item.value }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 设备指纹信息 -->
+      <div v-if="fingerprintInfo" class="info-card">
+        <div class="card-header">
+          <div class="icon-container" :style="{ backgroundColor: fingerprintInfo.iconBg }">
+            <RiFingerprintLine class="card-icon" :style="{ color: fingerprintInfo.iconColor }" />
+          </div>
+          <h2 class="card-title">{{ fingerprintInfo.title }}</h2>
+        </div>
+        <div class="card-body">
+          <div class="info-full-width">
+            <div
+              v-for="(item, itemIndex) in fingerprintInfo.items"
+              :key="itemIndex"
+              class="info-field-full"
+            >
+              <span class="field-label">{{ item.label }}</span>
+              <div class="field-value-box wide">
+                <span class="field-value mono">{{ item.value }}</span>
               </div>
             </div>
           </div>
@@ -143,15 +150,56 @@ const sections = ref<InfoSection[]>([systemInfo.value, networkInfo.value, finger
   justify-content: space-between;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.refresh-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background-color: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background-color: rgba(139, 0, 0, 0.1);
+}
+
+.refresh-btn:disabled {
+  cursor: not-allowed;
+}
+
+.refresh-icon {
+  font-size: 18px;
+  color: rgba(107, 79, 52, 1);
+}
+
+.refresh-icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .sample-badge {
   display: inline-flex;
   align-items: center;
   padding: 4px 12px;
-  background-color: rgba(254, 243, 199, 1);
+  background-color: rgba(220, 252, 231, 1);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 500;
-  color: rgba(217, 119, 6, 1);
+  color: rgba(34, 139, 34, 1);
   font-family: SourceHanSans-Medium;
 }
 
@@ -168,6 +216,64 @@ const sections = ref<InfoSection[]>([systemInfo.value, networkInfo.value, finger
   color: rgba(166, 124, 82, 1);
   margin: 0;
   font-family: SourceHanSans-Regular;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(216, 191, 156, 0.3);
+  border-top-color: rgba(139, 0, 0, 1);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-text {
+  margin-top: 16px;
+  font-size: 14px;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-Regular;
+}
+
+/* 错误状态 */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.error-text {
+  font-size: 14px;
+  color: rgba(220, 38, 38, 1);
+  font-family: SourceHanSans-Regular;
+  margin-bottom: 16px;
+}
+
+.retry-btn {
+  padding: 8px 24px;
+  border: 1px solid rgba(139, 0, 0, 1);
+  border-radius: 8px;
+  background-color: transparent;
+  color: rgba(139, 0, 0, 1);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: SourceHanSans-Medium;
+  transition: all 0.2s ease;
+}
+
+.retry-btn:hover {
+  background-color: rgba(139, 0, 0, 0.1);
 }
 
 /* 信息卡片 */
@@ -255,6 +361,9 @@ const sections = ref<InfoSection[]>([systemInfo.value, networkInfo.value, finger
   background-color: rgba(245, 238, 226, 1);
   border-radius: 8px;
   padding: 12px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
 
 .field-value-box.wide {
@@ -266,6 +375,7 @@ const sections = ref<InfoSection[]>([systemInfo.value, networkInfo.value, finger
   font-weight: 500;
   color: rgba(44, 24, 16, 1);
   font-family: SourceHanSans-Medium;
+  line-height: 1.4;
 }
 
 .field-value.mono {
