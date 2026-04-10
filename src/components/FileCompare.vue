@@ -1132,15 +1132,14 @@ const generateWordReport = () => {
 .feature-card {
   width: 360px;
   height: 196px;
-  padding: 48px;
+  padding: 24px;
   background-color: rgba(255, 255, 255, 1);
   border: 0.7px solid rgba(216, 191, 156, 1);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
   transition: all 0.3s ease;
 }
 
@@ -1152,12 +1151,40 @@ const generateWordReport = () => {
 .card-icon {
   width: 48px;
   height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 16px;
 }
 
 .card-icon .icon {
-  font-size: 36px;
-  color: rgba(139, 0, 0, 1);
+  font-size: 24px;
+}
+
+/* 各卡片图标颜色 */
+.card-icon.accuracy {
+  background-color: rgba(254, 243, 199, 1);
+}
+
+.card-icon.accuracy .icon {
+  color: rgba(217, 119, 6, 1);
+}
+
+.card-icon.highlight {
+  background-color: rgba(219, 234, 254, 1);
+}
+
+.card-icon.highlight .icon {
+  color: rgba(37, 99, 235, 1);
+}
+
+.card-icon.export {
+  background-color: rgba(252, 231, 243, 1);
+}
+
+.card-icon.export .icon {
+  color: rgba(219, 39, 119, 1);
 }
 
 .card-title {
@@ -1170,10 +1197,10 @@ const generateWordReport = () => {
 
 .card-desc {
   font-size: 14px;
-  color: rgba(139, 115, 85, 1);
+  color: rgba(107, 79, 52, 1);
   font-family: SourceHanSans-Regular;
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.2;
 }
 
 /* 对比按钮 */
@@ -1186,8 +1213,8 @@ const generateWordReport = () => {
   width: 100%;
   height: 58px;
   border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  border-radius: 8px;
+  background: rgba(139, 0, 0, 1);
   color: white;
   font-size: 18px;
   font-weight: 600;
@@ -1197,6 +1224,7 @@ const generateWordReport = () => {
   align-items: center;
   justify-content: center;
   gap: 12px;
+  padding: 16px 48px;
   box-shadow: 0 4px 20px rgba(139, 0, 0, 0.3);
   transition: all 0.3s ease;
 }
