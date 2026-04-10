@@ -23,6 +23,8 @@ import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
 import { useAIModel } from '../composables/useAIModel'
+import { useComparison } from '../composables/useComparison'
+import type { ComparisonSettings } from '../utils/textAlgorithms'
 import FileUpload from './FileUpload.vue'
 import RecentRecords from './RecentRecords.vue'
 
@@ -52,6 +54,17 @@ const { parseFile } = useFileParser()
 // 使用设置组合式函数
 const { settings } = useSettings()
 
+// 使用对比组合式函数
+const {
+  isProcessing,
+  progress,
+  progressMessage,
+  canCancel,
+  parseError: comparisonParseError,
+  runComparison,
+  cancelComparison
+} = useComparison()
+
 // 响应式数据
 const leftFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' });
 const rightFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' });
@@ -59,8 +72,6 @@ const rightFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' }
 // 解析结果
 const leftFileContent = ref('')
 const rightFileContent = ref('')
-const isParsing = ref(false)
-const parseError = ref('')
 
 // 对比结果
 const showResults = ref(false)
@@ -387,471 +398,54 @@ const preprocessText = (text: string): string => {
   return processed;
 };
 
-// 简单的文本相似度计算（基于最长公共子串）
-const calculateTextSimilarity = (text1: string, text2: string): number => {
-  if (!text1 || !text2) return 0;
-  
-  const preprocessed1 = preprocessText(text1);
-  const preprocessed2 = preprocessText(text2);
-  
-  const m = preprocessed1.length;
-  const n = preprocessed2.length;
-  
-  // 初始化dp数组
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-  
-  let maxLength = 0;
-  
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (preprocessed1[i - 1] === preprocessed2[j - 1]) {
-        const prevValue: number = dp[i - 1][j - 1];
-        const currentValue: number = prevValue + 1;
-        dp[i][j] = currentValue;
-        maxLength = Math.max(maxLength, currentValue);
-      } else {
-        dp[i][j] = 0;
-      }
-    }
-  }
-  
-  // 计算相似度百分比
-  const minLength = Math.min(preprocessed1.length, preprocessed2.length);
-  if (minLength === 0) return 0;
-  
-  return Math.round((maxLength / minLength) * 100);
-};
-
-// 检测雷同片段 - 基于单词匹配的实现
-const detectSimilarSegments = (text1: string, text2: string): SimilarSegment[] => {
-  // 文件大小检查
-  const totalChars = text1.length + text2.length;
-  if (totalChars > 500000) {
-    console.warn(`文件内容过大（${totalChars} 字符），建议使用 Web Worker 进行后台处理`);
-  }
-
-  // 前后显示的字符数 - 当检查的字符数大时，显示更少的上下文
-  let contextLength = 15;
-  
-  // 如果文本内容很长，减少上下文长度，只显示重复文字的前后小段
-  if (text1.length > 1000 || text2.length > 1000) {
-    contextLength = 8;
-  }
-  
-  // 使用设置中的最小查重字数
-  const minMatchLength = settings.minDuplicateWords;
-  
-  // 预处理整个文本
-  const preprocessed1 = preprocessText(text1);
-  const preprocessed2 = preprocessText(text2);
-  
-  const m = preprocessed1.length;
-  const n = preprocessed2.length;
-  
-  // 用于记录已经匹配的位置，避免重复匹配
-  const matchedPositions = new Set<string>();
-  
-  const segments: SimilarSegment[] = [];
-  
-  // 寻找所有设置的最小查重字数及以上的重复内容
-  for (let i = 0; i < m; i++) {
-    for (let j = 0; j < n; j++) {
-      // 检查是否已经匹配过这个位置
-      if (matchedPositions.has(i + ',' + j)) continue;
-      
-      let k = 0;
-      // 找到最长的连续匹配内容 - 使用预处理文本进行比较
-      while (i + k < m && j + k < n && preprocessed1[i + k] === preprocessed2[j + k]) {
-        k++;
-      }
-      
-      // 如果匹配长度达到最小要求
-      if (k >= minMatchLength) {
-        // 计算相似度（基于预处理文本，这里是完全匹配，所以相似度为100%）
-        const similarityValue = 100;
-        
-        // 寻找原始文本中对应的位置
-        let originalIndex1 = 0;
-        let preprocessedCount1 = 0;
-        
-        // 找到预处理文本中i位置对应的原始文本位置
-        while (preprocessedCount1 < i && originalIndex1 < text1.length) {
-          const preprocessedChar = preprocessText(text1[originalIndex1]);
-          if (preprocessedChar) {
-            preprocessedCount1++;
-          }
-          originalIndex1++;
-        }
-        
-        let originalIndex2 = 0;
-        let preprocessedCount2 = 0;
-        
-        // 找到预处理文本中j位置对应的原始文本位置
-        while (preprocessedCount2 < j && originalIndex2 < text2.length) {
-          const preprocessedChar = preprocessText(text2[originalIndex2]);
-          if (preprocessedChar) {
-            preprocessedCount2++;
-          }
-          originalIndex2++;
-        }
-        
-        // 找到匹配结束位置
-        let originalEnd1 = originalIndex1;
-        let originalEnd2 = originalIndex2;
-        preprocessedCount1 = 0;
-        preprocessedCount2 = 0;
-        
-        while (preprocessedCount1 < k && originalEnd1 < text1.length) {
-          const preprocessedChar = preprocessText(text1[originalEnd1]);
-          if (preprocessedChar) {
-            preprocessedCount1++;
-          }
-          originalEnd1++;
-        }
-        
-        while (preprocessedCount2 < k && originalEnd2 < text2.length) {
-          const preprocessedChar = preprocessText(text2[originalEnd2]);
-          if (preprocessedChar) {
-            preprocessedCount2++;
-          }
-          originalEnd2++;
-        }
-        
-        // 获取原始匹配内容
-        const originalMatch1 = text1.substring(originalIndex1, originalEnd1);
-        const originalMatch2 = text2.substring(originalIndex2, originalEnd2);
-        
-        // 只显示重复文字的前后小段
-        const leftContextStart = Math.max(0, originalIndex1 - contextLength);
-        const leftContextEnd = Math.min(text1.length, originalEnd1 + contextLength);
-        const leftContentWithContext = text1.substring(leftContextStart, leftContextEnd);
-        
-        const rightContextStart = Math.max(0, originalIndex2 - contextLength);
-        const rightContextEnd = Math.min(text2.length, originalEnd2 + contextLength);
-        const rightContentWithContext = text2.substring(rightContextStart, rightContextEnd);
-        
-        // 生成带有高亮的内容 - 高亮匹配部分
-        // 转义正则表达式特殊字符
-        const escapeRegExp = (str: string) => {
-          return str.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
-        };
-        
-        // 安全地转义HTML特殊字符，防止XSS攻击
-        const escapeHtml = (str: string) => {
-          const div = document.createElement('div');
-          div.textContent = str;
-          return div.innerHTML;
-        };
-        
-        // 确保匹配内容在上下文文本中正确高亮
-        let highlightedLeftContent = leftContentWithContext;
-        let highlightedRightContent = rightContentWithContext;
-        
-        // 使用原始匹配内容进行高亮，而不是预处理后的内容
-        // 安全地转义HTML特殊字符，防止XSS攻击
-        const safeMatch1 = escapeHtml(originalMatch1);
-        const safeMatch2 = escapeHtml(originalMatch2);
-        
-        // 先转义上下文文本，确保安全
-        const safeLeftContext = escapeHtml(leftContentWithContext);
-        const safeRightContext = escapeHtml(rightContentWithContext);
-        
-        // 高亮所有匹配内容 - 使用内联样式确保样式生效
-        // 使用原始匹配内容进行高亮
-        highlightedLeftContent = safeLeftContext.replace(new RegExp(escapeRegExp(safeMatch1), 'g'), `<span class="highlighted-text" style="background-color: rgba(255, 215, 0, 0.9); color: #8B0000; padding: 3px 6px; border-radius: 4px; font-weight: 700; display: inline-block;">${safeMatch1}</span>`);
-        highlightedRightContent = safeRightContext.replace(new RegExp(escapeRegExp(safeMatch2), 'g'), `<span class="highlighted-text" style="background-color: rgba(255, 215, 0, 0.9); color: #8B0000; padding: 3px 6px; border-radius: 4px; font-weight: 700; display: inline-block;">${safeMatch2}</span>`);
-        
-        // 标记匹配位置，避免重复匹配
-        for (let l = 0; l < k; l++) {
-          matchedPositions.add((i + l) + ',' + (j + l));
-        }
-        
-        segments.push({
-          id: segments.length + 1,
-          similarity: `${similarityValue}%`,
-          similarityValue: similarityValue,
-          leftContent: highlightedLeftContent,
-          rightContent: highlightedRightContent,
-          leftPage: `第${Math.floor(originalIndex1 / 1000) + 1}页`,
-          rightPage: `第${Math.floor(originalIndex2 / 1000) + 1}页`,
-          level: similarityValue >= 90 ? 'high' : similarityValue >= settings.textSimilarityThreshold ? 'medium' : 'low'
-        });
-      }
-    }
-  }
-  
-  return segments;
-};
-
-// 生成带高亮的HTML内容 - 显示所有设置的最小查重字数及以上的重复内容
-const generateHighlightedContent = (text1: string, text2: string) => {
-  if (!text1 || !text2) return { left: '', right: '' };
-  
-  // 前后显示的字符数 - 当检查的字符数大时，显示更少的上下文
-  let contextLength = 15;
-  
-  // 如果文本内容很长，减少上下文长度，只显示重复文字的前后小段
-  if (text1.length > 1000 || text2.length > 1000) {
-    contextLength = 8;
-  }
-  
-  // 预处理整个文本
-  const preprocessed1 = preprocessText(text1);
-  const preprocessed2 = preprocessText(text2);
-  
-  const m = preprocessed1.length;
-  const n = preprocessed2.length;
-  
-  // 使用设置中的最小查重字数
-  const minMatchLength = settings.minDuplicateWords;
-  
-  // 用于记录已经匹配的位置，避免重复匹配
-  const matchedPositions = new Set<string>();
-  
-  // 存储所有匹配位置和匹配文本
-  const matchPositions: { start1: number; end1: number; start2: number; end2: number; matchedText: string }[] = [];
-  
-  // 寻找所有设置的最小查重字数及以上的重复内容
-  for (let i = 0; i < m; i++) {
-    for (let j = 0; j < n; j++) {
-      // 检查是否已经匹配过这个位置
-      if (matchedPositions.has(i + ',' + j)) continue;
-      
-      let k = 0;
-      // 找到最长的连续匹配内容
-      while (i + k < m && j + k < n && preprocessed1[i + k] === preprocessed2[j + k]) {
-        k++;
-      }
-      
-      // 如果匹配长度达到最小要求
-      if (k >= minMatchLength) {
-        // 标记匹配位置，避免重复匹配
-        for (let l = 0; l < k; l++) {
-          matchedPositions.add((i + l) + ',' + (j + l));
-        }
-        
-        // 寻找原始文本中对应的位置
-        let originalIndex1 = 0;
-        let preprocessedCount1 = 0;
-        
-        // 找到预处理文本中i位置对应的原始文本位置
-        while (preprocessedCount1 < i && originalIndex1 < text1.length) {
-          const preprocessedChar = preprocessText(text1[originalIndex1]);
-          if (preprocessedChar) {
-            preprocessedCount1++;
-          }
-          originalIndex1++;
-        }
-        
-        let originalIndex2 = 0;
-        let preprocessedCount2 = 0;
-        
-        // 找到预处理文本中j位置对应的原始文本位置
-        while (preprocessedCount2 < j && originalIndex2 < text2.length) {
-          const preprocessedChar = preprocessText(text2[originalIndex2]);
-          if (preprocessedChar) {
-            preprocessedCount2++;
-          }
-          originalIndex2++;
-        }
-        
-        // 找到匹配结束位置
-        let originalEnd1 = originalIndex1;
-        let originalEnd2 = originalIndex2;
-        preprocessedCount1 = 0;
-        preprocessedCount2 = 0;
-        
-        while (preprocessedCount1 < k && originalEnd1 < text1.length) {
-          const preprocessedChar = preprocessText(text1[originalEnd1]);
-          if (preprocessedChar) {
-            preprocessedCount1++;
-          }
-          originalEnd1++;
-        }
-        
-        while (preprocessedCount2 < k && originalEnd2 < text2.length) {
-          const preprocessedChar = preprocessText(text2[originalEnd2]);
-          if (preprocessedChar) {
-            preprocessedCount2++;
-          }
-          originalEnd2++;
-        }
-        
-        // 保存匹配位置和匹配文本
-        matchPositions.push({
-          start1: originalIndex1,
-          end1: originalEnd1,
-          start2: originalIndex2,
-          end2: originalEnd2,
-          matchedText: preprocessed1.substring(i, i + k) // 保存预处理后的匹配文本
-        });
-      }
-    }
-  }
-  
-  // 如果没有匹配内容，返回原始文本
-  if (matchPositions.length === 0) {
-    return { left: text1, right: text2 };
-  }
-  
-  // 合并重叠的匹配位置
-  matchPositions.sort((a, b) => a.start1 - b.start1);
-  const mergedMatches: typeof matchPositions = [matchPositions[0]];
-  
-  for (let i = 1; i < matchPositions.length; i++) {
-    const current = matchPositions[i];
-    const last = mergedMatches[mergedMatches.length - 1];
-    
-    if (current.start1 <= last.end1) {
-      // 重叠，合并
-      last.end1 = Math.max(last.end1, current.end1);
-      last.end2 = Math.max(last.end2, current.end2);
-      // 合并matchedText，使用更长的匹配文本
-      last.matchedText = last.matchedText.length > current.matchedText.length ? last.matchedText : current.matchedText;
-    } else {
-      // 不重叠，添加新匹配
-      mergedMatches.push(current);
-    }
-  }
-  
-  // 生成带高亮的HTML，只显示重复文字的前后小段
-  let highlightedText1 = '';
-  let highlightedText2 = '';
-  
-  // 转义正则表达式特殊字符
-  const escapeRegExp = (str: string) => {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  };
-  
-  // 显示所有匹配的前后小段
-  for (const match of mergedMatches) {
-    // 左侧文件处理
-    const leftStart = Math.max(0, match.start1 - contextLength);
-    const leftEnd = Math.min(text1.length, match.end1 + contextLength);
-    const leftText = text1.substring(leftStart, leftEnd);
-    const leftMatchText = text1.substring(match.start1, match.end1);
-    
-    // 从匹配位置对象中获取预处理后的匹配文本
-        const matchedText = match.matchedText;
-        
-        // 手动构建左侧高亮HTML - 使用内联样式确保样式生效
-        let leftHighlighted = leftText;
-        const leftMatchIndex = leftText.indexOf(leftMatchText);
-        if (leftMatchIndex !== -1) {
-          leftHighlighted = 
-            leftText.substring(0, leftMatchIndex) + 
-            `<span class="highlighted-text" style="background-color: rgba(255, 215, 0, 0.9); color: #8B0000; padding: 3px 6px; border-radius: 4px; font-weight: 700; display: inline-block;">${leftMatchText}</span>` + 
-            leftText.substring(leftMatchIndex + leftMatchText.length);
-        }
-        
-        // 右侧文件处理
-        const rightStart = Math.max(0, match.start2 - contextLength);
-        const rightEnd = Math.min(text2.length, match.end2 + contextLength);
-        const rightText = text2.substring(rightStart, rightEnd);
-        const rightMatchText = text2.substring(match.start2, match.end2);
-        
-        // 手动构建右侧高亮HTML - 使用内联样式确保样式生效
-        let rightHighlighted = rightText;
-        const rightMatchIndex = rightText.indexOf(rightMatchText);
-        if (rightMatchIndex !== -1) {
-          rightHighlighted = 
-            rightText.substring(0, rightMatchIndex) + 
-            `<span class="highlighted-text" style="background-color: rgba(255, 215, 0, 0.9); color: #8B0000; padding: 3px 6px; border-radius: 4px; font-weight: 700; display: inline-block;">${rightMatchText}</span>` + 
-            rightText.substring(rightMatchIndex + rightMatchText.length);
-        }
-    
-    // 添加到结果中，用分隔符分隔不同匹配
-    if (highlightedText1) {
-      highlightedText1 += '<div class="match-separator">...</div>';
-      highlightedText2 += '<div class="match-separator">...</div>';
-    }
-    highlightedText1 += leftHighlighted;
-    highlightedText2 += rightHighlighted;
-  }
-  
-  // 返回左右文本的高亮内容
-  return {
-    left: highlightedText1,
-    right: highlightedText2
-  };
-};
-
-// 当设置改变时，重新计算雷同片段等级和相似度
-const updateSimilarityDisplay = () => {
-  if (!leftFileContent.value || !rightFileContent.value) return;
-
-  // 重新计算文本相似度
-  const similarity = calculateTextSimilarity(leftFileContent.value, rightFileContent.value);
-  textSimilarity.value = `${similarity}%`;
-
-  // 重新检测雷同片段，应用新的阈值
-  const segments = detectSimilarSegments(leftFileContent.value, rightFileContent.value);
-  similarSegmentsList.value = segments;
-  similarSegments.value = segments.length;
-  
-  // 重新生成带高亮的HTML内容
-  const highlightedContent = generateHighlightedContent(leftFileContent.value, rightFileContent.value);
-  
-  // 更新当前显示内容
-  if (segments.length > 0) {
-    currentContent.value = highlightedContent;
-    currentLeftPage.value = segments[0].leftPage;
-    currentRightPage.value = segments[0].rightPage;
-  } else {
-    currentContent.value = { left: '', right: '' };
-  }
-  
-  // 更新分页信息
-  currentPage.value = 1;
-  totalPages.value = Math.ceil(segments.length / pageSize.value);
-  if (currentPage.value > totalPages.value) {
-    currentPage.value = totalPages.value || 1;
-  }
-};
-
-// 监听设置变化，实现阈值联动
-import { watch } from 'vue';
-watch(
-  () => settings.textSimilarityThreshold,
-  () => {
-    if (showResults.value) {
-      updateSimilarityDisplay();
-    }
-  }
-);
-
 // 执行对比
 const handleCompare = async () => {
-  if (!leftFileInfo.value.file || !rightFileInfo.value.file) return;
+  if (!leftFileInfo.value.file || !rightFileInfo.value.file) return
 
-  isParsing.value = true;
-  parseError.value = '';
+  comparisonParseError.value = ''
 
   try {
     // 解析左侧文件
-    const leftResult = await parseFile(leftFileInfo.value.file);
-    if (leftResult.error) {
-      throw new Error(leftResult.error);
-    }
-    leftFileContent.value = leftResult.content;
+    const leftResult = await parseFile(leftFileInfo.value.file)
+    if (leftResult.error) throw new Error(leftResult.error)
+    leftFileContent.value = leftResult.content
 
     // 解析右侧文件
-    const rightResult = await parseFile(rightFileInfo.value.file);
-    if (rightResult.error) {
-      throw new Error(rightResult.error);
-    }
-    rightFileContent.value = rightResult.content;
+    const rightResult = await parseFile(rightFileInfo.value.file)
+    if (rightResult.error) throw new Error(rightResult.error)
+    rightFileContent.value = rightResult.content
 
     // 文件大小警告
-    const totalChars = leftResult.content.length + rightResult.content.length;
-    if (totalChars > 500000) {
-      parseError.value = `文件内容较大（${(totalChars / 10000).toFixed(1)} 万字），对比可能需要较长时间，请耐心等待...`;
+    const totalChars = leftResult.content.length + rightResult.content.length
+    if (totalChars > 500_000) {
+      comparisonParseError.value = `文件内容较大（${(totalChars / 10000).toFixed(1)} 万字），对比可能需要较长时间，请耐心等待...`
     }
 
-    // 计算相似度并显示结果
-    updateSimilarityDisplay();
-    
-    // 添加真实的对比记录
+    // 执行对比
+    const comparisonSettings: ComparisonSettings = {
+      minDuplicateWords: settings.minDuplicateWords,
+      textSimilarityThreshold: settings.textSimilarityThreshold,
+      ignoreCase: settings.ignoreCase,
+      ignorePunctuation: settings.ignorePunctuation,
+      ignoreWhitespace: settings.ignoreWhitespace
+    }
+
+    const result = await runComparison(leftResult.content, rightResult.content, comparisonSettings)
+
+    textSimilarity.value = `${result.similarity}%`
+    similarSegmentsList.value = result.segments
+    similarSegments.value = result.segments.length
+
+    if (result.segments.length > 0) {
+      currentContent.value = {
+        left: result.segments[0].leftContent,
+        right: result.segments[0].rightContent
+      }
+      currentLeftPage.value = result.segments[0].leftPage
+      currentRightPage.value = result.segments[0].rightPage
+    }
+
+    // 保存记录
     addRecentRecord({
       filename: `${leftFileInfo.value.name} vs ${rightFileInfo.value.name}`,
       timestamp: new Date().toLocaleString(),
@@ -859,16 +453,21 @@ const handleCompare = async () => {
       leftFileName: leftFileInfo.value.name,
       rightFileName: rightFileInfo.value.name,
       similarSegments: similarSegmentsList.value
-    });
-    
-    // 显示结果
-    showResults.value = true;
+    })
+
+    showResults.value = true
   } catch (error) {
-    parseError.value = (error as Error).message;
-  } finally {
-    isParsing.value = false;
+    comparisonParseError.value = (error as Error).message
   }
-};
+}
+
+// 取消对比
+const handleCancel = () => {
+  cancelComparison()
+  if (!showResults.value) {
+    comparisonParseError.value = '已取消对比'
+  }
+}
 
 // 返回文件上传界面
 const handleBack = () => {
@@ -879,12 +478,13 @@ const handleBack = () => {
 
 // 片段点击处理
 const handleSegmentClick = (segment: SimilarSegment) => {
-  // 生成该片段的高亮内容
-  const highlightedContent = generateHighlightedContent(segment.leftContent, segment.rightContent);
-  currentContent.value = highlightedContent;
-  currentLeftPage.value = segment.leftPage;
-  currentRightPage.value = segment.rightPage;
-};
+  currentContent.value = {
+    left: segment.leftContent,
+    right: segment.rightContent
+  }
+  currentLeftPage.value = segment.leftPage
+  currentRightPage.value = segment.rightPage
+}
 
 // 返回处理
 const handleReturn = () => {
@@ -1195,10 +795,21 @@ const generateWordReport = () => {
 
       <!-- 对比按钮 -->
       <div class="compare-btn-wrapper">
-        <button class="compare-main-btn" @click="handleCompare" :disabled="isParsing">
-          <RiExchangeLine class="compare-icon" :class="{ 'rotating': isParsing }" />
-          <span class="compare-text">{{ isParsing ? '对比中...' : '一键对比' }}</span>
+        <button class="compare-main-btn" @click="handleCompare" :disabled="isProcessing">
+          <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
+          <span class="compare-text">{{ isProcessing ? '对比中...' : '一键对比' }}</span>
         </button>
+      </div>
+
+      <!-- 进度条容器 -->
+      <div v-if="isProcessing && canCancel" class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" :style="{ width: `${Math.round(progress * 100)}%` }" />
+        </div>
+        <span class="progress-text">
+          {{ progressMessage }} {{ Math.round(progress * 100) }}%
+        </span>
+        <button class="cancel-btn" @click="handleCancel">取消</button>
       </div>
     </div>
 
@@ -1225,8 +836,8 @@ const generateWordReport = () => {
     />
 
     <!-- 解析错误显示 -->
-    <div v-if="parseError" class="error-message">
-      {{ parseError }}
+    <div v-if="comparisonParseError" class="error-message">
+      {{ comparisonParseError }}
     </div>
 
     <!-- 对比结果 -->
@@ -2429,5 +2040,54 @@ const generateWordReport = () => {
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(166, 124, 82, 0.8);
+}
+
+/* 进度条 */
+.progress-container {
+  width: 100%;
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 8px;
+  background-color: rgba(245, 238, 226, 1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 14px;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-Medium;
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+.cancel-btn {
+  padding: 8px 20px;
+  background-color: transparent;
+  border: 1px solid rgba(139, 0, 0, 1);
+  color: rgba(139, 0, 0, 1);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: SourceHanSans-Medium;
+  transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+  background-color: rgba(139, 0, 0, 0.1);
 }
 </style>
