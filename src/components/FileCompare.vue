@@ -17,7 +17,8 @@ import {
   RiSearchLine,
   RiEditLine,
   RiInformationLine,
-  RiHistoryLine
+  RiHistoryLine,
+  RiDownloadLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx'
 import { useFileParser } from '../composables/useFileParser'
@@ -728,11 +729,11 @@ const generateWordReport = () => {
         </div>
         <div class="header-actions">
           <button v-if="showResults" class="header-back-btn" @click="handleBack" title="返回">
-            <RiArrowLeftLine class="header-btn-icon" />
+            <RiArrowLeftSLine class="header-btn-icon" />
             <span class="header-btn-text">返回</span>
           </button>
           <button v-if="showResults" class="header-export-btn" @click="handleExportReport" title="导出报告">
-            <RiFileExcelLine class="header-btn-icon" />
+            <RiDownloadLine class="header-btn-icon" />
             <span class="header-btn-text">导出报告</span>
           </button>
           <button class="icon-btn" title="历史记录" @click="toggleHistory">
@@ -1150,6 +1151,13 @@ const generateWordReport = () => {
 
 .header-btn-icon {
   font-size: 18px;
+}
+
+.header-back-btn .header-btn-icon {
+  color: rgba(107, 79, 52, 1);
+}
+
+.header-export-btn .header-btn-icon {
   color: rgba(255, 255, 255, 1);
 }
 
