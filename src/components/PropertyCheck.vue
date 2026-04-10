@@ -739,7 +739,7 @@ const generateWordReport = () => {
             <RiDownloadLine class="header-btn-icon" />
             <span class="header-btn-text">导出报告</span>
           </button>
-          <button class="icon-btn" title="历史记录" @click="toggleHistory">
+          <button v-if="!showResults" class="icon-btn" title="历史记录" @click="toggleHistory">
             <RiHistoryLine class="icon-btn-svg" />
           </button>
           <button class="help-btn" v-if="!showResults" title="帮助" @click="toggleHelp">
