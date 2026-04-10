@@ -65,7 +65,6 @@ const parseError = ref('')
 // 对比结果
 const showResults = ref(false)
 const textSimilarity = ref('0%')
-const imageSimilarity = ref('65.2%') // 默认图片相似度
 const similarSegments = ref(0)
 
 // AI分析相关
@@ -216,13 +215,20 @@ const toggleSort = () => {
 
 
 // 使用最近记录组合式函数 - 传入fileCompare类型
-const { 
-  showRecentRecords, 
-  recentRecords, 
-  addRecentRecord, 
+const {
+  showRecentRecords,
+  recentRecords,
+  addRecentRecord,
   clearAllRecords,
   deleteRecord
 } = useRecentRecords('fileCompare')
+
+// 帮助弹窗
+const showHelp = ref(false)
+
+const toggleHelp = () => {
+  showHelp.value = !showHelp.value
+}
 
 // 查看历史对比记录
 const viewHistoricalRecord = (record: any) => {
@@ -294,13 +300,18 @@ const handleFileUpload = (event: Event, side: 'left' | 'right') => {
   const input = event.target as HTMLInputElement
   if (input.files && input.files[0]) {
     const file = input.files[0]
+    // 文件大小限制 50MB
+    if (file.size > 50 * 1024 * 1024) {
+      alert('文件大小超过 50MB 限制')
+      return
+    }
     const fileInfo = {
       file: file,
       name: file.name,
       size: formatFileSize(file.size),
       type: getFileType(file.name)
     };
-    
+
     if (side === 'left') {
       leftFileInfo.value = fileInfo;
     } else {
@@ -413,6 +424,12 @@ const calculateTextSimilarity = (text1: string, text2: string): number => {
 
 // 检测雷同片段 - 基于单词匹配的实现
 const detectSimilarSegments = (text1: string, text2: string): SimilarSegment[] => {
+  // 文件大小检查
+  const totalChars = text1.length + text2.length;
+  if (totalChars > 500000) {
+    console.warn(`文件内容过大（${totalChars} 字符），建议使用 Web Worker 进行后台处理`);
+  }
+
   // 前后显示的字符数 - 当检查的字符数大时，显示更少的上下文
   let contextLength = 15;
   
@@ -759,26 +776,14 @@ const generateHighlightedContent = (text1: string, text2: string) => {
   };
 };
 
-// 计算图片相似度（模拟实现，实际需要使用图片处理库）
-const calculateImageSimilarity = (): number => {
-  // 模拟图片相似度计算，返回一个随机值
-  // 实际应用中，需要使用图片处理库或API来计算真实的图片相似度
-  const randomSimilarity = Math.floor(Math.random() * 40) + 60; // 60-100之间的随机值
-  return randomSimilarity;
-};
-
 // 当设置改变时，重新计算雷同片段等级和相似度
 const updateSimilarityDisplay = () => {
   if (!leftFileContent.value || !rightFileContent.value) return;
-  
+
   // 重新计算文本相似度
   const similarity = calculateTextSimilarity(leftFileContent.value, rightFileContent.value);
   textSimilarity.value = `${similarity}%`;
-  
-  // 重新计算图片相似度
-  const imgSimilarity = calculateImageSimilarity();
-  imageSimilarity.value = `${imgSimilarity}%`;
-  
+
   // 重新检测雷同片段，应用新的阈值
   const segments = detectSimilarSegments(leftFileContent.value, rightFileContent.value);
   similarSegmentsList.value = segments;
@@ -815,23 +820,13 @@ watch(
   }
 );
 
-watch(
-  () => settings.imageSimilarityThreshold,
-  () => {
-    if (showResults.value) {
-      // 重新计算图片相似度并应用新的阈值
-      updateSimilarityDisplay();
-    }
-  }
-);
-
 // 执行对比
 const handleCompare = async () => {
   if (!leftFileInfo.value.file || !rightFileInfo.value.file) return;
-  
+
   isParsing.value = true;
   parseError.value = '';
-  
+
   try {
     // 解析左侧文件
     const leftResult = await parseFile(leftFileInfo.value.file);
@@ -839,14 +834,20 @@ const handleCompare = async () => {
       throw new Error(leftResult.error);
     }
     leftFileContent.value = leftResult.content;
-    
+
     // 解析右侧文件
     const rightResult = await parseFile(rightFileInfo.value.file);
     if (rightResult.error) {
       throw new Error(rightResult.error);
     }
     rightFileContent.value = rightResult.content;
-    
+
+    // 文件大小警告
+    const totalChars = leftResult.content.length + rightResult.content.length;
+    if (totalChars > 500000) {
+      parseError.value = `文件内容较大（${(totalChars / 10000).toFixed(1)} 万字），对比可能需要较长时间，请耐心等待...`;
+    }
+
     // 计算相似度并显示结果
     updateSimilarityDisplay();
     
@@ -1112,10 +1113,32 @@ const generateWordReport = () => {
         <h1 class="main-title">文档比对中心</h1>
         <p class="sub-title">精准识别两个版本文档之间的内容差异、相似片段和结构变更</p>
       </div>
-      <button class="help-btn" title="帮助">
+      <button class="help-btn" title="帮助" @click="toggleHelp">
         <RiQuestionLine class="help-icon" />
       </button>
       <div class="decorative-line"></div>
+    </div>
+
+    <!-- 帮助弹窗 -->
+    <div v-if="showHelp" class="help-modal-overlay" @click="toggleHelp">
+      <div class="help-modal" @click.stop>
+        <div class="help-modal-header">
+          <h3>使用说明</h3>
+          <button class="help-close-btn" @click="toggleHelp">×</button>
+        </div>
+        <div class="help-modal-body">
+          <h4>文件对比功能</h4>
+          <p>1. 分别上传源文件和修订版文件（支持拖拽或点击上传）</p>
+          <p>2. 点击"一键对比"按钮开始分析</p>
+          <p>3. 查看详细的对比结果和高亮标记的相似内容</p>
+          <p>4. 点击雷同片段可查看详细内容</p>
+          <p>5. 支持导出 Word 格式报告</p>
+          <h4>支持的格式</h4>
+          <p>.doc, .docx, .pdf, .txt, .ppt, .pptx, .xls, .xlsx</p>
+          <h4>注意事项</h4>
+          <p>单个文件大小不超过 50MB</p>
+        </div>
+      </div>
     </div>
 
     <!-- 文件上传区域 -->
@@ -1226,7 +1249,7 @@ const generateWordReport = () => {
           </div>
           <div class="stat-content">
             <span class="stat-label">图片相似度</span>
-            <span class="stat-value image-similarity-value">65.2%</span>
+            <span class="stat-value image-similarity-value">暂不支持</span>
           </div>
         </div>
         <div class="stat-card">
@@ -1454,6 +1477,7 @@ const generateWordReport = () => {
 
 .help-btn:hover {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  background-color: rgba(139, 0, 0, 0.05);
 }
 
 .help-icon {
@@ -2319,6 +2343,88 @@ const generateWordReport = () => {
 ::-webkit-scrollbar-thumb {
   background-color: rgba(166, 124, 82, 0.5);
   border-radius: 3px;
+}
+
+/* 帮助弹窗 */
+.help-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.help-modal {
+  background-color: rgba(255, 255, 255, 1);
+  border-radius: 12px;
+  width: 480px;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.help-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(216, 191, 156, 0.3);
+}
+
+.help-modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  margin: 0;
+  font-family: SourceHanSans-SemiBold;
+}
+
+.help-close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background-color: transparent;
+  cursor: pointer;
+  font-size: 24px;
+  color: rgba(107, 79, 52, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.help-close-btn:hover {
+  background-color: rgba(139, 0, 0, 0.1);
+}
+
+.help-modal-body {
+  padding: 24px;
+}
+
+.help-modal-body h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  margin: 16px 0 8px 0;
+  font-family: SourceHanSans-SemiBold;
+}
+
+.help-modal-body h4:first-child {
+  margin-top: 0;
+}
+
+.help-modal-body p {
+  font-size: 14px;
+  color: rgba(107, 79, 52, 1);
+  margin: 4px 0;
+  font-family: SourceHanSans-Regular;
+  line-height: 1.6;
 }
 
 ::-webkit-scrollbar-thumb:hover {

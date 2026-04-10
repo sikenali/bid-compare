@@ -8,6 +8,7 @@ import {
   RiCloseLine,
   RiAlertLine
 } from '@remixicon/vue'
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx'
 
 interface PropertyDetail {
   name: string;
@@ -50,8 +51,82 @@ const handleBack = () => {
   router.push('/property-check')
 }
 
-const handleExport = () => {
-  alert('导出功能开发中...')
+const handleExport = async () => {
+  if (propertyDetails.value.length === 0) {
+    alert('没有可导出的对比数据')
+    return
+  }
+
+  try {
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: '属性对比报告', bold: true, size: 24 })],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `匹配属性：${matchCount.value}项`, size: 16 })]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `不匹配属性：${mismatchCount.value}项`, size: 16 })]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `警告属性：${warningCount.value}项`, size: 16 })],
+            spacing: { after: 200 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `左侧文件：${leftFileName.value}`, size: 16 })]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `右侧文件：${rightFileName.value}`, size: 16 })],
+            spacing: { after: 200 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: '属性对比详情：', bold: true, size: 20 })],
+            spacing: { after: 100 }
+          }),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ text: '对比类型', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                  new TableCell({ children: [new Paragraph({ text: leftFileName.value, bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                  new TableCell({ children: [new Paragraph({ text: rightFileName.value, bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                  new TableCell({ children: [new Paragraph({ text: '是否匹配', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                ]
+              }),
+              ...propertyDetails.value.map(property => new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ text: property.name, alignment: AlignmentType.CENTER })] }),
+                  new TableCell({ children: [new Paragraph({ text: property.leftValue, alignment: AlignmentType.CENTER })] }),
+                  new TableCell({ children: [new Paragraph({ text: property.rightValue, alignment: AlignmentType.CENTER })] }),
+                  new TableCell({ children: [new Paragraph({
+                    text: property.status === 'match' ? '匹配' : property.status === 'mismatch' ? '不匹配' : '警告',
+                    alignment: AlignmentType.CENTER
+                  })] }),
+                ]
+              }))
+            ]
+          })
+        ]
+      }]
+    })
+
+    const blob = await Packer.toBlob(doc)
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = '属性对比报告.docx'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (error) {
+    console.error('导出报告失败:', error)
+    alert('导出报告失败，请重试')
+  }
 }
 
 const getStatusIcon = (status: string): any => {

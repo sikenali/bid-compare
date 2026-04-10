@@ -251,13 +251,18 @@ const handleFileUpload = (event: Event, side: 'left' | 'right') => {
   const input = event.target as HTMLInputElement
   if (input.files && input.files[0]) {
     const file = input.files[0]
+    // 文件大小限制 50MB
+    if (file.size > 50 * 1024 * 1024) {
+      alert('文件大小超过 50MB 限制')
+      return
+    }
     const fileInfo = {
       file: file,
       name: file.name,
       size: formatFileSize(file.size),
       type: getFileType(file.name)
     };
-    
+
     if (side === 'left') {
       leftFileInfo.value = fileInfo;
     } else {
@@ -298,12 +303,18 @@ const handleClearFile = (side: 'left' | 'right') => {
     size: '',
     type: ''
   };
-  
+
   if (side === 'left') {
     leftFileInfo.value = emptyFileInfo;
   } else {
     rightFileInfo.value = emptyFileInfo;
   }
+}
+
+// 帮助弹窗
+const showHelp = ref(false)
+const toggleHelp = () => {
+  showHelp.value = !showHelp.value
 }
 
 // 文本预处理（根据设置调整）
@@ -707,10 +718,31 @@ const generateWordReport = () => {
         <h1 class="main-title">属性检查</h1>
         <p class="sub-title">对比两个文件的基础属性信息，快速识别差异</p>
       </div>
-      <button class="help-btn" title="帮助">
+      <button class="help-btn" title="帮助" @click="toggleHelp">
         <RiQuestionLine class="help-icon" />
       </button>
       <div class="decorative-line"></div>
+    </div>
+
+    <!-- 帮助弹窗 -->
+    <div v-if="showHelp" class="help-modal-overlay" @click="toggleHelp">
+      <div class="help-modal" @click.stop>
+        <div class="help-modal-header">
+          <h3>属性检查说明</h3>
+          <button class="help-close-btn" @click="toggleHelp">×</button>
+        </div>
+        <div class="help-modal-body">
+          <h4>属性检查功能</h4>
+          <p>对比两个文件的基础属性信息，快速识别差异</p>
+          <h4>检查项目</h4>
+          <p>文件类型、文件大小、作者信息、创建时间、修改时间</p>
+          <h4>使用说明</h4>
+          <p>1. 上传两个待比较文件</p>
+          <p>2. 点击"开始检查"按钮</p>
+          <p>3. 查看属性对比结果</p>
+          <p>4. 支持导出 Word 格式报告</p>
+        </div>
+      </div>
     </div>
 
     <!-- 文件上传区域 -->
@@ -1648,5 +1680,87 @@ const generateWordReport = () => {
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(166, 124, 82, 0.8);
+}
+
+/* 帮助弹窗 */
+.help-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.help-modal {
+  background-color: rgba(255, 255, 255, 1);
+  border-radius: 12px;
+  width: 480px;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.help-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(216, 191, 156, 0.3);
+}
+
+.help-modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  margin: 0;
+  font-family: SourceHanSans-SemiBold;
+}
+
+.help-close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background-color: transparent;
+  cursor: pointer;
+  font-size: 24px;
+  color: rgba(107, 79, 52, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.help-close-btn:hover {
+  background-color: rgba(139, 0, 0, 0.1);
+}
+
+.help-modal-body {
+  padding: 24px;
+}
+
+.help-modal-body h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  margin: 16px 0 8px 0;
+  font-family: SourceHanSans-SemiBold;
+}
+
+.help-modal-body h4:first-child {
+  margin-top: 0;
+}
+
+.help-modal-body p {
+  font-size: 14px;
+  color: rgba(107, 79, 52, 1);
+  margin: 4px 0;
+  font-family: SourceHanSans-Regular;
+  line-height: 1.6;
 }
 </style>

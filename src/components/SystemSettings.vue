@@ -5,7 +5,8 @@ import {
   RiSettings3Line,
   RiText,
   RiFilterLine,
-  RiFileDownloadLine
+  RiFileDownloadLine,
+  RiRobot2Line
 } from '@remixicon/vue'
 
 const {
@@ -14,21 +15,19 @@ const {
   cancelSettings: handleCancelSettings
 } = useSettings()
 
-const exportFormat = ref('docx')
-const includeHighlight = ref(true)
-const includeMetadata = ref(true)
-
 const handleReset = () => {
-  settings.minDuplicateWords = 5
-  settings.textSimilarityThreshold = 70
+  settings.minDuplicateWords = 8
+  settings.textSimilarityThreshold = 75
   settings.imageSimilarityThreshold = 80
+  settings.ngramSize = 3
+  settings.maxResults = 100
   settings.ignoreCase = false
-  settings.ignorePunctuation = false
-  settings.ignoreWhitespace = false
-  settings.ignoreInvisibleChars = false
-  exportFormat.value = 'docx'
-  includeHighlight.value = true
-  includeMetadata.value = true
+  settings.ignorePunctuation = true
+  settings.ignoreWhitespace = true
+  settings.ignoreInvisibleChars = true
+  settings.selectedModel = 'gpt-3.5'
+  settings.apiKey = ''
+  settings.apiEndpoint = ''
 }
 </script>
 
@@ -147,33 +146,47 @@ const handleReset = () => {
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">导出格式</label>
-              <p class="setting-desc">选择导出报告的文件格式</p>
+              <p class="setting-desc">当前仅支持 Word 文档格式 (.docx)</p>
             </div>
-            <select v-model="exportFormat" class="setting-select">
-              <option value="docx">Word 文档 (.docx)</option>
-              <option value="xlsx">Excel 表格 (.xlsx)</option>
-              <option value="pdf">PDF 文档 (.pdf)</option>
+            <span class="format-badge">.docx</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI模型设置卡片 -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon ai-model">
+            <RiRobot2Line class="icon" />
+          </div>
+          <h2 class="card-title">AI 模型设置</h2>
+        </div>
+        <div class="card-content">
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <label class="setting-label">AI 模型</label>
+              <p class="setting-desc">选择用于分析的 AI 模型</p>
+            </div>
+            <select v-model="settings.selectedModel" class="setting-select">
+              <option value="gpt-3.5">GPT-3.5 Turbo</option>
+              <option value="gpt-4">GPT-4</option>
+              <option value="gemini">Google Gemini</option>
+              <option value="claude">Anthropic Claude</option>
             </select>
           </div>
           <div class="setting-row">
             <div class="setting-label-group">
-              <label class="setting-label">包含高亮标记</label>
-              <p class="setting-desc">导出报告中是否包含相似内容高亮</p>
+              <label class="setting-label">API 端点</label>
+              <p class="setting-desc">API 请求地址，留空使用默认地址</p>
             </div>
-            <label class="switch">
-              <input type="checkbox" v-model="includeHighlight" />
-              <span class="slider"></span>
-            </label>
+            <input type="text" v-model="settings.apiEndpoint" class="setting-input api-input" placeholder="留空使用默认端点" />
           </div>
           <div class="setting-row">
             <div class="setting-label-group">
-              <label class="setting-label">包含元数据</label>
-              <p class="setting-desc">导出报告中是否包含文件元数据信息</p>
+              <label class="setting-label">API 密钥</label>
+              <p class="setting-desc">输入您的 API Key 以使用 AI 分析</p>
             </div>
-            <label class="switch">
-              <input type="checkbox" v-model="includeMetadata" />
-              <span class="slider"></span>
-            </label>
+            <input type="password" v-model="settings.apiKey" class="setting-input api-input" placeholder="sk-..." />
           </div>
         </div>
       </div>
@@ -272,6 +285,10 @@ const handleReset = () => {
   background-color: rgba(254, 243, 199, 1);
 }
 
+.card-icon.ai-model {
+  background-color: rgba(233, 213, 255, 1);
+}
+
 .card-icon .icon {
   font-size: 20px;
 }
@@ -286,6 +303,10 @@ const handleReset = () => {
 
 .card-icon.export .icon {
   color: rgba(217, 119, 6, 1);
+}
+
+.card-icon.ai-model .icon {
+  color: rgba(126, 34, 206, 1);
 }
 
 .card-title {
@@ -344,6 +365,11 @@ const handleReset = () => {
   transition: all 0.3s ease;
 }
 
+.setting-input.api-input {
+  width: 280px;
+  text-align: left;
+}
+
 .setting-input:focus {
   outline: none;
   border-color: rgba(139, 0, 0, 1);
@@ -369,6 +395,19 @@ const handleReset = () => {
   outline: none;
   border-color: rgba(139, 0, 0, 1);
   box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
+}
+
+.format-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px;
+  background-color: rgba(245, 238, 226, 1);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-Medium;
 }
 
 /* 开关按钮 */

@@ -52,18 +52,32 @@ const fingerprintInfo = ref<InfoSection>({
 
 const sections = ref<InfoSection[]>([deviceInfo.value, networkInfo.value, fingerprintInfo.value])
 
-onMounted(() => {
-  // 未来可以从系统 API 获取硬件信息
-  console.log('硬件信息页面已加载')
-})
+/**
+ * 注意：当前页面展示的数据为示例数据（Mock Data）。
+ * NW.js 环境下可通过 Node.js API 获取真实硬件信息，但需要考虑：
+ * 1. 跨平台兼容性（Windows/macOS/Linux 信息结构不同）
+ * 2. 权限要求（部分硬件信息需要管理员权限）
+ * 3. 隐私安全（MAC 地址等设备标识可能涉及用户隐私）
+ *
+ * 后续如需接入真实数据，可参考以下方案：
+ * - 操作系统/处理器/内存：使用 Node.js 的 `os` 模块
+ * - 硬盘信息：使用 `systeminformation` 第三方库
+ * - 网络信息：使用 `os.networkInterfaces()`
+ * - 设备指纹：基于硬件信息生成哈希值
+ */
 </script>
 
 <template>
   <div class="hardware-info-container">
     <!-- 页面标题 -->
     <div class="page-header">
-      <h1 class="page-title">硬件信息</h1>
-      <p class="page-subtitle">查看系统硬件和网络信息</p>
+      <div class="title-row">
+        <div>
+          <h1 class="page-title">硬件信息</h1>
+          <p class="page-subtitle">查看系统硬件和网络信息</p>
+        </div>
+        <span class="sample-badge">示例数据</span>
+      </div>
     </div>
 
     <!-- 信息卡片列表 -->
@@ -106,6 +120,24 @@ onMounted(() => {
   border-radius: 8px;
   border: 1px solid rgba(166, 124, 82, 0.2);
   box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sample-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background-color: rgba(254, 243, 199, 1);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(217, 119, 6, 1);
+  font-family: SourceHanSans-Medium;
 }
 
 .page-title {

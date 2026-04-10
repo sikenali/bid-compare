@@ -8,6 +8,7 @@ import {
   RiPercentLine,
   RiCheckLine
 } from '@remixicon/vue'
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx'
 
 interface SimilarSegment {
   id: number;
@@ -30,8 +31,6 @@ const router = useRouter()
 
 const segments = ref<SimilarSegment[]>([])
 const stats = ref<ComparisonStats | null>(null)
-const hasMore = ref(false)
-const isLoading = ref(false)
 const leftFileName = ref('')
 const rightFileName = ref('')
 
@@ -55,20 +54,91 @@ onMounted(() => {
   }
 })
 
-const loadMore = () => {
-  if (isLoading.value || !hasMore.value) return
-  isLoading.value = true
-  setTimeout(() => {
-    isLoading.value = false
-  }, 500)
-}
-
 const handleBack = () => {
   router.push('/file-compare')
 }
 
-const handleExport = () => {
-  alert('导出功能开发中...')
+const handleExport = async () => {
+  if (!stats.value || segments.value.length === 0) {
+    alert('没有可导出的对比数据')
+    return
+  }
+
+  try {
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: '文件对比报告', bold: true, size: 24 })],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: '相似度统计：', bold: true, size: 20 })],
+            spacing: { after: 100 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `总字数：${stats.value.totalWords.toLocaleString()}` , size: 16 })]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `相似字数：${stats.value.similarWords.toLocaleString()}`, size: 16 })]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `整体重合率：${stats.value.similarityRate.toFixed(2)}%`, size: 16 })],
+            spacing: { after: 200 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: '文件信息：', bold: true, size: 20 })],
+            spacing: { after: 100 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `左侧文件：${leftFileName.value}`, size: 16 })]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `右侧文件：${rightFileName.value}`, size: 16 })],
+            spacing: { after: 200 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: '雷同片段详情：', bold: true, size: 20 })],
+            spacing: { after: 100 }
+          }),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ text: '序号', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                  new TableCell({ children: [new Paragraph({ text: '左侧内容', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                  new TableCell({ children: [new Paragraph({ text: '相似度', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                  new TableCell({ children: [new Paragraph({ text: '右侧内容', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                ]
+              }),
+              ...segments.value.map(segment => new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ text: segment.id.toString(), alignment: AlignmentType.CENTER })] }),
+                  new TableCell({ children: [new Paragraph({ text: segment.leftContent.replace(/<[^>]*>/g, '') })] }),
+                  new TableCell({ children: [new Paragraph({ text: segment.similarity, alignment: AlignmentType.CENTER })] }),
+                  new TableCell({ children: [new Paragraph({ text: segment.rightContent.replace(/<[^>]*>/g, '') })] }),
+                ]
+              }))
+            ]
+          })
+        ]
+      }]
+    })
+
+    const blob = await Packer.toBlob(doc)
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = '文件对比报告.docx'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (error) {
+    console.error('导出报告失败:', error)
+    alert('导出报告失败，请重试')
+  }
 }
 
 const getSimilarityLevel = (value: number): string => {
@@ -158,18 +228,6 @@ const getSimilarityLevel = (value: number): string => {
               {{ segment.similarityValue }}%
             </span>
           </div>
-        </div>
-
-        <!-- 加载更多 -->
-        <div v-if="hasMore" class="load-more-wrapper">
-          <button class="load-more-btn" @click="loadMore" :disabled="isLoading">
-            {{ isLoading ? '加载中...' : '加载更多' }}
-          </button>
-        </div>
-
-        <!-- 空状态 -->
-        <div v-if="segments.length === 0" class="empty-state">
-          <p>暂无对比数据</p>
         </div>
       </div>
     </div>
@@ -474,43 +532,6 @@ const getSimilarityLevel = (value: number): string => {
 .similarity-tag.low {
   background-color: rgba(34, 139, 34, 0.1);
   color: rgba(34, 139, 34, 1);
-}
-
-/* 加载更多 */
-.load-more-wrapper {
-  padding: 20px;
-  text-align: center;
-}
-
-.load-more-btn {
-  padding: 10px 32px;
-  background-color: transparent;
-  border: 1px solid rgba(139, 0, 0, 1);
-  color: rgba(139, 0, 0, 1);
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.3s;
-  font-family: SourceHanSans-Medium;
-}
-
-.load-more-btn:hover:not(:disabled) {
-  background-color: rgba(139, 0, 0, 0.1);
-}
-
-.load-more-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* 空状态 */
-.empty-state {
-  padding: 60px 20px;
-  text-align: center;
-  color: rgba(166, 124, 82, 1);
-  font-size: 14px;
-  font-family: SourceHanSans-Regular;
 }
 
 /* 高亮文本样式 */

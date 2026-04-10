@@ -11,6 +11,10 @@ export interface FileCompareSettings {
   ignoreWhitespace: boolean
   ignoreCase: boolean
   ignoreInvisibleChars: boolean
+  // AI模型设置
+  selectedModel: string
+  apiKey: string
+  apiEndpoint: string
 }
 
 // 定义默认设置
@@ -23,7 +27,10 @@ export const defaultSettings: FileCompareSettings = {
   ignorePunctuation: true,
   ignoreWhitespace: true,
   ignoreCase: false,
-  ignoreInvisibleChars: true
+  ignoreInvisibleChars: true,
+  selectedModel: 'gpt-3.5',
+  apiKey: '',
+  apiEndpoint: ''
 }
 
 // 导出设置组合式函数
