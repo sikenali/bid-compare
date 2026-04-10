@@ -18,7 +18,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const titleText = props.side === 'left' ? '源文件' : '修订版文件';
+const titleText = props.side === 'left' ? 'File A' : 'File B';
 const titleColor = props.side === 'left' ? 'rgba(139,0,0,1)' : 'rgba(46,89,132,1)';
 
 // 声明文件输入框引用
