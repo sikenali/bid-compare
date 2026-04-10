@@ -232,7 +232,7 @@ export function findSimilarSegmentsRabinKarp(
   for (let i = 0; i <= m - windowSize; i++) {
     if (i > 0) {
       hash1 = ((hash1 - preprocessed1.charCodeAt(i - 1) * high1) * HASH1_BASE + preprocessed1.charCodeAt(i + windowSize - 1)) % HASH1_MOD
-      hash2 = ((hash2 - preprocessed2.charCodeAt(i - 1) * high2) * HASH2_BASE + preprocessed2.charCodeAt(i + windowSize - 1)) % HASH2_MOD
+      hash2 = ((hash2 - preprocessed1.charCodeAt(i - 1) * high2) * HASH2_BASE + preprocessed1.charCodeAt(i + windowSize - 1)) % HASH2_MOD
       if (hash1 < 0) hash1 += HASH1_MOD
       if (hash2 < 0) hash2 += HASH2_MOD
     }
