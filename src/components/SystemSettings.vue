@@ -247,8 +247,8 @@ const handleReset = () => {
 
 /* 设置表单区 */
 .settings-form {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
 
@@ -258,19 +258,19 @@ const handleReset = () => {
   border: 0.7px solid rgba(216, 191, 156, 1);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  padding: 24px;
+  padding: 20px;
 }
 
 .card-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .card-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -294,7 +294,7 @@ const handleReset = () => {
 }
 
 .card-icon .icon {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .card-icon.algorithm .icon {
@@ -314,7 +314,7 @@ const handleReset = () => {
 }
 
 .card-title {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
   color: rgba(44, 24, 16, 1);
   font-family: SourceHanSans-SemiBold;
@@ -324,7 +324,7 @@ const handleReset = () => {
 .card-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 /* 设置行 */
@@ -332,7 +332,7 @@ const handleReset = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px;
 }
 
 .setting-label-group {
@@ -340,28 +340,29 @@ const handleReset = () => {
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: rgba(44, 24, 16, 1);
   font-family: SourceHanSans-Medium;
-  margin: 0 0 4px 0;
+  margin: 0 0 2px 0;
 }
 
 .setting-desc {
-  font-size: 12px;
+  font-size: 11px;
   color: rgba(139, 115, 85, 1);
   font-family: SourceHanSans-Regular;
   margin: 0;
+  line-height: 1.3;
 }
 
 /* 输入框 */
 .setting-input {
-  width: 120px;
-  height: 44px;
-  padding: 12px 16px;
+  width: 80px;
+  height: 36px;
+  padding: 8px 12px;
   border: 1px solid rgba(216, 191, 156, 0.5);
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   color: rgba(44, 24, 16, 1);
   background-color: rgba(255, 255, 255, 0.8);
   font-family: SourceHanSans-Regular;
@@ -370,7 +371,7 @@ const handleReset = () => {
 }
 
 .setting-input.api-input {
-  width: 280px;
+  width: 180px;
   text-align: left;
 }
 
@@ -382,12 +383,12 @@ const handleReset = () => {
 
 /* 下拉选择框 */
 .setting-select {
-  width: 180px;
-  height: 44px;
-  padding: 12px 16px;
+  width: 140px;
+  height: 36px;
+  padding: 8px 12px;
   border: 1px solid rgba(216, 191, 156, 0.5);
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   color: rgba(44, 24, 16, 1);
   background-color: rgba(255, 255, 255, 0.8);
   font-family: SourceHanSans-Regular;
@@ -405,10 +406,10 @@ const handleReset = () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 20px;
+  padding: 6px 16px;
   background-color: rgba(245, 238, 226, 1);
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: rgba(107, 79, 52, 1);
   font-family: SourceHanSans-Medium;
@@ -418,8 +419,8 @@ const handleReset = () => {
 .switch {
   position: relative;
   display: inline-block;
-  width: 48px;
-  height: 24px;
+  width: 40px;
+  height: 20px;
   flex-shrink: 0;
 }
 
@@ -444,8 +445,8 @@ const handleReset = () => {
 .slider:before {
   position: absolute;
   content: "";
-  height: 18px;
-  width: 18px;
+  height: 14px;
+  width: 14px;
   left: 3px;
   bottom: 3px;
   background-color: white;
@@ -459,7 +460,7 @@ input:checked + .slider {
 }
 
 input:checked + .slider:before {
-  transform: translateX(24px);
+  transform: translateX(20px);
 }
 
 /* 操作按钮区 */
@@ -471,11 +472,11 @@ input:checked + .slider:before {
 }
 
 .btn {
-  width: 200px;
-  height: 46px;
+  width: 160px;
+  height: 40px;
   border: none;
-  border-radius: 12px;
-  font-size: 16px;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 600;
   font-family: SourceHanSans-SemiBold;
   cursor: pointer;
