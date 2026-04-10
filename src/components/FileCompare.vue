@@ -711,7 +711,7 @@ const generateWordReport = () => {
     <div class="page-header">
       <div class="title-row">
         <div>
-          <h1 class="page-title">文档比对中心</h1>
+          <h1 class="page-title">文件对比</h1>
           <p class="page-subtitle">精准识别两个版本文档之间的内容差异、相似片段和结构变更</p>
         </div>
         <button class="help-btn" title="帮助" @click="toggleHelp">
