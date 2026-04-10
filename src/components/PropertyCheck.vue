@@ -775,6 +775,13 @@ const generateWordReport = () => {
         :on-clear-file="handleClearFile"
       />
 
+      <!-- 检查按钮 -->
+      <div class="check-btn-wrapper">
+        <button class="start-check-btn" @click="handleCheck" :disabled="isParsing" title="开始检查">
+          <RiExchangeLine class="check-icon" :class="{ 'rotating': isParsing }" />
+        </button>
+      </div>
+
       <!-- 文件B上传 -->
       <FileUpload
         side="right"
@@ -784,13 +791,6 @@ const generateWordReport = () => {
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
-
-      <!-- 检查按钮 -->
-      <div class="check-btn-wrapper">
-        <button class="start-check-btn" @click="handleCheck" :disabled="isParsing" title="开始检查">
-          <RiExchangeLine class="check-icon" :class="{ 'rotating': isParsing }" />
-        </button>
-      </div>
     </div>
 
     <!-- 最近对比记录 -->
