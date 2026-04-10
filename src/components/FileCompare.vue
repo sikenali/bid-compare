@@ -768,29 +768,29 @@ const generateWordReport = () => {
     <!-- 功能说明区 -->
     <div v-if="!showResults" class="features-section">
       <div class="feature-cards">
-        <!-- 精确对比 -->
+        <!-- 取证级精确对比 -->
         <div class="feature-card">
-          <div class="card-icon">
+          <div class="card-icon accuracy">
             <RiSearchLine class="icon" />
           </div>
-          <h3 class="card-title">精确对比</h3>
-          <p class="card-desc">采用智能算法，精确识别文本内容的每一处差异</p>
+          <h3 class="card-title">取证级精确对比</h3>
+          <p class="card-desc">采用行业领先的文本比对算法，精确识别每一处内容差异，支持多格式文档智能解析。</p>
         </div>
-        <!-- 高亮展示 -->
+        <!-- 差异高亮展示 -->
         <div class="feature-card">
-          <div class="card-icon">
+          <div class="card-icon highlight">
             <RiEditLine class="icon" />
           </div>
-          <h3 class="card-title">高亮展示</h3>
-          <p class="card-desc">相似内容以醒目标记高亮显示，快速定位关键信息</p>
+          <h3 class="card-title">差异高亮展示</h3>
+          <p class="card-desc">相同内容以金色背景高亮标注，差异内容清晰区分，支持分页查看所有相似片段。</p>
         </div>
-        <!-- 报告导出 -->
+        <!-- 一键导出报告 -->
         <div class="feature-card">
-          <div class="card-icon">
+          <div class="card-icon export">
             <RiFileExcelLine class="icon" />
           </div>
-          <h3 class="card-title">报告导出</h3>
-          <p class="card-desc">一键生成详细对比报告，支持多种格式导出</p>
+          <h3 class="card-title">一键导出报告</h3>
+          <p class="card-desc">支持导出完整的对比分析报告，包含统计数据和详细对比结果，方便存档与分享。</p>
         </div>
       </div>
 
