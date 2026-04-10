@@ -17,11 +17,14 @@ export interface ComparisonSettings {
   ignoreWhitespace: boolean
 }
 
-// HTML 转义工具函数（提取到循环外，避免重复创建）
-const escapeHtml = (str: string): string => {
-  const div = document.createElement('div')
-  div.textContent = str
-  return div.innerHTML
+// HTML 转义工具函数（纯字符串实现，避免 DOM 创建开销）
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
 }
 
 // 预处理文本，同时返回预处理后的文本和索引映射表

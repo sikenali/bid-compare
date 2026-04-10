@@ -106,8 +106,14 @@ export function useComparison() {
           strategy
         })
       } catch (error) {
-        // Worker 不可用，降级到主线程
-        console.warn('Worker 不可用，使用主线程 LCS')
+        // Worker 不可用，降级到主线程（仅限小文件）
+        const textLength = Math.max(text1.length, text2.length)
+        if (textLength >= 20_000) {
+          cleanup()
+          reject(new Error('Worker 不可用且文件过大，无法降级处理'))
+          return
+        }
+        console.warn('Worker 不可用，降级到主线程 LCS')
         isProcessing.value = false
         canCancel.value = false
         const segments = findSimilarSegments(text1, text2, settings)

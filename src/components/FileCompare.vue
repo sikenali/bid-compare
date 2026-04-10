@@ -557,7 +557,7 @@ const generateWordReport = () => {
           new Paragraph({
             children: [
               new TextRun({
-                text: `图片相似度：${imageSimilarity.value}`,
+                text: '图片相似度：暂不支持',
                 size: 16,
               })
             ]
