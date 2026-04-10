@@ -1015,60 +1015,6 @@ const generateWordReport = () => {
   to { transform: rotate(360deg); }
 }
 
-/* 操作按钮区 */
-.action-section {
-  display: flex;
-  justify-content: center;
-}
-
-.start-check-btn {
-  width: 100%;
-  height: 62px;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
-  color: white;
-  font-size: 18px;
-  font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  box-shadow: 0 4px 20px rgba(139, 0, 0, 0.3);
-  transition: all 0.3s ease;
-}
-
-.start-check-btn:hover:not(:disabled) {
-  box-shadow: 0 6px 24px rgba(139, 0, 0, 0.4);
-  transform: translateY(-2px);
-}
-
-.start-check-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.check-icon {
-  font-size: 24px;
-  transition: all 0.3s ease;
-}
-
-.check-icon.rotating {
-  animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.check-text {
-  font-size: 18px;
-  font-weight: 600;
-}
-
 .upload-box {
   flex: 1;
   min-width: 300px;

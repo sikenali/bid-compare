@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RiUploadCloud2Line, RiRefreshLine, RiCloseLine } from '@remixicon/vue';
+import { RiUploadCloud2Line, RiRefreshLine, RiCloseLine, RiFileWord2Line, RiFileExcel2Line, RiSlideshow2Line, RiFilePdf2Line, RiFileTextLine } from '@remixicon/vue';
 
 interface Props {
   side: 'left' | 'right';
@@ -59,7 +59,13 @@ const triggerFileInput = () => {
           <RiUploadCloud2Line class="upload-icon" />
         </div>
         <div class="upload-main-text">拖拽文件到此处或点击上传</div>
-        <div class="upload-format-text">支持 .doc, .docx, .pdf, .txt, .ppt, .pptx, .xls, .xlsx</div>
+        <div class="upload-format-icons">
+          <div class="format-icon" title="Word"><RiFileWord2Line class="format-icon-svg" /></div>
+          <div class="format-icon" title="Excel"><RiFileExcel2Line class="format-icon-svg" /></div>
+          <div class="format-icon" title="PPT"><RiSlideshow2Line class="format-icon-svg" /></div>
+          <div class="format-icon" title="PDF"><RiFilePdf2Line class="format-icon-svg" /></div>
+          <div class="format-icon" title="TXT"><RiFileTextLine class="format-icon-svg" /></div>
+        </div>
         <div class="upload-size-text">单个文件大小不超过 50MB</div>
       </div>
 
@@ -186,14 +192,34 @@ const triggerFileInput = () => {
   font-weight: 500;
   color: rgba(44, 24, 16, 1);
   font-family: SourceHanSans-Medium;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
-.upload-format-text {
-  font-size: 14px;
-  color: rgba(139, 115, 85, 1);
-  font-family: SourceHanSans-Regular;
+.upload-format-icons {
+  display: flex;
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+.format-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: rgba(245, 238, 226, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.format-icon:hover {
+  background-color: rgba(245, 238, 226, 1);
+  transform: translateY(-2px);
+}
+
+.format-icon-svg {
+  font-size: 20px;
+  color: rgba(166, 124, 82, 1);
 }
 
 .upload-size-text {
