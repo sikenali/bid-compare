@@ -730,6 +730,10 @@ const generateWordReport = () => {
           <p class="page-subtitle">对比两个文件的基础属性信息，快速识别差异</p>
         </div>
         <div class="header-actions">
+          <button v-if="showResults" class="header-export-btn" @click="handleExportReport" title="导出报告">
+            <RiFileExcelLine class="header-btn-icon" />
+            <span class="header-btn-text">导出报告</span>
+          </button>
           <button class="icon-btn" title="历史记录" @click="toggleHistory">
             <RiHistoryLine class="icon-btn-svg" />
           </button>
@@ -980,6 +984,38 @@ const generateWordReport = () => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.header-export-btn {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  background-color: rgba(46, 89, 132, 1);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: SourceHanSans-Medium;
+  transition: all 0.3s ease;
+}
+
+.header-export-btn:hover {
+  background-color: rgba(46, 89, 132, 0.9);
+  box-shadow: 0 4px 12px rgba(46, 89, 132, 0.3);
+}
+
+.header-btn-icon {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 1);
+}
+
+.header-btn-text {
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .icon-btn {
