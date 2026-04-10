@@ -43,6 +43,11 @@ export function useRecentRecords(recordType: 'fileCompare' | 'propertyCheck') {
   // 生成存储键名
   const storageKey = `${recordType}RecentRecords`
 
+  // 清理 HTML 标签，减少存储大小
+  const stripHtml = (html: string): string => {
+    return html.replace(/<[^>]*>/g, '').substring(0, 200)
+  }
+
   // 加载最近记录
   const loadRecentRecords = () => {
     const savedRecords = localStorage.getItem(storageKey)
@@ -64,8 +69,27 @@ export function useRecentRecords(recordType: 'fileCompare' | 'propertyCheck') {
 
   // 保存最近记录
   const saveRecentRecords = () => {
-    localStorage.setItem(storageKey, JSON.stringify(recentRecords))
-    showRecentRecords.value = recentRecords.length > 0
+    // 压缩数据后再存储
+    const compressed = recentRecords.map(record => {
+      const compressed: RecentRecord = {
+        ...record,
+        similarSegments: record.similarSegments
+          ? record.similarSegments.map(seg => ({
+              ...seg,
+              leftContent: stripHtml(seg.leftContent),
+              rightContent: stripHtml(seg.rightContent)
+            }))
+          : undefined
+      }
+      return compressed
+    })
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(compressed))
+      showRecentRecords.value = recentRecords.length > 0
+    } catch (e) {
+      console.warn('localStorage 配额已满，清空历史记录', e)
+      clearAllRecords()
+    }
   }
 
   // 添加新记录

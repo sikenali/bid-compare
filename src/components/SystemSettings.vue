@@ -330,11 +330,11 @@ const handleReset = () => {
 /* 设置行 */
 .setting-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  height: 50px;
-  padding: 4px 0;
+  height: 45px;
+  box-sizing: border-box;
 }
 
 .setting-label-group {
@@ -360,8 +360,8 @@ const handleReset = () => {
 /* 输入框 */
 .setting-input {
   width: 80px;
-  height: 36px;
-  padding: 8px 12px;
+  height: 32px;
+  padding: 6px 10px;
   border: 1px solid rgba(216, 191, 156, 0.5);
   border-radius: 8px;
   font-size: 13px;
@@ -371,7 +371,6 @@ const handleReset = () => {
   text-align: center;
   transition: all 0.3s ease;
   flex-shrink: 0;
-  margin-top: 4px;
 }
 
 .setting-input.api-input {
@@ -388,8 +387,8 @@ const handleReset = () => {
 /* 下拉选择框 */
 .setting-select {
   width: 140px;
-  height: 36px;
-  padding: 8px 12px;
+  height: 32px;
+  padding: 6px 10px;
   border: 1px solid rgba(216, 191, 156, 0.5);
   border-radius: 8px;
   font-size: 13px;
@@ -399,7 +398,6 @@ const handleReset = () => {
   cursor: pointer;
   transition: all 0.3s ease;
   flex-shrink: 0;
-  margin-top: 4px;
 }
 
 .setting-select:focus {
@@ -420,7 +418,6 @@ const handleReset = () => {
   color: rgba(107, 79, 52, 1);
   font-family: SourceHanSans-Medium;
   flex-shrink: 0;
-  margin-top: 4px;
 }
 
 /* 开关按钮 */
@@ -430,7 +427,6 @@ const handleReset = () => {
   width: 40px;
   height: 20px;
   flex-shrink: 0;
-  margin-top: 12px;
 }
 
 .switch input {
