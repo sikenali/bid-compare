@@ -333,7 +333,7 @@ const handleReset = () => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  height: 52px;
+  height: 50px;
   padding: 4px 0;
 }
 
