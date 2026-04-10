@@ -5,8 +5,9 @@ import {
   RiFileExcelLine,
   RiArrowLeftLine,
   RiCheckLine,
-  RiCloseLine,
-  RiAlertLine
+  RiCloseCircleLine,
+  RiAlertLine,
+  RiFilterLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx'
 
@@ -131,14 +132,14 @@ const handleExport = async () => {
 
 const getStatusIcon = (status: string): any => {
   if (status === 'match') return RiCheckLine
-  if (status === 'mismatch') return RiCloseLine
+  if (status === 'mismatch') return RiCloseCircleLine
   return RiAlertLine
 }
 
-const getStatusText = (status: string): string => {
-  if (status === 'match') return '匹配'
-  if (status === 'mismatch') return '不匹配'
-  return '警告'
+const getStatusColor = (status: string): string => {
+  if (status === 'match') return 'rgba(34, 139, 34, 1)'
+  if (status === 'mismatch') return 'rgba(220, 38, 38, 1)'
+  return 'rgba(255, 165, 0, 1)'
 }
 </script>
 
@@ -176,7 +177,7 @@ const getStatusText = (status: string): string => {
       </div>
       <div class="stat-card mismatch">
         <div class="stat-icon-wrapper mismatch">
-          <RiCloseLine class="stat-icon" />
+          <RiCloseCircleLine class="stat-icon" />
         </div>
         <div class="stat-info">
           <span class="stat-label">不匹配属性</span>
@@ -194,42 +195,60 @@ const getStatusText = (status: string): string => {
       </div>
     </div>
 
-    <!-- 属性对比表格 -->
-    <div class="property-table">
-      <div class="table-header-bar">
-        <h2 class="section-title">属性对比详情</h2>
+    <!-- 属性对比表格区 -->
+    <div class="property-table-card">
+      <!-- 表格头部 -->
+      <div class="table-card-header">
+        <div class="header-icon-wrapper">
+          <RiFilterLine class="header-icon" />
+        </div>
+        <h2 class="header-title">属性对比详情</h2>
       </div>
 
-      <!-- 表头 -->
-      <div class="table-header">
-        <div class="table-col col-name">对比类型</div>
-        <div class="table-col col-value">{{ leftFileName }}</div>
-        <div class="table-col col-value">{{ rightFileName }}</div>
-        <div class="table-col col-status">是否匹配</div>
-      </div>
-
-      <!-- 表体 -->
-      <div class="table-body">
-        <div
-          v-for="(property, index) in propertyDetails"
-          :key="index"
-          class="table-row"
-          :class="`status-${property.status}`"
-        >
-          <div class="table-col col-name">{{ property.name }}</div>
-          <div class="table-col col-value">{{ property.leftValue }}</div>
-          <div class="table-col col-value">{{ property.rightValue }}</div>
+      <!-- 表格内容 -->
+      <div class="property-table">
+        <!-- 表头 -->
+        <div class="table-header">
+          <div class="table-col col-name">
+            <span class="col-text">属性字段</span>
+          </div>
+          <div class="table-col col-value-left">
+            <span class="col-text file-a">{{ leftFileName }}</span>
+          </div>
           <div class="table-col col-status">
-            <component :is="getStatusIcon(property.status)" class="status-icon" :class="property.status" />
-            <span class="status-text" :class="property.status">
-              {{ getStatusText(property.status) }}
-            </span>
+            <span class="col-text">状态</span>
+          </div>
+          <div class="table-col col-value-right">
+            <span class="col-text file-b">{{ rightFileName }}</span>
           </div>
         </div>
 
-        <!-- 空状态 -->
-        <div v-if="propertyDetails.length === 0" class="empty-state">
-          <p>暂无对比数据</p>
+        <!-- 表体 -->
+        <div class="table-body">
+          <div
+            v-for="(property, index) in propertyDetails"
+            :key="index"
+            class="table-row"
+            :class="{ 'row-mismatch': property.status === 'mismatch' }"
+          >
+            <div class="table-col col-name">
+              <span class="col-text name-text">{{ property.name }}</span>
+            </div>
+            <div class="table-col col-value-left">
+              <span class="col-text value-text" :class="{ 'value-mismatch': property.status === 'mismatch' }">{{ property.leftValue }}</span>
+            </div>
+            <div class="table-col col-status">
+              <component :is="getStatusIcon(property.status)" class="status-icon-svg" :style="{ color: getStatusColor(property.status) }" />
+            </div>
+            <div class="table-col col-value-right">
+              <span class="col-text value-text" :class="{ 'value-mismatch': property.status === 'mismatch' }">{{ property.rightValue }}</span>
+            </div>
+          </div>
+
+          <!-- 空状态 -->
+          <div v-if="propertyDetails.length === 0" class="empty-state">
+            <p>暂无对比数据</p>
+          </div>
         </div>
       </div>
     </div>
@@ -427,129 +446,130 @@ const getStatusText = (status: string): string => {
   color: rgba(255, 165, 0, 1);
 }
 
-/* 属性表格 */
-.property-table {
-  flex: 1;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
-  overflow: hidden;
+/* 属性对比表格区 */
+.property-table-card {
+  background-color: rgba(255, 255, 255, 1);
+  border: 0.7px solid rgba(216, 191, 156, 1);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+}
+
+.table-card-header {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
-.table-header-bar {
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
-  background-color: rgba(248, 244, 233, 0.5);
+.header-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: rgba(254, 243, 199, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.section-title {
-  font-size: 16px;
+.header-icon {
+  font-size: 20px;
+  color: rgba(217, 119, 6, 1);
+}
+
+.header-title {
+  font-size: 20px;
   font-weight: 600;
   color: rgba(44, 24, 16, 1);
   margin: 0;
   font-family: SourceHanSans-SemiBold;
 }
 
-.table-header {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 120px;
-  background-color: rgba(248, 244, 233, 0.8);
-  border-bottom: 2px solid rgba(166, 124, 82, 0.3);
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+.property-table {
+  border: 0.7px solid rgba(230, 215, 191, 1);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.table-header .table-col {
-  padding: 12px 16px;
-  text-align: center;
+.table-header {
+  display: grid;
+  grid-template-columns: 269px 323px 162px 323px;
+  background-color: rgba(245, 238, 226, 1);
 }
 
 .table-body {
+  max-height: 500px;
   overflow-y: auto;
-  flex: 1;
 }
 
 .table-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 120px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.15);
-  transition: background-color 0.2s;
-  font-size: 13px;
+  grid-template-columns: 269px 323px 162px 323px;
+  border-top: 0.7px solid rgba(230, 215, 191, 1);
 }
 
-.table-row:hover {
-  background-color: rgba(248, 244, 233, 0.3);
-}
-
-.table-row.status-mismatch {
-  background-color: rgba(139, 0, 0, 0.05);
-}
-
-.table-row.status-mismatch:hover {
-  background-color: rgba(139, 0, 0, 0.1);
+.table-row.row-mismatch {
+  background-color: rgba(254, 242, 242, 1);
 }
 
 .table-col {
-  padding: 16px;
-  text-align: center;
+  padding: 16px 24px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: rgba(44, 24, 16, 1);
 }
 
 .col-name {
   justify-content: flex-start;
-  font-weight: 500;
-  color: rgba(44, 24, 16, 1);
 }
 
-.col-value {
-  color: rgba(166, 124, 82, 1);
+.col-value-left {
+  justify-content: flex-start;
 }
 
 .col-status {
   justify-content: center;
-  gap: 8px;
 }
 
-.status-icon {
-  font-size: 20px;
+.col-value-right {
+  justify-content: flex-start;
 }
 
-.status-icon.match {
-  color: rgba(34, 139, 34, 1);
+.col-text {
+  font-size: 14px;
+  line-height: 1.2;
 }
 
-.status-icon.mismatch {
-  color: rgba(139, 0, 0, 1);
+.table-header .col-text {
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+  color: rgba(107, 79, 52, 1);
 }
 
-.status-icon.warning {
-  color: rgba(255, 165, 0, 1);
+.table-header .col-text.file-a {
+  color: rgba(153, 27, 27, 1);
 }
 
-.status-text {
-  font-size: 12px;
+.table-header .col-text.file-b {
+  color: rgba(30, 64, 175, 1);
+}
+
+.name-text {
   font-weight: 500;
+  color: rgba(44, 24, 16, 1);
   font-family: SourceHanSans-Medium;
 }
 
-.status-text.match {
-  color: rgba(34, 139, 34, 1);
+.value-text {
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-Regular;
 }
 
-.status-text.mismatch {
-  color: rgba(139, 0, 0, 1);
+.value-text.value-mismatch {
+  color: rgba(153, 27, 27, 1);
 }
 
-.status-text.warning {
-  color: rgba(255, 165, 0, 1);
+.status-icon-svg {
+  font-size: 20px;
 }
 
 /* 空状态 */
