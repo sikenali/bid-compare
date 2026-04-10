@@ -66,7 +66,6 @@ const triggerFileInput = () => {
           <div class="format-icon" title="PDF"><RiFilePdf2Line class="format-icon-svg" /></div>
           <div class="format-icon" title="TXT"><RiFileTextLine class="format-icon-svg" /></div>
         </div>
-        <div class="upload-size-text">单个文件大小不超过 50MB</div>
       </div>
 
       <!-- 已上传状态 -->

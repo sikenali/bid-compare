@@ -1181,13 +1181,12 @@ const generateWordReport = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: 40px;
-  flex-shrink: 0;
+  margin: 0 auto;
 }
 
 .compare-main-btn {
-  width: 48px;
-  height: 48px;
+  width: 60px;
+  height: 60px;
   border: none;
   border-radius: 50%;
   background: rgba(139, 0, 0, 1);
@@ -1202,7 +1201,7 @@ const generateWordReport = () => {
 
 .compare-main-btn:hover:not(:disabled) {
   box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .compare-main-btn:disabled {
@@ -1211,7 +1210,7 @@ const generateWordReport = () => {
 }
 
 .compare-icon {
-  font-size: 22px;
+  font-size: 28px;
   transition: all 0.3s ease;
 }
 

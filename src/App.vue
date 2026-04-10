@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { RiExchangeLine, RiFileLine, RiSearchLine, RiSettings3Line, RiCpuLine, RiFileCopy2Line } from '@remixicon/vue'
+import { RiExchangeLine, RiFileLine, RiSearchLine, RiSettings3Line, RiCpuLine } from '@remixicon/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -42,7 +42,7 @@ const handleMenuClick = (menu: string) => {
       <div class="logo-section">
         <div class="logo-icon">
           <div class="logo-seal">
-            <RiContrastLine class="logo-icon-svg" />
+            <RiExchangeLine class="logo-icon-svg" />
           </div>
         </div>
         <h1 class="logo-title">文件对对碰</h1>
@@ -145,7 +145,7 @@ const handleMenuClick = (menu: string) => {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(196, 30, 58, 1) 0%, rgba(139, 0, 0, 1) 100%);
+  background: rgba(139, 0, 0, 1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -165,8 +165,13 @@ const handleMenuClick = (menu: string) => {
 }
 
 .logo-icon-svg {
-  font-size: 28px;
+  font-size: 32px;
   color: rgba(255, 255, 255, 1);
+}
+
+.logo-seal:hover {
+  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
+  transform: scale(1.1);
 }
 
 .logo-title {
