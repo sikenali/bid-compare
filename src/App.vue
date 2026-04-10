@@ -53,13 +53,12 @@ const handleMenuClick = (menu: string) => {
       <nav class="nav-menu">
         <!-- 核心功能 -->
         <div class="nav-group">
-          <div class="nav-group-title">核心功能</div>
           <button
             class="nav-item"
             :class="{ active: activeMenu === 'file-compare' }"
             @click="handleMenuClick('file-compare')"
           >
-            <RiFileLine class="nav-icon" />
+            <RiExchangeLine class="nav-icon" />
             <span class="nav-text">文件对比</span>
           </button>
           <button
@@ -74,7 +73,6 @@ const handleMenuClick = (menu: string) => {
 
         <!-- 系统功能 -->
         <div class="nav-group">
-          <div class="nav-group-title">系统功能</div>
           <button
             class="nav-item"
             :class="{ active: activeMenu === 'hardware-info' }"
@@ -205,17 +203,6 @@ const handleMenuClick = (menu: string) => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.nav-group-title {
-  padding: 0 8px 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(166, 124, 82, 1);
-  font-family: SourceHanSans-SemiBold;
-  letter-spacing: 1px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
-  margin-bottom: 4px;
 }
 
 .nav-item {

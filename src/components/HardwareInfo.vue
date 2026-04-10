@@ -59,6 +59,15 @@ const fingerprintInfo = ref<InfoSection>({
 })
 
 const sections = ref<InfoSection[]>([systemInfo.value, networkInfo.value, fingerprintInfo.value])
+
+// 将数据项分组（每组两个）
+const getGroupedItems = (items: InfoItem[]) => {
+  const groups: InfoItem[][] = []
+  for (let i = 0; i < items.length; i += 2) {
+    groups.push(items.slice(i, i + 2))
+  }
+  return groups
+}
 </script>
 
 <template>
@@ -229,7 +238,7 @@ const sections = ref<InfoSection[]>([systemInfo.value, networkInfo.value, finger
 .info-full-width {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 /* 信息字段 */
