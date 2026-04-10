@@ -51,45 +51,38 @@ const handleMenuClick = (menu: string) => {
 
       <!-- 导航菜单 -->
       <nav class="nav-menu">
-        <!-- 核心功能 -->
-        <div class="nav-group">
-          <button
-            class="nav-item"
-            :class="{ active: activeMenu === 'file-compare' }"
-            @click="handleMenuClick('file-compare')"
-          >
-            <RiExchangeLine class="nav-icon" />
-            <span class="nav-text">文件对比</span>
-          </button>
-          <button
-            class="nav-item"
-            :class="{ active: activeMenu === 'property-check' }"
-            @click="handleMenuClick('property-check')"
-          >
-            <RiFileInfoLine class="nav-icon" />
-            <span class="nav-text">属性检查</span>
-          </button>
-        </div>
-
-        <!-- 系统功能 -->
-        <div class="nav-group">
-          <button
-            class="nav-item"
-            :class="{ active: activeMenu === 'hardware-info' }"
-            @click="handleMenuClick('hardware-info')"
-          >
-            <RiCpuLine class="nav-icon" />
-            <span class="nav-text">硬件信息</span>
-          </button>
-          <button
-            class="nav-item"
-            :class="{ active: activeMenu === 'system-settings' }"
-            @click="handleMenuClick('system-settings')"
-          >
-            <RiSettings3Line class="nav-icon" />
-            <span class="nav-text">系统设置</span>
-          </button>
-        </div>
+        <button
+          class="nav-item"
+          :class="{ active: activeMenu === 'file-compare' }"
+          @click="handleMenuClick('file-compare')"
+        >
+          <RiExchangeLine class="nav-icon" />
+          <span class="nav-text">文件对比</span>
+        </button>
+        <button
+          class="nav-item"
+          :class="{ active: activeMenu === 'property-check' }"
+          @click="handleMenuClick('property-check')"
+        >
+          <RiFileInfoLine class="nav-icon" />
+          <span class="nav-text">属性检查</span>
+        </button>
+        <button
+          class="nav-item"
+          :class="{ active: activeMenu === 'hardware-info' }"
+          @click="handleMenuClick('hardware-info')"
+        >
+          <RiCpuLine class="nav-icon" />
+          <span class="nav-text">硬件信息</span>
+        </button>
+        <button
+          class="nav-item"
+          :class="{ active: activeMenu === 'system-settings' }"
+          @click="handleMenuClick('system-settings')"
+        >
+          <RiSettings3Line class="nav-icon" />
+          <span class="nav-text">系统设置</span>
+        </button>
       </nav>
 
       <!-- 底部版本信息 -->
@@ -192,17 +185,10 @@ const handleMenuClick = (menu: string) => {
 /* 导航菜单 */
 .nav-menu {
   flex: 1;
-  padding: 16px 0;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-}
-
-.nav-group {
-  padding: 0 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .nav-item {
