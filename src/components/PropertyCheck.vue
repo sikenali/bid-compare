@@ -896,8 +896,8 @@ const generateWordReport = () => {
   display: flex;
   flex-direction: column;
   background-color: rgba(248, 244, 233, 1);
-  padding: 32px;
-  gap: 32px;
+  padding: 24px;
+  gap: 20px;
   font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -965,7 +965,7 @@ const generateWordReport = () => {
 /* 文件上传区域 */
 .upload-section {
   display: flex;
-  gap: 32px;
+  gap: 20px;
   align-items: flex-start;
   justify-content: center;
 }

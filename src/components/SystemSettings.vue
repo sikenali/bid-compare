@@ -211,8 +211,8 @@ const handleReset = () => {
   display: flex;
   flex-direction: column;
   background-color: rgba(248, 244, 233, 1);
-  padding: 32px;
-  gap: 32px;
+  padding: 24px;
+  gap: 20px;
   font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -250,7 +250,7 @@ const handleReset = () => {
 .settings-form {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 /* 设置卡片 */
@@ -266,7 +266,7 @@ const handleReset = () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .card-icon {
@@ -325,7 +325,7 @@ const handleReset = () => {
 .card-content {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 /* 设置行 */
