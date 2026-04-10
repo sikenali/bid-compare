@@ -1,70 +1,64 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import {
-  RiComputerLine,
+  RiWindowsLine,
   RiWifiLine,
-  RiFingerprintLine,
-  RiCpuLine,
-  RiHardDrive2Line,
-  RiRamLine
+  RiFingerprintLine
 } from '@remixicon/vue'
 
-interface HardwareInfo {
+interface InfoItem {
   label: string;
   value: string;
-  icon: any;
+  fullWidth?: boolean;
 }
 
 interface InfoSection {
   title: string;
-  items: HardwareInfo[];
+  icon: any;
+  iconBg: string;
+  iconColor: string;
+  items: InfoItem[];
 }
 
-const deviceInfo = ref<InfoSection>({
-  title: '设备信息',
+const systemInfo = ref<InfoSection>({
+  title: '操作系统信息',
+  icon: RiWindowsLine,
+  iconBg: 'rgba(219, 234, 254, 1)',
+  iconColor: 'rgba(37, 99, 235, 1)',
   items: [
-    { label: '操作系统', value: 'Windows 11 Pro', icon: RiComputerLine },
-    { label: '系统版本', value: '23H2', icon: RiComputerLine },
-    { label: '处理器', value: 'Intel Core i7-12700K', icon: RiCpuLine },
-    { label: '内存', value: '32 GB DDR5', icon: RiRamLine },
-    { label: '硬盘', value: '1TB NVMe SSD', icon: RiHardDrive2Line }
+    { label: '用户名', value: 'administrator' },
+    { label: '操作系统版本', value: 'Windows 11 专业版 22H2' },
+    { label: '处理器', value: 'Intel(R) Core(TM) i7-12700H CPU @ 2.30GHz' },
+    { label: '内存', value: '16.0 GB (15.7 GB 可用)' },
+    { label: '系统类型', value: '64 位操作系统, 基于 x64 的处理器' },
+    { label: '计算机名称', value: 'DESKTOP-8V7X9Z2' }
   ]
 })
 
 const networkInfo = ref<InfoSection>({
   title: '网络信息',
+  icon: RiWifiLine,
+  iconBg: 'rgba(254, 243, 199, 1)',
+  iconColor: 'rgba(217, 119, 6, 1)',
   items: [
-    { label: 'IP 地址', value: '192.168.1.100', icon: RiWifiLine },
-    { label: 'MAC 地址', value: '00-1B-44-11-3A-B7', icon: RiWifiLine },
-    { label: '子网掩码', value: '255.255.255.0', icon: RiWifiLine },
-    { label: '默认网关', value: '192.168.1.1', icon: RiWifiLine }
+    { label: 'IP 地址', value: '192.168.1.105' },
+    { label: 'MAC 地址', value: '00:1A:2B:3C:4D:5E' },
+    { label: '子网掩码', value: '255.255.255.0' },
+    { label: '网关', value: '192.168.1.1' }
   ]
 })
 
 const fingerprintInfo = ref<InfoSection>({
-  title: '指纹信息',
+  title: '设备指纹信息',
+  icon: RiFingerprintLine,
+  iconBg: 'rgba(252, 231, 243, 1)',
+  iconColor: 'rgba(219, 39, 119, 1)',
   items: [
-    { label: '设备指纹', value: 'A7F3E9D2C1B8', icon: RiFingerprintLine },
-    { label: '硬件指纹', value: 'HW-2024-0409-001', icon: RiFingerprintLine },
-    { label: '授权状态', value: '已授权', icon: RiFingerprintLine }
+    { label: '设备唯一标识', value: '8a7f9d2e-3c5b-7a1f-9d4e-2b8c7a9f3e1d', fullWidth: true }
   ]
 })
 
-const sections = ref<InfoSection[]>([deviceInfo.value, networkInfo.value, fingerprintInfo.value])
-
-/**
- * 注意：当前页面展示的数据为示例数据（Mock Data）。
- * NW.js 环境下可通过 Node.js API 获取真实硬件信息，但需要考虑：
- * 1. 跨平台兼容性（Windows/macOS/Linux 信息结构不同）
- * 2. 权限要求（部分硬件信息需要管理员权限）
- * 3. 隐私安全（MAC 地址等设备标识可能涉及用户隐私）
- *
- * 后续如需接入真实数据，可参考以下方案：
- * - 操作系统/处理器/内存：使用 Node.js 的 `os` 模块
- * - 硬盘信息：使用 `systeminformation` 第三方库
- * - 网络信息：使用 `os.networkInterfaces()`
- * - 设备指纹：基于硬件信息生成哈希值
- */
+const sections = ref<InfoSection[]>([systemInfo.value, networkInfo.value, fingerprintInfo.value])
 </script>
 
 <template>
@@ -83,16 +77,38 @@ const sections = ref<InfoSection[]>([deviceInfo.value, networkInfo.value, finger
     <!-- 信息卡片列表 -->
     <div class="info-cards">
       <div v-for="(section, index) in sections" :key="index" class="info-card">
+        <!-- 卡片头部 -->
         <div class="card-header">
+          <div class="icon-container" :style="{ backgroundColor: section.iconBg }">
+            <component :is="section.icon" class="card-icon" :style="{ color: section.iconColor }" />
+          </div>
           <h2 class="card-title">{{ section.title }}</h2>
         </div>
-        <div class="card-content">
-          <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="info-item">
-            <div class="info-label">
-              <component :is="item.icon" class="item-icon" />
-              <span>{{ item.label }}</span>
+
+        <!-- 信息项列表 -->
+        <div class="card-body">
+          <!-- 两列布局 -->
+          <div class="info-grid" v-if="!section.items[0]?.fullWidth">
+            <div
+              v-for="(item, itemIndex) in section.items"
+              :key="itemIndex"
+              class="info-field"
+            >
+              <span class="field-label">{{ item.label }}</span>
+              <div class="field-value-box">
+                <span class="field-value">{{ item.value }}</span>
+              </div>
             </div>
-            <div class="info-value">{{ item.value }}</div>
+          </div>
+
+          <!-- 全宽布局（指纹信息） -->
+          <div v-else class="info-full-width">
+            <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="info-field-full">
+              <span class="field-label">{{ item.label }}</span>
+              <div class="field-value-box large">
+                <span class="field-value mono">{{ item.value }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -159,72 +175,98 @@ const sections = ref<InfoSection[]>([deviceInfo.value, networkInfo.value, finger
 .info-cards {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
 }
 
 .info-card {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
-  overflow: hidden;
+  background-color: rgba(255, 255, 255, 1);
+  border: 0.7px solid rgba(216, 191, 156, 1);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 24px;
 }
 
+/* 卡片头部 */
 .card-header {
-  padding: 16px 20px;
-  background-color: rgba(248, 244, 233, 0.5);
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-container {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-icon {
+  font-size: 20px;
 }
 
 .card-title {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 600;
   color: rgba(44, 24, 16, 1);
   margin: 0;
   font-family: SourceHanSans-SemiBold;
 }
 
-.card-content {
-  padding: 20px;
+/* 卡片内容 */
+.card-body {
+  margin-top: 24px;
+}
+
+/* 两列网格布局 */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* 全宽布局 */
+.info-full-width {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
 }
 
-.info-item {
+/* 信息字段 */
+.info-field,
+.info-field-full {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background-color: rgba(248, 244, 233, 0.3);
-  border-radius: 6px;
-  border: 1px solid rgba(166, 124, 82, 0.1);
-  transition: all 0.2s;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.info-item:hover {
-  background-color: rgba(248, 244, 233, 0.5);
-  border-color: rgba(166, 124, 82, 0.2);
-}
-
-.info-label {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.field-label {
   font-size: 14px;
-  color: rgba(166, 124, 82, 1);
+  color: rgba(107, 79, 52, 1);
   font-family: SourceHanSans-Regular;
 }
 
-.item-icon {
-  font-size: 18px;
-  color: rgba(139, 0, 0, 1);
+.field-value-box {
+  background-color: rgba(245, 238, 226, 1);
+  border-radius: 8px;
+  padding: 12px;
 }
 
-.info-value {
+.field-value-box.large {
+  padding: 16px;
+}
+
+.field-value {
   font-size: 14px;
   font-weight: 500;
   color: rgba(44, 24, 16, 1);
   font-family: SourceHanSans-Medium;
+}
+
+.field-value.mono {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  word-break: break-all;
 }
 </style>
