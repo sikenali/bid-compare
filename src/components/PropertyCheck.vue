@@ -784,14 +784,13 @@ const generateWordReport = () => {
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
-    </div>
 
-    <!-- 操作按钮区 -->
-    <div v-if="!showResults" class="action-section">
-      <button class="start-check-btn" @click="handleCheck" :disabled="isParsing">
-        <RiExchangeLine class="check-icon" :class="{ 'rotating': isParsing }" />
-        <span class="check-text">{{ isParsing ? '检查中...' : '开始检查' }}</span>
-      </button>
+      <!-- 检查按钮 -->
+      <div class="check-btn-wrapper">
+        <button class="start-check-btn" @click="handleCheck" :disabled="isParsing" title="开始检查">
+          <RiExchangeLine class="check-icon" :class="{ 'rotating': isParsing }" />
+        </button>
+      </div>
     </div>
 
     <!-- 最近对比记录 -->
@@ -965,9 +964,55 @@ const generateWordReport = () => {
 .upload-section {
   display: flex;
   gap: 20px;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   padding: 0 24px;
+}
+
+.check-btn-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.start-check-btn {
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(139, 0, 0, 1);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.start-check-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
+  transform: scale(1.1);
+}
+
+.start-check-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.check-icon {
+  font-size: 22px;
+  transition: all 0.3s ease;
+}
+
+.check-icon.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* 操作按钮区 */

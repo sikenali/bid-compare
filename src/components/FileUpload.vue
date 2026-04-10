@@ -85,6 +85,11 @@ const triggerFileInput = () => {
         </div>
       </div>
     </div>
+
+    <!-- 中心操作按钮（可选插槽） -->
+    <div class="upload-action">
+      <slot name="action"></slot>
+    </div>
   </div>
 </template>
 
@@ -277,5 +282,12 @@ const triggerFileInput = () => {
 .clear-btn:hover {
   background-color: rgba(239, 68, 68, 0.2);
   border-color: rgba(239, 68, 68, 1);
+}
+
+/* 中心操作按钮 */
+.upload-action {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
 }
 </style>

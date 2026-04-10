@@ -770,6 +770,13 @@ const generateWordReport = () => {
         :on-clear-file="handleClearFile"
       />
 
+      <!-- 对比按钮 -->
+      <div class="compare-btn-wrapper">
+        <button class="compare-main-btn" @click="handleCompare" :disabled="isProcessing" title="一键对比">
+          <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
+        </button>
+      </div>
+
       <!-- 右侧文件上传 -->
       <FileUpload
         side="right"
@@ -781,26 +788,15 @@ const generateWordReport = () => {
       />
     </div>
 
-    <!-- 对比按钮区 -->
-    <div v-if="!showResults" class="compare-section">
-      <!-- 对比按钮 -->
-      <div class="compare-btn-wrapper">
-        <button class="compare-main-btn" @click="handleCompare" :disabled="isProcessing">
-          <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
-          <span class="compare-text">{{ isProcessing ? '对比中...' : '一键对比' }}</span>
-        </button>
+    <!-- 进度条容器 -->
+    <div v-if="isProcessing && canCancel" class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill" :style="{ width: `${Math.round(progress * 100)}%` }" />
       </div>
-
-      <!-- 进度条容器 -->
-      <div v-if="isProcessing && canCancel" class="progress-container">
-        <div class="progress-bar">
-          <div class="progress-fill" :style="{ width: `${Math.round(progress * 100)}%` }" />
-        </div>
-        <span class="progress-text">
-          {{ progressMessage }} {{ Math.round(progress * 100) }}%
-        </span>
-        <button class="cancel-btn" @click="handleCancel">取消</button>
-      </div>
+      <span class="progress-text">
+        {{ progressMessage }} {{ Math.round(progress * 100) }}%
+      </span>
+      <button class="cancel-btn" @click="handleCancel">取消</button>
     </div>
 
     <!-- 最近对比记录 -->
@@ -1087,8 +1083,8 @@ const generateWordReport = () => {
 .upload-section {
   display: flex;
   gap: 20px;
-  align-items: flex-start;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: center;
   padding: 0 24px;
 }
 
@@ -1183,32 +1179,30 @@ const generateWordReport = () => {
 /* 对比按钮 */
 .compare-btn-wrapper {
   display: flex;
+  align-items: center;
   justify-content: center;
+  padding-top: 40px;
+  flex-shrink: 0;
 }
 
 .compare-main-btn {
-  width: 100%;
-  height: 58px;
+  width: 48px;
+  height: 48px;
   border: none;
-  border-radius: 8px;
+  border-radius: 50%;
   background: rgba(139, 0, 0, 1);
   color: white;
-  font-size: 18px;
-  font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 16px 48px;
-  box-shadow: 0 4px 20px rgba(139, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
   transition: all 0.3s ease;
 }
 
 .compare-main-btn:hover:not(:disabled) {
-  box-shadow: 0 6px 24px rgba(139, 0, 0, 0.4);
-  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
+  transform: scale(1.1);
 }
 
 .compare-main-btn:disabled {
@@ -1217,7 +1211,7 @@ const generateWordReport = () => {
 }
 
 .compare-icon {
-  font-size: 24px;
+  font-size: 22px;
   transition: all 0.3s ease;
 }
 
@@ -1228,11 +1222,6 @@ const generateWordReport = () => {
 @keyframes rotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
-
-.compare-text {
-  font-size: 18px;
-  font-weight: 600;
 }
 
 /* 使用说明区 */
