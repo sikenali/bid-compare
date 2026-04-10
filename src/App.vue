@@ -94,7 +94,7 @@ const handleMenuClick = (menu: string) => {
 
       <!-- 底部版本信息 -->
       <div class="version-info">
-        <p>V1.0.0</p>
+        <p>@2026 sikenali</p>
       </div>
     </aside>
 
