@@ -727,6 +727,10 @@ const generateWordReport = () => {
           <p class="page-subtitle">精准识别两个版本文档之间的内容差异、相似片段和结构变更</p>
         </div>
         <div class="header-actions">
+          <button v-if="showResults" class="header-back-btn" @click="handleBack" title="返回">
+            <RiArrowLeftLine class="header-btn-icon" />
+            <span class="header-btn-text">返回</span>
+          </button>
           <button v-if="showResults" class="header-export-btn" @click="handleExportReport" title="导出报告">
             <RiFileExcelLine class="header-btn-icon" />
             <span class="header-btn-text">导出报告</span>
@@ -734,7 +738,7 @@ const generateWordReport = () => {
           <button class="icon-btn" title="历史记录" @click="toggleHistory">
             <RiHistoryLine class="icon-btn-svg" />
           </button>
-          <button class="help-btn" title="帮助" @click="toggleHelp">
+          <button class="help-btn" v-if="!showResults" title="帮助" @click="toggleHelp">
             <RiQuestionLine class="help-icon" />
           </button>
         </div>
@@ -892,14 +896,7 @@ const generateWordReport = () => {
         
         <!-- 操作按钮 -->
         <div class="action-buttons">
-          <button class="action-btn ai-analysis-btn" @click="handleAIAnalysis" :disabled="isLoading">
-            <RiBrainLine class="btn-icon" />
-            <span>{{ isLoading ? '分析中...' : 'AI分析' }}</span>
-          </button>
-          <button class="action-btn issue-tracking-btn" @click="handleBack">
-            <RiArrowLeftSLine class="btn-icon" />
-            <span>返回</span>
-          </button>
+          <!-- 按钮已移动到头部 -->
         </div>
       </div>
 
@@ -1105,6 +1102,28 @@ const generateWordReport = () => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.header-back-btn {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  border: 0.7px solid rgba(216, 191, 156, 1);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 1);
+  color: rgba(107, 79, 52, 1);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: SourceHanSans-Medium;
+  transition: all 0.3s ease;
+}
+
+.header-back-btn:hover {
+  background-color: rgba(139, 0, 0, 0.05);
+  border-color: rgba(139, 0, 0, 1);
 }
 
 .header-export-btn {

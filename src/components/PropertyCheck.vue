@@ -730,6 +730,10 @@ const generateWordReport = () => {
           <p class="page-subtitle">对比两个文件的基础属性信息，快速识别差异</p>
         </div>
         <div class="header-actions">
+          <button v-if="showResults" class="header-back-btn" @click="handleBack" title="返回">
+            <RiArrowLeftLine class="header-btn-icon" />
+            <span class="header-btn-text">返回</span>
+          </button>
           <button v-if="showResults" class="header-export-btn" @click="handleExportReport" title="导出报告">
             <RiFileExcelLine class="header-btn-icon" />
             <span class="header-btn-text">导出报告</span>
@@ -737,7 +741,7 @@ const generateWordReport = () => {
           <button class="icon-btn" title="历史记录" @click="toggleHistory">
             <RiHistoryLine class="icon-btn-svg" />
           </button>
-          <button class="help-btn" title="帮助" @click="toggleHelp">
+          <button class="help-btn" v-if="!showResults" title="帮助" @click="toggleHelp">
             <RiQuestionLine class="help-icon" />
           </button>
         </div>
@@ -876,14 +880,7 @@ const generateWordReport = () => {
           </div>
         </div>
         <div class="export-section">
-          <button class="action-btn export-btn" @click="handleExportReport">
-            <RiFileExcelLine class="btn-icon" />
-            导出报告
-          </button>
-          <button class="action-btn issue-tracking-btn" @click="handleBack">
-            <RiArrowLeftSLine class="btn-icon" />
-            返回
-          </button>
+          <!-- 按钮已移动到头部 -->
         </div>
       </div>
 
@@ -984,6 +981,28 @@ const generateWordReport = () => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.header-back-btn {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  border: 0.7px solid rgba(216, 191, 156, 1);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 1);
+  color: rgba(107, 79, 52, 1);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: SourceHanSans-Medium;
+  transition: all 0.3s ease;
+}
+
+.header-back-btn:hover {
+  background-color: rgba(139, 0, 0, 0.05);
+  border-color: rgba(139, 0, 0, 1);
 }
 
 .header-export-btn {
