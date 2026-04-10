@@ -15,7 +15,8 @@ import {
   RiUserLine,
   RiCalendarLine,
   RiHistoryLine,
-  RiDownloadLine
+  RiDownloadLine,
+  RiFileList3Line
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx'
 import { useFileParser } from '../composables/useFileParser'
@@ -224,24 +225,8 @@ const warningProperties = ref(0)
     }
   ])
 
-// 组件挂载时恢复 sessionStorage 中保存的结果
-onMounted(() => {
-  const saved = sessionStorage.getItem('propertyCheckResult')
-  if (saved) {
-    try {
-      const data = JSON.parse(saved)
-      propertyDetails.value = data.propertyDetails || []
-      matchingProperties.value = data.matchCount || 0
-      nonMatchingProperties.value = data.mismatchCount || 0
-      warningProperties.value = data.warningCount || 0
-      leftFileInfo.value.name = data.leftFileName || ''
-      rightFileInfo.value.name = data.rightFileName || ''
-      showResults.value = true
-    } catch {
-      sessionStorage.removeItem('propertyCheckResult')
-    }
-  }
-})
+// 组件挂载时不恢复结果，总是显示主界面
+// 刷新页面后返回检查界面，不恢复之前的检查结果
 
 // 格式化文件大小
 const formatFileSize = (size: number): string => {
@@ -519,15 +504,6 @@ const handleCheck = async () => {
     // 显示结果
     showResults.value = true;
 
-    // 持久化结果到 sessionStorage
-    sessionStorage.setItem('propertyCheckResult', JSON.stringify({
-      matchCount: matchingProperties.value,
-      mismatchCount: nonMatchingProperties.value,
-      warningCount: warningProperties.value,
-      propertyDetails: propertyDetails.value,
-      leftFileName: leftFileInfo.value.name,
-      rightFileName: rightFileInfo.value.name
-    }))
   } catch (error) {
     parseError.value = (error as Error).message;
   } finally {
@@ -562,6 +538,19 @@ const handleExportReport = async () => {
 // 返回文件上传界面
 const handleBack = () => {
   showResults.value = false
+  // 重置检查结果状态，但保留已上传的文件信息
+  isParsing.value = false;
+  parseError.value = '';
+  propertyDetails.value = [];
+  matchingProperties.value = 0;
+  nonMatchingProperties.value = 0;
+  warningProperties.value = 0;
+  leftFileContent.value = '';
+  rightFileContent.value = '';
+  leftFileProperties.value = {};
+  rightFileProperties.value = {};
+  // 注意：不清理 leftFileInfo 和 rightFileInfo，保留已上传的文件
+  // 用户可以重新点击检查或上传新文件
 }
 
 // 生成Word报告内容
@@ -917,6 +906,9 @@ const generateWordReport = () => {
       <!-- 属性差异详情 -->
         <div class="property-details-section">
           <div class="section-header">
+            <div class="section-icon-container">
+              <RiFileList3Line class="section-icon" />
+            </div>
             <h3 class="section-title">属性对比详情</h3>
           </div>
           
@@ -1562,10 +1554,10 @@ const generateWordReport = () => {
   border-radius: 8px;
   border: 1px solid rgba(166, 124, 82, 0.2);
   box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
-  padding: 24px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
 /* 属性统计 */
@@ -1707,11 +1699,27 @@ const generateWordReport = () => {
 /* 区域标题 */
 .section-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 12px;
   padding: 16px 20px;
   background-color: rgba(248, 244, 233, 0.5);
   border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+}
+
+.section-icon-container {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(139, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.section-icon {
+  font-size: 18px;
+  color: rgba(139, 0, 0, 1);
 }
 
 .section-title {

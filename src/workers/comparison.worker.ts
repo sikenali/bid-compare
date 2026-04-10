@@ -12,6 +12,8 @@ interface ComparisonMessage {
   text2: string
   settings: ComparisonSettings
   strategy: 'lcs' | 'rabin-karp' | 'block-match'
+  totalPages1?: number
+  totalPages2?: number
 }
 
 interface CancelMessage {
@@ -31,7 +33,7 @@ self.onmessage = function (e: MessageEvent<WorkerMessage>) {
 }
 
 function handleComparison(data: ComparisonMessage) {
-  const { text1, text2, settings, strategy } = data
+  const { text1, text2, settings, strategy, totalPages1 = 1, totalPages2 = 1 } = data
   const startTime = performance.now()
   let cancelled = false
 
@@ -49,7 +51,7 @@ function handleComparison(data: ComparisonMessage) {
 
     switch (strategy) {
       case 'lcs':
-        segments = findSimilarSegments(text1, text2, settings)
+        segments = findSimilarSegments(text1, text2, settings, 15, totalPages1, totalPages2)
         // LCS 同时计算了所有匹配，相似度可从片段估算
         similarity = segments.length > 0 ? 100 : 0
         break
@@ -60,7 +62,9 @@ function handleComparison(data: ComparisonMessage) {
             if (!cancelled) {
               self.postMessage({ type: 'PROGRESS', progress, message: '正在分析...' })
             }
-          }
+          },
+          totalPages1,
+          totalPages2
         )
         similarity = estimateSimilarityFromSegments(segments, text1.length)
         break

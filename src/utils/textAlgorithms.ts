@@ -17,6 +17,15 @@ export interface ComparisonSettings {
   ignoreWhitespace: boolean
 }
 
+// 估算页码（基于字符位置）
+// 这是一个后备方案，当无法获取真实页数时使用
+const estimatePage = (charPosition: number, totalPages: number = 1): string => {
+  // 假设平均每页约 1000 字符
+  const CHARS_PER_PAGE = 1000
+  const estimatedPage = Math.floor(charPosition / CHARS_PER_PAGE) + 1
+  return `第${Math.min(estimatedPage, totalPages)}页/共${totalPages}页`
+}
+
 // HTML 转义工具函数（纯字符串实现，避免 DOM 创建开销）
 function escapeHtml(str: string): string {
   return str
@@ -71,7 +80,9 @@ export function findSimilarSegments(
   text1: string,
   text2: string,
   settings: ComparisonSettings,
-  contextLength: number = 15
+  contextLength: number = 15,
+  totalPages1: number = 1,
+  totalPages2: number = 1
 ): SimilarSegment[] {
   const { processed: preprocessed1, indexMap: indexMap1 } = preprocessText(text1, settings)
   const { processed: preprocessed2, indexMap: indexMap2 } = preprocessText(text2, settings)
@@ -131,8 +142,8 @@ export function findSimilarSegments(
           similarityValue: 100,
           leftContent: highlightedLeft,
           rightContent: highlightedRight,
-          leftPage: `第${Math.floor(origStart1 / 1000) + 1}页`,
-          rightPage: `第${Math.floor(origStart2 / 1000) + 1}页`,
+          leftPage: estimatePage(origStart1, totalPages1),
+          rightPage: estimatePage(origStart2, totalPages2),
           level: 'high'
         })
       }
@@ -204,7 +215,9 @@ export function findSimilarSegmentsRabinKarp(
   text2: string,
   settings: ComparisonSettings,
   contextLength: number = 8,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  totalPages1: number = 1,
+  totalPages2: number = 1
 ): SimilarSegment[] {
   const { processed: preprocessed1 } = preprocessText(text1, settings)
   const { processed: preprocessed2 } = preprocessText(text2, settings)
@@ -305,8 +318,8 @@ export function findSimilarSegmentsRabinKarp(
             similarityValue: 100,
             leftContent: highlightedLeft,
             rightContent: highlightedRight,
-            leftPage: `第${Math.floor(i / 1000) + 1}页`,
-            rightPage: `第${Math.floor(j / 1000) + 1}页`,
+            leftPage: estimatePage(i, totalPages1),
+            rightPage: estimatePage(j, totalPages2),
             level: 'high'
           })
         }

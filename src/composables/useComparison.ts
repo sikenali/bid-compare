@@ -23,7 +23,9 @@ export function useComparison() {
   async function runComparison(
     text1: string,
     text2: string,
-    settings: ComparisonSettings
+    settings: ComparisonSettings,
+    totalPages1: number = 1,
+    totalPages2: number = 1
   ): Promise<{ segments: SimilarSegment[]; similarity: number }> {
     const textLength = Math.max(text1.length, text2.length)
 
@@ -44,13 +46,13 @@ export function useComparison() {
       if (strategy === 'lcs') {
         // 小文件：主线程
         progressMessage.value = '正在对比...'
-        const segments = findSimilarSegments(text1, text2, settings)
+        const segments = findSimilarSegments(text1, text2, settings, 15, totalPages1, totalPages2)
         const similarity = calculateTextSimilarity(text1, text2, settings)
         isProcessing.value = false
         return { segments, similarity }
       } else {
         // 中/大文件：Worker
-        return runWorkerComparison(text1, text2, settings, strategy)
+        return runWorkerComparison(text1, text2, settings, strategy, totalPages1, totalPages2)
       }
     } catch (error) {
       isProcessing.value = false
@@ -62,7 +64,9 @@ export function useComparison() {
     text1: string,
     text2: string,
     settings: ComparisonSettings,
-    strategy: string
+    strategy: string,
+    totalPages1: number = 1,
+    totalPages2: number = 1
   ): Promise<{ segments: SimilarSegment[]; similarity: number }> {
     return new Promise((resolve, reject) => {
       try {
@@ -103,7 +107,9 @@ export function useComparison() {
           text1,
           text2,
           settings,
-          strategy
+          strategy,
+          totalPages1,
+          totalPages2
         })
       } catch (error) {
         // Worker 不可用，降级到主线程（仅限小文件）
@@ -116,7 +122,7 @@ export function useComparison() {
         console.warn('Worker 不可用，降级到主线程 LCS')
         isProcessing.value = false
         canCancel.value = false
-        const segments = findSimilarSegments(text1, text2, settings)
+        const segments = findSimilarSegments(text1, text2, settings, 15, totalPages1, totalPages2)
         const similarity = calculateTextSimilarity(text1, text2, settings)
         resolve({ segments, similarity })
       }

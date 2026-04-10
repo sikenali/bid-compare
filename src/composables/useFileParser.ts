@@ -1,6 +1,9 @@
 import mammoth from 'mammoth';
-// @ts-expect-error Vite worker import
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import * as pdfjsLib from 'pdfjs-dist';
+import PdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
+
+// 设置worker路径
+pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorker;
 
 // 文件属性类型
 export interface FileProperties {
@@ -247,20 +250,13 @@ export function useFileParser() {
   // 解析PDF文件
   const parsePdfFile = async (file: File): Promise<FileParseResult> => {
     try {
-      // 动态导入pdfjs-dist，避免初始化问题
-      const pdfjsLib = await import('pdfjs-dist');
-      
-      // 设置worker路径
-      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-      
       // 读取文件为ArrayBuffer
       const dataBuffer = await file.arrayBuffer();
-      
-      // 设置PDF解析超时
+
+      // 设置PDF解析配置
       const pdfPromise = pdfjsLib.getDocument({
         data: dataBuffer,
-        cMapUrl: 'https://unpkg.com/pdfjs-dist@latest/cmaps/',
-        cMapPacked: true
+        useSystemFonts: true
       }).promise;
       
       // 添加超时机制

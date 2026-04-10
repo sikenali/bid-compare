@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import {
   RiExchangeLine,
   RiFileWordLine,
@@ -134,31 +134,8 @@ const currentRightPage = ref('第1页/共1页')
 // 雷同片段列表
 const similarSegmentsList = ref<SimilarSegment[]>([])
 
-// 组件挂载时恢复 sessionStorage 中保存的结果
-onMounted(() => {
-  const saved = sessionStorage.getItem('fileCompareResult')
-  if (saved) {
-    try {
-      const data = JSON.parse(saved)
-      textSimilarity.value = data.textSimilarity
-      similarSegmentsList.value = data.similarSegments || []
-      similarSegments.value = data.similarSegmentsCount || 0
-      leftFileInfo.value.name = data.leftFileName || ''
-      rightFileInfo.value.name = data.rightFileName || ''
-      if (similarSegmentsList.value.length > 0) {
-        currentContent.value = {
-          left: similarSegmentsList.value[0].leftContent,
-          right: similarSegmentsList.value[0].rightContent
-        }
-        currentLeftPage.value = similarSegmentsList.value[0].leftPage
-        currentRightPage.value = similarSegmentsList.value[0].rightPage
-      }
-      showResults.value = true
-    } catch {
-      sessionStorage.removeItem('fileCompareResult')
-    }
-  }
-})
+// 组件挂载时不恢复结果，总是显示主界面
+// 刷新页面后返回对比界面，不恢复之前的对比结果
 
 // 排序状态
 const sortAscending = ref(false)
@@ -176,9 +153,15 @@ const updateTotalPages = () => {
   }
 }
 
+// 计算总页数
+const getTotalPages = () => {
+  return Math.ceil(similarSegmentsList.value.length / pageSize.value)
+}
+
 // 切换到指定页码
 const goToPage = (page: number) => {
-  if (page >= 1 && page <= totalPages.value) {
+  const total = getTotalPages()
+  if (page >= 1 && page <= total) {
     currentPage.value = page
   }
 }
@@ -251,6 +234,16 @@ const toggleSort = () => {
   updateTotalPages()
 }
 
+// 监听雷同片段列表和页面大小变化，自动重置分页
+watch(
+  [similarSegmentsList, pageSize],
+  () => {
+    updateTotalPages()
+    if (currentPage.value > getTotalPages()) {
+      currentPage.value = 1
+    }
+  }
+)
 
 
 // 使用最近记录组合式函数 - 传入fileCompare类型
@@ -493,15 +486,6 @@ const handleCompare = async () => {
       similarSegments: similarSegmentsList.value
     })
 
-    // 持久化结果到 sessionStorage，防止页面刷新或组件重新挂载时丢失
-    sessionStorage.setItem('fileCompareResult', JSON.stringify({
-      textSimilarity: textSimilarity.value,
-      similarSegments: result.segments,
-      similarSegmentsCount: result.segments.length,
-      leftFileName: leftFileInfo.value.name,
-      rightFileName: rightFileInfo.value.name
-    }))
-
     showResults.value = true
   } catch (error) {
     isProcessing.value = false
@@ -520,6 +504,19 @@ const handleCancel = () => {
 // 返回文件上传界面
 const handleBack = () => {
   showResults.value = false;
+  // 重置对比结果状态，但保留已上传的文件信息
+  isProcessing.value = false;
+  progress.value = 0;
+  progressMessage.value = '';
+  comparisonParseError.value = '';
+  similarSegmentsList.value = [];
+  similarSegments.value = 0;
+  textSimilarity.value = '0%';
+  currentContent.value = { left: '', right: '' };
+  currentLeftPage.value = '第1页/共1页';
+  currentRightPage.value = '第1页/共1页';
+  // 注意：不清理 leftFileInfo 和 rightFileInfo，保留已上传的文件
+  // 用户可以重新点击对比或上传新文件
 };
 
 
@@ -1597,10 +1594,10 @@ const generateWordReport = () => {
   border-radius: 8px;
   border: 1px solid rgba(166, 124, 82, 0.2);
   box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
-  padding: 24px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
   overflow-y: auto;
 }
 
