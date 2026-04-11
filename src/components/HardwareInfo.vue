@@ -300,21 +300,32 @@ const {
   }
 
   .info-multi-columns {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .info-full-width {
+    display: flex;
+    flex-direction: column;
     gap: 12px;
   }
 
   .info-field,
   .info-field-full {
+    display: flex;
     flex-direction: row;
     align-items: center;
     gap: 12px;
+    width: 100%;
   }
 
   .field-label {
     min-width: 80px;
+    max-width: 80px;
     flex-shrink: 0;
     font-size: 13px;
+    line-height: 1.3;
   }
 
   .field-value-box {
@@ -329,6 +340,7 @@ const {
 
   .field-value {
     font-size: 13px;
+    word-break: break-all;
   }
 
   .card-title {
