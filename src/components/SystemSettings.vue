@@ -690,7 +690,8 @@ input:checked + .slider:before {
   }
 
   .action-buttons {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 12px;
     padding-bottom: 16px;
   }
