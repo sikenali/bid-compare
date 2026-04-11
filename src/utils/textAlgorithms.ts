@@ -56,12 +56,16 @@ function escapeHtml(str: string): string {
 
 /**
  * 基于索引生成高亮 HTML
+ * @param fullText 完整原文
+ * @param matchStart 匹配内容起始索引
+ * @param matchEnd 匹配内容结束索引
+ * @param contextLength 上下文长度（匹配内容前后各显示多少字符），默认 5
  */
 export function buildHighlightedHtml(
   fullText: string,
   matchStart: number,
   matchEnd: number,
-  contextLength: number = 50
+  contextLength: number = 5
 ): string {
   const contextStart = Math.max(0, matchStart - contextLength)
   const contextEnd = Math.min(fullText.length, matchEnd + contextLength)
