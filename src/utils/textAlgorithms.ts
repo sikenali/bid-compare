@@ -7,6 +7,17 @@ export interface SimilarSegment {
   leftPage: string
   rightPage: string
   level: 'high' | 'medium' | 'low'
+  // 新增：原始位置索引
+  leftStartIndex?: number
+  leftEndIndex?: number
+  rightStartIndex?: number
+  rightEndIndex?: number
+}
+
+// 页码映射表
+export interface PageMap {
+  ranges: Array<{ start: number; end: number; page: number }>
+  totalPages: number
 }
 
 export interface ComparisonSettings {
@@ -41,6 +52,69 @@ function escapeHtml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
+}
+
+/**
+ * 基于索引生成高亮 HTML
+ */
+export function buildHighlightedHtml(
+  fullText: string,
+  matchStart: number,
+  matchEnd: number,
+  contextLength: number = 50
+): string {
+  const contextStart = Math.max(0, matchStart - contextLength)
+  const contextEnd = Math.min(fullText.length, matchEnd + contextLength)
+
+  const before = escapeHtml(fullText.substring(contextStart, matchStart))
+  const match = escapeHtml(fullText.substring(matchStart, matchEnd))
+  const after = escapeHtml(fullText.substring(matchEnd, contextEnd))
+
+  const prefix = contextStart > 0 ? '…' : ''
+  const suffix = contextEnd < fullText.length ? '…' : ''
+
+  return `${prefix}${before}<span class="highlighted-text">${match}</span>${after}${suffix}`
+}
+
+/**
+ * 通过字符索引查找对应页码（二分查找）
+ */
+export function findPageByIndex(pageMap: PageMap, charIndex: number): number {
+  let left = 0
+  let right = pageMap.ranges.length - 1
+
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2)
+    const range = pageMap.ranges[mid]
+
+    if (charIndex >= range.start && charIndex < range.end) {
+      return range.page
+    } else if (charIndex < range.start) {
+      right = mid - 1
+    } else {
+      left = mid + 1
+    }
+  }
+
+  return pageMap.ranges[pageMap.ranges.length - 1]?.page || 1
+}
+
+/**
+ * 格式化页码显示
+ */
+export function formatPageRange(
+  pageMap: PageMap,
+  startIndex: number,
+  endIndex: number
+): string {
+  const startPage = findPageByIndex(pageMap, startIndex)
+  const endPage = findPageByIndex(pageMap, endIndex)
+
+  if (startPage === endPage) {
+    return `第${startPage}页/共${pageMap.totalPages}页`
+  } else {
+    return `第${startPage}-${endPage}页/共${pageMap.totalPages}页`
+  }
 }
 
 // 预处理文本，同时返回预处理后的文本和索引映射表
