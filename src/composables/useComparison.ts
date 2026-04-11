@@ -4,7 +4,8 @@ import {
   findSimilarSegments,
   calculateTextSimilarity,
   type SimilarSegment,
-  type ComparisonSettings
+  type ComparisonSettings,
+  type PageMap
 } from '../utils/textAlgorithms'
 import ComparisonWorker from '../workers/comparison.worker?worker'
 
@@ -24,8 +25,8 @@ export function useComparison() {
     text1: string,
     text2: string,
     settings: ComparisonSettings,
-    totalPages1: number = 1,
-    totalPages2: number = 1
+    pageMap1?: PageMap,
+    pageMap2?: PageMap
   ): Promise<{ segments: SimilarSegment[]; similarity: number }> {
     const textLength = Math.max(text1.length, text2.length)
 
@@ -46,13 +47,13 @@ export function useComparison() {
       if (strategy === 'lcs') {
         // 小文件：使用暴力 LCS 算法，结果最准确
         progressMessage.value = '正在对比...'
-        const segments = findSimilarSegments(text1, text2, settings, 15, totalPages1, totalPages2)
+        const segments = findSimilarSegments(text1, text2, settings, 50, pageMap1, pageMap2)
         const similarity = calculateTextSimilarity(text1, text2, settings)
         isProcessing.value = false
         return { segments, similarity }
       } else {
         // 中/大文件：Worker
-        return runWorkerComparison(text1, text2, settings, strategy, totalPages1, totalPages2)
+        return runWorkerComparison(text1, text2, settings, strategy, pageMap1, pageMap2)
       }
     } catch (error) {
       isProcessing.value = false
@@ -65,15 +66,15 @@ export function useComparison() {
     text2: string,
     settings: ComparisonSettings,
     strategy: string,
-    totalPages1: number = 1,
-    totalPages2: number = 1
+    pageMap1?: PageMap,
+    pageMap2?: PageMap
   ): Promise<{ segments: SimilarSegment[]; similarity: number }> {
     return new Promise((resolve, reject) => {
       try {
         const worker = new ComparisonWorker()
         currentWorker = worker
         canCancel.value = true
-        progressMessage.value = strategy === 'rabin-karp' ? '正在分析...' : '分块匹配中...'
+        progressMessage.value = strategy === 'rabin-karp' ? '正在分析...' : 'MinHash 计算中...'
 
         // 超时保护
         timeoutId = window.setTimeout(() => {
@@ -108,8 +109,8 @@ export function useComparison() {
           text2,
           settings,
           strategy,
-          totalPages1,
-          totalPages2
+          pageMap1,
+          pageMap2
         })
       } catch (error) {
         // Worker 不可用，降级到主线程（仅限小文件）
@@ -122,7 +123,7 @@ export function useComparison() {
         console.warn('Worker 不可用，降级到主线程 LCS')
         isProcessing.value = false
         canCancel.value = false
-        const segments = findSimilarSegments(text1, text2, settings, 15, totalPages1, totalPages2)
+        const segments = findSimilarSegments(text1, text2, settings, 50, pageMap1, pageMap2)
         const similarity = calculateTextSimilarity(text1, text2, settings)
         resolve({ segments, similarity })
       }
