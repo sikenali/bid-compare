@@ -645,9 +645,14 @@ input:checked + .slider:before {
 
 /* 移动端响应式优化 */
 @media (max-width: 768px) {
+  .system-settings-container {
+    padding-bottom: 70px;
+  }
+
   .settings-form {
     grid-template-columns: 1fr;
     gap: 12px;
+    padding-bottom: 0;
   }
 
   .settings-card {
@@ -694,11 +699,14 @@ input:checked + .slider:before {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
-    padding-bottom: 12px;
-    position: sticky;
+    position: fixed;
     bottom: 0;
+    left: 0;
+    right: 0;
     background-color: rgba(248, 244, 233, 1);
-    padding-top: 12px;
+    padding: 12px 16px;
+    z-index: 100;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
   }
 
   .btn {
