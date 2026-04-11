@@ -361,6 +361,25 @@ const nextPage = () => {
   gap: 24px;
 }
 
+/* 自定义滚动条 */
+.table-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.table-body::-webkit-scrollbar-track {
+  background: rgba(245, 238, 226, 0.5);
+  border-radius: 3px;
+}
+
+.table-body::-webkit-scrollbar-thumb {
+  background: rgba(166, 124, 82, 0.3);
+  border-radius: 3px;
+}
+
+.table-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(166, 124, 82, 0.5);
+}
+
 /* 列表头部 */
 .list-header {
   display: flex;
@@ -425,7 +444,7 @@ const nextPage = () => {
 }
 
 .table-header .col {
-  padding: 12px 16px;
+  padding: 16px;
   font-size: 14px;
   font-weight: 600;
   color: rgba(107, 79, 52, 1);
@@ -456,6 +475,7 @@ const nextPage = () => {
   grid-template-columns: 81px 377px 122px 377px 122px;
   border-bottom: 1px solid rgba(230, 215, 191, 0.5);
   transition: background-color 0.2s;
+  min-height: 80px;
 }
 
 .table-row:last-child {
@@ -463,7 +483,7 @@ const nextPage = () => {
 }
 
 .table-row:hover {
-  background-color: rgba(248, 244, 233, 0.3);
+  background-color: rgba(245, 238, 226, 0.5);
 }
 
 .table-row .col {
@@ -516,29 +536,8 @@ const nextPage = () => {
   gap: 8px;
 }
 
-.page-btn {
-  width: 40px;
-  height: 40px;
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 1);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  color: rgba(107, 79, 52, 1);
-}
-
-.page-btn:hover:not(:disabled) {
-  background-color: rgba(245, 238, 226, 1);
-}
-
-.page-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
+/* 共用分页按钮样式 */
+.page-btn,
 .page-number {
   width: 40px;
   height: 40px;
@@ -549,21 +548,31 @@ const nextPage = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s;
   font-size: 14px;
   font-weight: 500;
   color: rgba(107, 79, 52, 1);
   font-family: SourceHanSans-Medium;
-  transition: all 0.2s;
 }
 
+.page-btn {
+  color: rgba(107, 79, 52, 1);
+}
+
+.page-btn:hover:not(:disabled),
 .page-number:hover {
   background-color: rgba(245, 238, 226, 1);
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .page-number.active {
   background-color: rgba(139, 0, 0, 1);
   border-color: rgba(139, 0, 0, 1);
-  color: white;
+  color: rgba(255, 255, 255, 1);
 }
 
 /* 高亮文本样式 */
