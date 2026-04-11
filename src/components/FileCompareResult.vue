@@ -8,7 +8,8 @@ import {
   RiArrowRightSLine,
   RiExchange2Line
 } from '@remixicon/vue'
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx'
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx'
+import { useSettings } from '../composables/useSettings'
 
 interface SimilarSegment {
   id: number;
@@ -26,6 +27,7 @@ interface SimilarSegment {
 
 const route = useRoute()
 const router = useRouter()
+const { settings } = useSettings()
 
 // 数据
 const segments = ref<SimilarSegment[]>([])
@@ -99,64 +101,7 @@ const handleExport = async () => {
   }
 
   try {
-    const doc = new Document({
-      sections: [{
-        properties: {},
-        children: [
-          new Paragraph({
-            children: [new TextRun({ text: '文件对比报告', bold: true, size: 24 })],
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 200 }
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `文本重复率：${textSimilarity.value}`, size: 16 })]
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `雷同片段：${similarSegmentsCount.value}处`, size: 16 })],
-            spacing: { after: 200 }
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: '文件信息：', bold: true, size: 20 })],
-            spacing: { after: 100 }
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `左侧文件：${leftFileName.value}`, size: 16 })]
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `右侧文件：${rightFileName.value}`, size: 16 })],
-            spacing: { after: 200 }
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: '雷同片段详情：', bold: true, size: 20 })],
-            spacing: { after: 100 }
-          }),
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: '序号', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-                  new TableCell({ children: [new Paragraph({ text: leftFileName.value, bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-                  new TableCell({ children: [new Paragraph({ text: '位置', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-                  new TableCell({ children: [new Paragraph({ text: rightFileName.value, bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-                  new TableCell({ children: [new Paragraph({ text: '位置', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-                ]
-              }),
-              ...segments.value.map(segment => new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: segment.id.toString(), alignment: AlignmentType.CENTER })] }),
-                  new TableCell({ children: [new Paragraph({ text: segment.leftContent.replace(/<[^>]*>/g, '') })] }),
-                  new TableCell({ children: [new Paragraph({ text: segment.leftPage, alignment: AlignmentType.CENTER })] }),
-                  new TableCell({ children: [new Paragraph({ text: segment.rightContent.replace(/<[^>]*>/g, '') })] }),
-                  new TableCell({ children: [new Paragraph({ text: segment.rightPage, alignment: AlignmentType.CENTER })] }),
-                ]
-              }))
-            ]
-          })
-        ]
-      }]
-    })
-
+    const doc = generateWordReport()
     const blob = await Packer.toBlob(doc)
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
@@ -168,6 +113,257 @@ const handleExport = async () => {
     console.error('导出报告失败:', error)
     alert('导出报告失败，请重试')
   }
+}
+
+// 解析高亮 HTML，返回带高亮标记的 TextRun 数组
+function parseHighlightedContent(htmlContent: string): any[] {
+  // 移除首尾的省略号
+  let content = htmlContent.replace(/^…/, '').replace(/…$/, '')
+
+  const runs: any[] = []
+
+  // 使用正则表达式拆分高亮和普通文本
+  const highlightRegex = /<span class="highlighted-text">([\s\S]*?)<\/span>/g
+  let lastIndex = 0
+  let match
+
+  while ((match = highlightRegex.exec(content)) !== null) {
+    // 添加高亮前的普通文本
+    if (match.index > lastIndex) {
+      const plainText = content.substring(lastIndex, match.index)
+      runs.push(new TextRun({
+        text: plainText.replace(/<[^>]*>/g, ''),
+        size: 20,
+        font: 'Microsoft YaHei'
+      }))
+    }
+
+    // 添加高亮文本（带背景色）
+    const highlightedText = match[1]
+    runs.push(new TextRun({
+      text: highlightedText,
+      size: 20,
+      font: 'Microsoft YaHei',
+      bold: true,
+      color: '8B0000',
+      highlight: 'FFD700'  // 金色高亮背景
+    }))
+
+    lastIndex = match.index + match[0].length
+  }
+
+  // 添加剩余的普通文本
+  if (lastIndex < content.length) {
+    const plainText = content.substring(lastIndex)
+    runs.push(new TextRun({
+      text: plainText.replace(/<[^>]*>/g, ''),
+      size: 20,
+      font: 'Microsoft YaHei'
+    }))
+  }
+
+  return runs.length > 0 ? runs : [new TextRun({ text: content.replace(/<[^>]*>/g, ''), size: 20, font: 'Microsoft YaHei' })]
+}
+
+// 生成Word报告
+function generateWordReport(): Document {
+  const includeHighlight = settings.includeHighlight
+  const includeCharts = settings.includeCharts
+
+  const children: any[] = [
+    // 报告标题
+    new Paragraph({
+      children: [new TextRun({ text: '文件对比报告', bold: true, size: 32, font: 'Microsoft YaHei' })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 300 }
+    })
+  ]
+
+  // 统计信息
+  children.push(
+    new Paragraph({
+      children: [new TextRun({ text: '一、相似度统计', bold: true, size: 24, font: 'Microsoft YaHei' })],
+      spacing: { after: 200 }
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: `文本重复率：${textSimilarity.value}`, size: 20, font: 'Microsoft YaHei' })],
+      spacing: { after: 100 }
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: `雷同片段：${similarSegmentsCount.value}处`, size: 20, font: 'Microsoft YaHei' })],
+      spacing: { after: 200 }
+    })
+  )
+
+  // 统计图表（如果开启）
+  if (includeCharts) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: '二、文件信息', bold: true, size: 24, font: 'Microsoft YaHei' })],
+        spacing: { after: 200 }
+      }),
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 1, color: 'D8BF9C' },
+          bottom: { style: BorderStyle.SINGLE, size: 1, color: 'D8BF9C' },
+          left: { style: BorderStyle.SINGLE, size: 1, color: 'D8BF9C' },
+          right: { style: BorderStyle.SINGLE, size: 1, color: 'D8BF9C' },
+          insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: 'D8BF9C' },
+          insideVertical: { style: BorderStyle.SINGLE, size: 1, color: 'D8BF9C' }
+        },
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: '项目', bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+                shading: { fill: 'F5EEE2' },
+                width: { size: 30, type: WidthType.PERCENTAGE }
+              }),
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: leftFileName.value, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+                shading: { fill: 'F5EEE2' },
+                width: { size: 35, type: WidthType.PERCENTAGE }
+              }),
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: rightFileName.value, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+                shading: { fill: 'F5EEE2' },
+                width: { size: 35, type: WidthType.PERCENTAGE }
+              })
+            ]
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: '文本重复率', bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+                width: { size: 30, type: WidthType.PERCENTAGE }
+              }),
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: textSimilarity.value, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+                width: { size: 35, type: WidthType.PERCENTAGE }
+              }),
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: textSimilarity.value, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+                width: { size: 35, type: WidthType.PERCENTAGE }
+              })
+            ]
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: '雷同片段数', bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+                width: { size: 30, type: WidthType.PERCENTAGE }
+              }),
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: similarSegmentsCount.value.toString(), size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+                width: { size: 35, type: WidthType.PERCENTAGE }
+              }),
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: similarSegmentsCount.value.toString(), size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+                width: { size: 35, type: WidthType.PERCENTAGE }
+              })
+            ]
+          })
+        ]
+      })
+    )
+  }
+
+  // 雷同片段详情
+  children.push(
+    new Paragraph({
+      children: [new TextRun({ text: includeCharts ? '三、雷同片段详情' : '二、雷同片段详情', bold: true, size: 24, font: 'Microsoft YaHei' })],
+      spacing: { after: 200, before: 200 }
+    })
+  )
+
+  // 构建详情表格
+  const detailRows: any[] = [
+    new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: '序号', bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+          shading: { fill: 'F5EEE2' },
+          width: { size: 8, type: WidthType.PERCENTAGE }
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: leftFileName.value, bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+          shading: { fill: 'F5EEE2' },
+          width: { size: 34, type: WidthType.PERCENTAGE }
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: '位置', bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+          shading: { fill: 'F5EEE2' },
+          width: { size: 12, type: WidthType.PERCENTAGE }
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: rightFileName.value, bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+          shading: { fill: 'F5EEE2' },
+          width: { size: 34, type: WidthType.PERCENTAGE }
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: '位置', bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+          shading: { fill: 'F5EEE2' },
+          width: { size: 12, type: WidthType.PERCENTAGE }
+        })
+      ]
+    })
+  ]
+
+  // 添加数据行
+  segments.value.forEach(segment => {
+    const leftRuns = includeHighlight ? parseHighlightedContent(segment.leftContent) : [new TextRun({ text: segment.leftContent.replace(/<[^>]*>/g, ''), size: 20, font: 'Microsoft YaHei' })]
+    const rightRuns = includeHighlight ? parseHighlightedContent(segment.rightContent) : [new TextRun({ text: segment.rightContent.replace(/<[^>]*>/g, ''), size: 20, font: 'Microsoft YaHei' })]
+
+    detailRows.push(
+      new TableRow({
+        children: [
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: segment.id.toString(), size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
+            width: { size: 8, type: WidthType.PERCENTAGE }
+          }),
+          new TableCell({
+            children: [new Paragraph({ children: leftRuns })],
+            width: { size: 34, type: WidthType.PERCENTAGE }
+          }),
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: segment.leftPage, size: 18, font: 'Microsoft YaHei', color: 'A67C52' })], alignment: AlignmentType.CENTER })],
+            width: { size: 12, type: WidthType.PERCENTAGE }
+          }),
+          new TableCell({
+            children: [new Paragraph({ children: rightRuns })],
+            width: { size: 34, type: WidthType.PERCENTAGE }
+          }),
+          new TableCell({
+            children: [new Paragraph({ children: [new TextRun({ text: segment.rightPage, size: 18, font: 'Microsoft YaHei', color: 'A67C52' })], alignment: AlignmentType.CENTER })],
+            width: { size: 12, type: WidthType.PERCENTAGE }
+          })
+        ]
+      })
+    )
+  })
+
+  children.push(
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: {
+        top: { style: BorderStyle.SINGLE, size: 1, color: 'E6D7BF' },
+        bottom: { style: BorderStyle.SINGLE, size: 1, color: 'E6D7BF' },
+        left: { style: BorderStyle.SINGLE, size: 1, color: 'E6D7BF' },
+        right: { style: BorderStyle.SINGLE, size: 1, color: 'E6D7BF' },
+        insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: 'E6D7BF' },
+        insideVertical: { style: BorderStyle.SINGLE, size: 1, color: 'E6D7BF' }
+      },
+      rows: detailRows
+    })
+  )
+
+  return new Document({
+    sections: [{
+      properties: {},
+      children
+    }]
+  })
 }
 
 const goToPage = (page: number) => {
