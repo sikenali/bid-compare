@@ -136,8 +136,17 @@ const fileTypeInfo = computed(() => {
 .file-upload-container {
   display: flex;
   flex-direction: column;
-  width: 547px;
+  width: 100%;
+  max-width: 547px;
   height: 344px;
+}
+
+@media (max-width: 768px) {
+  .file-upload-container {
+    max-width: 100%;
+    height: auto;
+    min-height: 280px;
+  }
 }
 
 /* 上传标题 */
@@ -391,5 +400,36 @@ const fileTypeInfo = computed(() => {
   display: flex;
   justify-content: center;
   margin-top: 8px;
+}
+
+/* 移动端响应式优化 */
+@media (max-width: 768px) {
+  .upload-placeholder {
+    padding: 16px;
+  }
+
+  .upload-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+  }
+
+  .upload-icon {
+    font-size: 32px;
+  }
+
+  .upload-main-text {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  .format-icon-wrapper {
+    width: 36px;
+    height: 36px;
+  }
+
+  .format-icon-svg {
+    font-size: 18px;
+  }
 }
 </style>
