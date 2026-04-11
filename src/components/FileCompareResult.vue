@@ -371,7 +371,6 @@ const nextPage = () => {
 .list-header .title-section {
   display: flex;
   align-items: center;
-  gap: 0;
 }
 
 .icon-container {
@@ -382,6 +381,7 @@ const nextPage = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .title-icon {
@@ -391,7 +391,7 @@ const nextPage = () => {
 
 .spacer {
   width: 12px;
-  height: 28px;
+  flex-shrink: 0;
 }
 
 .list-title {
@@ -400,12 +400,14 @@ const nextPage = () => {
   color: rgba(44, 24, 16, 1);
   margin: 0;
   font-family: SourceHanSans-SemiBold;
+  white-space: nowrap;
 }
 
 .stats-info {
   font-size: 14px;
   color: rgba(107, 79, 52, 1);
   font-family: SourceHanSans-Regular;
+  white-space: nowrap;
 }
 
 /* 对比数据表 */
@@ -420,7 +422,6 @@ const nextPage = () => {
   display: grid;
   grid-template-columns: 81px 377px 122px 377px 122px;
   background-color: rgba(245, 238, 226, 1);
-  border-bottom: 1px solid rgba(230, 215, 191, 1);
 }
 
 .table-header .col {
@@ -431,18 +432,17 @@ const nextPage = () => {
   font-family: SourceHanSans-SemiBold;
   display: flex;
   align-items: center;
-}
-
-.col-index {
   justify-content: center;
+  border-bottom: 1px solid rgba(230, 215, 191, 1);
 }
 
-.col-content {
+.table-header .col-content {
   justify-content: flex-start;
+  border-right: 1px solid rgba(230, 215, 191, 1);
 }
 
-.col-position {
-  justify-content: center;
+.table-header .col-position {
+  border-right: 1px solid rgba(230, 215, 191, 1);
 }
 
 /* 表体 */
@@ -486,12 +486,14 @@ const nextPage = () => {
   justify-content: flex-start;
   text-align: left;
   overflow: hidden;
+  border-right: 1px solid rgba(230, 215, 191, 0.3);
 }
 
 .table-row .col-position {
   justify-content: center;
   font-size: 12px;
   color: rgba(166, 124, 82, 1);
+  border-right: 1px solid rgba(230, 215, 191, 0.3);
 }
 
 /* 分页控件 */
