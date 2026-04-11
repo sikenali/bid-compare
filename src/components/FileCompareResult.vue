@@ -807,15 +807,16 @@ const nextPage = () => {
 
 /* 高亮文本样式 */
 :deep(.highlighted-text) {
-  background-color: rgba(255, 215, 0, 0.7) !important;
+  background-color: rgba(255, 215, 0, 0.85) !important;
   color: rgba(139, 0, 0, 1) !important;
-  padding: 1px 4px !important;
-  border-radius: 3px !important;
-  font-weight: 600 !important;
+  padding: 2px 4px !important;
+  border-radius: 2px !important;
+  font-weight: 700 !important;
   display: inline !important;
   line-height: inherit !important;
   box-decoration-break: clone !important;
   -webkit-box-decoration-break: clone !important;
+  box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.5) !important;
 }
 
 /* 移动端响应式 */
