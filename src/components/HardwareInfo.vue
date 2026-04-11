@@ -307,9 +307,7 @@ const {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid rgba(166, 124, 82, 0.15);
+    margin-bottom: 16px;
   }
 
   .icon-container {
@@ -319,61 +317,62 @@ const {
 
   .card-title {
     font-size: 16px;
+    font-weight: 600;
     margin: 0;
   }
 
   .card-body {
     margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
-  /* 系统信息/网络信息 - 表格样式 */
+  /* 系统信息/网络信息 - 与 settings-card 一致的样式 */
   .info-multi-columns {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
-  /* 指纹信息 - 表格样式 */
+  /* 指纹信息 - 与 settings-card 一致的样式 */
   .info-full-width {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
-  /* 每个字段一行，左 label 右 value */
+  /* 字段样式 - 与 setting-row 一致 */
   .info-field,
   .info-field-full {
-    display: grid;
-    grid-template-columns: 80px 1fr;
+    display: flex;
     align-items: center;
-    gap: 0;
+    justify-content: space-between;
+    gap: 12px;
     width: 100%;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(166, 124, 82, 0.1);
-  }
-
-  .info-field:last-child,
-  .info-field-full:last-child {
-    border-bottom: none;
+    min-height: 32px;
   }
 
   .field-label {
-    font-size: 13px;
-    color: rgba(107, 79, 52, 1);
-    font-family: SourceHanSans-Regular;
-    padding-right: 12px;
-    text-align: left;
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(44, 24, 16, 1);
+    font-family: SourceHanSans-Medium;
+    margin: 0;
   }
 
   .field-value-box {
-    background-color: transparent;
-    padding: 0;
-    min-height: auto;
-    justify-content: flex-end;
+    background-color: rgba(245, 238, 226, 1);
+    border-radius: 8px;
+    padding: 8px 12px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
   }
 
   .field-value-box.wide {
-    padding: 0;
+    padding: 8px 12px;
   }
 
   .field-value {
