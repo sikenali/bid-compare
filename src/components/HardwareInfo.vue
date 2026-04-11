@@ -288,6 +288,42 @@ const {
   grid-column: 1 / -1;
 }
 
+/* 移动端响应式 */
+@media (max-width: 768px) {
+  .info-cards {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .info-card {
+    padding: 16px;
+  }
+
+  .info-multi-columns {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .card-title {
+    font-size: 18px;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+}
+
+/* 平板端优化 */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .info-cards {
+    gap: 20px;
+  }
+
+  .info-multi-columns {
+    gap: 20px;
+  }
+}
+
 .info-card {
   background-color: rgba(255, 255, 255, 1);
   border: 0.7px solid rgba(216, 191, 156, 1);
