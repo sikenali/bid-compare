@@ -647,17 +647,18 @@ input:checked + .slider:before {
 @media (max-width: 768px) {
   .settings-form {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 12px;
   }
 
   .settings-card {
-    padding: 16px;
+    padding: 12px;
   }
 
   .setting-row {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 6px;
+    margin-bottom: 10px;
   }
 
   .setting-input {
@@ -692,8 +693,12 @@ input:checked + .slider:before {
   .action-buttons {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    padding-bottom: 16px;
+    gap: 10px;
+    padding-bottom: 12px;
+    position: sticky;
+    bottom: 0;
+    background-color: rgba(248, 244, 233, 1);
+    padding-top: 12px;
   }
 
   .btn {
