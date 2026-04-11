@@ -280,10 +280,10 @@ export function findSimilarSegmentsRabinKarp(
   text1: string,
   text2: string,
   settings: ComparisonSettings,
-  contextLength: number = 8,
+  contextLength: number = 50,
   onProgress?: (progress: number) => void,
-  totalPages1: number = 1,
-  totalPages2: number = 1
+  pageMap1?: PageMap,
+  pageMap2?: PageMap
 ): SimilarSegment[] {
   const { processed: preprocessed1 } = preprocessText(text1, settings)
   const { processed: preprocessed2 } = preprocessText(text2, settings)
@@ -359,34 +359,19 @@ export function findSimilarSegmentsRabinKarp(
         if (matchLen >= settings.minDuplicateWords) {
           matchedPairs.add(pairKey)
 
-          const leftStart = Math.max(0, i - contextLength)
-          const leftEnd = Math.min(text1.length, i + matchLen + contextLength)
-          const rightStart = Math.max(0, j - contextLength)
-          const rightEnd = Math.min(text2.length, j + matchLen + contextLength)
-
-          const safeLeft = escapeHtml(text1.substring(leftStart, leftEnd))
-          const safeRight = escapeHtml(text2.substring(rightStart, rightEnd))
-          const safeMatch1 = escapeHtml(text1.substring(i, i + matchLen))
-          const safeMatch2 = escapeHtml(text2.substring(j, j + matchLen))
-
-          const highlightedLeft = safeLeft.replace(
-            new RegExp(escapeRegExp(safeMatch1), 'g'),
-            `<span class="highlighted-text" style="background-color: rgba(255,215,0,0.9);color:#8B0000;padding:3px 6px;border-radius:4px;font-weight:700;">${safeMatch1}</span>`
-          )
-          const highlightedRight = safeRight.replace(
-            new RegExp(escapeRegExp(safeMatch2), 'g'),
-            `<span class="highlighted-text" style="background-color: rgba(255,215,0,0.9);color:#8B0000;padding:3px 6px;border-radius:4px;font-weight:700;">${safeMatch2}</span>`
-          )
-
           segments.push({
             id: ++segmentId,
             similarity: '100%',
             similarityValue: 100,
-            leftContent: highlightedLeft,
-            rightContent: highlightedRight,
-            leftPage: estimatePage(i, totalPages1),
-            rightPage: estimatePage(j, totalPages2),
-            level: 'high'
+            leftContent: buildHighlightedHtml(text1, i, i + matchLen, contextLength),
+            rightContent: buildHighlightedHtml(text2, j, j + matchLen, contextLength),
+            leftPage: pageMap1 ? formatPageRange(pageMap1, i, i + matchLen) : '第1页',
+            rightPage: pageMap2 ? formatPageRange(pageMap2, j, j + matchLen) : '第1页',
+            level: 'high',
+            leftStartIndex: i,
+            leftEndIndex: i + matchLen,
+            rightStartIndex: j,
+            rightEndIndex: j + matchLen
           })
         }
       }
