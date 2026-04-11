@@ -296,17 +296,44 @@ const {
   }
 
   .info-card {
-    padding: 12px;
+    background-color: rgba(255, 255, 255, 1);
+    border: 0.7px solid rgba(216, 191, 156, 1);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 16px;
   }
 
-  /* 系统信息/网络信息 - 单列表格样式 */
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(166, 124, 82, 0.15);
+  }
+
+  .icon-container {
+    width: 36px;
+    height: 36px;
+  }
+
+  .card-title {
+    font-size: 16px;
+    margin: 0;
+  }
+
+  .card-body {
+    margin-top: 0;
+  }
+
+  /* 系统信息/网络信息 - 表格样式 */
   .info-multi-columns {
     display: grid;
     grid-template-columns: 1fr;
     gap: 0;
   }
 
-  /* 指纹信息 - 单列表格样式 */
+  /* 指纹信息 - 表格样式 */
   .info-full-width {
     display: grid;
     grid-template-columns: 1fr;
@@ -321,8 +348,8 @@ const {
     align-items: center;
     gap: 0;
     width: 100%;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(166, 124, 82, 0.15);
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(166, 124, 82, 0.1);
   }
 
   .info-field:last-child,
@@ -361,10 +388,6 @@ const {
   .field-value.mono {
     font-family: 'Courier New', monospace;
     font-size: 12px;
-  }
-
-  .card-title {
-    font-size: 16px;
   }
 
   .page-title {
