@@ -2035,4 +2035,62 @@ const generateWordReport = () => {
   margin: 0;
   line-height: 1.4;
 }
+
+/* 移动端响应式优化 */
+@media (max-width: 768px) {
+  .upload-section {
+    flex-direction: column;
+    gap: 16px;
+    padding: 0;
+  }
+
+  .check-btn-wrapper {
+    order: 3;
+    width: 100%;
+    margin: 8px 0;
+  }
+
+  .start-check-btn {
+    width: 100%;
+    max-width: 320px;
+    height: 48px;
+    border-radius: 12px;
+  }
+
+  .check-icon {
+    font-size: 24px;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .page-subtitle {
+    font-size: 12px;
+  }
+
+  .title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .property-stats {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .stat-item {
+    width: 100%;
+  }
+
+  .property-details-list {
+    gap: 12px;
+  }
+}
 </style>
