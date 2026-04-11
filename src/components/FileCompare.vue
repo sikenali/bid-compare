@@ -461,11 +461,13 @@ const handleCompare = async () => {
       ignoreWhitespace: settings.ignoreWhitespace
     }
 
-    // 获取文件页数（从解析结果中提取）
-    const leftPages = leftResult.pages || 1
-    const rightPages = rightResult.pages || 1
-
-    const result = await runComparison(leftResult.content, rightResult.content, comparisonSettings, leftPages, rightPages)
+    const result = await runComparison(
+      leftResult.content,
+      rightResult.content,
+      comparisonSettings,
+      leftResult.pageMap,
+      rightResult.pageMap
+    )
 
     textSimilarity.value = `${result.similarity}%`
     similarSegmentsList.value = result.segments
