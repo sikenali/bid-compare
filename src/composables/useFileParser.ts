@@ -292,9 +292,8 @@ export function useFileParser() {
       let textContent = '';
       const pageMap: PageMap = { ranges: [], totalPages: pageCount };
 
-      // 对于大文件，限制提取的页数，提高性能
-      const MAX_EXTRACT_PAGES = 50; // 最多提取50页
-      const extractPageCount = Math.min(pageCount, MAX_EXTRACT_PAGES);
+      // 全量提取所有页数
+      const extractPageCount = pageCount;
 
       // 逐页提取文本，同时构建页码映射
       let offset = 0
@@ -316,11 +315,6 @@ export function useFileParser() {
 
         textContent += pageText + '\n';
         offset += pageText.length + 1;
-      }
-      
-      // 如果有更多页，添加提示信息
-      if (pageCount > extractPageCount) {
-        textContent += `\n... 仅显示前${extractPageCount}页内容，共${pageCount}页 ...\n`;
       }
       
       // 关闭PDF文档
