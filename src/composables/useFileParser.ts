@@ -1,6 +1,7 @@
 import mammoth from 'mammoth';
 import * as pdfjsLib from 'pdfjs-dist';
 import PdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
+import type { PageMap } from '../utils/textAlgorithms';
 
 // 设置worker路径
 pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorker;
@@ -26,6 +27,7 @@ export interface FileParseResult {
   content: string;
   properties: FileProperties;
   pages?: number;
+  pageMap?: PageMap;
   error?: string;
 }
 
@@ -39,6 +41,22 @@ const formatFileSize = (size: number): string => {
     return `${(size / (1024 * 1024)).toFixed(2)} MB`;
   }
 };
+
+// 构建估算页码映射（1500 字符/页）
+const buildEstimatedPageMap = (content: string, charsPerPage: number = 1500): PageMap => {
+  const ranges: Array<{ start: number; end: number; page: number }> = []
+  const totalPages = Math.max(1, Math.ceil(content.length / charsPerPage))
+
+  for (let i = 1; i <= totalPages; i++) {
+    ranges.push({
+      start: (i - 1) * charsPerPage,
+      end: Math.min(i * charsPerPage, content.length),
+      page: i
+    })
+  }
+
+  return { ranges, totalPages }
+}
 
 // 文件解析组合式函数
 export function useFileParser() {
@@ -64,7 +82,8 @@ export function useFileParser() {
             文本内容长度: content.length.toString(),
             创建时间: new Date(file.lastModified).toLocaleString(),
             修改时间: new Date(file.lastModified).toLocaleString()
-          }
+          },
+          pageMap: buildEstimatedPageMap(content)
         });
       };
       
@@ -235,7 +254,8 @@ export function useFileParser() {
       
       return {
         content: textResult.value,
-        properties
+        properties,
+        pageMap: buildEstimatedPageMap(textResult.value)
       };
     } catch (error) {
       console.error('解析DOCX文件失败:', error);
@@ -267,26 +287,35 @@ export function useFileParser() {
       
       // 获取PDF页数
       const pageCount = pdfDocument.numPages;
-      
-      // 初始化文本内容
+
+      // 初始化文本内容和页码映射
       let textContent = '';
-      
+      const pageMap: PageMap = { ranges: [], totalPages: pageCount };
+
       // 对于大文件，限制提取的页数，提高性能
       const MAX_EXTRACT_PAGES = 50; // 最多提取50页
       const extractPageCount = Math.min(pageCount, MAX_EXTRACT_PAGES);
-      
-      // 逐页提取文本，但不超过最大页数限制
+
+      // 逐页提取文本，同时构建页码映射
+      let offset = 0
       for (let pageNum = 1; pageNum <= extractPageCount; pageNum++) {
         const page = await pdfDocument.getPage(pageNum);
         const textContentResult = await page.getTextContent();
-        
+
         // 提取文本内容
         const pageText = textContentResult.items
           .map((item: any) => item.str)
           .join('');
-        
-        // 添加上下文信息（可选择性添加）
+
+        // 添加页码映射
+        pageMap.ranges.push({
+          start: offset,
+          end: offset + pageText.length,
+          page: pageNum
+        })
+
         textContent += pageText + '\n';
+        offset += pageText.length + 1;
       }
       
       // 如果有更多页，添加提示信息
@@ -373,7 +402,8 @@ export function useFileParser() {
       return {
         content: textContent,
         properties: pdfProperties,
-        pages: pageCount
+        pages: pageCount,
+        pageMap
       };
     } catch (error) {
       console.error('PDF解析错误:', error);
@@ -540,7 +570,8 @@ export function useFileParser() {
       // 返回Excel文件的解析结果
       return {
         content: textContent,
-        properties
+        properties,
+        pageMap: buildEstimatedPageMap(textContent)
       };
     } catch (error) {
       console.error('解析XLSX文件失败:', error);
@@ -704,7 +735,8 @@ export function useFileParser() {
       // 返回PPTX文件的解析结果
       return {
         content: textContent,
-        properties
+        properties,
+        pageMap: buildEstimatedPageMap(textContent)
       };
     } catch (error) {
       console.error('解析PPTX文件失败:', error);
