@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   RiFileExcelLine,
   RiArrowLeftLine,
-  RiText,
-  RiPercentLine,
-  RiCheckLine
+  RiArrowLeftSLine,
+  RiArrowRightSLine,
+  RiExchange2Line
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx'
 
@@ -18,48 +18,82 @@ interface SimilarSegment {
   rightContent: string;
   leftPage: string;
   rightPage: string;
-}
-
-interface ComparisonStats {
-  totalWords: number;
-  similarWords: number;
-  similarityRate: number;
+  leftStartIndex?: number;
+  leftEndIndex?: number;
+  rightStartIndex?: number;
+  rightEndIndex?: number;
 }
 
 const route = useRoute()
 const router = useRouter()
 
+// 数据
 const segments = ref<SimilarSegment[]>([])
-const stats = ref<ComparisonStats | null>(null)
 const leftFileName = ref('')
 const rightFileName = ref('')
+const textSimilarity = ref('0%')
+const similarSegmentsCount = ref(0)
 
-onMounted(() => {
-  const result = sessionStorage.getItem('compareResult')
-  if (!result) {
-    router.push('/file-compare')
-    return
-  }
+// 分页状态
+const currentPage = ref(1)
+const pageSize = ref(10)
 
-  try {
-    const data = JSON.parse(result)
-    segments.value = data.segments || []
-    stats.value = data.stats || null
-    leftFileName.value = data.leftFileName || '左侧文件'
-    rightFileName.value = data.rightFileName || '右侧文件'
-    hasMore.value = false
-  } catch (error) {
-    console.error('解析对比结果失败:', error)
-    router.push('/file-compare')
-  }
+// 计算属性
+const totalPages = computed(() => Math.ceil(segments.value.length / pageSize.value))
+const startRecord = computed(() => (currentPage.value - 1) * pageSize.value + 1)
+const endRecord = computed(() => Math.min(currentPage.value * pageSize.value, segments.value.length))
+const totalRecords = computed(() => segments.value.length)
+
+// 当前页数据
+const pageSegments = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return segments.value.slice(start, end)
 })
+
+// 页码列表
+const pageNumbers = computed(() => {
+  const pages: number[] = []
+  const total = totalPages.value
+  const current = currentPage.value
+
+  if (total <= 5) {
+    for (let i = 1; i <= total; i++) pages.push(i)
+  } else if (current <= 3) {
+    pages.push(1, 2, 3, 4, 5)
+  } else if (current >= total - 2) {
+    for (let i = total - 4; i <= total; i++) pages.push(i)
+  } else {
+    for (let i = current - 2; i <= current + 2; i++) pages.push(i)
+  }
+  return pages
+})
+
+// 初始化数据
+const initData = () => {
+  const result = sessionStorage.getItem('compareResult')
+  if (result) {
+    try {
+      const data = JSON.parse(result)
+      segments.value = data.segments || []
+      leftFileName.value = data.leftFileName || '左侧文件'
+      rightFileName.value = data.rightFileName || '右侧文件'
+      textSimilarity.value = data.textSimilarity || '0%'
+      similarSegmentsCount.value = data.similarSegmentsCount || segments.value.length
+    } catch (error) {
+      console.error('解析对比结果失败:', error)
+    }
+  }
+}
+
+initData()
 
 const handleBack = () => {
   router.push('/file-compare')
 }
 
 const handleExport = async () => {
-  if (!stats.value || segments.value.length === 0) {
+  if (segments.value.length === 0) {
     alert('没有可导出的对比数据')
     return
   }
@@ -75,17 +109,10 @@ const handleExport = async () => {
             spacing: { after: 200 }
           }),
           new Paragraph({
-            children: [new TextRun({ text: '相似度统计：', bold: true, size: 20 })],
-            spacing: { after: 100 }
+            children: [new TextRun({ text: `文本重复率：${textSimilarity.value}`, size: 16 })]
           }),
           new Paragraph({
-            children: [new TextRun({ text: `总字数：${stats.value.totalWords.toLocaleString()}` , size: 16 })]
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `相似字数：${stats.value.similarWords.toLocaleString()}`, size: 16 })]
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `整体重合率：${stats.value.similarityRate.toFixed(2)}%`, size: 16 })],
+            children: [new TextRun({ text: `雷同片段：${similarSegmentsCount.value}处`, size: 16 })],
             spacing: { after: 200 }
           }),
           new Paragraph({
@@ -109,17 +136,19 @@ const handleExport = async () => {
               new TableRow({
                 children: [
                   new TableCell({ children: [new Paragraph({ text: '序号', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-                  new TableCell({ children: [new Paragraph({ text: '左侧内容', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-                  new TableCell({ children: [new Paragraph({ text: '相似度', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-                  new TableCell({ children: [new Paragraph({ text: '右侧内容', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                  new TableCell({ children: [new Paragraph({ text: leftFileName.value, bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                  new TableCell({ children: [new Paragraph({ text: '位置', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                  new TableCell({ children: [new Paragraph({ text: rightFileName.value, bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                  new TableCell({ children: [new Paragraph({ text: '位置', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
                 ]
               }),
               ...segments.value.map(segment => new TableRow({
                 children: [
                   new TableCell({ children: [new Paragraph({ text: segment.id.toString(), alignment: AlignmentType.CENTER })] }),
                   new TableCell({ children: [new Paragraph({ text: segment.leftContent.replace(/<[^>]*>/g, '') })] }),
-                  new TableCell({ children: [new Paragraph({ text: segment.similarity, alignment: AlignmentType.CENTER })] }),
+                  new TableCell({ children: [new Paragraph({ text: segment.leftPage, alignment: AlignmentType.CENTER })] }),
                   new TableCell({ children: [new Paragraph({ text: segment.rightContent.replace(/<[^>]*>/g, '') })] }),
+                  new TableCell({ children: [new Paragraph({ text: segment.rightPage, alignment: AlignmentType.CENTER })] }),
                 ]
               }))
             ]
@@ -141,10 +170,18 @@ const handleExport = async () => {
   }
 }
 
-const getSimilarityLevel = (value: number): string => {
-  if (value >= 90) return 'high'
-  if (value >= 70) return 'medium'
-  return 'low'
+const goToPage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+  }
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value--
+}
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value++
 }
 </script>
 
@@ -164,67 +201,64 @@ const getSimilarityLevel = (value: number): string => {
       </button>
     </div>
 
-    <!-- 统计卡片 -->
-    <div v-if="stats" class="stats-cards">
-      <div class="stat-card">
-        <div class="stat-icon-wrapper">
-          <RiText class="stat-icon" />
-        </div>
-        <div class="stat-info">
-          <span class="stat-label">总字数</span>
-          <span class="stat-value">{{ stats.totalWords.toLocaleString() }}</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon-wrapper similar">
-          <RiCheckLine class="stat-icon" />
-        </div>
-        <div class="stat-info">
-          <span class="stat-label">相似字数</span>
-          <span class="stat-value similar">{{ stats.similarWords.toLocaleString() }}</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon-wrapper rate">
-          <RiPercentLine class="stat-icon" />
-        </div>
-        <div class="stat-info">
-          <span class="stat-label">整体重合率</span>
-          <span class="stat-value rate">{{ stats.similarityRate.toFixed(2) }}%</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 对比列表 -->
+    <!-- 对比列表区 -->
     <div class="comparison-list">
-      <div class="section-header">
-        <h2 class="section-title">相似片段列表</h2>
-        <span class="section-count">共 {{ segments.length }} 条</span>
-      </div>
-
-      <!-- 表头 -->
-      <div class="table-header">
-        <div class="table-col col-index">序号</div>
-        <div class="table-col col-content">左侧文件内容</div>
-        <div class="table-col col-position">左侧位置</div>
-        <div class="table-col col-content">右侧文件内容</div>
-        <div class="table-col col-position">右侧位置</div>
-        <div class="table-col col-similarity">相似度</div>
-      </div>
-
-      <!-- 表体 -->
-      <div class="table-body">
-        <div v-for="(segment, index) in segments" :key="segment.id" class="table-row">
-          <div class="table-col col-index">{{ index + 1 }}</div>
-          <div class="table-col col-content" v-html="segment.leftContent"></div>
-          <div class="table-col col-position">{{ segment.leftPage }}</div>
-          <div class="table-col col-content" v-html="segment.rightContent"></div>
-          <div class="table-col col-position">{{ segment.rightPage }}</div>
-          <div class="table-col col-similarity">
-            <span :class="['similarity-tag', getSimilarityLevel(segment.similarityValue)]">
-              {{ segment.similarityValue }}%
-            </span>
+      <!-- 列表头部 -->
+      <div class="list-header">
+        <div class="title-section">
+          <div class="icon-container">
+            <RiExchange2Line class="title-icon" />
           </div>
+          <span class="spacer"></span>
+          <h2 class="list-title">相似片段详情</h2>
+        </div>
+        <span class="stats-info">共 {{ totalRecords }} 条记录，显示第 {{ startRecord }} - {{ endRecord }} 条</span>
+      </div>
+
+      <!-- 对比数据表 -->
+      <div class="data-table">
+        <!-- 表头 -->
+        <div class="table-header">
+          <div class="col col-index">序号</div>
+          <div class="col col-content">{{ leftFileName }}</div>
+          <div class="col col-position">源文件位置</div>
+          <div class="col col-content">{{ rightFileName }}</div>
+          <div class="col col-position">修订版位置</div>
+        </div>
+
+        <!-- 表体 -->
+        <div class="table-body">
+          <div v-for="segment in pageSegments" :key="segment.id" class="table-row">
+            <div class="col col-index">{{ segment.id }}</div>
+            <div class="col col-content" v-html="segment.leftContent"></div>
+            <div class="col col-position">{{ segment.leftPage }}</div>
+            <div class="col col-content" v-html="segment.rightContent"></div>
+            <div class="col col-position">{{ segment.rightPage }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分页控件 -->
+      <div class="pagination">
+        <div class="pagination-info">
+          共 {{ totalRecords }} 条记录，显示第 {{ startRecord }} - {{ endRecord }} 条
+        </div>
+        <div class="pagination-controls">
+          <button class="page-btn" :disabled="currentPage <= 1" @click="prevPage">
+            <RiArrowLeftSLine />
+          </button>
+          <button
+            v-for="page in pageNumbers"
+            :key="page"
+            class="page-number"
+            :class="{ active: page === currentPage }"
+            @click="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+          <button class="page-btn" :disabled="currentPage >= totalPages" @click="nextPage">
+            <RiArrowRightSLine />
+          </button>
         </div>
       </div>
     </div>
@@ -315,204 +349,219 @@ const getSimilarityLevel = (value: number): string => {
   color: rgba(255, 255, 255, 1);
 }
 
-/* 统计卡片 */
-.stats-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+/* 对比列表区 */
+.comparison-list {
+  background-color: rgba(255, 255, 255, 1);
+  border: 0.7px solid rgba(216, 191, 156, 1);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.stat-card {
+/* 列表头部 */
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.list-header .title-section {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  gap: 0;
 }
 
-.stat-icon-wrapper {
-  width: 48px;
-  height: 48px;
+.icon-container {
+  width: 40px;
+  height: 40px;
   border-radius: 8px;
-  background-color: rgba(166, 124, 82, 0.1);
+  background-color: rgba(252, 231, 243, 1);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.stat-icon-wrapper.similar {
-  background-color: rgba(34, 139, 34, 0.1);
+.title-icon {
+  font-size: 20px;
+  color: rgba(219, 39, 119, 1);
 }
 
-.stat-icon-wrapper.rate {
-  background-color: rgba(139, 0, 0, 0.1);
+.spacer {
+  width: 12px;
+  height: 28px;
 }
 
-.stat-icon {
-  font-size: 24px;
-  color: rgba(166, 124, 82, 1);
-}
-
-.stat-icon-wrapper.similar .stat-icon {
-  color: rgba(34, 139, 34, 1);
-}
-
-.stat-icon-wrapper.rate .stat-icon {
-  color: rgba(139, 0, 0, 1);
-}
-
-.stat-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: rgba(166, 124, 82, 1);
-  font-family: SourceHanSans-Regular;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Bold;
-}
-
-.stat-value.similar {
-  color: rgba(34, 139, 34, 1);
-}
-
-.stat-value.rate {
-  color: rgba(139, 0, 0, 1);
-}
-
-/* 对比列表 */
-.comparison-list {
-  flex: 1;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
-  background-color: rgba(248, 244, 233, 0.5);
-}
-
-.section-title {
-  font-size: 16px;
+.list-title {
+  font-size: 20px;
   font-weight: 600;
   color: rgba(44, 24, 16, 1);
   margin: 0;
   font-family: SourceHanSans-SemiBold;
 }
 
-.section-count {
-  font-size: 12px;
-  color: rgba(166, 124, 82, 1);
+.stats-info {
+  font-size: 14px;
+  color: rgba(107, 79, 52, 1);
   font-family: SourceHanSans-Regular;
 }
 
-/* 表格 */
+/* 对比数据表 */
+.data-table {
+  border: 0.7px solid rgba(230, 215, 191, 1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* 表头 */
 .table-header {
   display: grid;
-  grid-template-columns: 60px 1fr 100px 1fr 100px 100px;
-  background-color: rgba(248, 244, 233, 0.8);
-  border-bottom: 2px solid rgba(166, 124, 82, 0.3);
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  grid-template-columns: 81px 377px 122px 377px 122px;
+  background-color: rgba(245, 238, 226, 1);
+  border-bottom: 1px solid rgba(230, 215, 191, 1);
 }
 
-.table-header .table-col {
+.table-header .col {
   padding: 12px 16px;
-  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-SemiBold;
+  display: flex;
+  align-items: center;
 }
 
+.col-index {
+  justify-content: center;
+}
+
+.col-content {
+  justify-content: flex-start;
+}
+
+.col-position {
+  justify-content: center;
+}
+
+/* 表体 */
 .table-body {
+  max-height: 600px;
   overflow-y: auto;
-  flex: 1;
 }
 
 .table-row {
   display: grid;
-  grid-template-columns: 60px 1fr 100px 1fr 100px 100px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.15);
+  grid-template-columns: 81px 377px 122px 377px 122px;
+  border-bottom: 1px solid rgba(230, 215, 191, 0.5);
   transition: background-color 0.2s;
-  font-size: 13px;
+}
+
+.table-row:last-child {
+  border-bottom: none;
 }
 
 .table-row:hover {
   background-color: rgba(248, 244, 233, 0.3);
 }
 
-.table-col {
+.table-row .col {
   padding: 16px;
-  text-align: center;
   display: flex;
   align-items: center;
-  justify-content: center;
+  font-size: 13px;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-Regular;
+  line-height: 1.6;
 }
 
-.col-index {
+.table-row .col-index {
+  justify-content: center;
   font-weight: 500;
   color: rgba(166, 124, 82, 1);
 }
 
-.col-content {
-  text-align: left;
+.table-row .col-content {
   justify-content: flex-start;
-  line-height: 1.6;
-  color: rgba(44, 24, 16, 1);
+  text-align: left;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.col-position {
-  color: rgba(166, 124, 82, 1);
-  font-size: 12px;
-}
-
-.col-similarity {
+.table-row .col-position {
   justify-content: center;
-}
-
-.similarity-tag {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
   font-size: 12px;
-  font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
-}
-
-.similarity-tag.high {
-  background-color: rgba(139, 0, 0, 0.1);
-  color: rgba(139, 0, 0, 1);
-}
-
-.similarity-tag.medium {
-  background-color: rgba(166, 124, 82, 0.2);
   color: rgba(166, 124, 82, 1);
 }
 
-.similarity-tag.low {
-  background-color: rgba(34, 139, 34, 0.1);
-  color: rgba(34, 139, 34, 1);
+/* 分页控件 */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-Regular;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-btn {
+  width: 40px;
+  height: 40px;
+  border: 0.7px solid rgba(216, 191, 156, 1);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: rgba(107, 79, 52, 1);
+}
+
+.page-btn:hover:not(:disabled) {
+  background-color: rgba(245, 238, 226, 1);
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-number {
+  width: 40px;
+  height: 40px;
+  border: 0.7px solid rgba(216, 191, 156, 1);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-Medium;
+  transition: all 0.2s;
+}
+
+.page-number:hover {
+  background-color: rgba(245, 238, 226, 1);
+}
+
+.page-number.active {
+  background-color: rgba(139, 0, 0, 1);
+  border-color: rgba(139, 0, 0, 1);
+  color: white;
 }
 
 /* 高亮文本样式 */
@@ -525,10 +574,46 @@ const getSimilarityLevel = (value: number): string => {
   display: inline-block;
 }
 
-/* 移动端响应式优化 */
+/* 移动端响应式 */
 @media (max-width: 768px) {
   .page-header {
     display: none;
+  }
+
+  .result-page-container {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .comparison-list {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .list-title {
+    font-size: 18px;
+  }
+
+  .data-table {
+    overflow-x: auto;
+  }
+
+  .table-header,
+  .table-row {
+    grid-template-columns: 60px minmax(200px, 1fr) 80px minmax(200px, 1fr) 80px;
+    min-width: 700px;
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
   }
 }
 </style>
