@@ -733,8 +733,10 @@ const nextPage = () => {
 .table-row .col-content {
   justify-content: flex-start;
   text-align: left;
-  overflow: hidden;
+  overflow: visible;
   border-right: 1px solid rgba(230, 215, 191, 0.3);
+  white-space: normal;
+  word-break: break-all;
 }
 
 .table-row .col-position {
@@ -807,13 +809,13 @@ const nextPage = () => {
 :deep(.highlighted-text) {
   background-color: rgba(255, 215, 0, 0.7) !important;
   color: rgba(139, 0, 0, 1) !important;
-  padding: 2px 6px !important;
-  border-radius: 4px !important;
+  padding: 1px 4px !important;
+  border-radius: 3px !important;
   font-weight: 600 !important;
-  display: inline-block !important;
-  line-height: 1.4 !important;
-  z-index: 1000 !important;
-  position: relative !important;
+  display: inline !important;
+  line-height: inherit !important;
+  box-decoration-break: clone !important;
+  -webkit-box-decoration-break: clone !important;
 }
 
 /* 移动端响应式 */
