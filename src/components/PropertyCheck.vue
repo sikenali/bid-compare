@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
   RiFileWordLine,
@@ -18,12 +19,13 @@ import {
   RiDownloadLine,
   RiFileList3Line
 } from '@remixicon/vue'
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx'
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
 import FileUpload from './FileUpload.vue'
 import RecentRecords from './RecentRecords.vue'
+
+const router = useRouter()
 
 // 文件信息类型定义
 interface FileInfo {
@@ -455,11 +457,17 @@ const handleCheck = async () => {
         status: (leftFileProperties.value.最后一次保存者 || '未知') === (rightFileProperties.value.最后一次保存者 || '未知') ? 'match' : 'mismatch'
       },
       {
-            name: '页码范围',
-            leftValue: leftFileProperties.value.页码范围 || 'N/A',
-            rightValue: rightFileProperties.value.页码范围 || 'N/A',
-            status: (leftFileProperties.value.页码范围 || 'N/A') === (rightFileProperties.value.页码范围 || 'N/A') ? 'match' : 'mismatch'
-          },
+        name: '修订号',
+        leftValue: leftFileProperties.value.修订号 || '未知',
+        rightValue: rightFileProperties.value.修订号 || '未知',
+        status: (leftFileProperties.value.修订号 || '未知') === (rightFileProperties.value.修订号 || '未知') ? 'match' : 'mismatch'
+      },
+      {
+        name: '版本号',
+        leftValue: leftFileProperties.value.版本号 || '未知',
+        rightValue: rightFileProperties.value.版本号 || '未知',
+        status: (leftFileProperties.value.版本号 || '未知') === (rightFileProperties.value.版本号 || '未知') ? 'match' : 'mismatch'
+      },
       {
         name: '程序名称',
         leftValue: leftFileProperties.value.程序名称 || '未知',
@@ -473,16 +481,28 @@ const handleCheck = async () => {
         status: (leftFileProperties.value.公司 || '未知') === (rightFileProperties.value.公司 || '未知') ? 'match' : 'mismatch'
       },
       {
-        name: '文本内容长度',
+        name: '创建时间',
+        leftValue: leftFileProperties.value.创建时间 || '未知',
+        rightValue: rightFileProperties.value.创建时间 || '未知',
+        status: (leftFileProperties.value.创建时间 || '未知') === (rightFileProperties.value.创建时间 || '未知') ? 'match' : 'mismatch'
+      },
+      {
+        name: '修改时间',
+        leftValue: leftFileProperties.value.修改时间 || '未知',
+        rightValue: rightFileProperties.value.修改时间 || '未知',
+        status: (leftFileProperties.value.修改时间 || '未知') === (rightFileProperties.value.修改时间 || '未知') ? 'match' : 'mismatch'
+      },
+      {
+        name: '页数',
+        leftValue: leftFileProperties.value.页数 || leftFileProperties.value.页码范围 || '未知',
+        rightValue: rightFileProperties.value.页数 || rightFileProperties.value.页码范围 || '未知',
+        status: (leftFileProperties.value.页数 || leftFileProperties.value.页码范围 || '未知') === (rightFileProperties.value.页数 || rightFileProperties.value.页码范围 || '未知') ? 'match' : 'mismatch'
+      },
+      {
+        name: '文件字数',
         leftValue: leftFileProperties.value.文本内容长度 || leftFileContent.value.length.toString(),
         rightValue: rightFileProperties.value.文本内容长度 || rightFileContent.value.length.toString(),
         status: (leftFileProperties.value.文本内容长度 || leftFileContent.value.length.toString()) === (rightFileProperties.value.文本内容长度 || rightFileContent.value.length.toString()) ? 'match' : 'mismatch'
-      },
-      {
-        name: '文本相似度',
-        leftValue: `${similarity}%`,
-        rightValue: `${similarity}%`,
-        status: similarityStatus
       }
     ];
     
@@ -500,10 +520,25 @@ const handleCheck = async () => {
       rightFileName: rightFileInfo.value.name,
       propertyDetails: propertyDetails.value
     });
-    
-    // 显示结果
-    showResults.value = true;
 
+    // 清理旧数据
+    sessionStorage.removeItem('propertyCheckResult')
+
+    // 保存检查结果到 sessionStorage
+    const checkResult = {
+      propertyDetails: propertyDetails.value,
+      leftFileName: leftFileInfo.value.name,
+      rightFileName: rightFileInfo.value.name,
+      totalProperties: propertyDetails.value.length,
+      matchingProperties: matchingProperties.value,
+      nonMatchingProperties: nonMatchingProperties.value,
+      warningProperties: warningProperties.value,
+      similarity: `${similarity}%`
+    }
+    sessionStorage.setItem('propertyCheckResult', JSON.stringify(checkResult))
+
+    // 跳转到结果页面，添加时间戳强制刷新
+    router.push({ path: '/property-check-result', query: { t: Date.now() } })
   } catch (error) {
     parseError.value = (error as Error).message;
   } finally {
@@ -754,13 +789,11 @@ const generateWordReport = () => {
           <p class="page-subtitle">对比两个文件的基础属性信息，快速识别差异</p>
         </div>
         <div class="header-actions">
-          <button v-if="showResults" class="header-back-btn" @click="handleBack">返回</button>
-          <button v-if="showResults" class="header-export-btn" @click="handleExportReport">导出报告</button>
-          <button v-if="!showResults" class="icon-btn-wrapper" @click="toggleHistory">
+          <button class="icon-btn-wrapper" @click="toggleHistory">
             <RiHistoryLine class="icon-btn-svg" />
             <span class="icon-btn-tooltip">历史记录</span>
           </button>
-          <button v-if="!showResults" class="icon-btn-wrapper" @click="toggleHelp">
+          <button class="icon-btn-wrapper" @click="toggleHelp">
             <RiQuestionLine class="icon-btn-svg" />
             <span class="icon-btn-tooltip">帮助</span>
           </button>
@@ -826,7 +859,7 @@ const generateWordReport = () => {
     </div>
 
     <!-- 文件上传区域 -->
-    <div v-if="!showResults" class="upload-section" :class="{ 'processing': isParsing }">
+    <div class="upload-section" :class="{ 'processing': isParsing }">
       <!-- 文件A上传 -->
       <FileUpload
         side="left"
@@ -867,80 +900,6 @@ const generateWordReport = () => {
     <!-- 解析错误显示 -->
     <div v-if="parseError" class="error-message">
       {{ parseError }}
-    </div>
-
-    <!-- 属性检查结果 -->
-    <div v-if="showResults" class="results-section">
-      <!-- 属性统计 -->
-      <div class="property-stats">
-        <div class="stat-item match">
-          <div class="stat-icon-container match">
-            <RiCheckDoubleLine class="stat-icon" />
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">匹配属性</span>
-            <span class="stat-value match">{{ matchingProperties }}项</span>
-          </div>
-        </div>
-        <div class="stat-item mismatch">
-          <div class="stat-icon-container mismatch">
-            <RiCloseCircleLine class="stat-icon" />
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">不匹配属性</span>
-            <span class="stat-value mismatch">{{ nonMatchingProperties }}项</span>
-          </div>
-        </div>
-        <div class="stat-item warning">
-          <div class="stat-icon-container warning">
-            <RiAlertLine class="stat-icon" />
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">警告属性</span>
-            <span class="stat-value warning">{{ warningProperties }}项</span>
-          </div>
-        </div>
-        <div class="export-section">
-          <!-- 按钮已移动到头部 -->
-        </div>
-      </div>
-
-      <!-- 属性差异详情 -->
-        <div class="property-details-section">
-          <div class="section-header">
-            <div class="section-icon-container">
-              <RiFileList3Line class="section-icon" />
-            </div>
-            <h3 class="section-title">属性对比详情</h3>
-          </div>
-          
-          <!-- 整合后的属性表格 -->
-          <div class="property-table">
-            <div class="table-header">
-              <div class="table-col prop-name">对比类型</div>
-              <div class="table-col prop-value-left">文件名称</div>
-              <div class="table-col prop-value-right">文件名称</div>
-              <div class="table-col prop-status">是否匹配</div>
-            </div>
-            <div class="table-body">
-              <div 
-                v-for="(property, index) in propertyDetails" 
-                :key="index"
-                class="table-row"
-                :class="`status-${property.status}`"
-              >
-                <div class="table-col prop-name">{{ property.name }}</div>
-                <div class="table-col prop-value-left">{{ property.leftValue }}</div>
-                <div class="table-col prop-value-right">{{ property.rightValue }}</div>
-                <div class="table-col prop-status">
-                  <span :class="`status-tag status-${property.status}`">
-                    {{ property.status === 'match' ? '匹配' : property.status === 'mismatch' ? '不匹配' : '警告' }}
-                  </span>
-                </div>
-              </div>
-            </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -2095,6 +2054,104 @@ const generateWordReport = () => {
 
   .page-header {
     display: none;
+  }
+
+  /* 属性详情区域移动端优化 */
+  .property-details-section {
+    margin: 0 -16px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .section-header {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+  }
+
+  .section-title {
+    font-size: 14px;
+  }
+
+  .view-options {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 8px;
+  }
+
+  .view-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  /* 属性表格移动端优化 */
+  .property-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-header {
+    grid-template-columns: 100px 1fr 1fr 80px;
+    padding: 10px 12px;
+    font-size: 12px;
+    min-width: 600px;
+  }
+
+  .table-row {
+    grid-template-columns: 100px 1fr 1fr 80px;
+    padding: 12px;
+    min-width: 600px;
+    font-size: 12px;
+  }
+
+  .table-header-cell,
+  .table-cell {
+    padding: 4px 6px;
+    word-break: break-word;
+  }
+
+  /* 分页容器移动端优化 */
+  .pagination-container {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 16px;
+    align-items: stretch;
+  }
+
+  .pagination-info {
+    text-align: center;
+    font-size: 12px;
+    order: 1;
+  }
+
+  .pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    order: 2;
+  }
+
+  .pagination-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+    min-height: 36px;
+  }
+
+  .page-numbers {
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .page-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
+    min-width: 36px;
+  }
+
+  .page-ellipsis {
+    font-size: 12px;
   }
 }
 </style>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onActivated, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   RiFileExcelLine,
   RiArrowLeftLine,
@@ -18,6 +18,7 @@ interface PropertyDetail {
   status: 'match' | 'mismatch' | 'warning';
 }
 
+const route = useRoute()
 const router = useRouter()
 
 const propertyDetails = ref<PropertyDetail[]>([])
@@ -27,25 +28,48 @@ const warningCount = ref(0)
 const leftFileName = ref('')
 const rightFileName = ref('')
 
-onMounted(() => {
+// 加载数据函数
+const loadData = () => {
   const result = sessionStorage.getItem('propertyCheckResult')
   if (!result) {
-    router.push('/property-check')
+    console.warn('未找到属性检查结果数据')
     return
   }
 
   try {
     const data = JSON.parse(result)
-    propertyDetails.value = data.properties || []
-    matchCount.value = data.stats?.matchCount || 0
-    mismatchCount.value = data.stats?.mismatchCount || 0
-    warningCount.value = data.stats?.warningCount || 0
+    propertyDetails.value = data.propertyDetails || []
+    matchCount.value = data.matchingProperties || 0
+    mismatchCount.value = data.nonMatchingProperties || 0
+    warningCount.value = data.warningProperties || 0
     leftFileName.value = data.leftFileName || '文件 A'
     rightFileName.value = data.rightFileName || '文件 B'
+    console.log('加载属性检查结果:', {
+      leftFileName: leftFileName.value,
+      rightFileName: rightFileName.value,
+      propertyCount: propertyDetails.value.length
+    })
   } catch (error) {
     console.error('解析属性检查结果失败:', error)
     router.push('/property-check')
   }
+}
+
+onMounted(() => {
+  console.log('PropertyCheckResult - onMounted')
+  loadData()
+})
+
+// 如果组件被 keep-alive 缓存，激活时重新加载数据
+onActivated(() => {
+  console.log('PropertyCheckResult - onActivated')
+  loadData()
+})
+
+// 监听路由查询参数变化，重新加载数据
+watch(() => route.query.t, () => {
+  console.log('PropertyCheckResult - route.query.t changed')
+  loadData()
 })
 
 const handleBack = () => {
@@ -147,45 +171,20 @@ const getStatusColor = (status: string): string => {
   <div class="property-result-container">
     <!-- 页面头部 -->
     <div class="page-header">
-      <div class="title-section">
-        <button class="back-btn" @click="handleBack">
-          <RiArrowLeftLine class="back-icon" />
-          <span class="back-text">返回</span>
-        </button>
-      </div>
-      <button class="export-btn" @click="handleExport">
-        <RiFileExcelLine class="export-icon" />
-        <span>导出报告</span>
-      </button>
-    </div>
-
-    <!-- 统计卡片 -->
-    <div class="stats-cards">
-      <div class="stat-card match">
-        <div class="stat-icon-wrapper match">
-          <RiCheckLine class="stat-icon" />
+      <div class="title-row">
+        <div>
+          <h1 class="page-title">属性检查结果</h1>
+          <p class="page-subtitle">显示两个文件的基础属性差异和匹配统计</p>
         </div>
-        <div class="stat-info">
-          <span class="stat-label">匹配属性</span>
-          <span class="stat-value match">{{ matchCount }}项</span>
-        </div>
-      </div>
-      <div class="stat-card mismatch">
-        <div class="stat-icon-wrapper mismatch">
-          <RiCloseCircleLine class="stat-icon" />
-        </div>
-        <div class="stat-info">
-          <span class="stat-label">不匹配属性</span>
-          <span class="stat-value mismatch">{{ mismatchCount }}项</span>
-        </div>
-      </div>
-      <div class="stat-card warning">
-        <div class="stat-icon-wrapper warning">
-          <RiAlertLine class="stat-icon" />
-        </div>
-        <div class="stat-info">
-          <span class="stat-label">警告属性</span>
-          <span class="stat-value warning">{{ warningCount }}项</span>
+        <div class="header-actions">
+          <button class="back-btn" @click="handleBack">
+            <RiArrowLeftLine class="back-icon" />
+            <span class="back-text">返回</span>
+          </button>
+          <button class="export-btn" @click="handleExport">
+            <RiFileExcelLine class="export-icon" />
+            <span>导出报告</span>
+          </button>
         </div>
       </div>
     </div>
@@ -198,6 +197,22 @@ const getStatusColor = (status: string): string => {
           <RiFilterLine class="header-icon" />
         </div>
         <h2 class="header-title">属性对比详情</h2>
+        
+        <!-- 统计徽章 -->
+        <div class="header-stats">
+          <div class="stat-badge stat-match">
+            <span class="stat-badge-icon">✓</span>
+            <span>匹配：{{ matchCount }}项</span>
+          </div>
+          <div class="stat-badge stat-mismatch">
+            <span class="stat-badge-icon">✕</span>
+            <span>不匹配：{{ mismatchCount }}项</span>
+          </div>
+          <div class="stat-badge stat-warning">
+            <span class="stat-badge-icon">!</span>
+            <span>警告：{{ warningCount }}项</span>
+          </div>
+        </div>
       </div>
 
       <!-- 表格内容 -->
@@ -210,11 +225,11 @@ const getStatusColor = (status: string): string => {
           <div class="table-col col-value-left">
             <span class="col-text file-a">{{ leftFileName }}</span>
           </div>
-          <div class="table-col col-status">
-            <span class="col-text">状态</span>
-          </div>
           <div class="table-col col-value-right">
             <span class="col-text file-b">{{ rightFileName }}</span>
+          </div>
+          <div class="table-col col-status">
+            <span class="col-text">状态</span>
           </div>
         </div>
 
@@ -232,11 +247,11 @@ const getStatusColor = (status: string): string => {
             <div class="table-col col-value-left">
               <span class="col-text value-text" :class="{ 'value-mismatch': property.status === 'mismatch' }">{{ property.leftValue }}</span>
             </div>
-            <div class="table-col col-status">
-              <component :is="getStatusIcon(property.status)" class="status-icon-svg" :style="{ color: getStatusColor(property.status) }" />
-            </div>
             <div class="table-col col-value-right">
               <span class="col-text value-text" :class="{ 'value-mismatch': property.status === 'mismatch' }">{{ property.rightValue }}</span>
+            </div>
+            <div class="table-col col-status">
+              <component :is="getStatusIcon(property.status)" class="status-icon-svg" :style="{ color: getStatusColor(property.status) }" />
             </div>
           </div>
 
@@ -256,7 +271,6 @@ const getStatusColor = (status: string): string => {
   height: 100%;
   overflow: auto;
   background-color: rgba(248, 244, 233, 1);
-  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -265,34 +279,61 @@ const getStatusColor = (status: string): string => {
 
 /* 页面头部 */
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  padding: 16px 24px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
 }
 
-.title-section {
+.title-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: rgba(44, 24, 16, 1);
+  margin: 0 0 4px 0;
+  font-family: SourceHanSans-Bold;
+}
+
+.page-subtitle {
+  font-size: 12px;
+  color: rgba(166, 124, 82, 1);
+  margin: 0;
+  font-family: SourceHanSans-Regular;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .back-btn {
-  height: 53px;
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 8px;
+  height: 40px;
+  padding: 0 20px;
   background-color: rgba(255, 255, 255, 1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  color: rgba(139, 0, 0, 1);
+  border: 1px solid rgba(139, 0, 0, 0.3);
+  border-radius: 10px;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 24px;
   gap: 8px;
-  transition: all 0.3s;
 }
 
 .back-btn:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  background-color: rgba(139, 0, 0, 0.05);
+  border-color: rgba(139, 0, 0, 1);
 }
 
 .back-icon {
@@ -308,11 +349,11 @@ const getStatusColor = (status: string): string => {
 }
 
 .export-btn {
-  height: 53px;
+  height: 40px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 24px;
+  padding: 0 20px;
   background-color: rgba(46, 89, 132, 1);
   color: white;
   border: none;
@@ -332,92 +373,6 @@ const getStatusColor = (status: string): string => {
 .export-icon {
   font-size: 18px;
   color: rgba(255, 255, 255, 1);
-}
-
-/* 统计卡片 */
-.stats-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-.stat-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
-}
-
-.stat-icon-wrapper {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.stat-icon-wrapper.match {
-  background-color: rgba(34, 139, 34, 0.1);
-}
-
-.stat-icon-wrapper.mismatch {
-  background-color: rgba(139, 0, 0, 0.1);
-}
-
-.stat-icon-wrapper.warning {
-  background-color: rgba(255, 165, 0, 0.1);
-}
-
-.stat-icon {
-  font-size: 24px;
-}
-
-.stat-icon-wrapper.match .stat-icon {
-  color: rgba(34, 139, 34, 1);
-}
-
-.stat-icon-wrapper.mismatch .stat-icon {
-  color: rgba(139, 0, 0, 1);
-}
-
-.stat-icon-wrapper.warning .stat-icon {
-  color: rgba(255, 165, 0, 1);
-}
-
-.stat-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: rgba(166, 124, 82, 1);
-  font-family: SourceHanSans-Regular;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Bold;
-}
-
-.stat-value.match {
-  color: rgba(34, 139, 34, 1);
-}
-
-.stat-value.mismatch {
-  color: rgba(139, 0, 0, 1);
-}
-
-.stat-value.warning {
-  color: rgba(255, 165, 0, 1);
 }
 
 /* 属性对比表格区 */
@@ -444,6 +399,7 @@ const getStatusColor = (status: string): string => {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .header-icon {
@@ -457,6 +413,59 @@ const getStatusColor = (status: string): string => {
   color: rgba(44, 24, 16, 1);
   margin: 0;
   font-family: SourceHanSans-SemiBold;
+  white-space: nowrap;
+}
+
+/* 头部统计徽章 */
+.header-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.stat-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: SourceHanSans-Medium, sans-serif;
+  white-space: nowrap;
+}
+
+.stat-badge-icon {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stat-match {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: rgba(22, 101, 52, 1);
+}
+
+.stat-match .stat-badge-icon {
+  color: rgba(34, 197, 94, 1);
+}
+
+.stat-mismatch {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: rgba(153, 27, 27, 1);
+}
+
+.stat-mismatch .stat-badge-icon {
+  color: rgba(239, 68, 68, 1);
+}
+
+.stat-warning {
+  background-color: rgba(249, 115, 22, 0.1);
+  color: rgba(154, 52, 18, 1);
+}
+
+.stat-warning .stat-badge-icon {
+  color: rgba(249, 115, 22, 1);
 }
 
 .property-table {
@@ -467,18 +476,21 @@ const getStatusColor = (status: string): string => {
 
 .table-header {
   display: grid;
-  grid-template-columns: 269px 323px 162px 323px;
+  grid-template-columns: 269px 323px 323px 162px;
   background-color: rgba(245, 238, 226, 1);
 }
 
+.table-header .table-col {
+  padding: 10px 24px;
+}
+
 .table-body {
-  max-height: 500px;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .table-row {
   display: grid;
-  grid-template-columns: 269px 323px 162px 323px;
+  grid-template-columns: 269px 323px 323px 162px;
   border-top: 0.7px solid rgba(230, 215, 191, 1);
 }
 
@@ -487,7 +499,7 @@ const getStatusColor = (status: string): string => {
 }
 
 .table-col {
-  padding: 16px 24px;
+  padding: 10px 24px;
   display: flex;
   align-items: center;
 }
@@ -502,6 +514,7 @@ const getStatusColor = (status: string): string => {
 
 .col-status {
   justify-content: center;
+  border-right: 0.7px solid rgba(230, 215, 191, 1);
 }
 
 .col-value-right {

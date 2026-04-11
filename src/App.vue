@@ -183,7 +183,7 @@ const handleMenuClick = (menu: string) => {
 
 /* 侧边导航栏 */
 .sidebar {
-  width: 250px;
+  width: 220px;
   height: 100%;
   background-color: rgba(44, 24, 16, 1);
   display: flex;
@@ -194,7 +194,7 @@ const handleMenuClick = (menu: string) => {
 
 /* Logo区域 */
 .logo-section {
-  padding: 32px 24px;
+  padding: 24px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -202,12 +202,12 @@ const handleMenuClick = (menu: string) => {
 }
 
 .logo-icon {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .logo-seal {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: rgba(139, 0, 0, 1);
   display: flex;
@@ -229,7 +229,7 @@ const handleMenuClick = (menu: string) => {
 }
 
 .logo-icon-svg {
-  font-size: 32px;
+  font-size: 28px;
   color: rgba(255, 255, 255, 1);
 }
 
@@ -239,42 +239,42 @@ const handleMenuClick = (menu: string) => {
 }
 
 .logo-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: rgba(255, 255, 255, 1);
-  margin: 0 0 4px 0;
+  margin: 0 0 2px 0;
   font-family: SourceHanSans-Bold;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
 }
 
 .logo-subtitle {
-  font-size: 12px;
+  font-size: 10px;
   color: rgba(216, 191, 156, 1);
   margin: 0;
   font-family: SourceHanSans-Regular;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 /* 导航菜单 */
 .nav-menu {
   flex: 1;
-  padding: 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border: none;
   border-radius: 8px;
   background-color: transparent;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   color: rgba(255, 255, 255, 0.8);
   transition: all 0.3s ease;
   text-align: left;
@@ -293,26 +293,29 @@ const handleMenuClick = (menu: string) => {
 }
 
 .nav-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
 }
 
 .nav-text {
   flex: 1;
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 底部版本信息 */
 .version-info {
-  padding: 20px;
+  padding: 16px 12px;
   border-top: 1px solid rgba(166, 124, 82, 0.2);
   text-align: center;
 }
 
 .version-info p {
-  font-size: 12px;
+  font-size: 10px;
   color: rgba(166, 124, 82, 1);
   margin: 0;
   font-family: SourceHanSans-Regular;
@@ -324,7 +327,8 @@ const handleMenuClick = (menu: string) => {
   height: 100%;
   overflow: auto;
   background-color: rgba(248, 244, 233, 1);
-  padding: 32px;
+  padding: 24px;
+  padding-left: 24px;
 }
 
 /* 移动端顶部导航栏 */

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
   RiFileWordLine,
@@ -26,9 +27,11 @@ import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
 import { useAIModel } from '../composables/useAIModel'
 import { useComparison } from '../composables/useComparison'
-import type { ComparisonSettings } from '../utils/textAlgorithms'
+import type { ComparisonSettings, SimilarSegment } from '../utils/textAlgorithms'
 import FileUpload from './FileUpload.vue'
 import RecentRecords from './RecentRecords.vue'
+
+const router = useRouter()
 
 // 文件信息类型定义
 interface FileInfo {
@@ -469,30 +472,44 @@ const handleCompare = async () => {
       rightResult.pageMap
     )
 
-    textSimilarity.value = `${result.similarity}%`
-    similarSegmentsList.value = result.segments
-    similarSegments.value = result.segments.length
+    // 清理旧数据
+    sessionStorage.removeItem('compareResult')
+    delete (window as any).__LARGE_COMPARE_RESULT
 
-    if (result.segments.length > 0) {
-      currentContent.value = {
-        left: result.segments[0].leftContent,
-        right: result.segments[0].rightContent
-      }
-      currentLeftPage.value = result.segments[0].leftPage
-      currentRightPage.value = result.segments[0].rightPage
+    // 保存对比结果到 sessionStorage
+    // 注意：不存储完整文件内容以避免 QuotaExceededError (5MB限制)
+    // 如果片段数据仍然过大，使用内存变量作为降级方案
+    const compareResult = {
+      segments: result.segments,
+      leftFileName: leftFileInfo.value.name,
+      rightFileName: rightFileInfo.value.name,
+      textSimilarity: `${result.similarity}%`,
+      similarSegmentsCount: result.segments.length,
+      // 保存真实页数
+      leftTotalPages: leftResult.pageMap?.totalPages || 1,
+      rightTotalPages: rightResult.pageMap?.totalPages || 1
+    }
+
+    try {
+      sessionStorage.setItem('compareResult', JSON.stringify(compareResult))
+    } catch (error) {
+      console.warn('Storage 配额不足，使用内存变量暂存数据', error)
+      // 将大数据存入全局变量
+      ;(window as any).__LARGE_COMPARE_RESULT = compareResult
     }
 
     // 保存记录
     addRecentRecord({
       filename: `${leftFileInfo.value.name} vs ${rightFileInfo.value.name}`,
       timestamp: new Date().toLocaleString(),
-      similarity: textSimilarity.value,
+      similarity: `${result.similarity}%`,
       leftFileName: leftFileInfo.value.name,
       rightFileName: rightFileInfo.value.name,
-      similarSegments: similarSegmentsList.value
+      similarSegments: result.segments
     })
 
-    showResults.value = true
+    // 跳转到结果页面，添加时间戳强制刷新
+    router.push({ path: '/file-compare-result', query: { t: Date.now() } })
   } catch (error) {
     isProcessing.value = false
     comparisonParseError.value = (error as Error).message
@@ -502,45 +519,10 @@ const handleCompare = async () => {
 // 取消对比
 const handleCancel = () => {
   cancelComparison()
-  if (!showResults.value) {
+  if (!sessionStorage.getItem('compareResult')) {
     comparisonParseError.value = '已取消对比'
   }
 }
-
-// 返回文件上传界面
-const handleBack = () => {
-  showResults.value = false;
-  // 重置对比结果状态，但保留已上传的文件信息
-  isProcessing.value = false;
-  progress.value = 0;
-  progressMessage.value = '';
-  comparisonParseError.value = '';
-  similarSegmentsList.value = [];
-  similarSegments.value = 0;
-  textSimilarity.value = '0%';
-  currentContent.value = { left: '', right: '' };
-  currentLeftPage.value = '第1页/共1页';
-  currentRightPage.value = '第1页/共1页';
-  // 注意：不清理 leftFileInfo 和 rightFileInfo，保留已上传的文件
-  // 用户可以重新点击对比或上传新文件
-};
-
-
-
-// 片段点击处理
-const handleSegmentClick = (segment: SimilarSegment) => {
-  currentContent.value = {
-    left: segment.leftContent,
-    right: segment.rightContent
-  }
-  currentLeftPage.value = segment.leftPage
-  currentRightPage.value = segment.rightPage
-}
-
-// 返回处理
-const handleReturn = () => {
-  showResults.value = false;
-};
 
 // 导出对比报告
 const handleExportReport = async () => {
@@ -812,13 +794,11 @@ const generateWordReport = () => {
           <p class="page-subtitle">精准识别两个版本文档之间的内容差异、相似片段和结构变更</p>
         </div>
         <div class="header-actions">
-          <button v-if="showResults" class="header-back-btn" @click="handleBack">返回</button>
-          <button v-if="showResults" class="header-export-btn" @click="handleExportReport">导出报告</button>
-          <button v-if="!showResults" class="icon-btn-wrapper" @click="toggleHistory">
+          <button class="icon-btn-wrapper" @click="toggleHistory">
             <RiHistoryLine class="icon-btn-svg" />
             <span class="icon-btn-tooltip">历史记录</span>
           </button>
-          <button v-if="!showResults" class="icon-btn-wrapper" @click="toggleHelp">
+          <button class="icon-btn-wrapper" @click="toggleHelp">
             <RiQuestionLine class="icon-btn-svg" />
             <span class="icon-btn-tooltip">帮助</span>
           </button>
@@ -887,7 +867,7 @@ const generateWordReport = () => {
     </div>
 
     <!-- 文件上传区域 -->
-    <div v-if="!showResults" class="upload-section" :class="{ 'processing': isProcessing }">
+    <div class="upload-section" :class="{ 'processing': isProcessing }">
       <!-- 左侧文件上传 -->
       <FileUpload
         side="left"
@@ -941,184 +921,6 @@ const generateWordReport = () => {
     <!-- 解析错误显示 -->
     <div v-if="comparisonParseError" class="error-message">
       {{ comparisonParseError }}
-    </div>
-
-    <!-- 对比结果 -->
-    <div v-if="showResults" class="results-section">
-      <!-- 结果统计 -->
-      <div class="result-stats">
-        <!-- 统计信息卡片 -->
-        <div class="stat-card">
-          <div class="stat-icon-container text-similarity">
-            <RiPercentLine class="stat-icon" />
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">文本重复率</span>
-            <span class="stat-value text-similarity-value">{{ textSimilarity }}</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon-container image-similarity">
-            <RiImageLine class="stat-icon" />
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">图片相似度</span>
-            <span class="stat-value image-similarity-value">暂不支持</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon-container similar-segments">
-            <RiListCheck class="stat-icon" />
-          </div>
-          <div class="stat-content">
-            <span class="stat-label">雷同片段</span>
-            <span class="stat-value similar-segments-value">{{ similarSegments }}处</span>
-          </div>
-        </div>
-        
-        <!-- 操作按钮 -->
-        <div class="action-buttons">
-          <!-- 按钮已移动到头部 -->
-        </div>
-      </div>
-
-      <!-- 雷同片段列表 -->
-      <div class="segment-details-section">
-        <!-- 表格控件 -->
-        <div class="table-container">
-          <table class="similarity-table">
-            <thead>
-              <tr>
-                <th class="table-header">序号</th>
-                <th class="table-header">{{ leftFileInfo.name }}</th>
-                <th class="table-header">页码</th>
-                <th class="table-header sortable" @click="toggleSort">
-                  相似度
-                  <span class="sort-icon" :class="sortAscending ? 'asc' : 'desc'">
-                    {{ sortAscending ? '↑' : '↓' }}
-                  </span>
-                </th>
-                <th class="table-header">页码</th>
-                <th class="table-header">{{ rightFileInfo.name }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr 
-                v-for="(segment, index) in similarSegmentsList.slice((currentPage - 1) * pageSize, currentPage * pageSize)" 
-                :key="segment.id"
-                class="table-row"
-                @click="handleSegmentClick(segment)"
-              >
-                <td class="table-cell index">
-                  <span>{{ (currentPage - 1) * pageSize + index + 1 }}</span>
-                  <RiImageLine class="image-icon" v-if="segment.isImage" title="图片对比结果" />
-                </td>
-                <td class="table-cell file-content">
-                  <div class="file-content-inner" v-html="segment.leftContent"></div>
-                </td>
-                <td class="table-cell page">
-                  <span class="page-number">{{ segment.leftPage }}</span>
-                </td>
-                <td class="table-cell similarity">
-                  <span 
-                    class="similarity-label" 
-                    :class="segment.similarityValue >= 90 ? 'high' : segment.similarityValue >= 75 ? 'medium' : 'low'"
-                  >
-                    {{ segment.similarity }}
-                  </span>
-                </td>
-                <td class="table-cell page">
-                  <span class="page-number">{{ segment.rightPage }}</span>
-                </td>
-                <td class="table-cell file-content">
-                  <div class="file-content-inner" v-html="segment.rightContent"></div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      
-      <!-- 分页控件 -->
-      <div v-if="Math.ceil(similarSegmentsList.length / pageSize) > 1" class="pagination-container">
-        <div class="pagination-info">
-          <span>显示 {{ (currentPage - 1) * pageSize + 1 }} 到 {{ Math.min(currentPage * pageSize, similarSegmentsList.length) }} 条，共 {{ similarSegmentsList.length }} 条记录</span>
-        </div>
-        <div class="pagination-controls">
-          <button 
-            class="pagination-btn" 
-            :disabled="currentPage === 1" 
-            @click="prevPage"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-          </button>
-          
-          <div class="page-numbers">
-            <!-- 页码显示 -->
-            <template v-if="Math.ceil(similarSegmentsList.length / pageSize) <= 5">
-              <!-- 总页数小于等于5时，显示所有页码 -->
-              <button 
-                v-for="page in Math.ceil(similarSegmentsList.length / pageSize)" 
-                :key="page"
-                class="page-btn" 
-                :class="{ 'active': page === currentPage }"
-                @click="goToPage(page)"
-              >
-                {{ page }}
-              </button>
-            </template>
-            <template v-else>
-              <!-- 总页数大于5时，显示部分页码和省略号 -->
-              <!-- 首页 -->
-              <button 
-                class="page-btn" 
-                :class="{ 'active': currentPage === 1 }"
-                @click="goToPage(1)"
-              >
-                1
-              </button>
-              
-              <!-- 前省略号 -->
-              <span v-if="currentPage > 3" class="page-ellipsis">...</span>
-              
-              <!-- 中间页码 -->
-              <button 
-                v-for="page in getMiddlePages()" 
-                :key="page"
-                class="page-btn" 
-                :class="{ 'active': page === currentPage }"
-                @click="goToPage(page)"
-              >
-                {{ page }}
-              </button>
-              
-              <!-- 后省略号 -->
-              <span v-if="currentPage < Math.ceil(similarSegmentsList.length / pageSize) - 2" class="page-ellipsis">...</span>
-              
-              <!-- 末页 -->
-              <button 
-                class="page-btn" 
-                :class="{ 'active': currentPage === Math.ceil(similarSegmentsList.length / pageSize) }"
-                @click="goToPage(Math.ceil(similarSegmentsList.length / pageSize))"
-              >
-                {{ Math.ceil(similarSegmentsList.length / pageSize) }}
-              </button>
-            </template>
-          </div>
-            
-          <button 
-            class="pagination-btn" 
-            :disabled="currentPage === Math.ceil(similarSegmentsList.length / pageSize)" 
-            @click="nextPage"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -2148,26 +1950,30 @@ const generateWordReport = () => {
 
 /* 全局高亮样式 - 国潮古风 */
 .highlighted-text {
-  background-color: rgba(255, 215, 0, 0.6) !important;
+  background-color: rgba(255, 215, 0, 0.85) !important;
   color: rgba(139, 0, 0, 1) !important;
-  padding: 2px 6px !important;
-  border-radius: 4px !important;
-  font-weight: 600 !important;
-  display: inline-block !important;
-  line-height: 1.4 !important;
-  z-index: 1000 !important;
-  position: relative !important;
+  padding: 2px 4px !important;
+  border-radius: 3px !important;
+  font-weight: 700 !important;
+  display: inline !important;
+  line-height: inherit !important;
+  box-decoration-break: clone !important;
+  -webkit-box-decoration-break: clone !important;
+  box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.5) !important;
 }
 
 /* file-content-inner中的高亮文本 */
 .file-content-inner .highlighted-text {
-  background-color: rgba(255, 215, 0, 0.7) !important;
+  background-color: rgba(255, 215, 0, 0.9) !important;
   color: rgba(139, 0, 0, 1) !important;
-  padding: 2px 6px !important;
-  border-radius: 4px !important;
-  font-weight: 600 !important;
-  z-index: 1000 !important;
-  position: relative !important;
+  padding: 2px 4px !important;
+  border-radius: 3px !important;
+  font-weight: 700 !important;
+  display: inline !important;
+  line-height: inherit !important;
+  box-decoration-break: clone !important;
+  -webkit-box-decoration-break: clone !important;
+  box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.6) !important;
 }
 
 .file-content-inner {
@@ -2586,6 +2392,113 @@ const generateWordReport = () => {
     justify-content: center;
     padding: 12px 16px;
     min-height: 44px;
+  }
+
+  /* 雷同片段详情区域移动端优化 */
+  .segment-details-section {
+    margin: 0 -16px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .section-header {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+  }
+
+  .segment-title {
+    font-size: 14px;
+  }
+
+  .section-actions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* 表格移动端优化 */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: none;
+  }
+
+  .similarity-table {
+    min-width: 700px;
+    font-size: 12px;
+  }
+
+  .table-header {
+    padding: 10px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .table-row {
+    font-size: 12px;
+  }
+
+  .table-cell {
+    padding: 10px 12px;
+  }
+
+  .table-cell.file-content {
+    min-width: 150px;
+  }
+
+  .file-content-inner {
+    padding: 8px;
+    font-size: 12px;
+  }
+
+  /* 分页容器移动端优化 */
+  .pagination-container {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 16px;
+    align-items: stretch;
+  }
+
+  .pagination-info {
+    text-align: center;
+    font-size: 12px;
+    order: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    order: 2;
+  }
+
+  .pagination-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+    min-height: 36px;
+  }
+
+  .page-numbers {
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .page-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
+    min-width: 36px;
+  }
+
+  .page-ellipsis {
+    font-size: 12px;
   }
 }
 </style>

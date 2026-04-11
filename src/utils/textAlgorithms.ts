@@ -115,9 +115,9 @@ export function formatPageRange(
   const endPage = findPageByIndex(pageMap, endIndex)
 
   if (startPage === endPage) {
-    return `第${startPage}页/共${pageMap.totalPages}页`
+    return `第${startPage}/${pageMap.totalPages}页`
   } else {
-    return `第${startPage}-${endPage}页/共${pageMap.totalPages}页`
+    return `第${startPage}-${endPage}/${pageMap.totalPages}页`
   }
 }
 
@@ -208,8 +208,8 @@ export function findSimilarSegments(
           similarityValue: 100,
           leftContent: buildHighlightedHtml(text1, origStart1, origEnd1, contextLength),
           rightContent: buildHighlightedHtml(text2, origStart2, origEnd2, contextLength),
-          leftPage: pageMap1 ? formatPageRange(pageMap1, origStart1, origEnd1) : '第1页',
-          rightPage: pageMap2 ? formatPageRange(pageMap2, origStart2, origEnd2) : '第1页',
+          leftPage: pageMap1 ? formatPageRange(pageMap1, origStart1, origEnd1) : '第1/1页',
+          rightPage: pageMap2 ? formatPageRange(pageMap2, origStart2, origEnd2) : '第1/1页',
           level: 'high',
           leftStartIndex: origStart1,
           leftEndIndex: origEnd1,
@@ -289,10 +289,10 @@ export function findSimilarSegmentsRabinKarp(
   pageMap1?: PageMap,
   pageMap2?: PageMap
 ): SimilarSegment[] {
-  const { processed: preprocessed1 } = preprocessText(text1, settings)
-  const { processed: preprocessed2 } = preprocessText(text2, settings)
-  const m = preprocessed1.length
-  const n = preprocessed2.length
+  const preprocessed1 = preprocessText(text1, settings)
+  const preprocessed2 = preprocessText(text2, settings)
+  const m = preprocessed1.processed.length
+  const n = preprocessed2.processed.length
   const windowSize = settings.minDuplicateWords
 
   if (windowSize > m || windowSize > n) return []
@@ -303,8 +303,8 @@ export function findSimilarSegmentsRabinKarp(
 
   // 计算第一个窗口
   for (let i = 0; i < windowSize; i++) {
-    hash1 = (hash1 * HASH1_BASE + preprocessed1.charCodeAt(i)) % HASH1_MOD
-    hash2 = (hash2 * HASH2_BASE + preprocessed1.charCodeAt(i)) % HASH2_MOD
+    hash1 = (hash1 * HASH1_BASE + preprocessed1.processed.charCodeAt(i)) % HASH1_MOD
+    hash2 = (hash2 * HASH2_BASE + preprocessed1.processed.charCodeAt(i)) % HASH2_MOD
   }
 
   // 计算最高位乘数
@@ -317,8 +317,8 @@ export function findSimilarSegmentsRabinKarp(
   // 滑动窗口记录哈希
   for (let i = 0; i <= m - windowSize; i++) {
     if (i > 0) {
-      hash1 = ((hash1 - preprocessed1.charCodeAt(i - 1) * high1) * HASH1_BASE + preprocessed1.charCodeAt(i + windowSize - 1)) % HASH1_MOD
-      hash2 = ((hash2 - preprocessed1.charCodeAt(i - 1) * high2) * HASH2_BASE + preprocessed1.charCodeAt(i + windowSize - 1)) % HASH2_MOD
+      hash1 = ((hash1 - preprocessed1.processed.charCodeAt(i - 1) * high1) * HASH1_BASE + preprocessed1.processed.charCodeAt(i + windowSize - 1)) % HASH1_MOD
+      hash2 = ((hash2 - preprocessed1.processed.charCodeAt(i - 1) * high2) * HASH2_BASE + preprocessed1.processed.charCodeAt(i + windowSize - 1)) % HASH2_MOD
       if (hash1 < 0) hash1 += HASH1_MOD
       if (hash2 < 0) hash2 += HASH2_MOD
     }
@@ -331,8 +331,8 @@ export function findSimilarSegmentsRabinKarp(
   // 在 text2 中滚动查找
   hash1 = 0; hash2 = 0
   for (let i = 0; i < windowSize; i++) {
-    hash1 = (hash1 * HASH1_BASE + preprocessed2.charCodeAt(i)) % HASH1_MOD
-    hash2 = (hash2 * HASH2_BASE + preprocessed2.charCodeAt(i)) % HASH2_MOD
+    hash1 = (hash1 * HASH1_BASE + preprocessed2.processed.charCodeAt(i)) % HASH1_MOD
+    hash2 = (hash2 * HASH2_BASE + preprocessed2.processed.charCodeAt(i)) % HASH2_MOD
   }
 
   const matchedPairs = new Set<string>()
@@ -341,8 +341,8 @@ export function findSimilarSegmentsRabinKarp(
 
   for (let j = 0; j <= n - windowSize; j++) {
     if (j > 0) {
-      hash1 = ((hash1 - preprocessed2.charCodeAt(j - 1) * high1) * HASH1_BASE + preprocessed2.charCodeAt(j + windowSize - 1)) % HASH1_MOD
-      hash2 = ((hash2 - preprocessed2.charCodeAt(j - 1) * high2) * HASH2_BASE + preprocessed2.charCodeAt(j + windowSize - 1)) % HASH2_MOD
+      hash1 = ((hash1 - preprocessed2.processed.charCodeAt(j - 1) * high1) * HASH1_BASE + preprocessed2.processed.charCodeAt(j + windowSize - 1)) % HASH1_MOD
+      hash2 = ((hash2 - preprocessed2.processed.charCodeAt(j - 1) * high2) * HASH2_BASE + preprocessed2.processed.charCodeAt(j + windowSize - 1)) % HASH2_MOD
       if (hash1 < 0) hash1 += HASH1_MOD
       if (hash2 < 0) hash2 += HASH2_MOD
     }
@@ -356,26 +356,32 @@ export function findSimilarSegmentsRabinKarp(
 
         // 验证实际内容
         let matchLen = windowSize
-        while (i + matchLen < m && j + matchLen < n && preprocessed1[i + matchLen] === preprocessed2[j + matchLen]) {
+        while (i + matchLen < m && j + matchLen < n && preprocessed1.processed[i + matchLen] === preprocessed2.processed[j + matchLen]) {
           matchLen++
         }
 
         if (matchLen >= settings.minDuplicateWords) {
           matchedPairs.add(pairKey)
 
+          // 关键修复：将预处理后的索引映射回原文本索引
+          const origStart1 = preprocessed1.indexMap[i]
+          const origEnd1 = preprocessed1.indexMap[i + matchLen - 1] + 1
+          const origStart2 = preprocessed2.indexMap[j]
+          const origEnd2 = preprocessed2.indexMap[j + matchLen - 1] + 1
+
           segments.push({
             id: ++segmentId,
             similarity: '100%',
             similarityValue: 100,
-            leftContent: buildHighlightedHtml(text1, i, i + matchLen, contextLength),
-            rightContent: buildHighlightedHtml(text2, j, j + matchLen, contextLength),
-            leftPage: pageMap1 ? formatPageRange(pageMap1, i, i + matchLen) : '第1页',
-            rightPage: pageMap2 ? formatPageRange(pageMap2, j, j + matchLen) : '第1页',
+            leftContent: buildHighlightedHtml(text1, origStart1, origEnd1, contextLength),
+            rightContent: buildHighlightedHtml(text2, origStart2, origEnd2, contextLength),
+            leftPage: pageMap1 ? formatPageRange(pageMap1, origStart1, origEnd1) : '第1/1页',
+            rightPage: pageMap2 ? formatPageRange(pageMap2, origStart2, origEnd2) : '第1/1页',
             level: 'high',
-            leftStartIndex: i,
-            leftEndIndex: i + matchLen,
-            rightStartIndex: j,
-            rightEndIndex: j + matchLen
+            leftStartIndex: origStart1,
+            leftEndIndex: origEnd1,
+            rightStartIndex: origStart2,
+            rightEndIndex: origEnd2
           })
         }
       }

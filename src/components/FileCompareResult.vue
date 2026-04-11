@@ -1,15 +1,40 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onActivated, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   RiFileExcelLine,
   RiArrowLeftLine,
   RiArrowLeftSLine,
   RiArrowRightSLine,
-  RiExchange2Line
+  RiExchange2Line,
+  RiBrainLine,
+  RiLoaderLine,
+  RiFileWordLine,
+  RiListCheck,
+  RiFontSize,
+  RiTableLine,
+  RiIndentIncrease,
+  RiMergeCellsHorizontal,
+  RiFileTextLine,
+  RiCheckboxCircleLine,
+  RiAddCircleLine,
+  RiCloseCircleLine,
+  RiEditBoxLine,
+  RiArrowUpSLine,
+  RiArrowDownSLine,
+  RiFileAddLine,
+  RiFolderOpenLine,
+  RiSaveLine,
+  RiArrowGoBackLine,
+  RiArrowGoForwardLine,
+  RiLayoutGridLine,
+  RiBookOpenLine,
+  RiGlobalLine,
+  RiZoomInLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx'
 import { useSettings } from '../composables/useSettings'
+import { useAIModel } from '../composables/useAIModel'
 
 interface SimilarSegment {
   id: number;
@@ -28,6 +53,7 @@ interface SimilarSegment {
 const route = useRoute()
 const router = useRouter()
 const { settings } = useSettings()
+const { isLoading, analysisResult, analyzeFileComparison } = useAIModel()
 
 // 数据
 const segments = ref<SimilarSegment[]>([])
@@ -35,10 +61,48 @@ const leftFileName = ref('')
 const rightFileName = ref('')
 const textSimilarity = ref('0%')
 const similarSegmentsCount = ref(0)
+const leftFileContent = ref('')
+const rightFileContent = ref('')
+
+// AI分析相关
+const showAIAnalysis = ref(false)
+const aiModelResponse = ref('')
+
+// 工具栏状态
+const syncScroll = ref(true)
+const fontSize = ref(100)
+
+// 统计数据
+const totalLines = ref(0)
+const sameLines = ref(0)
+const addedLines = ref(0)
+const deletedLines = ref(0)
+const modifiedLines = ref(0)
+
+// 完整文件行数据 (已移除，改为仅显示相似片段以避免 Storage 溢出)
+// const leftLines = ref<FileLine[]>([])
+// const rightLines = ref<FileLine[]>([])
+
+// 文件真实页数
+const leftTotalPages = ref(1)
+const rightTotalPages = ref(1)
 
 // 分页状态
 const currentPage = ref(1)
 const pageSize = ref(10)
+
+// DOM refs for scroll synchronization
+const leftContentRef = ref<HTMLElement | null>(null)
+const rightContentRef = ref<HTMLElement | null>(null)
+const leftPanelRef = ref<HTMLElement | null>(null)
+const rightPanelRef = ref<HTMLElement | null>(null)
+
+// Floating page indicator positions
+const leftPageIndicatorTop = ref(12)
+const rightPageIndicatorTop = ref(12)
+
+// Scroll synchronization flag
+let isScrolling = false
 
 // 计算属性
 const totalPages = computed(() => Math.ceil(segments.value.length / pageSize.value))
@@ -73,22 +137,125 @@ const pageNumbers = computed(() => {
 
 // 初始化数据
 const initData = () => {
-  const result = sessionStorage.getItem('compareResult')
-  if (result) {
+  // 先清空旧数据
+  segments.value = []
+  leftFileName.value = ''
+  rightFileName.value = ''
+  textSimilarity.value = '0%'
+  similarSegmentsCount.value = 0
+  leftTotalPages.value = 1
+  rightTotalPages.value = 1
+
+  let resultData: any = null
+
+  // 1. 尝试从 sessionStorage 读取
+  const sessionResult = sessionStorage.getItem('compareResult')
+  if (sessionResult) {
     try {
-      const data = JSON.parse(result)
-      segments.value = data.segments || []
-      leftFileName.value = data.leftFileName || '左侧文件'
-      rightFileName.value = data.rightFileName || '右侧文件'
-      textSimilarity.value = data.textSimilarity || '0%'
-      similarSegmentsCount.value = data.similarSegmentsCount || segments.value.length
-    } catch (error) {
-      console.error('解析对比结果失败:', error)
+      resultData = JSON.parse(sessionResult)
+    } catch (e) {
+      console.error('解析 sessionStorage 失败', e)
     }
+  }
+
+  // 2. 如果 storage 中没有（或解析失败），尝试从全局变量读取（用于大文件降级方案）
+  if (!resultData && (window as any).__LARGE_COMPARE_RESULT) {
+    resultData = (window as any).__LARGE_COMPARE_RESULT
+    // 清理全局变量
+    delete (window as any).__LARGE_COMPARE_RESULT
+  }
+
+  if (resultData) {
+    segments.value = resultData.segments || []
+    // 确保文件名正确显示
+    leftFileName.value = resultData.leftFileName && resultData.leftFileName !== '' ? resultData.leftFileName : '左侧文件'
+    rightFileName.value = resultData.rightFileName && resultData.rightFileName !== '' ? resultData.rightFileName : '右侧文件'
+    textSimilarity.value = resultData.textSimilarity || '0%'
+    similarSegmentsCount.value = resultData.similarSegmentsCount || segments.value.length
+
+    // 读取真实页数
+    leftTotalPages.value = resultData.leftTotalPages || 1
+    rightTotalPages.value = resultData.rightTotalPages || 1
+
+    // 调试日志
+    console.log('加载对比结果:', {
+      leftFileName: leftFileName.value,
+      rightFileName: rightFileName.value,
+      segmentCount: segments.value.length,
+      rawData: resultData
+    })
+  } else {
+    console.warn('未找到对比结果数据')
   }
 }
 
-initData()
+// 解析文件内容为行数据 (已移除，不再使用全文本解析)
+// const parseFileLines = (leftContent: string, rightContent: string, segments: SimilarSegment[]) => {
+//   // ... (code removed)
+// }
+
+// 在组件挂载时初始化数据
+onMounted(() => {
+  console.log('FileCompareResult - onMounted')
+  initData()
+})
+
+// 如果组件被 keep-alive 缓存，激活时重新加载数据
+onActivated(() => {
+  console.log('FileCompareResult - onActivated')
+  initData()
+})
+
+// 监听路由查询参数变化，重新加载数据
+watch(() => route.query.t, () => {
+  console.log('FileCompareResult - route.query.t changed')
+  initData()
+})
+
+// AI分析处理函数
+const handleAIAnalysis = async () => {
+  if (segments.value.length === 0) {
+    alert('没有可分析的对比数据')
+    return
+  }
+
+  if (!settings.apiKey || !settings.apiEndpoint) {
+    alert('请先在系统设置中配置AI模型')
+    return
+  }
+
+  try {
+    const result = await analyzeFileComparison(
+      settings,
+      leftFileContent.value,
+      rightFileContent.value,
+      textSimilarity.value,
+      segments.value
+    )
+
+    // 格式化AI响应
+    if (result.error) {
+      aiModelResponse.value = `AI分析失败: ${result.error}`
+    } else {
+      let response = `## AI分析总结\n\n${result.summary}\n`
+
+      if (result.insights.length > 0) {
+        response += `\n## 关键发现\n${result.insights.map(insight => `- ${insight}`).join('\n')}\n`
+      }
+
+      if (result.suggestions.length > 0) {
+        response += `\n## 改进建议\n${result.suggestions.map(suggestion => `- ${suggestion}`).join('\n')}\n`
+      }
+
+      aiModelResponse.value = response
+    }
+
+    showAIAnalysis.value = true
+  } catch (error) {
+    aiModelResponse.value = `AI分析失败: ${(error as Error).message}`
+    showAIAnalysis.value = true
+  }
+}
 
 const handleBack = () => {
   router.push('/file-compare')
@@ -399,34 +566,180 @@ function generateWordReport(): Document {
 }
 
 const goToPage = (page: number) => {
-  if (page >= 1 && page <= totalPages.value) {
+  if (page >= 1 && page <= leftTotalPages.value) {
     currentPage.value = page
+    // 滚动到对应页码的内容位置
+    scrollToPage(page)
   }
 }
 
 const prevPage = () => {
-  if (currentPage.value > 1) currentPage.value--
+  if (currentPage.value > 1) {
+    currentPage.value--
+    scrollToPage(currentPage.value)
+  }
 }
 
 const nextPage = () => {
-  if (currentPage.value < totalPages.value) currentPage.value++
+  if (currentPage.value < leftTotalPages.value) {
+    currentPage.value++
+    scrollToPage(currentPage.value)
+  }
 }
+
+// 滚动到指定页码对应的内容位置 (已简化，适配片段模式)
+const scrollToPage = (page: number) => {
+  // 在片段模式下，暂时禁用复杂的滚动定位，仅保留页码状态
+  // 如果需要精确定位到某个片段，可以在此扩展逻辑
+  console.log('切换到页码:', page)
+}
+
+// 是否有上一处差异
+const hasPrevDiff = computed(() => {
+  return segments.value.length > 0
+})
+
+// 是否有下一处差异
+const hasNextDiff = computed(() => {
+  return segments.value.length > 0
+})
+
+// 计算100%相似度的片段数量
+const count100Similarity = computed(() => {
+  return segments.value.filter(s => s.similarityValue >= 100).length
+})
+
+// 计算达到相似度阈值的片段数量
+const countThresholdSimilarity = computed(() => {
+  const threshold = settings.textSimilarityThreshold || 75
+  return segments.value.filter(s => s.similarityValue >= threshold).length
+})
+
+// 上一处差异
+const goToPrevDiff = () => {
+  // TODO: 实现跳转到上一处差异的逻辑
+  console.log('上一处差异')
+}
+
+// 下一处差异
+const goToNextDiff = () => {
+  // TODO: 实现跳转到下一处差异的逻辑
+  console.log('下一处差异')
+}
+
+// 跟踪哪个面板有焦点
+let focusedPanel: 'left' | 'right' | null = null
+
+// 左侧面板获得焦点
+const handleLeftFocus = () => {
+  focusedPanel = 'left'
+}
+
+// 右侧面板获得焦点
+const handleRightFocus = () => {
+  focusedPanel = 'right'
+}
+
+// 滚动同步处理
+const handleLeftScroll = () => {
+  if (!syncScroll.value || !leftContentRef.value || !rightContentRef.value) return
+  
+  // 只有当左侧有焦点或者同步滚动开启时才同步
+  if (focusedPanel === 'left' || focusedPanel === null) {
+    rightContentRef.value.scrollTop = leftContentRef.value.scrollTop
+  }
+}
+
+const handleRightScroll = () => {
+  if (!syncScroll.value || !leftContentRef.value || !rightContentRef.value) return
+  
+  // 只有当右侧有焦点或者同步滚动开启时才同步
+  if (focusedPanel === 'right' || focusedPanel === null) {
+    leftContentRef.value.scrollTop = rightContentRef.value.scrollTop
+  }
+}
+const formatMarkdown = (text: string) => {
+  if (!text) return ''
+  
+  return text
+    // 标题
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    // 粗体
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // 斜体
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // 列表项
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    // 换行
+    .replace(/\n\n/g, '<br><br>')
+}
+
+// 解析文本为行数组
+const cleanText = (html: string) => {
+  return html.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'")
+}
+
+// 连接线位置
+const connections = computed(() => {
+  const lines: { top: number }[] = []
+  const count = Math.min(pageSegments.value.length, 10)
+  for (let i = 0; i < count; i++) {
+    lines.push({ top: 60 + i * 80 })
+  }
+  return lines
+})
+
+// Visible connections based on scroll
+const visibleConnections = computed(() => {
+  return connections.value
+})
 </script>
 
 <template>
   <div class="result-page-container">
     <!-- 页面头部 -->
     <div class="page-header">
-      <div class="title-section">
-        <button class="back-btn" @click="handleBack">
-          <RiArrowLeftLine class="back-icon" />
-          <span class="back-text">返回</span>
-        </button>
+      <div class="title-row">
+        <div>
+          <h1 class="page-title">文件对比结果</h1>
+          <p class="page-subtitle">显示文档之间的内容差异、相似片段和统计分析</p>
+        </div>
+        <div class="header-actions">
+          <button class="back-btn" @click="handleBack">
+            <RiArrowLeftLine class="back-icon" />
+            <span class="back-text">返回</span>
+          </button>
+          <button class="ai-btn" @click="handleAIAnalysis" :disabled="isLoading">
+            <RiBrainLine class="ai-icon" />
+            <span>{{ isLoading ? 'AI分析中...' : 'AI分析' }}</span>
+          </button>
+          <button class="export-btn" @click="handleExport">
+            <RiFileExcelLine class="export-icon" />
+            <span>导出报告</span>
+          </button>
+        </div>
       </div>
-      <button class="export-btn" @click="handleExport">
-        <RiFileExcelLine class="export-icon" />
-        <span>导出报告</span>
-      </button>
+    </div>
+
+    <!-- AI分析结果弹窗 -->
+    <div v-if="showAIAnalysis" class="ai-modal-overlay" @click="showAIAnalysis = false">
+      <div class="ai-modal" @click.stop>
+        <div class="ai-modal-header">
+          <div class="ai-modal-title">
+            <RiBrainLine class="ai-modal-icon" />
+            <h3>AI智能分析</h3>
+          </div>
+          <button class="ai-modal-close" @click="showAIAnalysis = false">×</button>
+        </div>
+        <div class="ai-modal-body">
+          <div v-if="isLoading" class="ai-loading">
+            <RiLoaderLine class="loading-spinner" />
+            <p>AI正在分析中，请稍候...</p>
+          </div>
+          <div v-else class="ai-result" v-html="formatMarkdown(aiModelResponse)"></div>
+        </div>
+      </div>
     </div>
 
     <!-- 对比列表区 -->
@@ -440,7 +753,16 @@ const nextPage = () => {
           <span class="spacer"></span>
           <h2 class="list-title">相似片段详情</h2>
         </div>
-        <span class="stats-info">共 {{ totalRecords }} 条记录，显示第 {{ startRecord }} - {{ endRecord }} 条</span>
+        <div class="list-header-stats">
+          <div class="stat-badge stat-badge-100">
+            <span class="stat-badge-icon">💯</span>
+            <span>100%相同：{{ count100Similarity }}个</span>
+          </div>
+          <div class="stat-badge stat-badge-threshold">
+            <span class="stat-badge-icon">🎯</span>
+            <span>≥{{ settings.textSimilarityThreshold }}%：{{ countThresholdSimilarity }}个</span>
+          </div>
+        </div>
       </div>
 
       <!-- 对比数据表 -->
@@ -448,10 +770,10 @@ const nextPage = () => {
         <!-- 表头 -->
         <div class="table-header">
           <div class="col col-index">序号</div>
-          <div class="col col-content">{{ leftFileName }}</div>
-          <div class="col col-position">源文件位置</div>
-          <div class="col col-content">{{ rightFileName }}</div>
-          <div class="col col-position">修订版位置</div>
+          <div class="col col-content">{{ leftFileName || '文件A' }}</div>
+          <div class="col col-position">位置</div>
+          <div class="col col-position">位置</div>
+          <div class="col col-content">{{ rightFileName || '文件B' }}</div>
         </div>
 
         <!-- 表体 -->
@@ -460,8 +782,8 @@ const nextPage = () => {
             <div class="col col-index">{{ segment.id }}</div>
             <div class="col col-content" v-html="segment.leftContent"></div>
             <div class="col col-position">{{ segment.leftPage }}</div>
-            <div class="col col-content" v-html="segment.rightContent"></div>
             <div class="col col-position">{{ segment.rightPage }}</div>
+            <div class="col col-content" v-html="segment.rightContent"></div>
           </div>
         </div>
       </div>
@@ -499,7 +821,6 @@ const nextPage = () => {
   height: 100%;
   overflow: auto;
   background-color: rgba(248, 244, 233, 1);
-  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -508,34 +829,61 @@ const nextPage = () => {
 
 /* 页面头部 */
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  padding: 16px 24px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
 }
 
-.title-section {
+.title-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: rgba(44, 24, 16, 1);
+  margin: 0 0 4px 0;
+  font-family: SourceHanSans-Bold;
+}
+
+.page-subtitle {
+  font-size: 12px;
+  color: rgba(166, 124, 82, 1);
+  margin: 0;
+  font-family: SourceHanSans-Regular;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .back-btn {
-  height: 53px;
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 8px;
+  height: 40px;
+  padding: 0 20px;
   background-color: rgba(255, 255, 255, 1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  color: rgba(139, 0, 0, 1);
+  border: 1px solid rgba(139, 0, 0, 0.3);
+  border-radius: 10px;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 24px;
   gap: 8px;
-  transition: all 0.3s;
 }
 
 .back-btn:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  background-color: rgba(139, 0, 0, 0.05);
+  border-color: rgba(139, 0, 0, 1);
 }
 
 .back-icon {
@@ -550,12 +898,13 @@ const nextPage = () => {
   font-family: SourceHanSans-Medium;
 }
 
+/* 导出按钮 */
 .export-btn {
-  height: 53px;
+  height: 40px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 24px;
+  padding: 0 20px;
   background-color: rgba(46, 89, 132, 1);
   color: white;
   border: none;
@@ -575,6 +924,815 @@ const nextPage = () => {
 .export-icon {
   font-size: 18px;
   color: rgba(255, 255, 255, 1);
+}
+
+/* AI分析按钮 */
+.ai-btn {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s;
+  font-family: SourceHanSans-Medium;
+}
+
+.ai-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+.ai-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ai-icon {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 1);
+}
+
+/* AI分析弹窗 */
+.ai-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.ai-modal {
+  background-color: rgba(248, 244, 233, 1);
+  border-radius: 12px;
+  width: 700px;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(166, 124, 82, 0.2);
+}
+
+.ai-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.ai-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-modal-title h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  margin: 0;
+  font-family: SourceHanSans-SemiBold;
+}
+
+.ai-modal-icon {
+  font-size: 24px;
+  color: rgba(139, 0, 0, 1);
+}
+
+.ai-modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.8);
+  color: rgba(107, 79, 52, 1);
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.ai-modal-close:hover {
+  background-color: rgba(139, 0, 0, 0.1);
+  color: rgba(139, 0, 0, 1);
+}
+
+.ai-modal-body {
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.ai-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 0;
+}
+
+.loading-spinner {
+  font-size: 32px;
+  color: rgba(139, 0, 0, 1);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ai-loading p {
+  font-size: 14px;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-Regular;
+}
+
+.ai-result {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-Regular;
+}
+
+.ai-result h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  margin: 20px 0 12px 0;
+  font-family: SourceHanSans-SemiBold;
+}
+
+.ai-result h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  margin: 16px 0 10px 0;
+  font-family: SourceHanSans-SemiBold;
+}
+
+.ai-result li {
+  margin: 8px 0;
+  padding-left: 16px;
+  list-style-type: disc;
+}
+
+.ai-result strong {
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+}
+
+.ai-result em {
+  font-style: italic;
+  color: rgba(107, 79, 52, 1);
+}
+
+/* 工具栏样式 */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background-color: rgba(255, 255, 255, 1);
+  border: 1px solid rgba(226, 232, 240, 1);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.toolbar-left,
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.toolbar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 同步滚动开关 */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch input:checked + .slider {
+  background-color: rgba(37, 99, 235, 1);
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(-24px);
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(148, 163, 184, 1);
+  transition: 0.3s;
+  border-radius: 9999px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.switch-label {
+  font-size: 13px;
+  color: rgba(51, 65, 85, 1);
+  font-family: SourceHanSans-Medium, sans-serif;
+  user-select: none;
+  cursor: pointer;
+}
+
+/* 字号控制 */
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(226, 232, 240, 1);
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.icon-btn:hover:not(:disabled) {
+  background-color: rgba(248, 250, 252, 1);
+  border-color: rgba(203, 213, 225, 1);
+}
+
+.icon-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-icon {
+  font-size: 16px;
+  color: rgba(71, 85, 105, 1);
+}
+
+.font-size-display {
+  font-size: 14px;
+  color: rgba(51, 65, 85, 1);
+  font-family: SourceHanSans-Regular, sans-serif;
+  min-width: 48px;
+  text-align: center;
+  padding: 6px 8px;
+  border: 1px solid rgba(226, 232, 240, 1);
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 1);
+}
+
+/* 右侧页码信息 */
+.page-info {
+  font-size: 14px;
+  color: rgba(51, 65, 85, 1);
+  font-family: SourceHanSans-Medium, sans-serif;
+  white-space: nowrap;
+}
+
+.page-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 对比信息栏 */
+.word-info-bar {
+  background-color: rgba(255, 255, 255, 1);
+  border: 1px solid rgba(226, 232, 240, 1);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.word-file-left,
+.word-file-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.word-file-right {
+  justify-content: flex-end;
+}
+
+.file-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 1) 0%, rgba(29, 78, 216, 1) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+.title-icon-wrapper.right-icon {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 1) 0%, rgba(234, 88, 12, 1) 100%);
+  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.3);
+}
+
+.title-icon {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 1);
+}
+
+.title-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title-main {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 1);
+  font-family: SourceHanSans-SemiBold, sans-serif;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title-sub {
+  font-size: 11px;
+  color: rgba(100, 116, 139, 1);
+  font-family: SourceHanSans-Regular, sans-serif;
+}
+
+.word-comparison-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.word-file-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: rgba(219, 234, 254, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.file-icon {
+  font-size: 20px;
+  color: rgba(37, 99, 235, 1);
+}
+
+.word-file-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 1);
+  font-family: SourceHanSans-SemiBold, sans-serif;
+}
+
+.file-sub-info {
+  font-size: 12px;
+  color: rgba(100, 116, 139, 1);
+  font-family: SourceHanSans-Regular, sans-serif;
+}
+
+/* 对比统计徽章 */
+.word-comparison-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: SourceHanSans-Medium, sans-serif;
+  white-space: nowrap;
+}
+
+.stat-badge-icon {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stat-same {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: rgba(22, 101, 52, 1);
+}
+
+.stat-same .stat-badge-icon {
+  color: rgba(34, 197, 94, 1);
+}
+
+/* Word 文档预览区 */
+.word-document-preview {
+  background-color: rgba(255, 255, 255, 1);
+  border: 1px solid rgba(226, 232, 240, 1);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 对比容器 */
+.comparison-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 48px 1fr;
+  min-height: 472px;
+  max-height: 600px;
+  position: relative;
+}
+
+/* 差异导航工具栏 */
+.diff-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: rgba(248, 250, 252, 1);
+  border-bottom: 1px solid rgba(226, 232, 240, 1);
+}
+
+.diff-toolbar-spacer {
+  flex: 1;
+}
+
+.diff-toolbar-center {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.diff-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid rgba(226, 232, 240, 1);
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 1);
+  color: rgba(71, 85, 105, 1);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: SourceHanSans-Medium, sans-serif;
+  transition: all 0.15s;
+}
+
+.diff-nav-btn:hover:not(:disabled) {
+  background-color: rgba(248, 250, 252, 1);
+  border-color: rgba(203, 213, 225, 1);
+}
+
+.diff-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.diff-nav-btn.primary {
+  background-color: rgba(59, 130, 246, 1);
+  border-color: rgba(59, 130, 246, 1);
+  color: rgba(255, 255, 255, 1);
+}
+
+.diff-nav-btn.primary:hover:not(:disabled) {
+  background-color: rgba(29, 78, 216, 1);
+  border-color: rgba(29, 78, 216, 1);
+}
+
+.diff-nav-icon {
+  font-size: 14px;
+}
+
+.diff-separator {
+  color: rgba(148, 163, 184, 1);
+  font-size: 14px;
+  padding: 0 4px;
+}
+
+/* 文件面板 */
+.file-panel {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: rgba(255, 255, 255, 1);
+}
+
+/* 面板头部 */
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: rgba(248, 250, 252, 1);
+  border-bottom: 1px solid rgba(226, 232, 240, 1);
+  font-weight: 500;
+  color: rgba(55, 65, 81, 1);
+  font-size: 14px;
+  font-family: SourceHanSans-Medium, sans-serif;
+}
+
+.panel-icon {
+  font-size: 16px;
+  color: rgba(100, 116, 139, 1);
+}
+
+/* 悬浮页码指示器 */
+.floating-page-indicator {
+  position: absolute;
+  left: 8px;
+  top: 60px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(226, 232, 240, 1);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 6px 10px;
+  font-size: 12px;
+  color: rgba(100, 116, 139, 1);
+  font-family: SourceHanSans-Medium, sans-serif;
+  text-align: center;
+  z-index: 30;
+  pointer-events: none;
+  transition: top 0.15s ease;
+}
+
+.right-panel .floating-page-indicator {
+  left: auto;
+  right: 8px;
+}
+
+.floating-page-indicator .divider {
+  margin: 2px 0;
+  opacity: 0.5;
+}
+
+/* 文件内容区 */
+.file-content {
+  flex: 1;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(31, 41, 55, 1);
+}
+
+/* 文件行 */
+.file-line {
+  display: flex;
+  align-items: flex-start;
+  padding: 0 12px;
+  min-height: 24px;
+  transition: background-color 0.1s;
+}
+
+.file-line:hover {
+  background-color: rgba(248, 250, 252, 1);
+}
+
+/* 行号 */
+.line-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 20px;
+  width: max-content;
+  padding: 0 4px;
+  font-size: 12px;
+  color: rgba(148, 163, 184, 1);
+  font-family: ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(226, 232, 240, 1);
+  margin-right: 6px;
+  text-align: right;
+}
+
+/* 行内容 */
+.line-content {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 2px 0;
+}
+
+/* 右侧面板特殊样式 */
+.right-content {
+  direction: ltr;
+}
+
+.right-line {
+  flex-direction: row-reverse;
+}
+
+.right-line-number {
+  border-right: none;
+  border-left: 1px solid rgba(226, 232, 240, 1);
+  margin-right: 0;
+  margin-left: 8px;
+  text-align: left;
+}
+
+/* 相同内容行 */
+.file-line.line-same {
+  background-color: rgba(34, 197, 94, 0.05);
+}
+
+.file-line.line-same .line-number,
+.right-line.line-same .right-line-number {
+  color: rgba(34, 197, 94, 1);
+  border-right-color: rgba(34, 197, 94, 0.3);
+  border-left-color: rgba(34, 197, 94, 0.3);
+}
+
+/* 新增内容行 */
+.file-line.line-added {
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+.file-line.line-added .line-number,
+.right-line.line-added .right-line-number {
+  color: rgba(59, 130, 246, 1);
+  border-right-color: rgba(59, 130, 246, 0.3);
+  border-left-color: rgba(59, 130, 246, 0.3);
+}
+
+/* 删除内容行 */
+.file-line.line-deleted {
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+.file-line.line-deleted .line-number,
+.right-line.line-deleted .right-line-number {
+  color: rgba(239, 68, 68, 1);
+  border-right-color: rgba(239, 68, 68, 0.3);
+  border-left-color: rgba(239, 68, 68, 0.3);
+}
+
+.file-line.line-deleted .line-content {
+  text-decoration: line-through;
+  color: rgba(148, 163, 184, 1);
+}
+
+/* 片段块样式 (Word View) */
+.segment-block {
+  margin-bottom: 20px;
+  border: 1px solid rgba(226, 232, 240, 1);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 1);
+  transition: all 0.2s;
+}
+
+.segment-block:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.segment-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background-color: rgba(248, 250, 252, 1);
+  border-bottom: 1px solid rgba(226, 232, 240, 1);
+  border-radius: 8px 8px 0 0;
+}
+
+.segment-id {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(71, 85, 105, 1);
+  font-family: SourceHanSans-SemiBold, sans-serif;
+}
+
+.segment-score {
+  font-size: 12px;
+  color: rgba(34, 197, 94, 1);
+  font-weight: bold;
+  background-color: rgba(34, 197, 94, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.segment-text {
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(31, 41, 55, 1);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.empty-view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgba(148, 163, 184, 1);
+  font-size: 14px;
+}
+
+/* 中间连接区域 */
+.center-divider {
+  position: relative;
+  background-color: rgba(248, 250, 252, 1);
+  border-left: 1px solid rgba(226, 232, 240, 1);
+  border-right: 1px solid rgba(226, 232, 240, 1);
+}
+
+.vertical-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: rgba(203, 213, 225, 1);
+  transform: translateX(-50%);
+}
+
+.horizontal-connection {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(148, 163, 184, 0.3) 20%, 
+    rgba(148, 163, 184, 0.3) 80%, 
+    transparent 100%
+  );
+  pointer-events: none;
 }
 
 /* 对比列表区 */
@@ -613,6 +1771,8 @@ const nextPage = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .list-header .title-section {
@@ -650,11 +1810,92 @@ const nextPage = () => {
   white-space: nowrap;
 }
 
-.stats-info {
-  font-size: 14px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
+/* 列表头部统计徽章 */
+.list-header-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: SourceHanSans-Medium, sans-serif;
   white-space: nowrap;
+}
+
+.stat-badge-icon {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stat-badge-100 {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: rgba(22, 101, 52, 1);
+}
+
+.stat-badge-100 .stat-badge-icon {
+  color: rgba(34, 197, 94, 1);
+}
+
+.stat-badge-threshold {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: rgba(30, 64, 175, 1);
+}
+
+.stat-badge-threshold .stat-badge-icon {
+  color: rgba(59, 130, 246, 1);
+}
+
+/* Word 预览列表样式 */
+.word-list-view {
+  width: 100%;
+  background-color: rgba(255, 255, 255, 1);
+  border: 0.7px solid rgba(216, 191, 156, 1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.word-list-view .table-header,
+.word-list-view .table-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 100px 90px 100px 1fr;
+}
+
+.word-list-view .col-similarity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border-right: 1px solid rgba(230, 215, 191, 0.5);
+}
+
+.similarity-score {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: rgba(22, 101, 52, 1);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* 确保高亮在 Word 预览列表中生效 */
+.word-list-view .col-content :deep(.highlighted-text) {
+  background-color: rgba(255, 215, 0, 0.85) !important;
+  color: rgba(139, 0, 0, 1) !important;
+  padding: 2px 4px !important;
+  border-radius: 3px !important;
+  font-weight: 700 !important;
+  display: inline !important;
+  box-decoration-break: clone !important;
+  -webkit-box-decoration-break: clone !important;
+  box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.5) !important;
 }
 
 /* 对比数据表 */
@@ -667,13 +1908,13 @@ const nextPage = () => {
 /* 表头 */
 .table-header {
   display: grid;
-  grid-template-columns: 81px 377px 122px 377px 122px;
+  grid-template-columns: 60px 1fr 100px 100px 1fr;
   background-color: rgba(245, 238, 226, 1);
 }
 
 .table-header .col {
-  padding: 16px;
-  font-size: 14px;
+  padding: 10px 12px;
+  font-size: 13px;
   font-weight: 600;
   color: rgba(107, 79, 52, 1);
   font-family: SourceHanSans-SemiBold;
@@ -681,11 +1922,12 @@ const nextPage = () => {
   align-items: center;
   justify-content: center;
   border-bottom: 1px solid rgba(230, 215, 191, 1);
+  white-space: nowrap;
 }
 
 .table-header .col-content {
   justify-content: flex-start;
-  border-right: 1px solid rgba(230, 215, 191, 1);
+  padding-left: 16px;
 }
 
 .table-header .col-position {
@@ -694,16 +1936,15 @@ const nextPage = () => {
 
 /* 表体 */
 .table-body {
-  max-height: 600px;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .table-row {
   display: grid;
-  grid-template-columns: 81px 377px 122px 377px 122px;
+  grid-template-columns: 60px 1fr 100px 100px 1fr;
   border-bottom: 1px solid rgba(230, 215, 191, 0.5);
   transition: background-color 0.2s;
-  min-height: 80px;
+  min-height: 44px;
 }
 
 .table-row:last-child {
@@ -715,36 +1956,54 @@ const nextPage = () => {
 }
 
 .table-row .col {
-  padding: 16px;
-  display: flex;
-  align-items: center;
+  padding: 8px 12px;
   font-size: 13px;
   color: rgba(44, 24, 16, 1);
   font-family: SourceHanSans-Regular;
-  line-height: 1.6;
+  line-height: 1.5;
+  /* 确保 grid item 能正确包含子元素 */
+  display: flex;
+  align-items: stretch;
 }
 
 .table-row .col-index {
   justify-content: center;
+  align-items: center;
   font-weight: 500;
   color: rgba(166, 124, 82, 1);
 }
 
 /* 确保高亮在表格内容中正确显示 */
 .table-row .col-content {
-  display: block;
   overflow: visible;
   white-space: pre-wrap;
   word-break: break-word;
-  line-height: 1.6;
-  padding: 8px 12px;
+  line-height: 1.5;
+  padding: 6px 12px;
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 6px;
   border: 1px solid rgba(166, 124, 82, 0.15);
-  min-height: 60px;
+  min-height: 32px;
+  /* 使用 flex: 1 填充可用空间 */
+  flex: 1;
+  display: block;
 }
 
 .table-row .col-content :deep(.highlighted-text) {
+  background-color: rgba(255, 215, 0, 0.9) !important;
+  color: rgba(139, 0, 0, 1) !important;
+  padding: 2px 4px !important;
+  border-radius: 3px !important;
+  font-weight: 700 !important;
+  display: inline !important;
+  line-height: inherit !important;
+  box-decoration-break: clone !important;
+  -webkit-box-decoration-break: clone !important;
+  box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.6) !important;
+}
+
+/* 全局高亮样式 - 用于v-html生成的内容 */
+.data-table .col-content .highlighted-text {
   background-color: rgba(255, 215, 0, 0.9) !important;
   color: rgba(139, 0, 0, 1) !important;
   padding: 2px 4px !important;
@@ -821,20 +2080,6 @@ const nextPage = () => {
   background-color: rgba(139, 0, 0, 1);
   border-color: rgba(139, 0, 0, 1);
   color: rgba(255, 255, 255, 1);
-}
-
-/* 高亮文本样式 */
-:deep(.highlighted-text) {
-  background-color: rgba(255, 215, 0, 0.85) !important;
-  color: rgba(139, 0, 0, 1) !important;
-  padding: 2px 4px !important;
-  border-radius: 2px !important;
-  font-weight: 700 !important;
-  display: inline !important;
-  line-height: inherit !important;
-  box-decoration-break: clone !important;
-  -webkit-box-decoration-break: clone !important;
-  box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.5) !important;
 }
 
 /* 移动端响应式 */
