@@ -65,7 +65,7 @@ export function buildHighlightedHtml(
   fullText: string,
   matchStart: number,
   matchEnd: number,
-  contextLength: number = 5
+  contextLength: number = 10
 ): string {
   const contextStart = Math.max(0, matchStart - contextLength)
   const contextEnd = Math.min(fullText.length, matchEnd + contextLength)

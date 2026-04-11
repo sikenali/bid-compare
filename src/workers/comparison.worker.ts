@@ -53,12 +53,12 @@ function handleComparison(data: ComparisonMessage) {
     switch (strategy) {
       case 'lcs':
         // 小文件：使用暴力 LCS 算法
-        segments = findSimilarSegments(text1, text2, settings, 5, pageMap1, pageMap2)
+        segments = findSimilarSegments(text1, text2, settings, 10, pageMap1, pageMap2)
         similarity = segments.length > 0 ? 100 : 0
         break
       case 'rabin-karp':
         segments = findSimilarSegmentsRabinKarp(
-          text1, text2, settings, 5,
+          text1, text2, settings, 10,
           (progress) => {
             if (!cancelled) {
               self.postMessage({ type: 'PROGRESS', progress, message: '正在分析...' })

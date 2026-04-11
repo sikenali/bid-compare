@@ -47,7 +47,7 @@ export function useComparison() {
       if (strategy === 'lcs') {
         // 小文件：使用暴力 LCS 算法，结果最准确
         progressMessage.value = '正在对比...'
-        const segments = findSimilarSegments(text1, text2, settings, 5, pageMap1, pageMap2)
+        const segments = findSimilarSegments(text1, text2, settings, 10, pageMap1, pageMap2)
         const similarity = calculateTextSimilarity(text1, text2, settings)
         isProcessing.value = false
         return { segments, similarity }
@@ -123,7 +123,7 @@ export function useComparison() {
         console.warn('Worker 不可用，降级到主线程 LCS')
         isProcessing.value = false
         canCancel.value = false
-        const segments = findSimilarSegments(text1, text2, settings, 5, pageMap1, pageMap2)
+        const segments = findSimilarSegments(text1, text2, settings, 10, pageMap1, pageMap2)
         const similarity = calculateTextSimilarity(text1, text2, settings)
         resolve({ segments, similarity })
       }
