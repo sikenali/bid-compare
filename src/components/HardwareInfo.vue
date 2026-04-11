@@ -292,59 +292,79 @@ const {
 @media (max-width: 768px) {
   .info-cards {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 12px;
   }
 
   .info-card {
-    padding: 16px;
+    padding: 12px;
   }
 
+  /* 系统信息/网络信息 - 单列表格样式 */
   .info-multi-columns {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
   }
 
+  /* 指纹信息 - 单列表格样式 */
   .info-full-width {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
   }
 
+  /* 每个字段一行，左 label 右 value */
   .info-field,
   .info-field-full {
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: 80px 1fr;
     align-items: center;
-    gap: 12px;
+    gap: 0;
     width: 100%;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(166, 124, 82, 0.15);
+  }
+
+  .info-field:last-child,
+  .info-field-full:last-child {
+    border-bottom: none;
   }
 
   .field-label {
-    min-width: 80px;
-    max-width: 80px;
-    flex-shrink: 0;
     font-size: 13px;
-    line-height: 1.3;
+    color: rgba(107, 79, 52, 1);
+    font-family: SourceHanSans-Regular;
+    padding-right: 12px;
+    text-align: left;
   }
 
   .field-value-box {
-    flex: 1;
-    padding: 10px 12px;
-    min-height: 40px;
+    background-color: transparent;
+    padding: 0;
+    min-height: auto;
+    justify-content: flex-end;
   }
 
   .field-value-box.wide {
-    padding: 10px 12px;
+    padding: 0;
   }
 
   .field-value {
     font-size: 13px;
+    font-weight: 500;
+    color: rgba(44, 24, 16, 1);
+    font-family: SourceHanSans-Medium;
+    text-align: right;
     word-break: break-all;
   }
 
+  .field-value.mono {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+  }
+
   .card-title {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .page-title {
