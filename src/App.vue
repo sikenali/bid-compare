@@ -1,10 +1,51 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { RiExchangeLine, RiFileLine, RiFileInfoLine, RiSettings3Line, RiCpuLine } from '@remixicon/vue'
 
 const route = useRoute()
 const router = useRouter()
+
+// 移动端菜单状态
+const isMobileMenuOpen = ref(false)
+const isMobile = ref(false)
+
+// 检测屏幕尺寸
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+  if (!isMobile.value) {
+    isMobileMenuOpen.value = false
+  }
+}
+
+// 切换移动端菜单
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
+
+// 关闭菜单
+const closeMobileMenu = () => {
+  isMobileMenuOpen.value = false
+}
+
+// ESC 键关闭菜单
+const handleKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && isMobileMenuOpen.value) {
+    closeMobileMenu()
+  }
+}
+
+// 生命周期钩子
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+  window.removeEventListener('keydown', handleKeydown)
+})
 
 // 计算当前激活的菜单
 const activeMenu = computed(() => {
@@ -31,65 +72,97 @@ const handleMenuClick = (menu: string) => {
       router.push('/settings')
       break
   }
+  // 移动端点击菜单后自动关闭
+  closeMobileMenu()
 }
 </script>
 
 <template>
   <div class="app-container">
-    <!-- 侧边导航栏 -->
-    <aside class="sidebar">
-      <!-- Logo区域 -->
-      <div class="logo-section">
-        <div class="logo-icon">
-          <div class="logo-seal">
-            <RiExchangeLine class="logo-icon-svg" />
-          </div>
+    <!-- 移动端顶部导航栏 -->
+    <header v-if="isMobile" class="mobile-header">
+      <button class="hamburger-btn" @click="toggleMobileMenu" aria-label="切换菜单">
+        <span class="hamburger-icon">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </span>
+      </button>
+      <div class="mobile-logo">
+        <div class="mobile-logo-seal">
+          <RiExchangeLine class="mobile-logo-icon" />
         </div>
-        <h1 class="logo-title">文件对对碰</h1>
-        <p class="logo-subtitle">智能文档比对工具</p>
+        <span class="mobile-title">文件对对碰</span>
       </div>
+      <div class="mobile-header-spacer"></div>
+    </header>
 
-      <!-- 导航菜单 -->
-      <nav class="nav-menu">
-        <button
-          class="nav-item"
-          :class="{ active: activeMenu === 'file-compare' }"
-          @click="handleMenuClick('file-compare')"
-        >
-          <RiExchangeLine class="nav-icon" />
-          <span class="nav-text">文件对比</span>
-        </button>
-        <button
-          class="nav-item"
-          :class="{ active: activeMenu === 'property-check' }"
-          @click="handleMenuClick('property-check')"
-        >
-          <RiFileInfoLine class="nav-icon" />
-          <span class="nav-text">属性检查</span>
-        </button>
-        <button
-          class="nav-item"
-          :class="{ active: activeMenu === 'hardware-info' }"
-          @click="handleMenuClick('hardware-info')"
-        >
-          <RiCpuLine class="nav-icon" />
-          <span class="nav-text">硬件信息</span>
-        </button>
-        <button
-          class="nav-item"
-          :class="{ active: activeMenu === 'system-settings' }"
-          @click="handleMenuClick('system-settings')"
-        >
-          <RiSettings3Line class="nav-icon" />
-          <span class="nav-text">系统设置</span>
-        </button>
-      </nav>
+    <!-- 遮罩层 -->
+    <Transition name="overlay">
+      <div v-if="isMobile && isMobileMenuOpen" class="mobile-overlay" @click="closeMobileMenu"></div>
+    </Transition>
 
-      <!-- 底部版本信息 -->
-      <div class="version-info">
-        <p>@2026 sikenali</p>
-      </div>
-    </aside>
+    <!-- 侧边导航栏 -->
+    <Transition name="sidebar">
+      <aside v-show="isMobile ? isMobileMenuOpen : true" class="sidebar" :class="{ 'mobile-open': isMobileMenuOpen }">
+        <!-- 移动端关闭按钮 -->
+        <button v-if="isMobile" class="mobile-close-btn" @click="closeMobileMenu" aria-label="关闭菜单">
+          <span class="close-icon">×</span>
+        </button>
+
+        <!-- Logo区域 -->
+        <div class="logo-section">
+          <div class="logo-icon">
+            <div class="logo-seal">
+              <RiExchangeLine class="logo-icon-svg" />
+            </div>
+          </div>
+          <h1 class="logo-title">文件对对碰</h1>
+          <p class="logo-subtitle">智能文档比对工具</p>
+        </div>
+
+        <!-- 导航菜单 -->
+        <nav class="nav-menu">
+          <button
+            class="nav-item"
+            :class="{ active: activeMenu === 'file-compare' }"
+            @click="handleMenuClick('file-compare')"
+          >
+            <RiExchangeLine class="nav-icon" />
+            <span class="nav-text">文件对比</span>
+          </button>
+          <button
+            class="nav-item"
+            :class="{ active: activeMenu === 'property-check' }"
+            @click="handleMenuClick('property-check')"
+          >
+            <RiFileInfoLine class="nav-icon" />
+            <span class="nav-text">属性检查</span>
+          </button>
+          <button
+            class="nav-item"
+            :class="{ active: activeMenu === 'hardware-info' }"
+            @click="handleMenuClick('hardware-info')"
+          >
+            <RiCpuLine class="nav-icon" />
+            <span class="nav-text">硬件信息</span>
+          </button>
+          <button
+            class="nav-item"
+            :class="{ active: activeMenu === 'system-settings' }"
+            @click="handleMenuClick('system-settings')"
+          >
+            <RiSettings3Line class="nav-icon" />
+            <span class="nav-text">系统设置</span>
+          </button>
+        </nav>
+
+        <!-- 底部版本信息 -->
+        <div class="version-info">
+          <p>@2026 sikenali</p>
+        </div>
+      </aside>
+    </Transition>
 
     <!-- 主内容区域 -->
     <main class="main-content">
@@ -252,5 +325,195 @@ const handleMenuClick = (menu: string) => {
   overflow: auto;
   background-color: rgba(248, 244, 233, 1);
   padding: 32px;
+}
+
+/* 移动端顶部导航栏 */
+.mobile-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background-color: rgba(44, 24, 16, 1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 999;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.hamburger-btn {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.hamburger-icon {
+  width: 24px;
+  height: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hamburger-line {
+  width: 100%;
+  height: 2px;
+  background-color: rgba(255, 255, 255, 1);
+  border-radius: 1px;
+  transition: all 0.3s ease;
+}
+
+.mobile-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  justify-content: center;
+}
+
+.mobile-logo-seal {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(139, 0, 0, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mobile-logo-icon {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 1);
+}
+
+.mobile-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 1);
+  font-family: SourceHanSans-Bold;
+  letter-spacing: 1px;
+}
+
+.mobile-header-spacer {
+  width: 44px;
+  flex-shrink: 0;
+}
+
+/* 遮罩层 */
+.mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+/* 侧边栏移动端样式 */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    transform: translateX(-100%);
+    z-index: 1001;
+    transition: transform 0.3s ease;
+    will-change: transform;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .mobile-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .close-icon {
+    font-size: 24px;
+    color: rgba(255, 255, 255, 1);
+    line-height: 1;
+  }
+
+  .main-content {
+    padding-top: 60px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* 平板端优化 */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .main-content {
+    padding: 24px;
+  }
+}
+
+/* 导航菜单项移动端优化 */
+@media (max-width: 768px) {
+  .nav-item {
+    min-height: 48px;
+    padding: 14px 16px;
+  }
+
+  .nav-icon {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+  }
+
+  .nav-text {
+    font-size: 15px;
+  }
+}
+
+/* Transition 动画 */
+.sidebar-enter-active,
+.sidebar-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.sidebar-enter-from,
+.sidebar-leave-to {
+  transform: translateX(-100%);
+}
+
+.overlay-enter-active,
+.overlay-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.overlay-enter-from,
+.overlay-leave-to {
+  opacity: 0;
 }
 </style>
