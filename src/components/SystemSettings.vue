@@ -646,7 +646,7 @@ input:checked + .slider:before {
 /* 移动端响应式优化 */
 @media (max-width: 768px) {
   .system-settings-container {
-    padding-bottom: 90px;
+    padding-bottom: 120px;
   }
 
   .settings-form {
