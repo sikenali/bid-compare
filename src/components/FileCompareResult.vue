@@ -730,41 +730,31 @@ const nextPage = () => {
   color: rgba(166, 124, 82, 1);
 }
 
+/* 确保高亮在表格内容中正确显示 */
 .table-row .col-content {
-  justify-content: flex-start;
-  text-align: left;
-  overflow: visible;
-  border-right: 1px solid rgba(230, 215, 191, 0.3);
-  white-space: normal;
-  word-break: break-all;
-  position: relative;
   display: block;
+  overflow: visible;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+  padding: 8px 12px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  border: 1px solid rgba(166, 124, 82, 0.15);
+  min-height: 60px;
 }
 
-/* 确保高亮样式在表格内容中生效 */
 .table-row .col-content :deep(.highlighted-text) {
   background-color: rgba(255, 215, 0, 0.9) !important;
   color: rgba(139, 0, 0, 1) !important;
-  padding: 1px 3px !important;
-  border-radius: 2px !important;
+  padding: 2px 4px !important;
+  border-radius: 3px !important;
   font-weight: 700 !important;
   display: inline !important;
   line-height: inherit !important;
   box-decoration-break: clone !important;
   -webkit-box-decoration-break: clone !important;
   box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.6) !important;
-}
-
-/* 确保高亮在 flex 子项中正确显示 */
-.table-row .col {
-  display: block !important;
-}
-
-.table-row .col-index,
-.table-row .col-position {
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
 }
 
 .table-row .col-position {
