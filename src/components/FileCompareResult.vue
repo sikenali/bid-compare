@@ -577,12 +577,15 @@ const nextPage = () => {
 
 /* 高亮文本样式 */
 :deep(.highlighted-text) {
-  background-color: rgba(255, 215, 0, 0.6);
-  color: #8B0000;
-  padding: 2px 4px;
-  border-radius: 4px;
-  font-weight: 600;
-  display: inline-block;
+  background-color: rgba(255, 215, 0, 0.7) !important;
+  color: rgba(139, 0, 0, 1) !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-weight: 600 !important;
+  display: inline-block !important;
+  line-height: 1.4 !important;
+  z-index: 1000 !important;
+  position: relative !important;
 }
 
 /* 移动端响应式 */
