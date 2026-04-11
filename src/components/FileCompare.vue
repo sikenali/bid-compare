@@ -2572,5 +2572,18 @@ const generateWordReport = () => {
   .page-header {
     display: none;
   }
+
+  .action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+    min-height: 44px;
+  }
 }
 </style>
