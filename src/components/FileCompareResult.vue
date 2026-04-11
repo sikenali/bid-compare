@@ -131,17 +131,32 @@ function parseHighlightedContent(htmlContent: string): any[] {
     // 添加高亮前的普通文本
     if (match.index > lastIndex) {
       const plainText = content.substring(lastIndex, match.index)
+      // 解码 HTML 实体
+      const decodedText = plainText
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#039;/g, "'")
+        .replace(/<[^>]*>/g, '')
       runs.push(new TextRun({
-        text: plainText.replace(/<[^>]*>/g, ''),
+        text: decodedText,
         size: 20,
         font: 'Microsoft YaHei'
       }))
     }
 
     // 添加高亮文本（带背景色）
-    const highlightedText = match[1]
+    const highlightedHtml = match[1]
+    // 解码 HTML 实体
+    const decodedHighlight = highlightedHtml
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
     runs.push(new TextRun({
-      text: highlightedText,
+      text: decodedHighlight,
       size: 20,
       font: 'Microsoft YaHei',
       bold: true,
@@ -155,14 +170,31 @@ function parseHighlightedContent(htmlContent: string): any[] {
   // 添加剩余的普通文本
   if (lastIndex < content.length) {
     const plainText = content.substring(lastIndex)
+    const decodedText = plainText
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/<[^>]*>/g, '')
     runs.push(new TextRun({
-      text: plainText.replace(/<[^>]*>/g, ''),
+      text: decodedText,
       size: 20,
       font: 'Microsoft YaHei'
     }))
   }
 
-  return runs.length > 0 ? runs : [new TextRun({ text: content.replace(/<[^>]*>/g, ''), size: 20, font: 'Microsoft YaHei' })]
+  return runs.length > 0 ? runs : [new TextRun({
+    text: content
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/<[^>]*>/g, ''),
+    size: 20,
+    font: 'Microsoft YaHei'
+  })]
 }
 
 // 生成Word报告
