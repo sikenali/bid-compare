@@ -444,15 +444,262 @@ export function findSimilarSegmentsBlockMatch(
   return segments
 }
 
-export type ComparisonStrategy = 'lcs' | 'rabin-karp' | 'block-match'
+export type ComparisonStrategy = 'lcs' | 'rabin-karp' | 'minhash'
 
 // 选择对比策略
 export function selectStrategy(textLength: number): ComparisonStrategy {
-  // 小文件（< 5000 字符）：使用暴力 LCS，结果最准确
-  // 中文件（5K-100K）：使用 Rabin-Karp 滚动哈希，性能 O(m+n)
-  // 大文件（> 100K）：使用分块匹配，避免内存溢出
-  if (textLength < 5_000) return 'lcs'
+  // 小文件（< 3K 字符）：使用暴力 LCS，结果最准确
+  // 中文件（3K-100K）：使用 Rabin-Karp 滚动哈希，性能 O(m+n)
+  // 大文件（> 100K）：使用 MinHash + LSH，避免内存溢出
+  if (textLength < 3_000) return 'lcs'
   if (textLength < 100_000) return 'rabin-karp'
-  return 'block-match'
+  return 'minhash'
+}
+
+// ========== MinHash + LSH 算法 ==========
+
+/**
+ * 将文本转换为 k-shingle 集合
+ */
+export function generateShingles(text: string, k: number = 5): Set<string> {
+  const shingles = new Set<string>()
+  const processed = text.toLowerCase().replace(/\s+/g, ' ').trim()
+
+  for (let i = 0; i <= processed.length - k; i++) {
+    shingles.add(processed.substring(i, i + k))
+  }
+
+  return shingles
+}
+
+function generateHashSeeds(numHashes: number): number[] {
+  const seeds: number[] = []
+  for (let i = 0; i < numHashes; i++) {
+    seeds.push(1000000007 + i * 1000003)
+  }
+  return seeds
+}
+
+function hashWithSeed(shingle: string, seed: number): number {
+  let hash = seed
+  for (let i = 0; i < shingle.length; i++) {
+    hash = ((hash << 5) - hash + shingle.charCodeAt(i)) | 0
+  }
+  return Math.abs(hash)
+}
+
+/**
+ * 计算 MinHash 签名
+ */
+export function computeMinHashSignature(
+  text: string,
+  numHashes: number = 128
+): number[] {
+  const shingles = Array.from(generateShingles(text))
+  const seeds = generateHashSeeds(numHashes)
+  const signature = new Array(numHashes).fill(Infinity)
+
+  for (const shingle of shingles) {
+    for (let i = 0; i < numHashes; i++) {
+      const hash = hashWithSeed(shingle, seeds[i])
+      signature[i] = Math.min(signature[i], hash)
+    }
+  }
+
+  return signature
+}
+
+interface LSHPair {
+  chunkIndex1: number
+  chunkIndex2: number
+  estimatedSimilarity: number
+}
+
+function estimateJaccardSimilarity(sig1: number[], sig2: number[]): number {
+  let matchCount = 0
+  for (let i = 0; i < sig1.length; i++) {
+    if (sig1[i] === sig2[i]) {
+      matchCount++
+    }
+  }
+  return matchCount / sig1.length
+}
+
+/**
+ * LSH 查找候选对
+ */
+export function findLSHCandidates(
+  signatures1: number[][],
+  signatures2: number[][],
+  numBuckets: number = 20
+): LSHPair[] {
+  const candidates = new Map<string, LSHPair>()
+  const rowsPerBand = Math.floor(signatures1[0].length / numBuckets)
+
+  for (let band = 0; band < numBuckets; band++) {
+    const startRow = band * rowsPerBand
+    const endRow = startRow + rowsPerBand
+
+    const buckets1 = new Map<string, number[]>()
+    for (let i = 0; i < signatures1.length; i++) {
+      const bandSignature = signatures1[i].slice(startRow, endRow).join(',')
+      if (!buckets1.has(bandSignature)) {
+        buckets1.set(bandSignature, [])
+      }
+      buckets1.get(bandSignature)!.push(i)
+    }
+
+    const buckets2 = new Map<string, number[]>()
+    for (let j = 0; j < signatures2.length; j++) {
+      const bandSignature = signatures2[j].slice(startRow, endRow).join(',')
+      if (!buckets2.has(bandSignature)) {
+        buckets2.set(bandSignature, [])
+      }
+      buckets2.get(bandSignature)!.push(j)
+
+      if (buckets1.has(bandSignature)) {
+        for (const i of buckets1.get(bandSignature)!) {
+          const key = `${i},${j}`
+          if (!candidates.has(key)) {
+            const similarity = estimateJaccardSimilarity(
+              signatures1[i],
+              signatures2[j]
+            )
+            candidates.set(key, {
+              chunkIndex1: i,
+              chunkIndex2: j,
+              estimatedSimilarity: similarity
+            })
+          }
+        }
+      }
+    }
+  }
+
+  return Array.from(candidates.values())
+    .filter(c => c.estimatedSimilarity > 0.7)
+    .sort((a, b) => b.estimatedSimilarity - a.estimatedSimilarity)
+}
+
+function chunkText(text: string, chunkSize: number = 1000): string[] {
+  const chunks: string[] = []
+  for (let i = 0; i < text.length; i += chunkSize) {
+    chunks.push(text.substring(i, i + chunkSize))
+  }
+  return chunks
+}
+
+/**
+ * MinHash + LSH 相似片段查找
+ */
+export function findSimilarSegmentsMinHash(
+  text1: string,
+  text2: string,
+  settings: ComparisonSettings,
+  onProgress?: (progress: number) => void,
+  pageMap1?: PageMap,
+  pageMap2?: PageMap
+): SimilarSegment[] {
+  const segments: SimilarSegment[] = []
+  const chunkSize = 1000
+  let segmentIdCounter = 0
+
+  const chunks1 = chunkText(text1, chunkSize)
+  const chunks2 = chunkText(text2, chunkSize)
+
+  if (onProgress) onProgress(0.1)
+
+  const signatures1 = chunks1.map(c => computeMinHashSignature(c, 128))
+  const signatures2 = chunks2.map(c => computeMinHashSignature(c, 128))
+
+  if (onProgress) onProgress(0.3)
+
+  const candidates = findLSHCandidates(signatures1, signatures2, 20)
+
+  if (onProgress) onProgress(0.5)
+
+  const totalCandidates = candidates.length
+  let processed = 0
+
+  for (const candidate of candidates) {
+    const chunk1 = chunks1[candidate.chunkIndex1]
+    const chunk2 = chunks2[candidate.chunkIndex2]
+
+    const blockSegments = findSimilarSegmentsRabinKarp(
+      chunk1,
+      chunk2,
+      settings,
+      50,
+      undefined,
+      pageMap1,
+      pageMap2
+    )
+
+    const offset1 = candidate.chunkIndex1 * chunkSize
+    const offset2 = candidate.chunkIndex2 * chunkSize
+
+    for (const seg of blockSegments) {
+      seg.id = ++segmentIdCounter
+      if (seg.leftStartIndex !== undefined) seg.leftStartIndex += offset1
+      if (seg.leftEndIndex !== undefined) seg.leftEndIndex += offset1
+      if (seg.rightStartIndex !== undefined) seg.rightStartIndex += offset2
+      if (seg.rightEndIndex !== undefined) seg.rightEndIndex += offset2
+      segments.push(seg)
+    }
+
+    processed++
+    if (onProgress && processed % 10 === 0) {
+      const progress = 0.5 + (processed / Math.max(1, totalCandidates)) * 0.5
+      onProgress(Math.min(1, progress))
+    }
+  }
+
+  return mergeOverlappingSegments(segments)
+}
+
+// ========== 重叠片段合并 ==========
+
+function areOverlapping(seg1: SimilarSegment, seg2: SimilarSegment): boolean {
+  const s1Start = seg1.leftStartIndex ?? 0
+  const s1End = seg1.leftEndIndex ?? 0
+  const s2Start = seg2.leftStartIndex ?? 0
+  const s2End = seg2.leftEndIndex ?? 0
+
+  return s2Start < s1End && s2End > s1Start
+}
+
+function mergeTwoSegments(seg1: SimilarSegment, seg2: SimilarSegment): void {
+  seg1.leftStartIndex = Math.min(seg1.leftStartIndex ?? 0, seg2.leftStartIndex ?? 0)
+  seg1.leftEndIndex = Math.max(seg1.leftEndIndex ?? 0, seg2.leftEndIndex ?? 0)
+  seg1.rightStartIndex = Math.min(seg1.rightStartIndex ?? 0, seg2.rightStartIndex ?? 0)
+  seg1.rightEndIndex = Math.max(seg1.rightEndIndex ?? 0, seg2.rightEndIndex ?? 0)
+  seg1.similarityValue = Math.max(seg1.similarityValue, seg2.similarityValue)
+  seg1.similarity = `${seg1.similarityValue}%`
+}
+
+/**
+ * 合并重叠片段
+ */
+export function mergeOverlappingSegments(
+  segments: SimilarSegment[]
+): SimilarSegment[] {
+  if (segments.length === 0) return []
+
+  segments.sort((a, b) => (a.leftStartIndex ?? 0) - (b.leftStartIndex ?? 0))
+
+  const merged: SimilarSegment[] = [{ ...segments[0] }]
+
+  for (let i = 1; i < segments.length; i++) {
+    const current = segments[i]
+    const last = merged[merged.length - 1]
+
+    if (areOverlapping(last, current)) {
+      mergeTwoSegments(last, current)
+    } else {
+      merged.push({ ...current })
+    }
+  }
+
+  return merged
 }
 
