@@ -425,5 +425,32 @@ const {
   .page-header {
     display: none;
   }
+
+  .info-field,
+  .info-field-full {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .field-label {
+    min-width: 90px;
+    flex-shrink: 0;
+    font-size: 13px;
+  }
+
+  .field-value-box {
+    flex: 1;
+    padding: 10px 12px;
+    min-height: 40px;
+  }
+
+  .field-value-box.wide {
+    padding: 10px 12px;
+  }
+
+  .field-value {
+    font-size: 13px;
+  }
 }
 </style>
