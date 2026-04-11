@@ -642,4 +642,69 @@ input:checked + .slider:before {
   box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
   transform: translateY(-2px);
 }
+
+/* 移动端响应式优化 */
+@media (max-width: 768px) {
+  .settings-form {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .settings-card {
+    padding: 16px;
+  }
+
+  .setting-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .setting-input {
+    width: 100%;
+  }
+
+  .setting-input.api-input {
+    width: 100%;
+  }
+
+  .radio-group {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .card-title {
+    font-size: 15px;
+  }
+
+  .setting-label {
+    font-size: 14px;
+  }
+
+  .setting-desc {
+    font-size: 12px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 16px;
+  }
+
+  .btn {
+    width: 100%;
+    height: 48px;
+  }
+}
+
+/* 平板端优化 */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .settings-form {
+    gap: 16px;
+  }
+}
 </style>
