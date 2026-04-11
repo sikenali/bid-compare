@@ -301,7 +301,34 @@ const {
 
   .info-multi-columns {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 12px;
+  }
+
+  .info-field,
+  .info-field-full {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .field-label {
+    min-width: 80px;
+    flex-shrink: 0;
+    font-size: 13px;
+  }
+
+  .field-value-box {
+    flex: 1;
+    padding: 10px 12px;
+    min-height: 40px;
+  }
+
+  .field-value-box.wide {
+    padding: 10px 12px;
+  }
+
+  .field-value {
+    font-size: 13px;
   }
 
   .card-title {
@@ -310,6 +337,10 @@ const {
 
   .page-title {
     font-size: 18px;
+  }
+
+  .page-header {
+    display: none;
   }
 }
 
@@ -418,39 +449,5 @@ const {
   font-family: 'Courier New', monospace;
   font-size: 13px;
   word-break: break-all;
-}
-
-/* 移动端响应式优化 */
-@media (max-width: 768px) {
-  .page-header {
-    display: none;
-  }
-
-  .info-field,
-  .info-field-full {
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .field-label {
-    min-width: 90px;
-    flex-shrink: 0;
-    font-size: 13px;
-  }
-
-  .field-value-box {
-    flex: 1;
-    padding: 10px 12px;
-    min-height: 40px;
-  }
-
-  .field-value-box.wide {
-    padding: 10px 12px;
-  }
-
-  .field-value {
-    font-size: 13px;
-  }
 }
 </style>
