@@ -1,9 +1,10 @@
 import {
   findSimilarSegments,
   findSimilarSegmentsRabinKarp,
-  findSimilarSegmentsBlockMatch,
+  findSimilarSegmentsMinHash,
   type ComparisonSettings,
-  type SimilarSegment
+  type SimilarSegment,
+  type PageMap
 } from '../utils/textAlgorithms'
 
 interface ComparisonMessage {
@@ -11,9 +12,9 @@ interface ComparisonMessage {
   text1: string
   text2: string
   settings: ComparisonSettings
-  strategy: 'lcs' | 'rabin-karp' | 'block-match'
-  totalPages1?: number
-  totalPages2?: number
+  strategy: 'lcs' | 'rabin-karp' | 'minhash'
+  pageMap1?: PageMap
+  pageMap2?: PageMap
 }
 
 interface CancelMessage {
@@ -33,7 +34,7 @@ self.onmessage = function (e: MessageEvent<WorkerMessage>) {
 }
 
 function handleComparison(data: ComparisonMessage) {
-  const { text1, text2, settings, strategy, totalPages1 = 1, totalPages2 = 1 } = data
+  const { text1, text2, settings, strategy, pageMap1, pageMap2 } = data
   const startTime = performance.now()
   let cancelled = false
 
@@ -52,30 +53,32 @@ function handleComparison(data: ComparisonMessage) {
     switch (strategy) {
       case 'lcs':
         // 小文件：使用暴力 LCS 算法
-        segments = findSimilarSegments(text1, text2, settings, 15, totalPages1, totalPages2)
+        segments = findSimilarSegments(text1, text2, settings, 50, pageMap1, pageMap2)
         similarity = segments.length > 0 ? 100 : 0
         break
       case 'rabin-karp':
         segments = findSimilarSegmentsRabinKarp(
-          text1, text2, settings, 8,
+          text1, text2, settings, 50,
           (progress) => {
             if (!cancelled) {
               self.postMessage({ type: 'PROGRESS', progress, message: '正在分析...' })
             }
           },
-          totalPages1,
-          totalPages2
+          pageMap1,
+          pageMap2
         )
         similarity = estimateSimilarityFromSegments(segments, text1.length)
         break
-      case 'block-match':
-        segments = findSimilarSegmentsBlockMatch(
+      case 'minhash':
+        segments = findSimilarSegmentsMinHash(
           text1, text2, settings,
           (progress) => {
             if (!cancelled) {
-              self.postMessage({ type: 'PROGRESS', progress, message: '分块匹配中...' })
+              self.postMessage({ type: 'PROGRESS', progress, message: 'MinHash 计算中...' })
             }
-          }
+          },
+          pageMap1,
+          pageMap2
         )
         similarity = estimateSimilarityFromSegments(segments, text1.length)
         break
@@ -88,7 +91,8 @@ function handleComparison(data: ComparisonMessage) {
         type: 'DONE',
         segments,
         similarity,
-        elapsed: Math.round(elapsed)
+        elapsed: Math.round(elapsed),
+        strategy
       })
     }
   } catch (error) {
@@ -107,14 +111,15 @@ function handleComparison(data: ComparisonMessage) {
 // 基于匹配片段估算整体相似度
 function estimateSimilarityFromSegments(segments: SimilarSegment[], textLength: number): number {
   if (textLength === 0 || segments.length === 0) return 0
-  // 估算：统计被匹配覆盖的字符比例
-  const matchedChars = new Set<number>()
+
+  const matchedPositions = new Set<number>()
   for (const seg of segments) {
-    // 从 leftContent 中提取高亮部分的原始位置（简化估算）
-    // 由于内容已被 HTML 包裹，这里使用片段数 * 平均匹配长度估算
-    const estimatedMatchLength = segments.reduce((sum, s) => sum + s.leftContent.replace(/<[^>]*>/g, '').length, 0)
-    const ratio = Math.min(1, estimatedMatchLength / textLength)
-    return Math.round(ratio * 100)
+    const start = seg.leftStartIndex ?? 0
+    const end = seg.leftEndIndex ?? 0
+    for (let i = start; i < end; i++) {
+      matchedPositions.add(i)
+    }
   }
-  return 0
+
+  return Math.round((matchedPositions.size / textLength) * 100)
 }
