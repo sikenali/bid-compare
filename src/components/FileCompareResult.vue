@@ -524,4 +524,11 @@ const getSimilarityLevel = (value: number): string => {
   font-weight: 600;
   display: inline-block;
 }
+
+/* 移动端响应式优化 */
+@media (max-width: 768px) {
+  .page-header {
+    display: none;
+  }
+}
 </style>

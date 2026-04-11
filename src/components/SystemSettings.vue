@@ -707,4 +707,11 @@ input:checked + .slider:before {
     gap: 16px;
   }
 }
+
+/* 移动端隐藏 page-header */
+@media (max-width: 768px) {
+  .page-header {
+    display: none;
+  }
+}
 </style>

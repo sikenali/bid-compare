@@ -2568,5 +2568,9 @@ const generateWordReport = () => {
     width: 100%;
     height: auto;
   }
+
+  .page-header {
+    display: none;
+  }
 }
 </style>

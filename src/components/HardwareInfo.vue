@@ -419,4 +419,11 @@ const {
   font-size: 13px;
   word-break: break-all;
 }
+
+/* 移动端响应式优化 */
+@media (max-width: 768px) {
+  .page-header {
+    display: none;
+  }
+}
 </style>

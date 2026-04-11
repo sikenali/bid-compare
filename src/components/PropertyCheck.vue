@@ -2092,5 +2092,9 @@ const generateWordReport = () => {
   .property-details-list {
     gap: 12px;
   }
+
+  .page-header {
+    display: none;
+  }
 }
 </style>
