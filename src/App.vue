@@ -251,7 +251,7 @@ const handleMenuClick = (menu: string) => {
 
 .logo-subtitle {
   font-size: 13px;
-  color: rgba(216, 191, 156, 1);
+  color: rgba(139, 100, 60, 1);
   margin: 0;
   font-family: SourceHanSans-Regular;
   letter-spacing: 0.5px;

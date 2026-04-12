@@ -471,7 +471,7 @@ const aiModels = [
 
 .setting-desc {
   font-size: 11px;
-  color: rgba(139, 115, 85, 1);
+  color: rgba(101, 70, 40, 1);
   font-family: SourceHanSans-Regular;
   margin: 0;
   line-height: 1.3;
@@ -534,8 +534,8 @@ const aiModels = [
 }
 
 .stepper-btn {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border: none;
   background-color: rgba(245, 238, 226, 1);
   color: rgba(139, 0, 0, 1);
@@ -558,14 +558,14 @@ const aiModels = [
 }
 
 .stepper-input {
-  width: 48px;
-  height: 28px;
+  width: 56px;
+  height: 36px;
   border: none;
   border-left: 1px solid rgba(216, 191, 156, 0.3);
   border-right: 1px solid rgba(216, 191, 156, 0.3);
   background-color: rgba(255, 255, 255, 1);
   color: rgba(44, 24, 16, 1);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   text-align: center;
   font-family: SourceHanSans-SemiBold;

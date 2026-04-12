@@ -819,7 +819,7 @@ const visibleConnections = computed(() => {
 
 .page-subtitle {
   font-size: 12px;
-  color: rgba(166, 124, 82, 1);
+  color: rgba(101, 70, 40, 1);
   margin: 0;
   font-family: SourceHanSans-Regular;
 }

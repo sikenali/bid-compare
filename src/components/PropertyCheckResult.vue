@@ -335,7 +335,7 @@ const getStatusColor = (status: string): string => {
 
 .page-subtitle {
   font-size: 12px;
-  color: rgba(166, 124, 82, 1);
+  color: rgba(101, 70, 40, 1);
   margin: 0;
   font-family: SourceHanSans-Regular;
 }
@@ -507,12 +507,14 @@ const getStatusColor = (status: string): string => {
 .property-table {
   border: 0.7px solid rgba(230, 215, 191, 1);
   border-radius: 8px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .table-header {
   display: grid;
   grid-template-columns: 269px 323px 323px 162px;
+  min-width: 1077px;
   background-color: rgba(245, 238, 226, 1);
 }
 
@@ -527,6 +529,7 @@ const getStatusColor = (status: string): string => {
 .table-row {
   display: grid;
   grid-template-columns: 269px 323px 323px 162px;
+  min-width: 1077px;
   border-top: 0.7px solid rgba(230, 215, 191, 1);
 }
 

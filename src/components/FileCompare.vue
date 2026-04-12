@@ -883,13 +883,13 @@ const generateWordReport = () => {
   font-size: 20px;
   font-weight: 700;
   color: rgba(44, 24, 16, 1);
-  margin: 0 0 2px 0;
+  margin: 0 0 4px 0;
   font-family: SourceHanSans-Bold;
 }
 
 .page-subtitle {
   font-size: 12px;
-  color: rgba(166, 124, 82, 1);
+  color: rgba(101, 70, 40, 1);
   margin: 0;
   font-family: SourceHanSans-Regular;
 }
@@ -972,7 +972,6 @@ const generateWordReport = () => {
   width: 20px;
   height: 20px;
   color: rgba(255, 255, 255, 1);
-  fill: currentColor;
   flex-shrink: 0;
   transition: all 0.3s ease;
 }
@@ -1003,7 +1002,7 @@ const generateWordReport = () => {
 .history-modal {
   background-color: rgba(255, 255, 255, 1);
   border-radius: 12px;
-  width: 600px;
+  width: min(600px, 90vw);
   max-height: 80vh;
   overflow: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
@@ -1894,13 +1893,14 @@ const generateWordReport = () => {
 }
 
 .page-btn {
-  width: 32px;
-  height: 32px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 8px;
   border: 1px solid rgba(166, 124, 82, 0.3);
   border-radius: 6px;
   background-color: rgba(255, 255, 255, 0.9);
   color: rgba(44, 24, 16, 1);
-  font-size: 13px;
+  font-size: 14px;
   font-family: SourceHanSans-Regular;
   cursor: pointer;
   transition: all 0.3s ease;

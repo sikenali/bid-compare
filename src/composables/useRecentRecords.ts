@@ -72,36 +72,47 @@ const loadFromStorage = (recordType: string) => {
 const saveToStorage = (recordType: string) => {
   const storageKey = `${recordType}RecentRecords`
   const store = getStore(recordType)
+  let maxRetries = 20
 
-  const compressed = store.recentRecords.map(record => ({
-    ...record,
-    // 只保留前 10 个相似片段，减少存储大小
-    similarSegments: record.similarSegments
-      ? record.similarSegments.slice(0, 10).map(seg => ({
-          ...seg,
-          leftContent: stripHtml(seg.leftContent),
-          rightContent: stripHtml(seg.rightContent)
-        }))
-      : undefined
-  }))
+  while (maxRetries > 0) {
+    const compressed = store.recentRecords.map(record => ({
+      ...record,
+      // 只保留前 10 个相似片段，减少存储大小
+      similarSegments: record.similarSegments
+        ? record.similarSegments.slice(0, 10).map(seg => ({
+            ...seg,
+            leftContent: stripHtml(seg.leftContent),
+            rightContent: stripHtml(seg.rightContent)
+          }))
+        : undefined
+    }))
 
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(compressed))
-    store.showRecentRecords = store.recentRecords.length > 0
-  } catch (e) {
-    console.warn(`[${recordType}] localStorage 配额不足，尝试删除最旧记录...`)
-    // 删除最旧的记录
-    if (store.recentRecords.length > 1) {
-      store.recentRecords.pop()
-      saveToStorage(recordType)
-    } else {
-      // 如果只有一条记录还是失败，清空
-      console.error(`[${recordType}] 无法保存记录，localStorage 配额已满`)
-      store.recentRecords.length = 0
-      store.showRecentRecords = false
-      localStorage.removeItem(storageKey)
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(compressed))
+      store.showRecentRecords = store.recentRecords.length > 0
+      return // 保存成功，退出
+    } catch (e) {
+      console.warn(`[${recordType}] localStorage 配额不足，尝试删除最旧记录... (剩余重试: ${maxRetries - 1})`)
+      // 删除最旧的记录
+      if (store.recentRecords.length > 1) {
+        store.recentRecords.pop()
+        maxRetries--
+      } else {
+        // 如果只有一条记录还是失败，清空
+        console.error(`[${recordType}] 无法保存记录，localStorage 配额已满`)
+        store.recentRecords.length = 0
+        store.showRecentRecords = false
+        localStorage.removeItem(storageKey)
+        return
+      }
     }
   }
+
+  // 超过最大重试次数，强制清空
+  console.error(`[${recordType}] 超过最大重试次数，强制清空记录`)
+  store.recentRecords.length = 0
+  store.showRecentRecords = false
+  localStorage.removeItem(storageKey)
 }
 
 // 导出最近记录组合式函数

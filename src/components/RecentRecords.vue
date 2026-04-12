@@ -243,4 +243,47 @@ const getFileIconComponent = (name: string): any => {
   font-family: SourceHanSans-Regular;
   font-size: 14px;
 }
+
+/* 移动端响应式适配 */
+@media (max-width: 768px) {
+  .records-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .select-btn {
+    width: 100%;
+    height: 44px;
+  }
+
+  .record-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .record-actions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .record-action-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .record-filename {
+    font-size: 15px;
+    word-break: break-word;
+  }
+
+  .record-timestamp {
+    font-size: 13px;
+  }
+}
 </style>
