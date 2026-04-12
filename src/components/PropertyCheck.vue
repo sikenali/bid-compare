@@ -69,7 +69,7 @@ const viewHistoricalRecord = (record: any) => {
   if (record.propertyDetails && record.propertyDetails.length > 0) {
     propertyDetails.value = record.propertyDetails;
   } else {
-    // 如果没有保存属性详情，生成默认数据
+    // 如果没有保存属性详情，生成默认数据（与 handleCheck 保持相同的 13 个字段）
     propertyDetails.value = [
       {
         name: '文件名称',
@@ -81,7 +81,7 @@ const viewHistoricalRecord = (record: any) => {
         name: '文件大小',
         leftValue: '未知',
         rightValue: '未知',
-        status: 'mismatch'
+        status: 'warning'
       },
       {
         name: '文件类型',
@@ -91,45 +91,69 @@ const viewHistoricalRecord = (record: any) => {
       },
       {
         name: '作者',
-        leftValue: '未知',
-        rightValue: '未知',
-        status: 'mismatch'
+        leftValue: 'N/A',
+        rightValue: 'N/A',
+        status: 'match'
       },
       {
         name: '最后一次保存者',
-        leftValue: '未知',
-        rightValue: '未知',
-        status: 'mismatch'
+        leftValue: 'N/A',
+        rightValue: 'N/A',
+        status: 'match'
+      },
+      {
+        name: '修订号',
+        leftValue: 'N/A',
+        rightValue: 'N/A',
+        status: 'match'
       },
       {
         name: '页码范围',
         leftValue: 'N/A',
         rightValue: 'N/A',
-        status: 'mismatch'
-      },
-      {
-        name: '程序名称',
-        leftValue: '未知',
-        rightValue: '未知',
-        status: 'mismatch'
-      },
-      {
-        name: '公司',
-        leftValue: '未知',
-        rightValue: '未知',
-        status: 'mismatch'
-      },
-      {
-        name: '文本内容长度',
-        leftValue: '0',
-        rightValue: '0',
         status: 'match'
       },
       {
-        name: '文本相似度',
-        leftValue: record.similarity,
-        rightValue: record.similarity,
-        status: parseInt(record.similarity) >= settings.textSimilarityThreshold ? 'match' : parseInt(record.similarity) >= 50 ? 'warning' : 'mismatch'
+        name: '版本号',
+        leftValue: 'N/A',
+        rightValue: 'N/A',
+        status: 'match'
+      },
+      {
+        name: '程序名称',
+        leftValue: 'N/A',
+        rightValue: 'N/A',
+        status: 'match'
+      },
+      {
+        name: '公司',
+        leftValue: 'N/A',
+        rightValue: 'N/A',
+        status: 'match'
+      },
+      {
+        name: '创建时间',
+        leftValue: 'N/A',
+        rightValue: 'N/A',
+        status: 'match'
+      },
+      {
+        name: '修改时间',
+        leftValue: 'N/A',
+        rightValue: 'N/A',
+        status: 'match'
+      },
+      {
+        name: '页数',
+        leftValue: 'N/A',
+        rightValue: 'N/A',
+        status: 'match'
+      },
+      {
+        name: '文件字数',
+        leftValue: '0',
+        rightValue: '0',
+        status: 'match'
       }
     ];
   }
@@ -158,68 +182,7 @@ const nonMatchingProperties = ref(0)
 const warningProperties = ref(0)
 
 // 属性差异详情
-  const propertyDetails = ref([
-    {
-      name: '文件名称',
-      leftValue: '',
-      rightValue: '',
-      status: 'match'
-    },
-    {
-      name: '文件大小',
-      leftValue: '',
-      rightValue: '',
-      status: 'match'
-    },
-    {
-      name: '文件类型',
-      leftValue: '',
-      rightValue: '',
-      status: 'match'
-    },
-    {
-      name: '作者',
-      leftValue: '',
-      rightValue: '',
-      status: 'match'
-    },
-    {
-      name: '最后一次保存者',
-      leftValue: '',
-      rightValue: '',
-      status: 'match'
-    },
-    {
-      name: '页码范围',
-      leftValue: '',
-      rightValue: '',
-      status: 'match'
-    },
-    {
-      name: '程序名称',
-      leftValue: '',
-      rightValue: '',
-      status: 'match'
-    },
-    {
-      name: '公司',
-      leftValue: '',
-      rightValue: '',
-      status: 'match'
-    },
-    {
-      name: '文本内容长度',
-      leftValue: '0',
-      rightValue: '0',
-      status: 'match'
-    },
-    {
-      name: '文本相似度',
-      leftValue: '0%',
-      rightValue: '0%',
-      status: 'match'
-    }
-  ])
+const propertyDetails = ref<any[]>([])
 
 // 组件挂载时不恢复结果，总是显示主界面
 // 刷新页面后返回检查界面，不恢复之前的检查结果
@@ -429,9 +392,9 @@ const handleCheck = async () => {
       },
       {
         name: '页数',
-        leftValue: leftFileProperties.value.页数 || leftFileProperties.value.页码范围 || '未知',
-        rightValue: rightFileProperties.value.页数 || rightFileProperties.value.页码范围 || '未知',
-        status: (leftFileProperties.value.页数 || leftFileProperties.value.页码范围 || '未知') === (rightFileProperties.value.页数 || rightFileProperties.value.页码范围 || '未知') ? 'match' : 'mismatch'
+        leftValue: leftFileProperties.value.页码范围 || '未知',
+        rightValue: rightFileProperties.value.页码范围 || '未知',
+        status: (leftFileProperties.value.页码范围 || '未知') === (rightFileProperties.value.页码范围 || '未知') ? 'match' : 'mismatch'
       },
       {
         name: '文件字数',
