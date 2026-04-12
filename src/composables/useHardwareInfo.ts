@@ -3,24 +3,21 @@ import { ref, onMounted } from 'vue'
 interface HardwareData {
   systemInfo: {
     title: string
-    icon: any
     iconBg: string
     iconColor: string
     items: { label: string; value: string }[]
   }
   networkInfo: {
     title: string
-    icon: any
     iconBg: string
     iconColor: string
     items: { label: string; value: string }[]
   }
   fingerprintInfo: {
     title: string
-    icon: any
     iconBg: string
     iconColor: string
-    items: { label: string; value: string; isWide: boolean }[]
+    items: { label: string; value: string; isWide?: boolean }[]
   }
 }
 
@@ -46,12 +43,26 @@ function generateDeviceFingerprint(components: string[]): string {
     '-' + Date.now().toString(36).slice(-6)
 }
 
+// Electron 模式获取硬件信息（通过 IPC）
+async function getElectronHardwareInfo(): Promise<HardwareData> {
+  if (!window.electronAPI || !window.electronAPI.getHardwareInfo) {
+    throw new Error('Electron API 不可用')
+  }
+  
+  const result = await window.electronAPI.getHardwareInfo()
+  return {
+    systemInfo: result.systemInfo,
+    networkInfo: result.networkInfo,
+    fingerprintInfo: result.fingerprintInfo
+  }
+}
+
 // 浏览器模式获取硬件信息
 async function getBrowserHardwareInfo(): Promise<HardwareData> {
   // 解析 User Agent 获取操作系统信息
   const ua = navigator.userAgent
   let osName = '未知操作系统'
-  let osVersion = ''
+  let osVersion = '未知版本'
 
   if (ua.includes('Windows NT')) {
     const ntVersion = ua.match(/Windows NT (\d+\.\d+)/)
@@ -62,10 +73,7 @@ async function getBrowserHardwareInfo(): Promise<HardwareData> {
       '6.1': 'Windows 7'
     }
     osName = ntMap[ntVersion?.[1] || ''] || 'Windows'
-    // 尝试获取更详细的版本
-    const winVer = ua.match(/Windows NT 10\.0;.*?(\d{4})/)
-    if (winVer) osVersion = `${osName} ${winVer[1]}`
-    else osVersion = osName
+    osVersion = osName
   } else if (ua.includes('Mac OS X')) {
     const macVer = ua.match(/Mac OS X (\d+[._]\d+[._]?\d*)/)
     osName = 'macOS'
@@ -73,35 +81,38 @@ async function getBrowserHardwareInfo(): Promise<HardwareData> {
   } else if (ua.includes('Linux')) {
     osName = 'Linux'
     osVersion = 'Linux'
+  } else if (ua.includes('Android')) {
+    osName = 'Android'
+    osVersion = 'Android'
+  } else if (ua.includes('iPhone') || ua.includes('iPad')) {
+    osName = 'iOS'
+    osVersion = 'iOS'
   }
 
   // CPU 信息
   const cpuCores = navigator.hardwareConcurrency || '未知'
   let cpuName = `${cpuCores} 核处理器`
   if (ua.includes('Intel')) {
-    const intelMatch = ua.match(/Intel.*?;\s*([^)]+)/)
-    if (intelMatch) cpuName = intelMatch[1].trim()
-    else cpuName = `Intel ${cpuCores} 核`
-  } else if (ua.includes('Apple')) {
-    cpuName = `Apple Silicon (${cpuCores} 核)`
-  } else if (ua.includes('ARM')) {
-    cpuName = `ARM ${cpuCores} 核`
+    cpuName = `Intel ${cpuCores} 核`
+  } else if (ua.includes('Apple') || ua.includes('ARM')) {
+    cpuName = `Apple Silicon / ARM (${cpuCores} 核)`
   }
 
   // 内存信息
   const deviceMemory = (navigator as any).deviceMemory
-  const memStr = deviceMemory ? `${deviceMemory} GB` : '未知'
+  const memStr = deviceMemory ? `约 ${deviceMemory} GB` : '浏览器无法获取'
 
   // 系统类型
   const arch = navigator.platform || '未知架构'
-  const is64 = ua.includes('Win64') || ua.includes('x64') || ua.includes('x86_64') || ua.includes('WOW64')
-  const systemType = is64 ? `64 位操作系统, ${arch}` : `32 位操作系统, ${arch}`
+  const is64 = ua.includes('Win64') || ua.includes('x64') || ua.includes('x86_64') || ua.includes('WOW64') || ua.includes('arm64')
+  const systemType = is64 ? `64 位环境, ${arch}` : `32 位环境, ${arch}`
+
+  // 屏幕信息
+  const screenRes = `${screen.width} x ${screen.height}`
 
   // 网络信息
   let ipAddress = '获取中...'
-  let macAddress = '浏览器模式不可用'
-  let subnetMask = '浏览器模式不可用'
-  let gateway = '浏览器模式不可用'
+  let publicIP = '获取中...'
 
   // 尝试通过 WebRTC 获取本地 IP
   try {
@@ -111,18 +122,29 @@ async function getBrowserHardwareInfo(): Promise<HardwareData> {
       pc.createOffer().then(offer => pc.setLocalDescription(offer))
       pc.onicecandidate = (ice) => {
         if (!ice || !ice.candidate || !ice.candidate.candidate) {
-          resolve('获取失败')
+          resolve('浏览器限制获取')
           return
         }
         const ipMatch = ice.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/)
         pc.close()
-        resolve(ipMatch ? ipMatch[1] : '获取失败')
+        resolve(ipMatch ? ipMatch[1] : '浏览器限制获取')
       }
       setTimeout(() => { pc.close(); resolve('获取超时') }, 3000)
     })
     ipAddress = await ipPromise
   } catch {
-    ipAddress = '获取失败'
+    ipAddress = '浏览器限制获取'
+  }
+
+  // 尝试获取公网 IP
+  try {
+    const response = await fetch('https://api.ipify.org?format=json', { 
+      signal: AbortSignal.timeout(3000) 
+    })
+    const data = await response.json()
+    publicIP = data.ip || '获取失败'
+  } catch {
+    publicIP = '获取失败'
   }
 
   // Canvas 指纹
@@ -150,173 +172,112 @@ async function getBrowserHardwareInfo(): Promise<HardwareData> {
   }
 
   const canvasFp = getCanvasFingerprint()
+  
+  // WebGL 指纹
+  function getWebGLFingerprint(): string {
+    try {
+      const canvas = document.createElement('canvas')
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
+      if (!gl) return 'webgl_unavailable'
+      
+      const debugInfo = (gl as WebGLRenderingContext).getExtension('WEBGL_debug_renderer_info')
+      if (!debugInfo) return 'webgl_debug_unavailable'
+      
+      const vendor = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_VENDOR_WEBGL)
+      const renderer = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+      
+      let hash = 0
+      const str = vendor + renderer
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i)
+        hash = hash & hash
+      }
+      return Math.abs(hash).toString(36).padStart(8, '0')
+    } catch {
+      return 'webgl_error'
+    }
+  }
+
+  const webglFp = getWebGLFingerprint()
+  
   const deviceFingerprint = generateDeviceFingerprint([
     ua,
     String(navigator.hardwareConcurrency),
     String(deviceMemory),
     navigator.language,
     String(screen.width) + 'x' + String(screen.height),
-    canvasFp
+    canvasFp,
+    webglFp
   ])
+
+  // 浏览器信息
+  const browserInfo = detectBrowser(ua)
 
   return {
     systemInfo: {
-      title: '操作系统信息',
-      icon: null, // Will be set by component
+      title: '浏览器环境信息',
       iconBg: 'rgba(219, 234, 254, 1)',
       iconColor: 'rgba(37, 99, 235, 1)',
       items: [
-        { label: '用户名', value: navigator.language || '未知' },
-        { label: '操作系统版本', value: osVersion },
-        { label: '处理器', value: cpuName },
-        { label: '内存', value: memStr },
-        { label: '系统类型', value: systemType },
-        { label: '计算机名称', value: '浏览器模式' }
+        { label: '浏览器', value: browserInfo },
+        { label: '操作系统', value: osVersion },
+        { label: '处理器核心', value: `${cpuCores} 逻辑核心` },
+        { label: '设备内存', value: memStr },
+        { label: '系统架构', value: systemType },
+        { label: '屏幕分辨率', value: screenRes },
+        { label: '语言环境', value: navigator.language }
       ]
     },
     networkInfo: {
-      title: '网络信息',
-      icon: null,
+      title: '网络信息（浏览器限制）',
       iconBg: 'rgba(254, 243, 199, 1)',
       iconColor: 'rgba(217, 119, 6, 1)',
       items: [
-        { label: 'IP 地址', value: ipAddress },
-        { label: 'MAC 地址', value: macAddress },
-        { label: '子网掩码', value: subnetMask },
-        { label: '网关', value: gateway }
+        { label: '本地 IP (WebRTC)', value: ipAddress },
+        { label: '公网 IP', value: publicIP },
+        { label: 'MAC 地址', value: '浏览器安全限制不可用' },
+        { label: '子网掩码', value: '浏览器安全限制不可用' },
+        { label: '默认网关', value: '浏览器安全限制不可用' }
       ]
     },
     fingerprintInfo: {
-      title: '设备指纹信息',
-      icon: null,
+      title: '设备指纹信息（浏览器）',
       iconBg: 'rgba(252, 231, 243, 1)',
       iconColor: 'rgba(219, 39, 119, 1)',
       items: [
-        { label: '设备唯一标识', value: deviceFingerprint, isWide: true }
+        { label: 'Canvas 指纹', value: canvasFp, isWide: true },
+        { label: 'WebGL 指纹', value: webglFp, isWide: true },
+        { label: '设备标识', value: deviceFingerprint, isWide: true }
       ]
     }
   }
 }
 
-// NW.js 模式获取硬件信息
-async function getNWJSHardwareInfo(): Promise<HardwareData> {
-  // 这些需要在 NW.js 环境下通过 require('os') 获取
-  // 浏览器构建时会跳过，实际运行时由 NW.js 提供
-  try {
-    // @ts-ignore - NW.js 运行时
-    const osModule = window.require?.('os') || window.nw?.require?.('os')
-    if (!osModule) throw new Error('os module not available')
-
-    const os = osModule
-
-    const hostname = os.hostname()
-    const osType = os.type()
-    const osRelease = os.release()
-    const cpus = os.cpus()
-    const totalMem = os.totalmem()
-    const freeMem = os.freemem()
-    const arch = os.arch()
-    const networkInterfaces = os.networkInterfaces()
-
-    // 操作系统版本
-    let osVersion = `${osType} ${osRelease}`
-    if (osType === 'Windows_NT') {
-      if (osRelease.startsWith('10.')) osVersion = 'Windows 10/11'
-      else if (osRelease.startsWith('6.3')) osVersion = 'Windows 8.1'
-      else if (osRelease.startsWith('6.1')) osVersion = 'Windows 7'
-    }
-
-    // CPU 信息
-    const cpuModel = cpus[0]?.model || '未知处理器'
-    const cpuCores = cpus.length
-
-    // 内存信息
-    const totalMemGB = formatBytes(totalMem)
-    const availMemGB = formatBytes(freeMem)
-    const memStr = `${totalMemGB} (${availMemGB} 可用)`
-
-    // 系统类型
-    const is64 = osRelease.includes('64') || arch.includes('64') || arch === 'x64' || arch === 'arm64'
-    const systemType = is64 ? `64 位操作系统, 基于 ${arch} 的处理器` : `32 位操作系统, 基于 ${arch} 的处理器`
-
-    // 网络信息
-    let ipAddress = '未找到'
-    let macAddress = '未找到'
-    let subnetMask = '未找到'
-    let gateway = '未找到'
-
-    // 遍历网络接口获取信息
-    for (const [name, interfaces] of Object.entries(networkInterfaces)) {
-      for (const iface of (interfaces as any[])) {
-        if (iface.family === 'IPv4' && !iface.internal) {
-          ipAddress = iface.address
-          macAddress = iface.mac.toUpperCase().replace(/-/g, ':')
-          subnetMask = iface.netmask
-          // 网关需要通过其他方式获取，这里暂时设为默认网关
-          gateway = ipAddress.split('.').slice(0, 3).join('.') + '.1'
-          break
-        }
-      }
-      if (ipAddress !== '未找到') break
-    }
-
-    // 设备指纹
-    const components = [
-      hostname,
-      macAddress,
-      cpuModel,
-      String(totalMem),
-      arch
-    ]
-    const deviceFingerprint = generateDeviceFingerprint(components)
-
-    return {
-      systemInfo: {
-        title: '操作系统信息',
-        icon: null,
-        iconBg: 'rgba(219, 234, 254, 1)',
-        iconColor: 'rgba(37, 99, 235, 1)',
-        items: [
-          { label: '用户名', value: process.env.USERNAME || process.env.USER || hostname },
-          { label: '操作系统版本', value: osVersion },
-          { label: '处理器', value: `${cpuModel} (${cpuCores} 核)` },
-          { label: '内存', value: memStr },
-          { label: '系统类型', value: systemType },
-          { label: '计算机名称', value: hostname }
-        ]
-      },
-      networkInfo: {
-        title: '网络信息',
-        icon: null,
-        iconBg: 'rgba(254, 243, 199, 1)',
-        iconColor: 'rgba(217, 119, 6, 1)',
-        items: [
-          { label: 'IP 地址', value: ipAddress },
-          { label: 'MAC 地址', value: macAddress },
-          { label: '子网掩码', value: subnetMask },
-          { label: '网关', value: gateway }
-        ]
-      },
-      fingerprintInfo: {
-        title: '设备指纹信息',
-        icon: null,
-        iconBg: 'rgba(252, 231, 243, 1)',
-        iconColor: 'rgba(219, 39, 119, 1)',
-        items: [
-          { label: '设备唯一标识', value: deviceFingerprint, isWide: true }
-        ]
-      }
-    }
-  } catch {
-    // NW.js 不可用时回退到浏览器模式
-    return getBrowserHardwareInfo()
+// 检测浏览器类型
+function detectBrowser(ua: string): string {
+  if (ua.includes('Edg/')) {
+    const match = ua.match(/Edg\/([\d.]+)/)
+    return `Microsoft Edge ${match?.[1] || ''}`
+  } else if (ua.includes('Chrome/') && !ua.includes('Edg/')) {
+    const match = ua.match(/Chrome\/([\d.]+)/)
+    return `Google Chrome ${match?.[1] || ''}`
+  } else if (ua.includes('Firefox/')) {
+    const match = ua.match(/Firefox\/([\d.]+)/)
+    return `Mozilla Firefox ${match?.[1] || ''}`
+  } else if (ua.includes('Safari/') && !ua.includes('Chrome/')) {
+    const match = ua.match(/Version\/([\d.]+)/)
+    return `Safari ${match?.[1] || ''}`
   }
+  return '未知浏览器'
 }
 
-// 检测是否为 NW.js 环境
-function isNWJSEnvironment(): boolean {
-  // @ts-ignore
-  return typeof window !== 'undefined' && (typeof window.require === 'function' || typeof window.nw !== 'undefined')
+// 检测运行环境
+function detectEnvironment(): 'electron' | 'browser' {
+  // 检查是否存在 electronAPI
+  if (typeof window !== 'undefined' && window.electronAPI) {
+    return 'electron'
+  }
+  return 'browser'
 }
 
 export function useHardwareInfo() {
@@ -325,14 +286,18 @@ export function useHardwareInfo() {
   const fingerprintInfo = ref<HardwareData['fingerprintInfo'] | null>(null)
   const isLoading = ref(true)
   const error = ref<string | null>(null)
+  const isElectron = ref(false)
 
   const loadHardwareInfo = async () => {
     isLoading.value = true
     error.value = null
 
     try {
-      const data = isNWJSEnvironment()
-        ? await getNWJSHardwareInfo()
+      const env = detectEnvironment()
+      isElectron.value = env === 'electron'
+      
+      const data = env === 'electron'
+        ? await getElectronHardwareInfo()
         : await getBrowserHardwareInfo()
 
       systemInfo.value = data.systemInfo
@@ -356,6 +321,7 @@ export function useHardwareInfo() {
     fingerprintInfo,
     isLoading,
     error,
+    isElectron,
     refresh: loadHardwareInfo
   }
 }
