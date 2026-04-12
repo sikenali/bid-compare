@@ -7,47 +7,53 @@ import {
   RiFileDownloadLine,
   RiRobot2Line,
   RiFileWordLine,
-  RiMarkdownLine,
-  RiSparklingFill,
-  RiChat1Line,
-  RiRobotLine
+  RiMarkdownLine
 } from '@remixicon/vue'
 
 const {
   settings,
   saveSettings: handleSaveSettings,
-  cancelSettings: handleCancelSettings
+  cancelSettings: handleCancelSettings,
+  resetToDefault: handleResetToDefault
 } = useSettings()
 
 const handleReset = () => {
-  settings.minDuplicateWords = 8
-  settings.textSimilarityThreshold = 75
-  settings.imageSimilarityThreshold = 80
-  settings.ngramSize = 3
-  settings.maxResults = 100
-  settings.ignoreCase = false
-  settings.ignorePunctuation = true
-  settings.ignoreWhitespace = true
-  settings.ignoreInvisibleChars = true
-  settings.selectedModel = 'deepseek'
-  settings.apiKey = ''
-  settings.apiEndpoint = ''
-  settings.exportFormat = 'word'
-  settings.includeHighlight = true
-  settings.includeCharts = true
+  handleResetToDefault()
+}
+
+// 数字范围限制工具函数
+const clampNumber = (value: string | number, min: number, max: number): number => {
+  const num = parseInt(String(value).replace(/\D/g, ''), 10)
+  if (isNaN(num)) return min
+  return Math.max(min, Math.min(max, num))
 }
 
 // 导出格式选项
 const exportFormats = [
-  { value: 'word', label: 'Word (.docx)', icon: RiFileWordLine },
-  { value: 'markdown', label: 'Markdown (.md)', icon: RiMarkdownLine }
+  { value: 'word', label: 'Word', icon: RiFileWordLine },
+  { value: 'markdown', label: 'Markdown', icon: RiMarkdownLine }
 ]
 
-// AI 模型选项
+// AI 模型选项 - 使用自定义 SVG 图标
 const aiModels = [
-  { value: 'deepseek', label: 'DeepSeek', icon: RiSparklingFill },
-  { value: 'kimi', label: 'Kimi', icon: RiChat1Line },
-  { value: 'doubao', label: '豆包', icon: RiRobotLine }
+  {
+    value: 'deepseek',
+    label: 'DeepSeek',
+    iconColor: '#4D6BFE',
+    iconSvg: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>`
+  },
+  {
+    value: 'kimi',
+    label: 'Kimi',
+    iconColor: '#10B981',
+    iconSvg: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/><path d="M7 9h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/></svg>`
+  },
+  {
+    value: 'doubao',
+    label: '豆包',
+    iconColor: '#059669',
+    iconSvg: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>`
+  }
 ]
 </script>
 
@@ -79,28 +85,75 @@ const aiModels = [
               <label class="setting-label">N-gram 大小</label>
               <p class="setting-desc">设置文本分片的字符数量</p>
             </div>
-            <input type="number" v-model.number="settings.ngramSize" class="setting-input" min="1" max="10" />
+            <div class="number-stepper">
+              <button class="stepper-btn" @click="settings.ngramSize = Math.max(1, settings.ngramSize - 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <input type="text" :value="settings.ngramSize" class="stepper-input" @input="settings.ngramSize = clampNumber($event.target.value, 1, 10)" />
+              <button class="stepper-btn" @click="settings.ngramSize = Math.min(10, settings.ngramSize + 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+            </div>
           </div>
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">最小匹配长度</label>
               <p class="setting-desc">连续匹配的最小字符数</p>
             </div>
-            <input type="number" v-model.number="settings.minDuplicateWords" class="setting-input" min="1" max="100" />
+            <div class="number-stepper">
+              <button class="stepper-btn" @click="settings.minDuplicateWords = Math.max(1, settings.minDuplicateWords - 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <input type="text" :value="settings.minDuplicateWords" class="stepper-input" @input="settings.minDuplicateWords = clampNumber($event.target.value, 1, 100)" />
+              <button class="stepper-btn" @click="settings.minDuplicateWords = Math.min(100, settings.minDuplicateWords + 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+            </div>
           </div>
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">相似度阈值</label>
               <p class="setting-desc">文本片段相似度达到此百分比即标记为重复</p>
             </div>
-            <input type="number" v-model.number="settings.textSimilarityThreshold" class="setting-input" min="1" max="100" />
+            <div class="number-stepper">
+              <button class="stepper-btn" @click="settings.textSimilarityThreshold = Math.max(1, settings.textSimilarityThreshold - 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <input type="text" :value="settings.textSimilarityThreshold" class="stepper-input" @input="settings.textSimilarityThreshold = clampNumber($event.target.value, 1, 100)" />
+              <button class="stepper-btn" @click="settings.textSimilarityThreshold = Math.min(100, settings.textSimilarityThreshold + 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <label class="setting-label">图像相似度阈值</label>
+              <p class="setting-desc">图像相似度达到此百分比即标记为重复</p>
+            </div>
+            <div class="number-stepper">
+              <button class="stepper-btn" @click="settings.imageSimilarityThreshold = Math.max(1, settings.imageSimilarityThreshold - 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <input type="text" :value="settings.imageSimilarityThreshold" class="stepper-input" @input="settings.imageSimilarityThreshold = clampNumber($event.target.value, 1, 100)" />
+              <button class="stepper-btn" @click="settings.imageSimilarityThreshold = Math.min(100, settings.imageSimilarityThreshold + 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+            </div>
           </div>
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">最大结果数</label>
               <p class="setting-desc">最多显示的相似片段数量</p>
             </div>
-            <input type="number" v-model.number="settings.maxResults" class="setting-input" min="10" max="500" />
+            <div class="number-stepper">
+              <button class="stepper-btn" @click="settings.maxResults = Math.max(10, settings.maxResults - 10)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <input type="text" :value="settings.maxResults" class="stepper-input" @input="settings.maxResults = clampNumber($event.target.value, 10, 500)" />
+              <button class="stepper-btn" @click="settings.maxResults = Math.min(500, settings.maxResults + 10)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -167,7 +220,7 @@ const aiModels = [
         </div>
         <div class="card-content">
           <!-- 默认导出格式 -->
-          <div class="setting-row">
+          <div class="setting-row radio-row">
             <div class="setting-label-group">
               <label class="setting-label">默认导出格式</label>
               <p class="setting-desc">导出报告时默认使用的文件格式</p>
@@ -176,12 +229,15 @@ const aiModels = [
               <label
                 v-for="format in exportFormats"
                 :key="format.value"
-                class="radio-item"
+                class="radio-box-item"
                 :class="{ 'active': settings.exportFormat === format.value }"
               >
                 <input type="radio" v-model="settings.exportFormat" :value="format.value" />
-                <component :is="format.icon" class="radio-icon" />
-                <span class="radio-tooltip">{{ format.label }}</span>
+                <span class="radio-box">
+                  <span class="radio-box-inner"></span>
+                </span>
+                <component :is="format.icon" class="radio-box-icon" />
+                <span class="radio-box-label">{{ format.label }}</span>
               </label>
             </div>
           </div>
@@ -220,7 +276,7 @@ const aiModels = [
         </div>
         <div class="card-content">
           <!-- AI 模型选择 -->
-          <div class="setting-row">
+          <div class="setting-row radio-row">
             <div class="setting-label-group">
               <label class="setting-label">AI 模型</label>
               <p class="setting-desc">选择用于分析的 AI 模型</p>
@@ -229,12 +285,15 @@ const aiModels = [
               <label
                 v-for="model in aiModels"
                 :key="model.value"
-                class="radio-item"
+                class="radio-box-item"
                 :class="{ 'active': settings.selectedModel === model.value }"
               >
                 <input type="radio" v-model="settings.selectedModel" :value="model.value" />
-                <component :is="model.icon" class="radio-icon" />
-                <span class="radio-tooltip">{{ model.label }}</span>
+                <span class="radio-box">
+                  <span class="radio-box-inner"></span>
+                </span>
+                <span class="radio-box-icon-svg" v-html="model.iconSvg" :style="{ color: model.iconColor }"></span>
+                <span class="radio-box-label">{{ model.label }}</span>
               </label>
             </div>
           </div>
@@ -243,7 +302,7 @@ const aiModels = [
               <label class="setting-label">API 端点</label>
               <p class="setting-desc">API 请求地址，留空使用默认地址</p>
             </div>
-            <input type="text" v-model="settings.apiEndpoint" class="setting-input api-input" placeholder="留空使用默认端点" />
+            <input type="text" v-model="settings.apiEndpoint" class="setting-input api-input" placeholder="https://api.example.com" />
           </div>
           <div class="setting-row">
             <div class="setting-label-group">
@@ -268,7 +327,7 @@ const aiModels = [
 .system-settings-container {
   width: 100%;
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background-color: rgba(248, 244, 233, 1);
@@ -444,7 +503,7 @@ const aiModels = [
 }
 
 .setting-input.api-input {
-  width: 160px;
+  width: 280px;
   text-align: left;
 }
 
@@ -456,99 +515,168 @@ const aiModels = [
   transform: translateY(0);
 }
 
-/* Radio 按钮组 */
-.radio-group {
+/* 数字步进器 */
+.number-stepper {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 0;
   flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid rgba(216, 191, 156, 0.6);
+  background-color: rgba(255, 255, 255, 1);
+  transition: all 0.3s ease;
 }
 
-.radio-item {
-  position: relative;
-  width: 40px;
-  height: 32px;
+.number-stepper:hover {
+  border-color: rgba(139, 0, 0, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.stepper-btn {
+  width: 28px;
+  height: 28px;
   border: none;
-  border-radius: 8px;
   background-color: rgba(245, 238, 226, 1);
+  color: rgba(139, 0, 0, 1);
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.stepper-btn:hover {
+  background-color: rgba(139, 0, 0, 0.1);
+}
+
+.stepper-btn:active {
+  background-color: rgba(139, 0, 0, 0.2);
+  transform: scale(0.95);
+}
+
+.stepper-input {
+  width: 48px;
+  height: 28px;
+  border: none;
+  border-left: 1px solid rgba(216, 191, 156, 0.3);
+  border-right: 1px solid rgba(216, 191, 156, 0.3);
+  background-color: rgba(255, 255, 255, 1);
+  color: rgba(44, 24, 16, 1);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  font-family: SourceHanSans-SemiBold;
+  flex-shrink: 0;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.stepper-input::-webkit-outer-spin-button,
+.stepper-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Radio 按钮组 */
+.radio-group {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.radio-row {
+  align-items: center;
+}
+
+.radio-box-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border: 1.5px solid rgba(216, 191, 156, 0.4);
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.radio-item input[type="radio"] {
+.radio-box-item input[type="radio"] {
   opacity: 0;
   width: 0;
   height: 0;
   position: absolute;
 }
 
-.radio-item:hover {
-  background-color: rgba(235, 228, 216, 1);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.radio-box-item:hover {
+  background-color: rgba(245, 238, 226, 1);
+  border-color: rgba(139, 0, 0, 0.3);
 }
 
-.radio-item.active {
+.radio-box-item.active {
+  background-color: rgba(139, 0, 0, 0.08);
+  border-color: rgba(139, 0, 0, 1);
+}
+
+.radio-box {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(166, 124, 82, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.radio-box-item.active .radio-box {
+  border-color: rgba(139, 0, 0, 1);
   background-color: rgba(139, 0, 0, 1);
-  color: white;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
 }
 
-.radio-item.active:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
+.radio-box-inner {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: transparent;
+  transition: all 0.3s ease;
 }
 
-.radio-item.active .radio-icon {
-  color: white;
+.radio-box-item.active .radio-box-inner {
+  background-color: white;
 }
 
-.radio-item.active::after {
-  content: "✓";
-  position: absolute;
-  top: -4px;
-  right: -4px;
+.radio-box-icon-svg {
   width: 12px;
   height: 12px;
-  background-color: white;
-  color: rgba(139, 0, 0, 1);
-  font-size: 8px;
-  line-height: 12px;
-  text-align: center;
-  border-radius: 50%;
-  font-weight: bold;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
 }
 
-.radio-item:not(.active) .radio-icon {
-  color: rgba(44, 24, 16, 1);
+.radio-box-icon-svg :deep(svg) {
+  width: 100%;
+  height: 100%;
 }
 
-.radio-icon {
-  font-size: 16px;
+.radio-box-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-Medium;
+  white-space: nowrap;
   transition: color 0.3s ease;
 }
 
-.radio-tooltip {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 8px;
-  background-color: rgba(44, 24, 16, 0.9);
-  color: white;
-  font-size: 11px;
-  font-family: SourceHanSans-Regular;
-  border-radius: 4px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-.radio-item:hover .radio-tooltip {
-  opacity: 1;
+.radio-box-item.active .radio-box-label {
+  color: rgba(139, 0, 0, 1);
+  font-weight: 600;
 }
 
 /* 开关按钮 */

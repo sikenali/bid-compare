@@ -111,9 +111,11 @@ const extractOfficeMetadata = async (zip: any): Promise<Partial<FileProperties>>
       const versionMatch = appXmlContent.match(/<AppVersion[^>]*>([^<]+)<\/AppVersion>/i);
       if (versionMatch?.[1]) properties.版本号 = versionMatch[1];
 
-      // 修订号 (总编辑时间/revision 不直接存在，使用 lastModifiedBy 存在性作为代理)
-      // Office 没有直接的 revision 字段，我们用 '未知' 表示
-      properties.修订号 = '未知';
+      // 修订号 (Revision)
+      const revisionMatch = appXmlContent.match(/<Revision[^>]*>(\d+)<\/Revision>/i);
+      if (revisionMatch?.[1]) {
+        properties.修订号 = revisionMatch[1];
+      }
 
       // 公司
       const companyMatch = appXmlContent.match(/<Company[^>]*>([^<]+)<\/Company>/i) ||

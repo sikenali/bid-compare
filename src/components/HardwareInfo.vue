@@ -2,7 +2,8 @@
 import {
   RiWindowsLine,
   RiWifiLine,
-  RiFingerprintLine
+  RiFingerprintLine,
+  RiRestartLine
 } from '@remixicon/vue'
 import { useHardwareInfo } from '../composables/useHardwareInfo'
 
@@ -27,7 +28,7 @@ const {
         </div>
         <div class="header-actions">
           <button class="refresh-btn" @click="refresh" :disabled="isLoading" title="刷新">
-            <RiWifiLine class="refresh-icon" :class="{ spinning: isLoading }" />
+            <RiRestartLine class="refresh-icon" :class="{ spinning: isLoading }" />
           </button>
           <span v-if="!isLoading" class="sample-badge">实时数据</span>
         </div>
@@ -180,15 +181,17 @@ const {
 .refresh-icon {
   font-size: 18px;
   color: rgba(107, 79, 52, 1);
+  transition: transform 0.3s ease;
 }
 
 .refresh-icon.spinning {
-  animation: spin 1s linear infinite;
+  animation: spin-refresh 1s ease-in-out infinite;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes spin-refresh {
+  0% { transform: rotate(0deg); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg); }
 }
 
 .sample-badge {

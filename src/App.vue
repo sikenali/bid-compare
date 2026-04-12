@@ -159,7 +159,8 @@ const handleMenuClick = (menu: string) => {
 
         <!-- 底部版本信息 -->
         <div class="version-info">
-          <p>@2026 sikenali</p>
+          <p class="version-title">@2026 sikenali</p>
+          <p class="version-subtitle">Vibe Coding</p>
         </div>
       </aside>
     </Transition>
@@ -190,6 +191,7 @@ const handleMenuClick = (menu: string) => {
   flex-direction: column;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Logo区域 */
@@ -239,16 +241,16 @@ const handleMenuClick = (menu: string) => {
 }
 
 .logo-title {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: rgba(255, 255, 255, 1);
-  margin: 0 0 2px 0;
+  margin: 0 0 4px 0;
   font-family: SourceHanSans-Bold;
   letter-spacing: 1px;
 }
 
 .logo-subtitle {
-  font-size: 10px;
+  font-size: 13px;
   color: rgba(216, 191, 156, 1);
   margin: 0;
   font-family: SourceHanSans-Regular;
@@ -274,7 +276,7 @@ const handleMenuClick = (menu: string) => {
   border-radius: 8px;
   background-color: transparent;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.8);
   transition: all 0.3s ease;
   text-align: left;
@@ -312,11 +314,22 @@ const handleMenuClick = (menu: string) => {
   padding: 16px 12px;
   border-top: 1px solid rgba(166, 124, 82, 0.2);
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.version-info p {
-  font-size: 10px;
+.version-title {
+  font-size: 14px;
+  font-weight: 600;
   color: rgba(166, 124, 82, 1);
+  margin: 0;
+  font-family: SourceHanSans-SemiBold;
+}
+
+.version-subtitle {
+  font-size: 12px;
+  color: rgba(166, 124, 82, 0.8);
   margin: 0;
   font-family: SourceHanSans-Regular;
 }
@@ -329,6 +342,7 @@ const handleMenuClick = (menu: string) => {
   background-color: rgba(248, 244, 233, 1);
   padding: 24px;
   padding-left: 24px;
+  display: block;
 }
 
 /* 移动端顶部导航栏 */

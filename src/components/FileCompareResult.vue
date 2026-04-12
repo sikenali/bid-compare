@@ -3,17 +3,21 @@ import { ref, computed, onMounted, onActivated, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   RiFileExcelLine,
-  RiArrowLeftLine,
-  RiBrainLine,
+  RiRestartLine,
+  RiSaveLine,
+  RiSparkling2Fill,
   RiLoaderLine,
   RiFileWordLine,
-  RiListCheck
+  RiListCheck,
+  RiExchange2Line,
+  RiArrowLeftSLine,
+  RiArrowRightSLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx'
 import { useSettings } from '../composables/useSettings'
 import { useAIModel } from '../composables/useAIModel'
 import { getCompareResult, deleteCompareResult } from '../utils/compareResultStore'
-import { sanitizeHTML } from '../utils/sanitize'
+import { sanitizeHTML, sanitizeWithHighlight } from '../utils/sanitize'
 import MarkdownIt from 'markdown-it'
 import type { SimilarSegment } from '../utils/textAlgorithms'
 
@@ -188,8 +192,8 @@ const handleAIAnalysis = async () => {
     return
   }
 
-  if (!settings.apiKey || !settings.apiEndpoint) {
-    alert('请先在系统设置中配置AI模型')
+  if (!settings.apiKey) {
+    alert('请先在系统设置中配置 API 密钥')
     return
   }
 
@@ -239,9 +243,15 @@ const handleExport = async () => {
   try {
     const doc = generateWordReport()
     const blob = await Packer.toBlob(doc)
+    
+    // 生成文件名：file1vsfile2-文件对比报告.docx
+    const leftName = (leftFileName.value || 'file1').replace(/\.[^/.]+$/, '')
+    const rightName = (rightFileName.value || 'file2').replace(/\.[^/.]+$/, '')
+    const fileName = `${leftName}vs${rightName}-文件对比报告.docx`
+    
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = '文件对比报告.docx'
+    link.download = fileName
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -535,7 +545,7 @@ function generateWordReport(): Document {
 }
 
 const goToPage = (page: number) => {
-  if (page >= 1 && page <= leftTotalPages.value) {
+  if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
     // 滚动到对应页码的内容位置
     scrollToPage(page)
@@ -550,7 +560,7 @@ const prevPage = () => {
 }
 
 const nextPage = () => {
-  if (currentPage.value < leftTotalPages.value) {
+  if (currentPage.value < totalPages.value) {
     currentPage.value++
     scrollToPage(currentPage.value)
   }
@@ -662,16 +672,12 @@ const visibleConnections = computed(() => {
         </div>
         <div class="header-actions">
           <button class="back-btn" @click="handleBack">
-            <RiArrowLeftLine class="back-icon" />
+            <RiRestartLine class="back-icon" />
             <span class="back-text">返回</span>
           </button>
-          <button class="ai-btn" @click="handleAIAnalysis" :disabled="isLoading">
-            <RiBrainLine class="ai-icon" />
-            <span>{{ isLoading ? 'AI分析中...' : 'AI分析' }}</span>
-          </button>
           <button class="export-btn" @click="handleExport">
-            <RiFileExcelLine class="export-icon" />
-            <span>导出报告</span>
+            <RiSaveLine class="export-icon" />
+            <span>导出</span>
           </button>
         </div>
       </div>
@@ -682,7 +688,7 @@ const visibleConnections = computed(() => {
       <div class="ai-modal" @click.stop>
         <div class="ai-modal-header">
           <div class="ai-modal-title">
-            <RiBrainLine class="ai-modal-icon" />
+            <RiSparkling2Fill class="ai-modal-icon" />
             <h3>AI智能分析</h3>
           </div>
           <button class="ai-modal-close" @click="showAIAnalysis = false">×</button>
@@ -708,14 +714,20 @@ const visibleConnections = computed(() => {
           <span class="spacer"></span>
           <h2 class="list-title">相似片段详情</h2>
         </div>
-        <div class="list-header-stats">
-          <div class="stat-badge stat-badge-100">
-            <span class="stat-badge-icon">💯</span>
-            <span>100%相同：{{ count100Similarity }}个</span>
-          </div>
-          <div class="stat-badge stat-badge-threshold">
-            <span class="stat-badge-icon">🎯</span>
-            <span>≥{{ settings.textSimilarityThreshold }}%：{{ countThresholdSimilarity }}个</span>
+        <div class="list-header-actions">
+          <button class="ai-btn" @click="handleAIAnalysis" :disabled="isLoading">
+            <RiSparkling2Fill class="ai-icon" />
+            <span>{{ isLoading ? 'AI分析中...' : 'AI分析' }}</span>
+          </button>
+          <div class="list-header-stats">
+            <div class="stat-badge stat-badge-100">
+              <span class="stat-badge-icon">💯</span>
+              <span>100%相同：{{ count100Similarity }}个</span>
+            </div>
+            <div class="stat-badge stat-badge-threshold">
+              <span class="stat-badge-icon">🎯</span>
+              <span>≥{{ settings.textSimilarityThreshold }}%：{{ countThresholdSimilarity }}个</span>
+            </div>
           </div>
         </div>
       </div>
@@ -732,13 +744,13 @@ const visibleConnections = computed(() => {
         </div>
 
         <!-- 表体 -->
-        <div class="table-body">
+        <div class="table-body" v-highlight-tooltip>
           <div v-for="segment in pageSegments" :key="segment.id" class="table-row">
             <div class="col col-index">{{ segment.id }}</div>
-            <div class="col col-content" v-html="sanitizeHTML(segment.leftContent)"></div>
+            <div class="col col-content" v-html="sanitizeWithHighlight(segment.leftContent)"></div>
             <div class="col col-position">{{ segment.leftPage }}</div>
             <div class="col col-position">{{ segment.rightPage }}</div>
-            <div class="col col-content" v-html="sanitizeHTML(segment.rightContent)"></div>
+            <div class="col col-content" v-html="sanitizeWithHighlight(segment.rightContent)"></div>
           </div>
         </div>
       </div>
@@ -821,9 +833,9 @@ const visibleConnections = computed(() => {
 .back-btn {
   height: 40px;
   padding: 0 20px;
-  background-color: rgba(255, 255, 255, 1);
-  color: rgba(139, 0, 0, 1);
-  border: 1px solid rgba(139, 0, 0, 0.3);
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  color: white;
+  border: none;
   border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
@@ -834,23 +846,24 @@ const visibleConnections = computed(() => {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
 }
 
 .back-btn:hover {
-  background-color: rgba(139, 0, 0, 0.05);
-  border-color: rgba(139, 0, 0, 1);
+  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
+  transform: translateY(-2px);
 }
 
 .back-icon {
   font-size: 18px;
-  color: rgba(107, 79, 52, 1);
+  color: rgba(255, 255, 255, 1);
 }
 
 .back-text {
   font-size: 14px;
-  font-weight: 500;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Medium;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 1);
+  font-family: SourceHanSans-SemiBold;
 }
 
 /* 导出按钮 */
@@ -863,53 +876,22 @@ const visibleConnections = computed(() => {
   background-color: rgba(46, 89, 132, 1);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
-  transition: all 0.3s;
-  font-family: SourceHanSans-Medium;
-}
-
-.export-btn:hover {
-  background-color: rgba(46, 89, 132, 0.9);
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+  transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(46, 89, 132, 0.3);
 }
 
+.export-btn:hover {
+  background-color: rgba(40, 78, 115, 1);
+  box-shadow: 0 6px 16px rgba(46, 89, 132, 0.4);
+  transform: translateY(-2px);
+}
+
 .export-icon {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 1);
-}
-
-/* AI分析按钮 */
-.ai-btn {
-  height: 40px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 20px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.3s;
-  font-family: SourceHanSans-Medium;
-}
-
-.ai-btn:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.4);
-  transform: translateY(-1px);
-}
-
-.ai-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.ai-icon {
   font-size: 18px;
   color: rgba(255, 255, 255, 1);
 }
@@ -1765,6 +1747,58 @@ const visibleConnections = computed(() => {
   white-space: nowrap;
 }
 
+/* 列表头部操作区 */
+.list-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* AI分析按钮 */
+.list-header-actions .ai-btn {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s;
+  font-family: SourceHanSans-SemiBold;
+  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.3);
+  white-space: nowrap;
+}
+
+.list-header-actions .ai-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+.list-header-actions .ai-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.list-header-actions .ai-icon {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 1);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.list-header-actions .ai-btn:hover:not(:disabled) .ai-icon {
+  animation: sparkle-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes sparkle-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
 /* 列表头部统计徽章 */
 .list-header-stats {
   display: flex;
@@ -1930,45 +1964,74 @@ const visibleConnections = computed(() => {
 
 /* 确保高亮在表格内容中正确显示 */
 .table-row .col-content {
-  overflow: visible;
-  white-space: pre-wrap;
-  word-break: break-word;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   line-height: 1.5;
   padding: 6px 12px;
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 6px;
   border: 1px solid rgba(166, 124, 82, 0.15);
   min-height: 32px;
+  max-height: 32px;
   /* 使用 flex: 1 填充可用空间 */
   flex: 1;
   display: block;
+  position: relative;
+  cursor: default;
 }
 
 .table-row .col-content :deep(.highlighted-text) {
   background-color: rgba(255, 215, 0, 0.9) !important;
   color: rgba(139, 0, 0, 1) !important;
-  padding: 2px 4px !important;
+  padding: 0 4px !important;
   border-radius: 3px !important;
   font-weight: 700 !important;
   display: inline !important;
-  line-height: inherit !important;
+  line-height: 1.5 !important;
+  max-height: 1.5em !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap !important;
   box-decoration-break: clone !important;
   -webkit-box-decoration-break: clone !important;
   box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.6) !important;
+  /* 截断过长的高亮文本 */
+  max-width: 100%;
+  position: relative;
+  cursor: default;
+}
+
+.table-row .col-content :deep(.highlighted-text):hover {
+  background-color: rgba(255, 215, 0, 1) !important;
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.8) !important;
 }
 
 /* 全局高亮样式 - 用于v-html生成的内容 */
 .data-table .col-content .highlighted-text {
   background-color: rgba(255, 215, 0, 0.9) !important;
   color: rgba(139, 0, 0, 1) !important;
-  padding: 2px 4px !important;
+  padding: 0 4px !important;
   border-radius: 3px !important;
   font-weight: 700 !important;
   display: inline !important;
-  line-height: inherit !important;
+  line-height: 1.5 !important;
+  max-height: 1.5em !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap !important;
   box-decoration-break: clone !important;
   -webkit-box-decoration-break: clone !important;
   box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.6) !important;
+  max-width: 100%;
+  position: relative;
+  cursor: default;
+  transition: all 0.2s ease;
+}
+
+.data-table .col-content .highlighted-text:hover {
+  background-color: rgba(255, 215, 0, 1) !important;
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.8) !important;
 }
 
 .table-row .col-position {

@@ -1,78 +1,106 @@
-// Electron 主进程文件
-const { app, BrowserWindow, ipcMain } = require('electron')
-const path = require('path')
-const os = require('os')
+// Electron 主进程文件 - ES Module 版本
+import { app, BrowserWindow, ipcMain } from 'electron'
+import path from 'path'
+import os from 'os'
+import { fileURLToPath } from 'url'
 
-// 保持对窗口对象的全局引用，如果不这样做，当 JavaScript 对象被垃圾回收时窗口会自动关闭
+// 在 ES Module 中模拟 __dirname
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// 获取应用根目录（兼容开发模式和生产模式）
+// 开发模式: 返回项目根目录
+// 生产模式: 返回 ASAR 包内的路径
+const getAppRoot = () => {
+  return app.getAppPath()
+}
+
+// 保持对窗口对象的全局引用
 let mainWindow
 
 function createWindow() {
+  const appRoot = getAppRoot()
+  
+  // 图标路径 - 在生产环境中使用 ICO 文件
+  const iconPath = path.join(appRoot, 'dist', 'favicon.ico')
+  
+  // preload 脚本路径（使用 .cjs 扩展名以支持 CommonJS 语法）
+  const preloadPath = path.join(appRoot, 'preload.cjs')
+
   // 创建浏览器窗口
   mainWindow = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    minWidth: 1024,
-    minHeight: 768,
+    width: 1600,
+    height: 950,
+    minWidth: 1200,
+    minHeight: 800,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: preloadPath,
       nodeIntegration: false,
       contextIsolation: true,
-      enableRemoteModule: false
+      enableRemoteModule: false,
+      sandbox: false
     },
-    icon: path.join(__dirname, 'dist/favicon.ico'),
+    icon: iconPath,
     title: '文件对对碰',
-    // 使用菜单栏隐藏选项
     autoHideMenuBar: true,
-    // 窗口样式
     frame: true,
-    backgroundColor: '#F8F4E9'
+    backgroundColor: '#F8F4E9',
+    show: false  // 先不显示，等待内容加载完成
   })
 
-  // 加载应用 - 在开发模式下加载 Vite 开发服务器
+  // 加载应用
   if (process.env.NODE_ENV === 'development') {
+    // 开发模式: 加载 Vite 开发服务器
     mainWindow.loadURL('http://localhost:5173')
-    // 打开开发者工具（由环境变量控制）
     if (process.env.OPEN_DEV_TOOLS === 'true') {
       mainWindow.webContents.openDevTools()
     }
   } else {
-    // 生产模式下加载构建后的文件
-    mainWindow.loadFile(path.join(__dirname, 'dist/index.html'))
+    // 生产模式: 加载构建后的 HTML 文件
+    const indexPath = path.join(appRoot, 'dist', 'index.html')
+    console.log('Loading production HTML:', indexPath)
+    console.log('App root:', appRoot)
+    console.log('Icon path:', iconPath)
+    
+    mainWindow.loadFile(indexPath)
   }
 
-  // 当窗口关闭时触发
-  mainWindow.on('closed', () => {
-    // 取消引用窗口对象
-    mainWindow = null
+  // 页面加载完成后显示窗口
+  mainWindow.once('ready-to-show', () => {
+    console.log('Window ready-to-show')
+    mainWindow.show()
+  })
+  
+  // 监听加载失败
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('Failed to load:', errorCode, errorDescription)
   })
 
-  // 可选：处理窗口就绪事件
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show()
+  // 窗口关闭时清理资源
+  mainWindow.on('closed', () => {
+    mainWindow = null
   })
 }
 
-// 当 Electron 完成初始化并准备创建浏览器窗口时调用此方法
+// 应用就绪后创建窗口
 app.whenReady().then(() => {
   createWindow()
 
   app.on('activate', () => {
-    // 在 macOS 上，当点击 dock 图标且没有其他窗口打开时，
-    // 通常会在应用中重新创建一个窗口
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow()
     }
   })
 })
 
-// 当所有窗口都关闭时退出应用（除了 macOS）
+// 所有窗口关闭时退出应用 (macOS 除外)
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
 
-// 可选：处理 IPC 通信
+// IPC 处理
 ipcMain.handle('get-app-version', () => {
   return app.getVersion()
 })
@@ -94,12 +122,34 @@ ipcMain.handle('get-hardware-info', () => {
     const networkInterfaces = os.networkInterfaces()
     const uptime = os.uptime()
 
-    // 操作系统版本
+    // 操作系统版本（Windows NT 版本号和实际 Windows 版本映射）
     let osVersion = `${osType} ${osRelease}`
     if (osType === 'Windows_NT') {
-      if (osRelease.startsWith('10.')) osVersion = 'Windows 10/11'
-      else if (osRelease.startsWith('6.3')) osVersion = 'Windows 8.1'
-      else if (osRelease.startsWith('6.1')) osVersion = 'Windows 7'
+      // os.release() 返回 NT 内核版本号，如 "10.0.26100"
+      // 通过第三位构建版本号判断具体 Windows 版本
+      const buildNumber = parseInt(osRelease.split('.')[2] || '0', 10)
+      
+      if (buildNumber >= 26100) {
+        osVersion = 'Windows 11 24H2/25H2'
+      } else if (buildNumber >= 22621) {
+        osVersion = 'Windows 11 22H2/23H2'
+      } else if (buildNumber >= 22000) {
+        osVersion = 'Windows 11'
+      } else if (buildNumber >= 19041) {
+        osVersion = 'Windows 10'
+      } else if (buildNumber >= 18362) {
+        osVersion = 'Windows 10'
+      } else if (buildNumber >= 17763) {
+        osVersion = 'Windows 10 1809'
+      } else if (buildNumber >= 10240) {
+        osVersion = 'Windows 10'
+      } else if (osRelease.startsWith('6.3')) {
+        osVersion = 'Windows 8.1'
+      } else if (osRelease.startsWith('6.1')) {
+        osVersion = 'Windows 7'
+      } else {
+        osVersion = `Windows NT ${osRelease}`
+      }
     } else if (osType === 'Darwin') {
       osVersion = `macOS ${osRelease}`
     } else if (osType === 'Linux') {
@@ -111,7 +161,7 @@ ipcMain.handle('get-hardware-info', () => {
     const cpuCores = cpus.length
     const cpuSpeed = cpus[0]?.speed || 0
 
-    // 内存信息
+    // 内存信息格式化
     const formatBytes = (bytes) => {
       if (bytes === 0) return '0 B'
       const k = 1024
@@ -136,7 +186,6 @@ ipcMain.handle('get-hardware-info', () => {
     let gateway = '未找到'
     let networkName = '未找到'
 
-    // 遍历网络接口获取信息
     for (const [name, interfaces] of Object.entries(networkInterfaces)) {
       for (const iface of interfaces) {
         if (iface.family === 'IPv4' && !iface.internal) {
@@ -144,7 +193,6 @@ ipcMain.handle('get-hardware-info', () => {
           ipAddress = iface.address
           macAddress = iface.mac.toUpperCase().replace(/-/g, ':')
           subnetMask = iface.netmask
-          // 默认网关通常是 IP 的第一个地址段 + .1
           gateway = ipAddress.split('.').slice(0, 3).join('.') + '.1'
           break
         }
@@ -152,16 +200,9 @@ ipcMain.handle('get-hardware-info', () => {
       if (ipAddress !== '未找到') break
     }
 
-    // 设备指纹（基于 MAC 地址和 CPU 信息）
+    // 设备指纹生成
     const generateDeviceFingerprint = () => {
-      const components = [
-        hostname,
-        macAddress,
-        cpuModel,
-        String(totalMem),
-        arch,
-        osRelease
-      ]
+      const components = [hostname, macAddress, cpuModel, String(totalMem), arch, osRelease]
       const hash = components.join('|')
       let h = 0
       for (let i = 0; i < hash.length; i++) {
@@ -169,13 +210,12 @@ ipcMain.handle('get-hardware-info', () => {
         h = ((h << 5) - h) + char
         h = h & h
       }
-      return Math.abs(h).toString(36).padStart(8, '0') +
-        '-' + Date.now().toString(36).slice(-6)
+      return Math.abs(h).toString(36).padStart(8, '0') + '-' + Date.now().toString(36).slice(-6)
     }
 
     const deviceFingerprint = generateDeviceFingerprint()
 
-    // 格式化运行时间
+    // 运行时间格式化
     const formatUptime = (seconds) => {
       const days = Math.floor(seconds / 86400)
       const hours = Math.floor((seconds % 86400) / 3600)

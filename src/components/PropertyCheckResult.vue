@@ -7,7 +7,9 @@ import {
   RiCheckLine,
   RiCloseCircleLine,
   RiAlertLine,
-  RiFilterLine
+  RiFilterLine,
+  RiRestartLine,
+  RiSaveLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx'
 import { getPropertyCheckResult, deletePropertyCheckResult } from '../utils/compareResultStore'
@@ -167,9 +169,15 @@ const handleExport = async () => {
     })
 
     const blob = await Packer.toBlob(doc)
+    
+    // 生成文件名：file1vsfile2-属性对比报告.docx
+    const leftName = (leftFileName.value || 'file1').replace(/\.[^/.]+$/, '')
+    const rightName = (rightFileName.value || 'file2').replace(/\.[^/.]+$/, '')
+    const fileName = `${leftName}vs${rightName}-属性对比报告.docx`
+    
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = '属性对比报告.docx'
+    link.download = fileName
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -203,12 +211,12 @@ const getStatusColor = (status: string): string => {
         </div>
         <div class="header-actions">
           <button class="back-btn" @click="handleBack">
-            <RiArrowLeftLine class="back-icon" />
+            <RiRestartLine class="back-icon" />
             <span class="back-text">返回</span>
           </button>
           <button class="export-btn" @click="handleExport">
-            <RiFileExcelLine class="export-icon" />
-            <span>导出报告</span>
+            <RiSaveLine class="export-icon" />
+            <span>导出</span>
           </button>
         </div>
       </div>
@@ -248,13 +256,13 @@ const getStatusColor = (status: string): string => {
             <span class="col-text">属性字段</span>
           </div>
           <div class="table-col col-value-left">
-            <span class="col-text file-a">{{ leftFileName }}</span>
+            <span class="col-text file-a">DOCUMENT SOURCE</span>
           </div>
           <div class="table-col col-value-right">
-            <span class="col-text file-b">{{ rightFileName }}</span>
+            <span class="col-text file-b">DOCUMENT MODIFY</span>
           </div>
           <div class="table-col col-status">
-            <span class="col-text">状态</span>
+            <span class="col-text">结果</span>
           </div>
         </div>
 
@@ -341,9 +349,9 @@ const getStatusColor = (status: string): string => {
 .back-btn {
   height: 40px;
   padding: 0 20px;
-  background-color: rgba(255, 255, 255, 1);
-  color: rgba(139, 0, 0, 1);
-  border: 1px solid rgba(139, 0, 0, 0.3);
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  color: white;
+  border: none;
   border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
@@ -354,23 +362,24 @@ const getStatusColor = (status: string): string => {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
 }
 
 .back-btn:hover {
-  background-color: rgba(139, 0, 0, 0.05);
-  border-color: rgba(139, 0, 0, 1);
+  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
+  transform: translateY(-2px);
 }
 
 .back-icon {
   font-size: 18px;
-  color: rgba(107, 79, 52, 1);
+  color: rgba(255, 255, 255, 1);
 }
 
 .back-text {
   font-size: 14px;
-  font-weight: 500;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Medium;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 1);
+  font-family: SourceHanSans-SemiBold;
 }
 
 .export-btn {
@@ -382,17 +391,19 @@ const getStatusColor = (status: string): string => {
   background-color: rgba(46, 89, 132, 1);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
-  transition: all 0.3s;
-  font-family: SourceHanSans-Medium;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(46, 89, 132, 0.3);
 }
 
 .export-btn:hover {
-  background-color: rgba(46, 89, 132, 0.9);
-  box-shadow: 0 4px 12px rgba(46, 89, 132, 0.3);
+  background-color: rgba(40, 78, 115, 1);
+  box-shadow: 0 6px 16px rgba(46, 89, 132, 0.4);
+  transform: translateY(-2px);
 }
 
 .export-icon {

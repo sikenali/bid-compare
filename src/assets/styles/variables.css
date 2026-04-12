@@ -6,17 +6,25 @@
   --warning: #F59E0B;
   --danger: #EF4444;
   --bg-gradient: linear-gradient(180deg, rgba(239,246,255,1) 0%, rgba(224,231,255,1) 100%);
-  
+
   /* 组件基础样式 */
   --card-bg: rgba(255,255,255,0.7);
   --card-radius: 20px;
   --card-border: 0.6667px solid rgba(255,255,255,0.2);
   --card-shadow: 0px 8px 32px rgba(31,38,135,0.05);
-  
+
   /* 间距系统 */
   --spacing-xs: 8px;
   --spacing-sm: 12px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 32px;
+}
+
+/* 全局重置 */
+body, html {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
 }

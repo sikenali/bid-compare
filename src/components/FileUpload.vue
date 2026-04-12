@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { RiUploadCloud2Line, RiRefreshLine, RiCloseLine, RiFileWord2Line, RiFileExcel2Line, RiSlideshow2Line, RiFilePdf2Line, RiFileTextLine, RiDeleteBinLine } from '@remixicon/vue';
+import { RiUploadCloud2Line, RiExchangeLine, RiCloseCircleLine, RiFileWord2Line, RiFileExcel2Line, RiSlideshow2Line, RiFilePdf2Line, RiFileTextLine, RiDeleteBinLine } from '@remixicon/vue';
 
 interface Props {
   side: 'left' | 'right';
@@ -115,10 +115,10 @@ const fileTypeInfo = computed(() => {
           </div>
           <div class="file-actions-inline">
             <label :for="`${props.side}-file`" class="icon-btn" title="更换文件">
-              <RiRefreshLine class="icon-btn-svg" />
+              <RiExchangeLine class="icon-btn-svg" />
             </label>
             <button class="icon-btn delete-btn" @click="onClearFile(props.side)" title="清除文件">
-              <RiDeleteBinLine class="icon-btn-svg delete" />
+              <RiCloseCircleLine class="icon-btn-svg delete" />
             </button>
           </div>
         </div>
@@ -138,7 +138,7 @@ const fileTypeInfo = computed(() => {
   flex-direction: column;
   width: 100%;
   max-width: 547px;
-  height: 344px;
+  height: 347px;
 }
 
 @media (max-width: 768px) {
@@ -384,15 +384,24 @@ const fileTypeInfo = computed(() => {
 
 .icon-btn-svg {
   font-size: 18px;
+  width: 18px;
+  height: 18px;
   color: rgba(107, 114, 128, 1);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.icon-btn:hover .icon-btn-svg {
+  color: rgba(139, 0, 0, 1);
 }
 
 .icon-btn-svg.delete {
   color: rgba(220, 38, 38, 1);
 }
 
-.delete-btn:hover {
-  background-color: rgba(220, 38, 38, 0.1);
+.delete-btn:hover .icon-btn-svg.delete {
+  color: rgba(180, 30, 30, 1);
+  transform: scale(1.1);
 }
 
 /* 中心操作按钮 */

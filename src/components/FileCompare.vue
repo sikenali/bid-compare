@@ -13,8 +13,6 @@ import {
   RiFilterLine,
   RiArrowLeftSLine,
   RiArrowRightSLine,
-  RiBrainLine,
-  RiQuestionLine,
   RiSearchLine,
   RiEditLine,
   RiInformationLine,
@@ -250,58 +248,45 @@ const {
   deleteRecord
 } = useRecentRecords('fileCompare')
 
-// 帮助弹窗
-const showHelp = ref(false)
+// 历史记录弹窗
 const showHistory = ref(false)
-
-const toggleHelp = () => {
-  showHelp.value = !showHelp.value
-}
 
 const toggleHistory = () => {
   showHistory.value = !showHistory.value
 }
 
+// 当记录为空时自动关闭弹窗
+watch(
+  () => recentRecords.length,
+  (newLen) => {
+    if (newLen === 0 && showHistory.value) {
+      showHistory.value = false
+    }
+  }
+)
+
 // 查看历史对比记录
 const viewHistoricalRecord = (record: any) => {
-  // 更新文件信息
-  leftFileInfo.value = {
-    file: null,
-    name: record.leftFileName,
-    size: '未知',
-    type: getFileType(record.leftFileName)
-  };
-
-  rightFileInfo.value = {
-    file: null,
-    name: record.rightFileName,
-    size: '未知',
-    type: getFileType(record.rightFileName)
-  };
-
-  // 设置文本相似度
-  textSimilarity.value = record.similarity;
-
-  // 标记为从历史记录恢复
-  isViewingHistory.value = true;
-
-  // 显示结果界面
-  showResults.value = true;
-
-  // 恢复保存的雷同片段数据
-  if (record.similarSegments && record.similarSegments.length > 0) {
-    similarSegmentsList.value = record.similarSegments;
-
-    // 设置当前显示内容
-    currentContent.value = {
-      left: record.similarSegments[0].leftContent,
-      right: record.similarSegments[0].rightContent
-    };
-  } else {
-    similarSegmentsList.value = [];
-    currentContent.value = { left: '', right: '' };
+  // 将历史记录数据存储到模块级存储中
+  const compareResult = {
+    segments: record.similarSegments || [],
+    leftFileName: record.leftFileName,
+    rightFileName: record.rightFileName,
+    textSimilarity: record.similarity,
+    similarSegmentsCount: record.similarSegments ? record.similarSegments.length : 0,
+    leftTotalPages: 1,
+    rightTotalPages: 1
   }
-};
+
+  // 存储到模块级存储
+  const resultId = storeCompareResult(compareResult)
+
+  // 跳转到结果页面，传递存储 ID 和时间戳
+  router.push({ path: '/file-compare-result', query: { resultId, t: Date.now() } })
+  
+  // 关闭历史记录弹窗
+  showHistory.value = false
+}
 
 // 格式化文件大小
 const formatFileSize = (size: number): string => {
@@ -780,13 +765,9 @@ const generateWordReport = () => {
           <p class="page-subtitle">精准识别两个版本文档之间的内容差异、相似片段和结构变更</p>
         </div>
         <div class="header-actions">
-          <button class="icon-btn-wrapper" @click="toggleHistory">
+          <button v-if="recentRecords.length > 0" class="icon-btn-wrapper" @click="toggleHistory">
             <RiHistoryLine class="icon-btn-svg" />
             <span class="icon-btn-tooltip">历史记录</span>
-          </button>
-          <button class="icon-btn-wrapper" @click="toggleHelp">
-            <RiQuestionLine class="icon-btn-svg" />
-            <span class="icon-btn-tooltip">帮助</span>
           </button>
         </div>
       </div>
@@ -806,47 +787,10 @@ const generateWordReport = () => {
             :on-clear-all="clearAllRecords"
             :on-view-record="(record) => { viewHistoricalRecord(record); toggleHistory(); }"
             :on-delete-record="deleteRecord"
+            :on-close="toggleHistory"
           />
           <div v-else class="empty-history">
             <p>暂无历史记录</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 帮助弹窗 -->
-    <div v-if="showHelp" class="help-modal-overlay" @click="toggleHelp">
-      <div class="help-modal" @click.stop>
-        <div class="help-modal-header">
-          <h3>功能介绍</h3>
-          <button class="help-close-btn" @click="toggleHelp">×</button>
-        </div>
-        <div class="help-modal-body">
-          <div class="help-feature-cards">
-            <!-- 取证级精确对比 -->
-            <div class="help-feature-card">
-              <div class="card-icon accuracy">
-                <RiSearchLine class="icon" />
-              </div>
-              <h3 class="card-title">取证级精确对比</h3>
-              <p class="card-desc">采用行业领先的文本比对算法，精确识别每一处内容差异，支持多格式文档智能解析。</p>
-            </div>
-            <!-- 差异高亮展示 -->
-            <div class="help-feature-card">
-              <div class="card-icon highlight">
-                <RiEditLine class="icon" />
-              </div>
-              <h3 class="card-title">差异高亮展示</h3>
-              <p class="card-desc">相同内容以金色背景高亮标注，差异内容清晰区分，支持分页查看所有相似片段。</p>
-            </div>
-            <!-- 一键导出报告 -->
-            <div class="help-feature-card">
-              <div class="card-icon export">
-                <RiFileExcelLine class="icon" />
-              </div>
-              <h3 class="card-title">一键导出报告</h3>
-              <p class="card-desc">支持导出完整的对比分析报告，包含统计数据和详细对比结果，方便存档与分享。</p>
-            </div>
           </div>
         </div>
       </div>
@@ -863,14 +807,6 @@ const generateWordReport = () => {
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
-
-      <!-- 对比按钮 -->
-      <div class="compare-btn-wrapper">
-        <button class="compare-main-btn" @click="handleCompare" :disabled="isProcessing || isViewingHistory" :title="isViewingHistory ? '请重新上传文件后再进行对比' : '一键对比'">
-          <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
-          <span class="compare-btn-tooltip">{{ isViewingHistory ? '请重新上传文件' : '一键对比' }}</span>
-        </button>
-      </div>
 
       <!-- 右侧文件上传 -->
       <FileUpload
@@ -893,15 +829,19 @@ const generateWordReport = () => {
       </div>
     </div>
 
-    <!-- 进度条容器 -->
-    <div v-if="isProcessing && canCancel" class="progress-container">
-      <div class="progress-bar">
-        <div class="progress-fill" :style="{ width: `${Math.round(progress * 100)}%` }" />
+    <!-- 对比按钮区域 -->
+    <div class="compare-action-area">
+      <button class="compare-main-btn" @click="handleCompare" :disabled="isProcessing || isViewingHistory" :class="{ 'processing': isProcessing }" :title="isViewingHistory ? '请重新上传文件后再进行对比' : '一键对比'">
+        <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
+        <span class="btn-text">{{ isViewingHistory ? '请重新上传文件' : '一键对比' }}</span>
+      </button>
+      <!-- 进度显示 -->
+      <div v-if="isProcessing" class="progress-display">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" :style="{ width: `${Math.round(progress * 100)}%` }"></div>
+        </div>
+        <span class="progress-text">{{ progressMessage || '正在处理中...' }} {{ Math.round(progress * 100) }}%</span>
       </div>
-      <span class="progress-text">
-        {{ progressMessage }} {{ Math.round(progress * 100) }}%
-      </span>
-      <button class="cancel-btn" @click="handleCancel">取消</button>
     </div>
 
     <!-- 解析错误显示 -->
@@ -916,11 +856,11 @@ const generateWordReport = () => {
 .file-compare-container {
   width: 100%;
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background-color: rgba(248, 244, 233, 1);
-  gap: 20px;
+  gap: 12px;
   font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -943,7 +883,7 @@ const generateWordReport = () => {
   font-size: 20px;
   font-weight: 700;
   color: rgba(44, 24, 16, 1);
-  margin: 0 0 4px 0;
+  margin: 0 0 2px 0;
   font-family: SourceHanSans-Bold;
 }
 
@@ -1100,6 +1040,134 @@ const generateWordReport = () => {
   padding: 0 24px;
 }
 
+/* 对比按钮区域 */
+.compare-action-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  gap: 16px;
+  width: 100%;
+  max-width: 1094px; /* 547px * 2 = 两个上传区域的宽度 */
+  margin: 0 auto;
+}
+
+/* 对比按钮 */
+.compare-main-btn {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  height: 56px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+  overflow: hidden;
+}
+
+.compare-main-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.3) 50%, 
+    rgba(255, 255, 255, 0) 100%);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.compare-main-btn:hover:not(:disabled)::before {
+  transform: translateX(100%);
+}
+
+.compare-main-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.compare-main-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.compare-main-btn.processing {
+  background: linear-gradient(90deg, 
+    rgba(139, 0, 0, 1) 0%, 
+    rgba(196, 30, 58, 0.8) 50%, 
+    rgba(139, 0, 0, 1) 100%);
+  background-size: 200% 100%;
+  animation: gradient-shift 2s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.btn-text {
+  position: relative;
+  z-index: 1;
+}
+
+.compare-icon {
+  font-size: 24px;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.compare-icon.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+/* 进度显示 */
+.progress-display {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  height: 8px;
+  background-color: rgba(216, 191, 156, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 13px;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-Regular;
+  text-align: center;
+}
+
 /* 功能说明区 */
 .features-section {
   display: flex;
@@ -1186,76 +1254,6 @@ const generateWordReport = () => {
   font-family: SourceHanSans-Regular;
   margin: 0;
   line-height: 1.2;
-}
-
-/* 对比按钮 */
-.compare-btn-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
-}
-
-.compare-main-btn {
-  position: relative;
-  width: 60px;
-  height: 60px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(139, 0, 0, 1);
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
-  transition: all 0.3s ease;
-}
-
-.compare-main-btn:hover:not(:disabled) {
-  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
-  transform: scale(1.05);
-}
-
-.compare-main-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.compare-btn-tooltip {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 8px;
-  background-color: rgba(44, 24, 16, 0.9);
-  color: white;
-  font-size: 11px;
-  font-family: SourceHanSans-Regular;
-  border-radius: 4px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-  z-index: 100;
-}
-
-.compare-main-btn:hover:not(:disabled) .compare-btn-tooltip {
-  opacity: 1;
-}
-
-.compare-icon {
-  font-size: 28px;
-  transition: all 0.3s ease;
-}
-
-.compare-icon.rotating {
-  animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 /* 使用说明区 */

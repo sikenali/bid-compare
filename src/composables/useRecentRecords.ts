@@ -1,4 +1,4 @@
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onActivated, computed, type Ref, type ComputedRef } from 'vue'
 import type { SimilarSegment } from '../utils/textAlgorithms'
 
 // 属性对比详情类型
@@ -21,115 +21,150 @@ export interface RecentRecord {
   propertyDetails?: PropertyDetail[]
 }
 
-// 导出最近记录组合式函数
-export function useRecentRecords(recordType: 'fileCompare' | 'propertyCheck') {
-  // 响应式最近记录状态
-  const showRecentRecords = ref(false)
+// 模块级存储 - 按类型区分，确保单例
+const recordStores = new Map<string, {
+  recentRecords: RecentRecord[]
+  showRecentRecords: boolean
+}>()
 
-  // 响应式最近对比记录数组
-  const recentRecords = reactive<RecentRecord[]>([])
+// 清理 HTML 标签，减少存储大小
+const stripHtml = (html: string): string => {
+  return html.replace(/<[^>]*>/g, '').substring(0, 200)
+}
 
-  // 生成存储键名
-  const storageKey = `${recordType}RecentRecords`
-
-  // 清理 HTML 标签，减少存储大小
-  const stripHtml = (html: string): string => {
-    return html.replace(/<[^>]*>/g, '').substring(0, 200)
+// 获取或创建指定类型的存储
+const getStore = (recordType: string) => {
+  if (!recordStores.has(recordType)) {
+    recordStores.set(recordType, {
+      recentRecords: reactive<RecentRecord[]>([]),
+      showRecentRecords: false
+    })
   }
+  return recordStores.get(recordType)!
+}
 
-  // 加载最近记录
-  const loadRecentRecords = () => {
+// 从 localStorage 加载记录到指定存储
+const loadFromStorage = (recordType: string) => {
+  const storageKey = `${recordType}RecentRecords`
+  const store = getStore(recordType)
+
+  try {
     const savedRecords = localStorage.getItem(storageKey)
     if (savedRecords) {
-      try {
-        const parsed = JSON.parse(savedRecords) as RecentRecord[]
-        recentRecords.length = 0
-        parsed.forEach(record => {
-          recentRecords.push(record)
-        })
-        showRecentRecords.value = parsed.length > 0
-      } catch (error) {
-        console.error('加载最近记录失败:', error)
-        recentRecords.length = 0
-        showRecentRecords.value = false
-      }
+      const parsed = JSON.parse(savedRecords) as RecentRecord[]
+      store.recentRecords.length = 0
+      parsed.forEach(record => store.recentRecords.push(record))
+      store.showRecentRecords = parsed.length > 0
+      console.log(`📂 [${recordType}] 加载历史记录: ${parsed.length} 条`)
+    } else {
+      store.recentRecords.length = 0
+      store.showRecentRecords = false
+      console.log(`📂 [${recordType}] 历史记录为空`)
     }
+  } catch (error) {
+    console.error(`[${recordType}] 加载最近记录失败:`, error)
+    store.recentRecords.length = 0
+    store.showRecentRecords = false
   }
+}
 
-  // 保存最近记录
-  const saveRecentRecords = () => {
-    // 压缩数据后再存储
-    const compressed = recentRecords.map(record => {
-      const compressed: RecentRecord = {
-        ...record,
-        similarSegments: record.similarSegments
-          ? record.similarSegments.map(seg => ({
-              ...seg,
-              leftContent: stripHtml(seg.leftContent),
-              rightContent: stripHtml(seg.rightContent)
-            }))
-          : undefined
-      }
-      return compressed
-    })
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(compressed))
-      showRecentRecords.value = recentRecords.length > 0
-    } catch (e) {
-      console.warn('localStorage 配额已满，清空历史记录', e)
-      clearAllRecords()
+// 保存指定类型的记录到 localStorage
+const saveToStorage = (recordType: string) => {
+  const storageKey = `${recordType}RecentRecords`
+  const store = getStore(recordType)
+
+  const compressed = store.recentRecords.map(record => ({
+    ...record,
+    // 只保留前 10 个相似片段，减少存储大小
+    similarSegments: record.similarSegments
+      ? record.similarSegments.slice(0, 10).map(seg => ({
+          ...seg,
+          leftContent: stripHtml(seg.leftContent),
+          rightContent: stripHtml(seg.rightContent)
+        }))
+      : undefined
+  }))
+
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(compressed))
+    store.showRecentRecords = store.recentRecords.length > 0
+  } catch (e) {
+    console.warn(`[${recordType}] localStorage 配额不足，尝试删除最旧记录...`)
+    // 删除最旧的记录
+    if (store.recentRecords.length > 1) {
+      store.recentRecords.pop()
+      saveToStorage(recordType)
+    } else {
+      // 如果只有一条记录还是失败，清空
+      console.error(`[${recordType}] 无法保存记录，localStorage 配额已满`)
+      store.recentRecords.length = 0
+      store.showRecentRecords = false
+      localStorage.removeItem(storageKey)
     }
   }
+}
+
+// 导出最近记录组合式函数
+export function useRecentRecords(recordType: 'fileCompare' | 'propertyCheck') {
+  const store = getStore(recordType)
+
+  // 创建计算属性以确保响应式
+  const recentRecords = computed(() => store.recentRecords) as ComputedRef<RecentRecord[]>
+  const showRecentRecords = computed(() => store.showRecentRecords) as ComputedRef<boolean>
 
   // 添加新记录
   const addRecentRecord = (record: Omit<RecentRecord, 'id'>) => {
-    // 生成唯一ID
-    const newId = Math.max(0, ...recentRecords.map(r => r.id)) + 1
-    // 创建新记录
-    const newRecord: RecentRecord = {
-      id: newId,
-      ...record
+    const newId = Math.max(0, ...store.recentRecords.map(r => r.id)) + 1
+    const newRecord: RecentRecord = { id: newId, ...record }
+    store.recentRecords.unshift(newRecord)
+    if (store.recentRecords.length > 10) {
+      store.recentRecords.pop()
     }
-    // 添加到列表开头
-    recentRecords.unshift(newRecord)
-    // 限制最大记录数量为10
-    if (recentRecords.length > 10) {
-      recentRecords.pop()
-    }
-    // 保存记录
-    saveRecentRecords()
-    // 显示记录
-    showRecentRecords.value = true
+    saveToStorage(recordType)
+    console.log(`✅ [${recordType}] 已添加记录:`, newRecord.filename)
   }
 
   // 删除单条记录
   const deleteRecord = (id: number) => {
-    const index = recentRecords.findIndex(record => record.id === id)
+    const index = store.recentRecords.findIndex(r => r.id === id)
     if (index !== -1) {
-      recentRecords.splice(index, 1)
-      saveRecentRecords()
+      store.recentRecords.splice(index, 1)
+      saveToStorage(recordType)
+      console.log(`✅ [${recordType}] 已删除记录, ID: ${id}`)
     }
   }
 
   // 一键清除记录
   const clearAllRecords = () => {
-    recentRecords.length = 0
-    showRecentRecords.value = false
-    localStorage.removeItem(storageKey)
+    store.recentRecords.length = 0
+    store.showRecentRecords = false
+    localStorage.removeItem(`${recordType}RecentRecords`)
+    console.log(`✅ [${recordType}] 已清除所有记录`)
   }
 
-  // 初始化时加载最近记录
+  // 手动触发加载（供外部调用）
+  const loadRecentRecords = () => {
+    loadFromStorage(recordType)
+  }
+
+  // 组件挂载时加载
   onMounted(() => {
-    loadRecentRecords()
+    console.log(`📂 [${recordType}] onMounted - 加载历史记录...`)
+    loadFromStorage(recordType)
+  })
+
+  // keep-alive 激活时重新加载
+  onActivated(() => {
+    console.log(`📂 [${recordType}] onActivated - 重新加载历史记录...`)
+    loadFromStorage(recordType)
   })
 
   return {
-    showRecentRecords,
     recentRecords,
-    loadRecentRecords,
-    saveRecentRecords,
+    showRecentRecords,
     addRecentRecord,
     deleteRecord,
-    clearAllRecords
+    clearAllRecords,
+    loadRecentRecords
   }
 }

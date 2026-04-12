@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
@@ -40,37 +40,24 @@ const leftFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' })
 const rightFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' });
 
 // 使用最近记录组合式函数 - 传入propertyCheck类型
-const { 
-  showRecentRecords, 
-  recentRecords, 
-  addRecentRecord, 
+const {
+  showRecentRecords,
+  recentRecords,
+  addRecentRecord,
   clearAllRecords,
   deleteRecord
 } = useRecentRecords('propertyCheck')
 
 // 查看历史对比记录
 const viewHistoricalRecord = (record: any) => {
-  // 更新文件信息
-  leftFileInfo.value = {
-    file: null,
-    name: record.leftFileName,
-    size: '未知',
-    type: getFileType(record.leftFileName)
-  };
-  
-  rightFileInfo.value = {
-    file: null,
-    name: record.rightFileName,
-    size: '未知',
-    type: getFileType(record.rightFileName)
-  };
-  
   // 恢复保存的属性详情数据
+  let propertyDetails = []
+  
   if (record.propertyDetails && record.propertyDetails.length > 0) {
-    propertyDetails.value = record.propertyDetails;
+    propertyDetails = record.propertyDetails
   } else {
     // 如果没有保存属性详情，生成默认数据（与 handleCheck 保持相同的 13 个字段）
-    propertyDetails.value = [
+    propertyDetails = [
       {
         name: '文件名称',
         leftValue: record.leftFileName,
@@ -114,12 +101,6 @@ const viewHistoricalRecord = (record: any) => {
         status: 'match'
       },
       {
-        name: '版本号',
-        leftValue: 'N/A',
-        rightValue: 'N/A',
-        status: 'match'
-      },
-      {
         name: '程序名称',
         leftValue: 'N/A',
         rightValue: 'N/A',
@@ -155,17 +136,38 @@ const viewHistoricalRecord = (record: any) => {
         rightValue: '0',
         status: 'match'
       }
-    ];
+    ]
   }
-  
+
   // 统计属性状态
-  matchingProperties.value = propertyDetails.value.filter(p => p.status === 'match').length;
-  nonMatchingProperties.value = propertyDetails.value.filter(p => p.status === 'mismatch').length;
-  warningProperties.value = propertyDetails.value.filter(p => p.status === 'warning').length;
+  const matchingProperties = propertyDetails.filter((p: any) => p.status === 'match').length
+  const nonMatchingProperties = propertyDetails.filter((p: any) => p.status === 'mismatch').length
+  const warningProperties = propertyDetails.filter((p: any) => p.status === 'warning').length
+
+  // 将历史记录数据存储到模块级存储中
+  const checkResult = {
+    propertyDetails: propertyDetails,
+    leftFileName: record.leftFileName,
+    rightFileName: record.rightFileName,
+    totalProperties: propertyDetails.length,
+    matchingProperties: matchingProperties,
+    nonMatchingProperties: nonMatchingProperties,
+    warningProperties: warningProperties,
+    similarity: record.similarity,
+    leftFileProperties: {},
+    rightFileProperties: {},
+    similarityStatus: 'match'
+  }
+
+  // 存储到模块级存储
+  const resultId = storePropertyCheckResult(checkResult)
+
+  // 跳转到结果页面，传递存储 ID 和时间戳
+  router.push({ path: '/property-check-result', query: { resultId, t: Date.now() } })
   
-  // 显示结果界面
-  showResults.value = true;
-};
+  // 关闭历史记录弹窗
+  showHistory.value = false
+}
 
 // 解析结果
 const leftFileContent = ref('')
@@ -279,17 +281,22 @@ const handleClearFile = (side: 'left' | 'right') => {
   }
 }
 
-// 帮助弹窗
-const showHelp = ref(false)
+// 历史记录弹窗
 const showHistory = ref(false)
-
-const toggleHelp = () => {
-  showHelp.value = !showHelp.value
-}
 
 const toggleHistory = () => {
   showHistory.value = !showHistory.value
 }
+
+// 当记录为空时自动关闭弹窗
+watch(
+  () => recentRecords.length,
+  (newLen) => {
+    if (newLen === 0 && showHistory.value) {
+      showHistory.value = false
+    }
+  }
+)
 
 // 执行属性检查
 const handleCheck = async () => {
@@ -359,12 +366,6 @@ const handleCheck = async () => {
         leftValue: leftFileProperties.value.修订号 || '未知',
         rightValue: rightFileProperties.value.修订号 || '未知',
         status: (leftFileProperties.value.修订号 || '未知') === (rightFileProperties.value.修订号 || '未知') ? 'match' : 'mismatch'
-      },
-      {
-        name: '版本号',
-        leftValue: leftFileProperties.value.版本号 || '未知',
-        rightValue: rightFileProperties.value.版本号 || '未知',
-        status: (leftFileProperties.value.版本号 || '未知') === (rightFileProperties.value.版本号 || '未知') ? 'match' : 'mismatch'
       },
       {
         name: '程序名称',
@@ -687,13 +688,9 @@ const generateWordReport = () => {
           <p class="page-subtitle">对比两个文件的基础属性信息，快速识别差异</p>
         </div>
         <div class="header-actions">
-          <button class="icon-btn-wrapper" @click="toggleHistory">
+          <button v-if="recentRecords.length > 0" class="icon-btn-wrapper" @click="toggleHistory">
             <RiHistoryLine class="icon-btn-svg" />
             <span class="icon-btn-tooltip">历史记录</span>
-          </button>
-          <button class="icon-btn-wrapper" @click="toggleHelp">
-            <RiQuestionLine class="icon-btn-svg" />
-            <span class="icon-btn-tooltip">帮助</span>
           </button>
         </div>
       </div>
@@ -713,44 +710,10 @@ const generateWordReport = () => {
             :on-clear-all="clearAllRecords"
             :on-view-record="(record) => { viewHistoricalRecord(record); toggleHistory(); }"
             :on-delete-record="deleteRecord"
+            :on-close="toggleHistory"
           />
           <div v-else class="empty-history">
             <p>暂无历史记录</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 帮助弹窗 -->
-    <div v-if="showHelp" class="help-modal-overlay" @click="toggleHelp">
-      <div class="help-modal" @click.stop>
-        <div class="help-modal-header">
-          <h3>功能介绍</h3>
-          <button class="help-close-btn" @click="toggleHelp">×</button>
-        </div>
-        <div class="help-modal-body">
-          <div class="help-feature-cards">
-            <div class="help-feature-card">
-              <div class="card-icon accuracy">
-                <RiFileLine class="icon" />
-              </div>
-              <h3 class="card-title">文件类型检查</h3>
-              <p class="card-desc">自动识别并对比两个文件的类型和大小，快速发现基本差异。</p>
-            </div>
-            <div class="help-feature-card">
-              <div class="card-icon highlight">
-                <RiUserLine class="icon" />
-              </div>
-              <h3 class="card-title">作者信息比对</h3>
-              <p class="card-desc">提取文档作者和最后保存者信息，确保文档来源可靠。</p>
-            </div>
-            <div class="help-feature-card">
-              <div class="card-icon export">
-                <RiCalendarLine class="icon" />
-              </div>
-              <h3 class="card-title">时间戳验证</h3>
-              <p class="card-desc">对比创建时间和修改时间，发现文档是否被篡改。</p>
-            </div>
           </div>
         </div>
       </div>
@@ -767,14 +730,6 @@ const generateWordReport = () => {
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
-
-      <!-- 检查按钮 -->
-      <div class="check-btn-wrapper">
-        <button class="start-check-btn" @click="handleCheck" :disabled="isParsing">
-          <RiExchangeLine class="check-icon" :class="{ 'rotating': isParsing }" />
-          <span class="check-btn-tooltip">开始检查</span>
-        </button>
-      </div>
 
       <!-- 文件B上传 -->
       <FileUpload
@@ -795,6 +750,21 @@ const generateWordReport = () => {
       </div>
     </div>
 
+    <!-- 检查按钮区域 -->
+    <div class="check-action-area">
+      <button class="start-check-btn" @click="handleCheck" :disabled="isParsing" :class="{ 'processing': isParsing }">
+        <RiExchangeLine class="check-icon" :class="{ 'rotating': isParsing }" />
+        <span class="btn-text">属性检查</span>
+      </button>
+      <!-- 进度显示 -->
+      <div v-if="isParsing" class="progress-display">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill"></div>
+        </div>
+        <span class="progress-text">正在检查中...</span>
+      </div>
+    </div>
+
     <!-- 解析错误显示 -->
     <div v-if="parseError" class="error-message">
       {{ parseError }}
@@ -806,11 +776,11 @@ const generateWordReport = () => {
 .property-check-container {
   width: 100%;
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background-color: rgba(248, 244, 233, 1);
-  gap: 20px;
+  gap: 12px;
   font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -833,7 +803,7 @@ const generateWordReport = () => {
   font-size: 20px;
   font-weight: 700;
   color: rgba(44, 24, 16, 1);
-  margin: 0 0 4px 0;
+  margin: 0 0 2px 0;
   font-family: SourceHanSans-Bold;
 }
 
@@ -1004,6 +974,146 @@ const generateWordReport = () => {
   pointer-events: none;
 }
 
+/* 检查按钮区域 */
+.check-action-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  gap: 16px;
+  width: 100%;
+  max-width: 1094px; /* 547px * 2 = 两个上传区域的宽度 */
+  margin: 0 auto;
+}
+
+/* 检查按钮 */
+.start-check-btn {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  height: 56px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+  overflow: hidden;
+}
+
+.start-check-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.3) 50%, 
+    rgba(255, 255, 255, 0) 100%);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.start-check-btn:hover:not(:disabled)::before {
+  transform: translateX(100%);
+}
+
+.start-check-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.start-check-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.start-check-btn.processing {
+  background: linear-gradient(90deg, 
+    rgba(139, 0, 0, 1) 0%, 
+    rgba(196, 30, 58, 0.8) 50%, 
+    rgba(139, 0, 0, 1) 100%);
+  background-size: 200% 100%;
+  animation: gradient-shift 2s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.btn-text {
+  position: relative;
+  z-index: 1;
+}
+
+.check-icon {
+  font-size: 24px;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.check-icon.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 进度显示 */
+.progress-display {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  height: 8px;
+  background-color: rgba(216, 191, 156, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  width: 30%;
+  background: linear-gradient(90deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  border-radius: 4px;
+  animation: indeterminate-progress 1.5s ease-in-out infinite;
+}
+
+@keyframes indeterminate-progress {
+  0% { width: 0%; margin-left: 0; }
+  50% { width: 30%; margin-left: 35%; }
+  100% { width: 0%; margin-left: 100%; }
+}
+
+.progress-text {
+  font-size: 13px;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-Regular;
+  text-align: center;
+}
+
 /* 处理中遮罩 */
 .processing-overlay {
   position: absolute;
@@ -1050,73 +1160,17 @@ const generateWordReport = () => {
   margin: 0;
 }
 
-.check-btn-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
-}
-
-.start-check-btn {
-  position: relative;
-  width: 60px;
-  height: 60px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(139, 0, 0, 1);
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
-  transition: all 0.3s ease;
-}
-
-.start-check-btn:hover:not(:disabled) {
-  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
-  transform: scale(1.05);
-}
-
-.start-check-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.check-btn-tooltip {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 8px;
-  background-color: rgba(44, 24, 16, 0.9);
-  color: white;
-  font-size: 11px;
+/* 错误信息样式 */
+.error-message {
+  color: rgba(139, 0, 0, 1);
+  font-size: 14px;
+  text-align: center;
+  margin: 16px 0;
+  padding: 12px;
+  background-color: rgba(139, 0, 0, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(139, 0, 0, 0.2);
   font-family: SourceHanSans-Regular;
-  border-radius: 4px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-  z-index: 100;
-}
-
-.start-check-btn:hover:not(:disabled) .check-btn-tooltip {
-  opacity: 1;
-}
-
-.check-icon {
-  font-size: 28px;
-  transition: all 0.3s ease;
-}
-
-.check-icon.rotating {
-  animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 .upload-box {
@@ -1273,54 +1327,6 @@ const generateWordReport = () => {
   border-radius: 8px;
   border: 1px solid rgba(139, 0, 0, 0.2);
   font-family: SourceHanSans-Regular;
-}
-
-.check-btn-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
-  border-radius: 50%;
-  width: 64px;
-  height: 64px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
-  flex-shrink: 0;
-}
-
-.check-btn {
-  width: 64px;
-  height: 64px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: #FFFFFF;
-  font-size: 24px;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.check-icon {
-  color: #FFFFFF;
-  font-size: 24px;
-  transition: all 0.3s ease;
-}
-
-.check-icon.rotating {
-  animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.check-btn:hover {
-  transform: rotate(90deg);
-  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
 }
 
 /* 最近对比记录 */
@@ -1899,23 +1905,6 @@ const generateWordReport = () => {
     flex-direction: column;
     gap: 16px;
     padding: 0;
-  }
-
-  .check-btn-wrapper {
-    order: 3;
-    width: 100%;
-    margin: 8px 0;
-  }
-
-  .start-check-btn {
-    width: 100%;
-    max-width: 320px;
-    height: 48px;
-    border-radius: 12px;
-  }
-
-  .check-icon {
-    font-size: 24px;
   }
 
   .page-title {

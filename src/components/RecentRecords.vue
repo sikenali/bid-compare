@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { Ref } from 'vue';
-import { 
-  RiFileWordLine, 
-  RiFilePdfLine, 
-  RiFileTextLine, 
-  RiFileExcelLine, 
+import {
+  RiFileWordLine,
+  RiFilePdfLine,
+  RiFileTextLine,
+  RiFileExcelLine,
   RiFileLine,
   RiFileImageLine,
   RiFilePptLine
@@ -21,13 +21,22 @@ interface RecentRecord {
 }
 
 interface Props {
-  recentRecords: Ref<RecentRecord[]>;
+  recentRecords: RecentRecord[];
   onClearAll: () => void;
   onViewRecord?: (record: RecentRecord) => void;
   onDeleteRecord: (id: number) => void;
+  onClose?: () => void;
 }
 
 const props = defineProps<Props>();
+
+const handleClearAll = () => {
+  props.onClearAll()
+  // 清除后关闭弹窗
+  if (props.onClose) {
+    props.onClose()
+  }
+}
 
 // 根据文件名获取文件类型
 const getFileType = (name: string): string => {
@@ -71,7 +80,7 @@ const getFileIconComponent = (name: string): any => {
   <div class="recent-records">
     <div class="records-header">
       <h3 class="records-title">最近对比记录</h3>
-      <button class="select-btn clear-all-btn" @click="props.onClearAll">一键清除</button>
+      <button class="select-btn clear-all-btn" @click="handleClearAll">一键清除</button>
     </div>
     <div class="records-list">
       <div v-for="record in props.recentRecords" :key="record.id" class="record-item">
