@@ -3,26 +3,19 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
-  RiFileWordLine,
-  RiCheckDoubleLine,
   RiCloseCircleLine,
   RiAlertLine,
-  RiFileExcelLine,
-  RiArrowLeftSLine,
-  RiArrowRightSLine,
   RiQuestionLine,
-  RiSearchLine,
   RiFileLine,
   RiUserLine,
   RiCalendarLine,
-  RiHistoryLine,
-  RiDownloadLine,
-  RiFileList3Line
+  RiHistoryLine
 } from '@remixicon/vue'
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
-import { calculateTextSimilarity, preprocessText } from '../utils/textAlgorithms'
+import { calculateTextSimilarity } from '../utils/textAlgorithms'
+import { storePropertyCheckResult } from '../utils/compareResultStore'
 import FileUpload from './FileUpload.vue'
 import RecentRecords from './RecentRecords.vue'
 
@@ -460,10 +453,7 @@ const handleCheck = async () => {
       propertyDetails: propertyDetails.value
     });
 
-    // 清理旧数据
-    sessionStorage.removeItem('propertyCheckResult')
-
-    // 保存检查结果到 sessionStorage
+    // 保存检查结果到模块级存储
     const checkResult = {
       propertyDetails: propertyDetails.value,
       leftFileName: leftFileInfo.value.name,
@@ -472,12 +462,15 @@ const handleCheck = async () => {
       matchingProperties: matchingProperties.value,
       nonMatchingProperties: nonMatchingProperties.value,
       warningProperties: warningProperties.value,
-      similarity: `${similarity}%`
+      similarity: `${similarity}%`,
+      leftFileProperties: leftFileProperties.value,
+      rightFileProperties: rightFileProperties.value,
+      similarityStatus: similarityStatus
     }
-    sessionStorage.setItem('propertyCheckResult', JSON.stringify(checkResult))
+    const resultId = storePropertyCheckResult(checkResult)
 
-    // 跳转到结果页面，添加时间戳强制刷新
-    router.push({ path: '/property-check-result', query: { t: Date.now() } })
+    // 跳转到结果页面，传递存储 ID
+    router.push({ path: '/property-check-result', query: { resultId, t: Date.now() } })
   } catch (error) {
     parseError.value = (error as Error).message;
   } finally {

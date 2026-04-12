@@ -32,10 +32,10 @@ export const defaultSettings: FileCompareSettings = {
   ignoreWhitespace: true,
   ignoreCase: false,
   ignoreInvisibleChars: true,
-  selectedModel: 'gpt-3.5',
+  selectedModel: 'deepseek',
   apiKey: '',
   apiEndpoint: '',
-  exportFormat: 'excel',
+  exportFormat: 'word',
   includeHighlight: true,
   includeCharts: true
 }

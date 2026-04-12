@@ -10,6 +10,7 @@ import {
   RiFilterLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx'
+import { getPropertyCheckResult, deletePropertyCheckResult } from '../utils/compareResultStore'
 
 interface PropertyDetail {
   name: string;
@@ -30,14 +31,37 @@ const rightFileName = ref('')
 
 // 加载数据函数
 const loadData = () => {
-  const result = sessionStorage.getItem('propertyCheckResult')
-  if (!result) {
+  let data: any = null
+
+  // 1. 优先尝试从路由参数中的 resultId 读取模块级存储
+  const resultId = route.query.resultId as string
+  if (resultId) {
+    data = getPropertyCheckResult(resultId)
+    // 读取后删除，避免内存积累
+    if (data) {
+      deletePropertyCheckResult(resultId)
+    }
+  }
+
+  // 2. 如果模块级存储没有，尝试从 sessionStorage 读取（兼容旧数据）
+  if (!data) {
+    const result = sessionStorage.getItem('propertyCheckResult')
+    if (result) {
+      try {
+        data = JSON.parse(result)
+        sessionStorage.removeItem('propertyCheckResult') // 读取后清理
+      } catch (e) {
+        console.error('解析 sessionStorage 失败', e)
+      }
+    }
+  }
+
+  if (!data) {
     console.warn('未找到属性检查结果数据')
     return
   }
 
   try {
-    const data = JSON.parse(result)
     propertyDetails.value = data.propertyDetails || []
     matchCount.value = data.matchingProperties || 0
     mismatchCount.value = data.nonMatchingProperties || 0
@@ -47,7 +71,8 @@ const loadData = () => {
     console.log('加载属性检查结果:', {
       leftFileName: leftFileName.value,
       rightFileName: rightFileName.value,
-      propertyCount: propertyDetails.value.length
+      propertyCount: propertyDetails.value.length,
+      fromStore: !!resultId
     })
   } catch (error) {
     console.error('解析属性检查结果失败:', error)

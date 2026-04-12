@@ -28,7 +28,7 @@ import { useRecentRecords } from '../composables/useRecentRecords'
 import { useAIModel } from '../composables/useAIModel'
 import { useComparison } from '../composables/useComparison'
 import type { ComparisonSettings, SimilarSegment } from '../utils/textAlgorithms'
-import { storeCompareResult } from '../utils/compareResultStore'
+import { storeCompareResult, deleteCompareResult } from '../utils/compareResultStore'
 import FileUpload from './FileUpload.vue'
 import RecentRecords from './RecentRecords.vue'
 
@@ -40,18 +40,6 @@ interface FileInfo {
   name: string;
   size: string;
   type: string;
-}
-
-// 雷同片段类型定义
-interface SimilarSegment {
-  id: number;
-  similarity: string;
-  similarityValue: number;
-  leftContent: string;
-  rightContent: string;
-  leftPage: string;
-  rightPage: string;
-  level: 'high' | 'medium' | 'low';
 }
 
 // 使用文件解析组合式函数

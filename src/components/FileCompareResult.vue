@@ -4,33 +4,10 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   RiFileExcelLine,
   RiArrowLeftLine,
-  RiArrowLeftSLine,
-  RiArrowRightSLine,
-  RiExchange2Line,
   RiBrainLine,
   RiLoaderLine,
   RiFileWordLine,
-  RiListCheck,
-  RiFontSize,
-  RiTableLine,
-  RiIndentIncrease,
-  RiMergeCellsHorizontal,
-  RiFileTextLine,
-  RiCheckboxCircleLine,
-  RiAddCircleLine,
-  RiCloseCircleLine,
-  RiEditBoxLine,
-  RiArrowUpSLine,
-  RiArrowDownSLine,
-  RiFileAddLine,
-  RiFolderOpenLine,
-  RiSaveLine,
-  RiArrowGoBackLine,
-  RiArrowGoForwardLine,
-  RiLayoutGridLine,
-  RiBookOpenLine,
-  RiGlobalLine,
-  RiZoomInLine
+  RiListCheck
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx'
 import { useSettings } from '../composables/useSettings'
@@ -38,6 +15,7 @@ import { useAIModel } from '../composables/useAIModel'
 import { getCompareResult, deleteCompareResult } from '../utils/compareResultStore'
 import { sanitizeHTML } from '../utils/sanitize'
 import MarkdownIt from 'markdown-it'
+import type { SimilarSegment } from '../utils/textAlgorithms'
 
 // 创建 Markdown 解析器实例
 const md = new MarkdownIt({
@@ -46,20 +24,6 @@ const md = new MarkdownIt({
   typographer: true,
   breaks: true
 })
-
-interface SimilarSegment {
-  id: number;
-  similarity: string;
-  similarityValue: number;
-  leftContent: string;
-  rightContent: string;
-  leftPage: string;
-  rightPage: string;
-  leftStartIndex?: number;
-  leftEndIndex?: number;
-  rightStartIndex?: number;
-  rightEndIndex?: number;
-}
 
 const route = useRoute()
 const router = useRouter()
@@ -79,24 +43,12 @@ const rightFileContent = ref('')
 const showAIAnalysis = ref(false)
 const aiModelResponse = ref('')
 
-// 工具栏状态
-const syncScroll = ref(true)
-const fontSize = ref(100)
-
-// 统计数据
-const totalLines = ref(0)
-const sameLines = ref(0)
-const addedLines = ref(0)
-const deletedLines = ref(0)
-const modifiedLines = ref(0)
-
-// 完整文件行数据 (已移除，改为仅显示相似片段以避免 Storage 溢出)
-// const leftLines = ref<FileLine[]>([])
-// const rightLines = ref<FileLine[]>([])
-
 // 文件真实页数
 const leftTotalPages = ref(1)
 const rightTotalPages = ref(1)
+
+// 同步滚动状态
+const syncScroll = ref(true)
 
 // 分页状态
 const currentPage = ref(1)
@@ -681,11 +633,6 @@ const formatMarkdown = (text: string) => {
   // 使用 markdown-it 解析，然后用 DOMPurify 消毒
   const rendered = md.render(text)
   return sanitizeHTML(rendered)
-}
-
-// 解析文本为行数组
-const cleanText = (html: string) => {
-  return html.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'")
 }
 
 // 连接线位置

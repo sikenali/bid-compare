@@ -1,16 +1,5 @@
 import { ref, reactive, onMounted } from 'vue'
-
-// 雷同片段类型定义
-export interface SimilarSegment {
-  id: number
-  similarity: string
-  similarityValue: number
-  leftContent: string
-  rightContent: string
-  leftPage: string
-  rightPage: string
-  level: 'high' | 'medium' | 'low'
-}
+import type { SimilarSegment } from '../utils/textAlgorithms'
 
 // 属性对比详情类型
 export interface PropertyDetail {

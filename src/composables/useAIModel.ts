@@ -53,6 +53,12 @@ const getDefaultEndpoint = (model: string): string => {
       return 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent'
     case 'claude':
       return 'https://api.anthropic.com/v1/messages'
+    case 'deepseek':
+      return 'https://api.deepseek.com/v1/chat/completions'
+    case 'kimi':
+      return 'https://api.moonshot.cn/v1/chat/completions'
+    case 'doubao':
+      return 'https://ark.cn-beijing.volces.com/api/v3/chat/completions'
     default:
       throw new Error('不支持的AI模型')
   }
@@ -97,6 +103,34 @@ export function useAIModel() {
             'Content-Type': 'application/json',
             'x-api-key': settings.apiKey,
             'anthropic-version': '2023-06-01'
+          }
+        }
+      // DeepSeek/Kimi/豆包 兼容 OpenAI API 格式
+      case 'deepseek':
+        return {
+          apiUrl: settings.apiEndpoint || 'https://api.deepseek.com/v1/chat/completions',
+          model: 'deepseek-chat',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${settings.apiKey}`
+          }
+        }
+      case 'kimi':
+        return {
+          apiUrl: settings.apiEndpoint || 'https://api.moonshot.cn/v1/chat/completions',
+          model: 'moonshot-v1-8k',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${settings.apiKey}`
+          }
+        }
+      case 'doubao':
+        return {
+          apiUrl: settings.apiEndpoint || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
+          model: settings.apiEndpoint?.includes('ep-') ? '' : 'doubao-pro-32k',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${settings.apiKey}`
           }
         }
       default:
