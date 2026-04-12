@@ -598,5 +598,86 @@ const getStatusColor = (status: string): string => {
   .page-header {
     display: none;
   }
+
+  /* 统计卡片移动端堆叠 */
+  .stats-overview {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .stat-card {
+    width: 100%;
+  }
+
+  /* 表格容器添加横向滚动 */
+  .property-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 表格列宽在小屏幕上优化 */
+  .table-header,
+  .table-row {
+    grid-template-columns: minmax(120px, 1fr) minmax(140px, 1.2fr) minmax(140px, 1.2fr) minmax(80px, 0.6fr);
+  }
+
+  /* 单元格内边距减小 */
+  .table-header .table-col,
+  .table-col {
+    padding: 8px 12px;
+  }
+
+  /* 字体大小调整 */
+  .col-text {
+    font-size: 13px;
+  }
+
+  .table-header .col-text {
+    font-size: 14px;
+  }
+
+  /* 内容区边距减小 */
+  .content-section {
+    padding: 16px;
+  }
+
+  /* 操作按钮堆叠 */
+  .action-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .action-buttons .btn {
+    width: 100%;
+  }
+}
+
+/* 超小屏幕手机优化 (320px-480px) */
+@media (max-width: 480px) {
+  .table-header,
+  .table-row {
+    grid-template-columns: minmax(100px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(70px, 0.5fr);
+  }
+
+  .table-header .table-col,
+  .table-col {
+    padding: 6px 8px;
+  }
+
+  .col-text {
+    font-size: 12px;
+  }
+
+  .table-header .col-text {
+    font-size: 13px;
+  }
+
+  .stat-title {
+    font-size: 12px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
 }
 </style>

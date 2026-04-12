@@ -2065,6 +2065,7 @@ const visibleConnections = computed(() => {
 
   .data-table {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .table-header,
@@ -2077,6 +2078,56 @@ const visibleConnections = computed(() => {
     flex-direction: column;
     gap: 12px;
     align-items: center;
+  }
+
+  /* 分页按钮最小触摸目标 */
+  .page-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  .pagination-btn {
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  .page-ellipsis {
+    font-size: 14px;
+  }
+}
+
+/* 超小屏幕手机优化 (320px-480px) */
+@media (max-width: 480px) {
+  .result-page-container {
+    padding: 12px;
+  }
+
+  .comparison-list {
+    padding: 12px;
+  }
+
+  .table-header,
+  .table-row {
+    font-size: 11px;
+  }
+
+  .page-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 13px;
+  }
+
+  .pagination-btn {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .page-ellipsis {
+    font-size: 13px;
   }
 }
 </style>

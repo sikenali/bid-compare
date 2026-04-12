@@ -2030,9 +2030,9 @@ const generateWordReport = () => {
   }
 
   .pagination-btn {
-    padding: 6px 10px;
-    font-size: 12px;
-    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 13px;
+    min-height: 44px;
   }
 
   .page-numbers {
@@ -2042,14 +2042,61 @@ const generateWordReport = () => {
   }
 
   .page-btn {
-    width: 36px;
-    height: 36px;
-    font-size: 12px;
-    min-width: 36px;
+    width: 44px;
+    height: 44px;
+    font-size: 14px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .page-ellipsis {
-    font-size: 12px;
+    font-size: 14px;
+  }
+
+  /* 模态框移动端适配 */
+  .help-modal,
+  .history-modal {
+    width: calc(100% - 32px);
+    max-width: 600px;
+    max-height: 85vh;
+    margin: 16px;
+  }
+
+  .help-close-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 24px;
+  }
+}
+
+/* 超小屏幕手机优化 (320px-480px) */
+@media (max-width: 480px) {
+  .page-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 13px;
+  }
+
+  .pagination-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+
+  .help-modal,
+  .history-modal {
+    width: calc(100% - 16px);
+    margin: 8px;
+  }
+
+  .table-header,
+  .table-row {
+    font-size: 11px;
+  }
+
+  .table-header-cell,
+  .table-cell {
+    padding: 3px 5px;
   }
 }
 </style>
