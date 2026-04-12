@@ -368,7 +368,10 @@ const handleCheck = async () => {
         name: '文件大小',
         leftValue: leftFileProperties.value.文件大小 || leftFileInfo.value.size,
         rightValue: rightFileProperties.value.文件大小 || rightFileInfo.value.size,
-        status: (leftFileProperties.value.文件大小 || leftFileInfo.value.size) === (rightFileProperties.value.文件大小 || rightFileInfo.value.size) ? 'match' : 'mismatch'
+        // 使用原始字节数比较，避免格式化字符串的精度问题
+        status: leftFileInfo.value.file && rightFileInfo.value.file
+          ? (leftFileInfo.value.file.size === rightFileInfo.value.file.size ? 'match' : 'mismatch')
+          : 'warning'
       },
       {
         name: '文件类型',

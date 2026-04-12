@@ -66,7 +66,7 @@ const fileTypeInfo = computed(() => {
         ref="fileInput"
         class="file-input"
         @change="(e) => onFileChange(e, props.side)"
-        accept=".doc,.docx,.pdf,.txt,.ppt,.pptx,.xls,.xlsx"
+        accept=".docx,.pdf,.txt,.xlsx,.pptx"
       />
 
       <!-- 未上传状态 -->
