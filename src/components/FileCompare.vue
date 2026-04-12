@@ -28,6 +28,7 @@ import { useRecentRecords } from '../composables/useRecentRecords'
 import { useAIModel } from '../composables/useAIModel'
 import { useComparison } from '../composables/useComparison'
 import type { ComparisonSettings, SimilarSegment } from '../utils/textAlgorithms'
+import { storeCompareResult } from '../utils/compareResultStore'
 import FileUpload from './FileUpload.vue'
 import RecentRecords from './RecentRecords.vue'
 
@@ -82,6 +83,9 @@ const rightFileContent = ref('')
 const showResults = ref(false)
 const textSimilarity = ref('0%')
 const similarSegments = ref(0)
+
+// 标记是否从历史记录恢复（恢复后禁用对比按钮）
+const isViewingHistory = ref(false)
 
 // AI分析相关
 const showAIAnalysis = ref(false)
@@ -279,24 +283,27 @@ const viewHistoricalRecord = (record: any) => {
     size: '未知',
     type: getFileType(record.leftFileName)
   };
-  
+
   rightFileInfo.value = {
     file: null,
     name: record.rightFileName,
     size: '未知',
     type: getFileType(record.rightFileName)
   };
-  
+
   // 设置文本相似度
   textSimilarity.value = record.similarity;
-  
+
+  // 标记为从历史记录恢复
+  isViewingHistory.value = true;
+
   // 显示结果界面
   showResults.value = true;
-  
+
   // 恢复保存的雷同片段数据
   if (record.similarSegments && record.similarSegments.length > 0) {
     similarSegmentsList.value = record.similarSegments;
-    
+
     // 设置当前显示内容
     currentContent.value = {
       left: record.similarSegments[0].leftContent,
@@ -357,6 +364,9 @@ const handleFileUpload = (event: Event, side: 'left' | 'right') => {
     } else {
       rightFileInfo.value = fileInfo;
     }
+    
+    // 用户重新上传文件，重置历史记录标记
+    isViewingHistory.value = false;
   }
 };
 
@@ -472,31 +482,19 @@ const handleCompare = async () => {
       rightResult.pageMap
     )
 
-    // 清理旧数据
-    sessionStorage.removeItem('compareResult')
-    delete (window as any).__LARGE_COMPARE_RESULT
-
-    // 保存对比结果到 sessionStorage
-    // 注意：不存储完整文件内容以避免 QuotaExceededError (5MB限制)
-    // 如果片段数据仍然过大，使用内存变量作为降级方案
+    // 保存对比结果到模块级存储
     const compareResult = {
       segments: result.segments,
       leftFileName: leftFileInfo.value.name,
       rightFileName: rightFileInfo.value.name,
       textSimilarity: `${result.similarity}%`,
       similarSegmentsCount: result.segments.length,
-      // 保存真实页数
       leftTotalPages: leftResult.pageMap?.totalPages || 1,
       rightTotalPages: rightResult.pageMap?.totalPages || 1
     }
 
-    try {
-      sessionStorage.setItem('compareResult', JSON.stringify(compareResult))
-    } catch (error) {
-      console.warn('Storage 配额不足，使用内存变量暂存数据', error)
-      // 将大数据存入全局变量
-      ;(window as any).__LARGE_COMPARE_RESULT = compareResult
-    }
+    // 使用模块级存储替代 sessionStorage + window 全局变量
+    const resultId = storeCompareResult(compareResult)
 
     // 保存记录
     addRecentRecord({
@@ -508,8 +506,8 @@ const handleCompare = async () => {
       similarSegments: result.segments
     })
 
-    // 跳转到结果页面，添加时间戳强制刷新
-    router.push({ path: '/file-compare-result', query: { t: Date.now() } })
+    // 跳转到结果页面，传递存储 ID 和时间戳
+    router.push({ path: '/file-compare-result', query: { resultId, t: Date.now() } })
   } catch (error) {
     isProcessing.value = false
     comparisonParseError.value = (error as Error).message
@@ -880,9 +878,9 @@ const generateWordReport = () => {
 
       <!-- 对比按钮 -->
       <div class="compare-btn-wrapper">
-        <button class="compare-main-btn" @click="handleCompare" :disabled="isProcessing">
+        <button class="compare-main-btn" @click="handleCompare" :disabled="isProcessing || isViewingHistory" :title="isViewingHistory ? '请重新上传文件后再进行对比' : '一键对比'">
           <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
-          <span class="compare-btn-tooltip">一键对比</span>
+          <span class="compare-btn-tooltip">{{ isViewingHistory ? '请重新上传文件' : '一键对比' }}</span>
         </button>
       </div>
 

@@ -22,6 +22,7 @@ import {
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
+import { calculateTextSimilarity, preprocessText } from '../utils/textAlgorithms'
 import FileUpload from './FileUpload.vue'
 import RecentRecords from './RecentRecords.vue'
 
@@ -334,68 +335,6 @@ const toggleHistory = () => {
   showHistory.value = !showHistory.value
 }
 
-// 文本预处理（根据设置调整）
-const preprocessText = (text: string): string => {
-  // 检查text是否为undefined或null
-  if (!text) {
-    return '';
-  }
-  
-  let processed = text;
-  
-  // 忽略大小写
-  if (settings.ignoreCase) {
-    processed = processed.toLowerCase();
-  }
-  
-  // 忽略标点符号
-  if (settings.ignorePunctuation) {
-    processed = processed.replace(/[\p{P}\p{S}]/gu, '');
-  }
-  
-  // 忽略空格差异
-  if (settings.ignoreWhitespace) {
-    processed = processed.replace(/\s+/g, ' ').trim();
-  }
-  
-  return processed;
-};
-
-// 简单的文本相似度计算（基于最长公共子串）
-const calculateTextSimilarity = (text1: string, text2: string): number => {
-  if (!text1 || !text2) return 0;
-  
-  const preprocessed1 = preprocessText(text1);
-  const preprocessed2 = preprocessText(text2);
-  
-  const m = preprocessed1.length;
-  const n = preprocessed2.length;
-  
-  // 初始化dp数组，使用any类型避免类型检查
-  const dp: any = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-  
-  let maxLength = 0;
-  
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (preprocessed1[i - 1] === preprocessed2[j - 1]) {
-        const prevValue: number = dp[i - 1][j - 1];
-        const currentValue: number = prevValue + 1;
-        dp[i][j] = currentValue;
-        maxLength = Math.max(maxLength, currentValue);
-      } else {
-        dp[i][j] = 0;
-      }
-    }
-  }
-  
-  // 计算相似度百分比
-  const minLength = Math.min(preprocessed1.length, preprocessed2.length);
-  if (minLength === 0) return 0;
-  
-  return Math.round((maxLength / minLength) * 100);
-};
-
 // 执行属性检查
 const handleCheck = async () => {
   if (!leftFileInfo.value.file || !rightFileInfo.value.file) return;
@@ -420,8 +359,8 @@ const handleCheck = async () => {
     rightFileContent.value = rightResult.content;
     rightFileProperties.value = rightResult.properties;
     
-    // 计算相似度
-    const similarity = calculateTextSimilarity(leftFileContent.value, rightFileContent.value);
+    // 计算相似度（使用优化后的算法，滚动数组实现空间 O(min(m,n))）
+    const similarity = calculateTextSimilarity(leftFileContent.value, rightFileContent.value, settings);
     const similarityStatus = similarity >= settings.textSimilarityThreshold ? 'match' : similarity >= 50 ? 'warning' : 'mismatch';
     
     // 更新属性详情

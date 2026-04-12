@@ -29,8 +29,10 @@ function createWindow() {
   // 加载应用 - 在开发模式下加载 Vite 开发服务器
   if (process.env.NODE_ENV === 'development') {
     mainWindow.loadURL('http://localhost:5173')
-    // 打开开发者工具
-    mainWindow.webContents.openDevTools()
+    // 打开开发者工具（由环境变量控制）
+    if (process.env.OPEN_DEV_TOOLS === 'true') {
+      mainWindow.webContents.openDevTools()
+    }
   } else {
     // 生产模式下加载构建后的文件
     mainWindow.loadFile(path.join(__dirname, 'dist/index.html'))

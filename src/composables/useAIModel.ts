@@ -22,6 +22,42 @@ interface AIAnalysisResult {
   error?: string
 }
 
+// API Endpoint 白名单
+const ALLOWED_ENDPOINTS = [
+  'api.openai.com',
+  'generativelanguage.googleapis.com',
+  'api.anthropic.com',
+  'api.deepseek.com',
+  'api.moonshot.cn',
+  'api.qwen.ai'
+]
+
+// 验证 endpoint 是否在白名单中
+const validateEndpoint = (endpoint: string): boolean => {
+  try {
+    const url = new URL(endpoint)
+    const hostname = url.hostname.toLowerCase()
+    return ALLOWED_ENDPOINTS.some(allowed => hostname === allowed || hostname.endsWith('.' + allowed))
+  } catch {
+    return false
+  }
+}
+
+// 获取默认 endpoint
+const getDefaultEndpoint = (model: string): string => {
+  switch (model) {
+    case 'gpt-3.5':
+    case 'gpt-4':
+      return 'https://api.openai.com/v1/chat/completions'
+    case 'gemini':
+      return 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent'
+    case 'claude':
+      return 'https://api.anthropic.com/v1/messages'
+    default:
+      throw new Error('不支持的AI模型')
+  }
+}
+
 // AI模型调用组合式函数
 export function useAIModel() {
   const isLoading = ref(false)
@@ -87,6 +123,12 @@ export function useAIModel() {
       // 检查API密钥是否配置
       if (!settings.apiKey) {
         throw new Error('未配置API密钥，请在系统设置中配置')
+      }
+
+      // 验证 endpoint 是否在白名单中，防止 API Key 泄露到恶意服务器
+      const endpointToUse = settings.apiEndpoint || getDefaultEndpoint(settings.selectedModel)
+      if (!validateEndpoint(endpointToUse)) {
+        throw new Error(`API 地址不在白名单中: ${endpointToUse}\n允许的域名: ${ALLOWED_ENDPOINTS.join(', ')}`)
       }
 
       // 获取API配置

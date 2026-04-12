@@ -35,6 +35,17 @@ import {
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx'
 import { useSettings } from '../composables/useSettings'
 import { useAIModel } from '../composables/useAIModel'
+import { getCompareResult, deleteCompareResult } from '../utils/compareResultStore'
+import { sanitizeHTML } from '../utils/sanitize'
+import MarkdownIt from 'markdown-it'
+
+// 创建 Markdown 解析器实例
+const md = new MarkdownIt({
+  html: false,
+  linkify: true,
+  typographer: true,
+  breaks: true
+})
 
 interface SimilarSegment {
   id: number;
@@ -148,21 +159,27 @@ const initData = () => {
 
   let resultData: any = null
 
-  // 1. 尝试从 sessionStorage 读取
-  const sessionResult = sessionStorage.getItem('compareResult')
-  if (sessionResult) {
-    try {
-      resultData = JSON.parse(sessionResult)
-    } catch (e) {
-      console.error('解析 sessionStorage 失败', e)
+  // 1. 优先尝试从路由参数中的 resultId 读取模块级存储
+  const resultId = route.query.resultId as string
+  if (resultId) {
+    resultData = getCompareResult(resultId)
+    // 读取后删除，避免内存积累
+    if (resultData) {
+      deleteCompareResult(resultId)
     }
   }
 
-  // 2. 如果 storage 中没有（或解析失败），尝试从全局变量读取（用于大文件降级方案）
-  if (!resultData && (window as any).__LARGE_COMPARE_RESULT) {
-    resultData = (window as any).__LARGE_COMPARE_RESULT
-    // 清理全局变量
-    delete (window as any).__LARGE_COMPARE_RESULT
+  // 2. 如果模块级存储没有，尝试从 sessionStorage 读取（兼容旧数据）
+  if (!resultData) {
+    const sessionResult = sessionStorage.getItem('compareResult')
+    if (sessionResult) {
+      try {
+        resultData = JSON.parse(sessionResult)
+        sessionStorage.removeItem('compareResult') // 读取后清理
+      } catch (e) {
+        console.error('解析 sessionStorage 失败', e)
+      }
+    }
   }
 
   if (resultData) {
@@ -182,7 +199,7 @@ const initData = () => {
       leftFileName: leftFileName.value,
       rightFileName: rightFileName.value,
       segmentCount: segments.value.length,
-      rawData: resultData
+      fromStore: !!resultId
     })
   } else {
     console.warn('未找到对比结果数据')
@@ -661,18 +678,9 @@ const handleRightScroll = () => {
 const formatMarkdown = (text: string) => {
   if (!text) return ''
   
-  return text
-    // 标题
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    // 粗体
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // 斜体
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // 列表项
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    // 换行
-    .replace(/\n\n/g, '<br><br>')
+  // 使用 markdown-it 解析，然后用 DOMPurify 消毒
+  const rendered = md.render(text)
+  return sanitizeHTML(rendered)
 }
 
 // 解析文本为行数组
@@ -780,10 +788,10 @@ const visibleConnections = computed(() => {
         <div class="table-body">
           <div v-for="segment in pageSegments" :key="segment.id" class="table-row">
             <div class="col col-index">{{ segment.id }}</div>
-            <div class="col col-content" v-html="segment.leftContent"></div>
+            <div class="col col-content" v-html="sanitizeHTML(segment.leftContent)"></div>
             <div class="col col-position">{{ segment.leftPage }}</div>
             <div class="col col-position">{{ segment.rightPage }}</div>
-            <div class="col col-content" v-html="segment.rightContent"></div>
+            <div class="col col-content" v-html="sanitizeHTML(segment.rightContent)"></div>
           </div>
         </div>
       </div>

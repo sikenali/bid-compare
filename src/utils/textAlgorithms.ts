@@ -227,9 +227,6 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-// 全局 segmentId 计数器
-let segmentId = 0
-
 // 滚动数组实现——空间 O(min(m,n))
 export function calculateTextSimilarity(
   text1: string,
@@ -296,6 +293,9 @@ export function findSimilarSegmentsRabinKarp(
   const windowSize = settings.minDuplicateWords
 
   if (windowSize > m || windowSize > n) return []
+
+  // 局部 segmentId 计数器
+  let segmentId = 0
 
   // 构建 text1 的所有窗口哈希 → 位置映射
   const hashToPositions = new Map<string, number[]>()
@@ -414,6 +414,8 @@ export function findSimilarSegmentsBlockMatch(
 
   const segments: SimilarSegment[] = []
   const matchedBlocks = new Set<string>()
+  // 局部 segmentId 计数器
+  let segmentId = 0
   let completedBlocks = 0
   const totalBlocks = blocks1.length
 
