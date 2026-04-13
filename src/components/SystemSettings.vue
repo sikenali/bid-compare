@@ -774,7 +774,8 @@ input:checked + .slider:before {
 /* 移动端响应式优化 */
 @media (max-width: 768px) {
   .system-settings-container {
-    padding-bottom: 120px;
+    padding-bottom: 100px;
+    gap: 12px;
   }
 
   .settings-form {
@@ -787,40 +788,81 @@ input:checked + .slider:before {
     padding: 12px;
   }
 
+  .card-header {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .card-icon {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+  }
+
+  .card-icon .icon {
+    font-size: 16px;
+  }
+
+  .card-title {
+    font-size: 14px;
+  }
+
+  .card-content {
+    gap: 10px;
+  }
+
   .setting-row {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-    margin-bottom: 10px;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 8px 0;
+  }
+
+  .setting-label-group {
+    text-align: center;
+  }
+
+  .setting-label {
+    font-size: 13px;
+  }
+
+  .setting-desc {
+    font-size: 11px;
   }
 
   .setting-input {
     width: 100%;
+    max-width: 280px;
+    margin: 0 auto;
   }
 
   .setting-input.api-input {
     width: 100%;
+    max-width: 280px;
+  }
+
+  .number-stepper {
+    margin: 0 auto;
+  }
+
+  .switch {
+    margin: 0 auto;
   }
 
   .radio-group {
     width: 100%;
-    justify-content: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .radio-box-item {
+    padding: 4px 8px;
   }
 
   .page-title {
     font-size: 18px;
-  }
-
-  .card-title {
-    font-size: 15px;
-  }
-
-  .setting-label {
-    font-size: 14px;
-  }
-
-  .setting-desc {
-    font-size: 12px;
   }
 
   .action-buttons {
@@ -832,14 +874,16 @@ input:checked + .slider:before {
     left: 0;
     right: 0;
     background-color: rgba(248, 244, 233, 1);
-    padding: 12px 16px;
+    padding: 10px 16px;
     z-index: 100;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+    margin-top: 0;
   }
 
   .btn {
     width: 100%;
-    height: 48px;
+    height: 44px;
+    font-size: 14px;
   }
 }
 

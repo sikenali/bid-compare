@@ -1902,7 +1902,7 @@ const generateWordReport = () => {
 @media (max-width: 768px) {
   .upload-section {
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     padding: 0;
   }
 
@@ -1927,7 +1927,7 @@ const generateWordReport = () => {
 
   .property-stats {
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
 
   .stat-item {
@@ -1940,6 +1940,30 @@ const generateWordReport = () => {
 
   .page-header {
     display: none;
+  }
+
+  .action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0;
+  }
+
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 12px;
+    min-height: 42px;
+    font-size: 13px;
+    gap: 6px;
+  }
+
+  .action-btn-text {
+    font-size: 13px;
+  }
+
+  .action-icon {
+    font-size: 16px;
   }
 
   /* 属性详情区域移动端优化 */

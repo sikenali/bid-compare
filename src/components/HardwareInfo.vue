@@ -293,6 +293,11 @@ const {
 
 /* 移动端响应式 */
 @media (max-width: 768px) {
+  .hardware-info-container {
+    gap: 12px;
+    padding: 12px;
+  }
+
   .info-cards {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -301,25 +306,31 @@ const {
   .info-card {
     background-color: rgba(255, 255, 255, 1);
     border: 0.7px solid rgba(216, 191, 156, 1);
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    padding: 16px;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    padding: 12px;
   }
 
   .card-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
   .icon-container {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border-radius: 6px;
+  }
+
+  .card-icon {
+    font-size: 16px;
   }
 
   .card-title {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     margin: 0;
   }
@@ -328,21 +339,21 @@ const {
     margin-top: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
   }
 
   /* 系统信息/网络信息 - 与 settings-card 一致的样式 */
   .info-multi-columns {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
 
   /* 指纹信息 - 与 settings-card 一致的样式 */
   .info-full-width {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
   }
 
   /* 字段样式 - 与 setting-row 一致 */
@@ -351,45 +362,53 @@ const {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 8px;
     width: 100%;
-    min-height: 32px;
+    min-height: 28px;
+    padding: 6px 0;
   }
 
   .field-label {
-    flex: 1;
-    font-size: 14px;
+    flex: 0 0 auto;
+    width: 70px;
+    font-size: 12px;
     font-weight: 500;
     color: rgba(44, 24, 16, 1);
     font-family: SourceHanSans-Medium;
     margin: 0;
+    flex-shrink: 0;
   }
 
   .field-value-box {
+    flex: 1;
     background-color: rgba(245, 238, 226, 1);
-    border-radius: 8px;
-    padding: 8px 12px;
-    min-height: 36px;
+    border-radius: 6px;
+    padding: 6px 8px;
+    min-height: 32px;
     display: flex;
     align-items: center;
+    min-width: 0;
   }
 
   .field-value-box.wide {
-    padding: 8px 12px;
+    padding: 6px 8px;
   }
 
   .field-value {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     color: rgba(44, 24, 16, 1);
     font-family: SourceHanSans-Medium;
     text-align: right;
     word-break: break-all;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .field-value.mono {
     font-family: 'Courier New', monospace;
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .page-title {
@@ -398,6 +417,20 @@ const {
 
   .page-header {
     display: none;
+  }
+
+  .sample-badge {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+
+  .refresh-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .refresh-icon {
+    font-size: 16px;
   }
 }
 

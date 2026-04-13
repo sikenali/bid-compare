@@ -2286,7 +2286,7 @@ const generateWordReport = () => {
 @media (max-width: 768px) {
   .upload-section {
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     padding: 0;
   }
 
@@ -2298,13 +2298,15 @@ const generateWordReport = () => {
 
   .compare-main-btn {
     width: 100%;
-    max-width: 320px;
-    height: 48px;
-    border-radius: 12px;
+    max-width: 100%;
+    height: 44px;
+    border-radius: 10px;
+    font-size: 14px;
+    padding: 0 16px;
   }
 
   .compare-icon {
-    font-size: 24px;
+    font-size: 20px;
   }
 
   .page-title {
@@ -2341,7 +2343,7 @@ const generateWordReport = () => {
 
   .result-stats {
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
 
   .stat-card {
@@ -2354,7 +2356,7 @@ const generateWordReport = () => {
 
   .feature-cards {
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
   }
 
   .feature-card {
@@ -2369,14 +2371,25 @@ const generateWordReport = () => {
   .action-buttons {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 8px;
+    padding: 0;
   }
 
   .action-btn {
     width: 100%;
     justify-content: center;
-    padding: 12px 16px;
-    min-height: 44px;
+    padding: 10px 12px;
+    min-height: 42px;
+    font-size: 13px;
+    gap: 6px;
+  }
+
+  .action-btn-text {
+    font-size: 13px;
+  }
+
+  .action-icon {
+    font-size: 16px;
   }
 
   /* 雷同片段详情区域移动端优化 */
