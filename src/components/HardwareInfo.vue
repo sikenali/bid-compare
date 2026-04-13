@@ -301,14 +301,19 @@ const {
   .info-cards {
     grid-template-columns: 1fr;
     gap: 12px;
+    width: 100%;
   }
 
   .info-card {
+    width: 100%;
+    max-width: 100%;
     background-color: rgba(255, 255, 255, 1);
     border: 0.7px solid rgba(216, 191, 156, 1);
     border-radius: 10px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
     padding: 12px;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 
   .card-header {
