@@ -776,6 +776,8 @@ input:checked + .slider:before {
   .system-settings-container {
     padding-bottom: 100px;
     gap: 12px;
+    overflow-y: auto;
+    height: 100%;
   }
 
   .settings-form {
@@ -786,6 +788,7 @@ input:checked + .slider:before {
 
   .settings-card {
     padding: 12px;
+    overflow: visible;
   }
 
   .card-header {
@@ -812,15 +815,19 @@ input:checked + .slider:before {
   }
 
   .setting-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    margin-bottom: 8px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
     padding: 8px 0;
+    flex-wrap: wrap;
   }
 
   .setting-label-group {
-    text-align: center;
+    flex: 1;
+    min-width: 0;
+    text-align: left;
   }
 
   .setting-label {
@@ -833,26 +840,25 @@ input:checked + .slider:before {
 
   .setting-input {
     width: 100%;
-    max-width: 280px;
-    margin: 0 auto;
+    max-width: 200px;
   }
 
   .setting-input.api-input {
     width: 100%;
-    max-width: 280px;
+    max-width: 100%;
   }
 
   .number-stepper {
-    margin: 0 auto;
+    flex-shrink: 0;
   }
 
   .switch {
-    margin: 0 auto;
+    flex-shrink: 0;
   }
 
   .radio-group {
-    width: 100%;
-    justify-content: center;
+    width: auto;
+    justify-content: flex-start;
     flex-wrap: wrap;
     gap: 6px;
   }

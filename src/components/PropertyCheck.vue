@@ -1906,12 +1906,21 @@ const generateWordReport = () => {
     padding: 0;
   }
 
+  .check-action-area {
+    padding: 0 12px;
+    gap: 12px;
+  }
+
   .page-title {
     font-size: 18px;
   }
 
   .page-subtitle {
     font-size: 12px;
+  }
+
+  .btn-text {
+    font-size: 14px;
   }
 
   .title-row {

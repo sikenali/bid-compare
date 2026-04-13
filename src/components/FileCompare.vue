@@ -2290,6 +2290,11 @@ const generateWordReport = () => {
     padding: 0;
   }
 
+  .compare-action-area {
+    padding: 0 12px;
+    gap: 12px;
+  }
+
   .compare-btn-wrapper {
     order: 3;
     width: 100%;
@@ -2307,6 +2312,24 @@ const generateWordReport = () => {
 
   .compare-icon {
     font-size: 20px;
+  }
+
+  .btn-text {
+    font-size: 14px;
+  }
+
+  .progress-display {
+    width: 100%;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .progress-bar-bg {
+    height: 16px;
+  }
+
+  .progress-text {
+    font-size: 12px;
   }
 
   .page-title {
