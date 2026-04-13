@@ -2293,6 +2293,7 @@ const generateWordReport = () => {
   .compare-action-area {
     padding: 0 12px;
     gap: 12px;
+    max-width: 100%;
   }
 
   .compare-btn-wrapper {
@@ -2308,6 +2309,7 @@ const generateWordReport = () => {
     border-radius: 10px;
     font-size: 14px;
     padding: 0 16px;
+    box-sizing: border-box;
   }
 
   .compare-icon {

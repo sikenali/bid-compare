@@ -1909,6 +1909,7 @@ const generateWordReport = () => {
   .check-action-area {
     padding: 0 12px;
     gap: 12px;
+    max-width: 100%;
   }
 
   .page-title {
@@ -1921,6 +1922,16 @@ const generateWordReport = () => {
 
   .btn-text {
     font-size: 14px;
+  }
+
+  .start-check-btn {
+    width: 100%;
+    max-width: 100%;
+    height: 44px;
+    border-radius: 10px;
+    font-size: 14px;
+    padding: 0 16px;
+    box-sizing: border-box;
   }
 
   .title-row {

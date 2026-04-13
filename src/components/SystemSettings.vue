@@ -857,14 +857,24 @@ input:checked + .slider:before {
   }
 
   .radio-group {
-    width: auto;
+    width: 100%;
     justify-content: flex-start;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
   }
 
   .radio-box-item {
-    padding: 4px 8px;
+    padding: 6px 10px;
+    flex-shrink: 0;
+  }
+
+  .radio-box-icon-svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .radio-box-label {
+    font-size: 12px;
   }
 
   .page-title {
