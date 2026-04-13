@@ -2287,13 +2287,15 @@ const generateWordReport = () => {
   .upload-section {
     flex-direction: column;
     gap: 12px;
-    padding: 0;
+    padding: 0 12px;
   }
 
   .compare-action-area {
-    padding: 0 12px;
+    padding: 0;
     gap: 12px;
-    max-width: 100%;
+    width: 100%;
+    max-width: none;
+    margin: 0;
   }
 
   .compare-btn-wrapper {
@@ -2304,11 +2306,10 @@ const generateWordReport = () => {
 
   .compare-main-btn {
     width: 100%;
-    max-width: 100%;
+    max-width: none;
     height: 44px;
     border-radius: 10px;
     font-size: 14px;
-    padding: 0 16px;
     box-sizing: border-box;
   }
 
