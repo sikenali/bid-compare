@@ -64,6 +64,7 @@ function handleComparison(data: ComparisonMessage) {
               self.postMessage({ type: 'PROGRESS', progress, message: '正在分析...' })
             }
           },
+          () => cancelled,
           pageMap1,
           pageMap2
         )
@@ -77,6 +78,7 @@ function handleComparison(data: ComparisonMessage) {
               self.postMessage({ type: 'PROGRESS', progress, message: 'MinHash 计算中...' })
             }
           },
+          () => cancelled,
           pageMap1,
           pageMap2
         )

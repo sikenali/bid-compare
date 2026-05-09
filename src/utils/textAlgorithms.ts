@@ -283,6 +283,7 @@ export function findSimilarSegmentsRabinKarp(
   settings: ComparisonSettings,
   contextLength: number = 50,
   onProgress?: (progress: number) => void,
+  onCancel?: () => boolean,
   pageMap1?: PageMap,
   pageMap2?: PageMap
 ): SimilarSegment[] {
@@ -340,6 +341,7 @@ export function findSimilarSegmentsRabinKarp(
   let processed = 0
 
   for (let j = 0; j <= n - windowSize; j++) {
+    if (onCancel?.()) return segments
     if (j > 0) {
       hash1 = ((hash1 - preprocessed2.processed.charCodeAt(j - 1) * high1) * HASH1_BASE + preprocessed2.processed.charCodeAt(j + windowSize - 1)) % HASH1_MOD
       hash2 = ((hash2 - preprocessed2.processed.charCodeAt(j - 1) * high2) * HASH2_BASE + preprocessed2.processed.charCodeAt(j + windowSize - 1)) % HASH2_MOD
@@ -388,7 +390,7 @@ export function findSimilarSegmentsRabinKarp(
     }
 
     processed++
-    if (onProgress && processed % 5000 === 0) {
+    if (onProgress && processed % 500 === 0) {
       onProgress(processed / (n - windowSize + 1))
     }
   }
@@ -609,6 +611,7 @@ export function findSimilarSegmentsMinHash(
   text2: string,
   settings: ComparisonSettings,
   onProgress?: (progress: number) => void,
+  onCancel?: () => boolean,
   pageMap1?: PageMap,
   pageMap2?: PageMap
 ): SimilarSegment[] {
@@ -619,21 +622,37 @@ export function findSimilarSegmentsMinHash(
   const chunks1 = chunkText(text1, chunkSize)
   const chunks2 = chunkText(text2, chunkSize)
 
-  if (onProgress) onProgress(0.1)
+  if (onCancel?.()) return []
 
-  const signatures1 = chunks1.map(c => computeMinHashSignature(c, 128))
-  const signatures2 = chunks2.map(c => computeMinHashSignature(c, 128))
+  const totalChunks = chunks1.length + chunks2.length
+  let completedChunks = 0
 
-  if (onProgress) onProgress(0.3)
+  const signatures1: number[][] = []
+  for (const c of chunks1) {
+    if (onCancel?.()) return []
+    signatures1.push(computeMinHashSignature(c, 128))
+    completedChunks++
+    if (onProgress) onProgress(0.4 * (completedChunks / totalChunks))
+  }
+
+  const signatures2: number[][] = []
+  for (const c of chunks2) {
+    if (onCancel?.()) return []
+    signatures2.push(computeMinHashSignature(c, 128))
+    completedChunks++
+    if (onProgress) onProgress(0.4 * (completedChunks / totalChunks))
+  }
 
   const candidates = findLSHCandidates(signatures1, signatures2, 20)
 
   if (onProgress) onProgress(0.5)
+  if (onCancel?.()) return []
 
   const totalCandidates = candidates.length
-  let processed = 0
 
-  for (const candidate of candidates) {
+  for (let ci = 0; ci < candidates.length; ci++) {
+    if (onCancel?.()) return segments
+    const candidate = candidates[ci]
     const chunk1 = chunks1[candidate.chunkIndex1]
     const chunk2 = chunks2[candidate.chunkIndex2]
 
@@ -643,8 +662,7 @@ export function findSimilarSegmentsMinHash(
       settings,
       50,
       undefined,
-      pageMap1,
-      pageMap2
+      onCancel
     )
 
     const offset1 = candidate.chunkIndex1 * chunkSize
@@ -659,10 +677,8 @@ export function findSimilarSegmentsMinHash(
       segments.push(seg)
     }
 
-    processed++
-    if (onProgress && processed % 10 === 0) {
-      const progress = 0.5 + (processed / Math.max(1, totalCandidates)) * 0.5
-      onProgress(Math.min(1, progress))
+    if (onProgress) {
+      onProgress(0.5 + 0.5 * ((ci + 1) / Math.max(1, totalCandidates)))
     }
   }
 
