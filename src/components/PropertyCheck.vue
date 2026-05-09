@@ -1541,21 +1541,6 @@ const generateWordReport = () => {
   gap: 12px;
 }
 
-/* 操作按钮 */
-.action-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: SourceHanSans-Medium;
-  cursor: pointer;
-  transition: all 0.3s;
-  border: none;
-}
-
 .export-btn {
   background-color: rgba(139, 0, 0, 1);
   color: white;
@@ -1970,21 +1955,18 @@ const generateWordReport = () => {
     padding: 0;
   }
 
-  .action-btn {
+  .progress-display {
     width: 100%;
-    justify-content: center;
-    padding: 10px 12px;
-    min-height: 42px;
-    font-size: 13px;
+    flex-direction: column;
     gap: 6px;
   }
 
-  .action-btn-text {
-    font-size: 13px;
+  .progress-bar-bg {
+    height: 16px;
   }
 
-  .action-icon {
-    font-size: 16px;
+  .progress-text {
+    font-size: 12px;
   }
 
   /* 属性详情区域移动端优化 */

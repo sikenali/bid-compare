@@ -291,6 +291,102 @@ const {
   grid-column: 1 / -1;
 }
 
+.info-card {
+  background-color: rgba(255, 255, 255, 1);
+  border: 0.7px solid rgba(216, 191, 156, 1);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+}
+
+/* 卡片头部 */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-container {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-icon {
+  font-size: 20px;
+}
+
+.card-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  margin: 0;
+  font-family: SourceHanSans-SemiBold;
+}
+
+/* 卡片内容 */
+.card-body {
+  margin-top: 24px;
+}
+
+/* 多列布局（系统信息/网络信息） */
+.info-multi-columns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+/* 全宽布局（指纹信息） */
+.info-full-width {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 信息字段 */
+.info-field,
+.info-field-full {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 14px;
+  color: rgba(107, 79, 52, 1);
+  font-family: SourceHanSans-Regular;
+}
+
+.field-value-box {
+  background-color: rgba(245, 238, 226, 1);
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.field-value-box.wide {
+  padding: 16px;
+}
+
+.field-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-Medium;
+  line-height: 1.4;
+}
+
+.field-value.mono {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  word-break: break-all;
+}
+
 /* 移动端响应式 */
 @media (max-width: 768px) {
   .hardware-info-container {
@@ -406,9 +502,6 @@ const {
     font-family: SourceHanSans-Medium;
     text-align: right;
     word-break: break-all;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .field-value.mono {
@@ -439,6 +532,14 @@ const {
   }
 }
 
+/* 小屏手机：单列布局避免内容挤压 */
+@media (max-width: 480px) {
+  .info-multi-columns {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}
+
 /* 平板端优化 */
 @media (min-width: 769px) and (max-width: 1024px) {
   .info-cards {
@@ -448,101 +549,5 @@ const {
   .info-multi-columns {
     gap: 20px;
   }
-}
-
-.info-card {
-  background-color: rgba(255, 255, 255, 1);
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  padding: 24px;
-}
-
-/* 卡片头部 */
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.icon-container {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.card-icon {
-  font-size: 20px;
-}
-
-.card-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  margin: 0;
-  font-family: SourceHanSans-SemiBold;
-}
-
-/* 卡片内容 */
-.card-body {
-  margin-top: 24px;
-}
-
-/* 多列布局（系统信息/网络信息） */
-.info-multi-columns {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-}
-
-/* 全宽布局（指纹信息） */
-.info-full-width {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* 信息字段 */
-.info-field,
-.info-field-full {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.field-label {
-  font-size: 14px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
-}
-
-.field-value-box {
-  background-color: rgba(245, 238, 226, 1);
-  border-radius: 8px;
-  padding: 12px;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-}
-
-.field-value-box.wide {
-  padding: 16px;
-}
-
-.field-value {
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Medium;
-  line-height: 1.4;
-}
-
-.field-value.mono {
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  word-break: break-all;
 }
 </style>

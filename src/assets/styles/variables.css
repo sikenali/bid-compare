@@ -28,3 +28,37 @@ body, html {
   overflow: hidden;
   height: 100%;
 }
+
+/* 共享操作按钮基础样式 */
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: SourceHanSans-Medium;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+}
+
+@media (max-width: 768px) {
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 12px;
+    min-height: 42px;
+    font-size: 13px;
+    gap: 6px;
+  }
+
+  .action-btn-text {
+    font-size: 13px;
+  }
+
+  .action-icon {
+    font-size: 16px;
+  }
+}

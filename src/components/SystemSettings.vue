@@ -840,12 +840,10 @@ input:checked + .slider:before {
 
   .setting-input {
     width: 100%;
-    max-width: 200px;
   }
 
   .setting-input.api-input {
     width: 100%;
-    max-width: 100%;
   }
 
   .number-stepper {
@@ -914,6 +912,18 @@ input:checked + .slider:before {
 @media (max-width: 768px) {
   .page-header {
     display: none;
+  }
+}
+
+/* 超小屏幕手机 */
+@media (max-width: 400px) {
+  .setting-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .setting-label-group {
+    width: 100%;
   }
 }
 </style>
