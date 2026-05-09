@@ -461,10 +461,10 @@ export type ComparisonStrategy = 'lcs' | 'rabin-karp' | 'minhash'
 // 选择对比策略
 export function selectStrategy(textLength: number): ComparisonStrategy {
   // 小文件（< 3K 字符）：使用暴力 LCS，结果最准确
-  // 中文件（3K-100K）：使用 Rabin-Karp 滚动哈希，性能 O(m+n)
-  // 大文件（> 100K）：使用 MinHash + LSH，避免内存溢出
+  // 中文件（3K-50K）：使用 Rabin-Karp 滚动哈希，性能 O(m+n)
+  // 大文件（> 50K）：使用 MinHash + LSH，避免内存溢出
   if (textLength < 3_000) return 'lcs'
-  if (textLength < 100_000) return 'rabin-karp'
+  if (textLength < 50_000) return 'rabin-karp'
   return 'minhash'
 }
 

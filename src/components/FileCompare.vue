@@ -434,7 +434,7 @@ const handleCompare = async () => {
 
     // 文件大小警告
     const totalChars = leftResult.content.length + rightResult.content.length
-    if (totalChars > 500_000) {
+    if (totalChars > 800_000) {
       comparisonParseError.value = `文件内容较大（${(totalChars / 10000).toFixed(1)} 万字），对比可能需要较长时间，请耐心等待...`
     }
 
@@ -1615,20 +1615,6 @@ const generateWordReport = () => {
   gap: 12px;
 }
 
-.action-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: SourceHanSans-Medium;
-  cursor: pointer;
-  transition: all 0.3s;
-  border: none;
-}
-
 .action-btn.small {
   padding: 8px 16px;
   font-size: 13px;
@@ -2399,23 +2385,6 @@ const generateWordReport = () => {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     padding: 0;
-  }
-
-  .action-btn {
-    width: 100%;
-    justify-content: center;
-    padding: 10px 12px;
-    min-height: 42px;
-    font-size: 13px;
-    gap: 6px;
-  }
-
-  .action-btn-text {
-    font-size: 13px;
-  }
-
-  .action-icon {
-    font-size: 16px;
   }
 
   /* 雷同片段详情区域移动端优化 */

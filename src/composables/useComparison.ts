@@ -19,7 +19,9 @@ export function useComparison() {
   let currentWorker: Worker | null = null
   let timeoutId: number | null = null
 
-  const WORKER_TIMEOUT = 60_000
+  const WORKER_TIMEOUT_BASE = 60_000
+  const WORKER_TIMEOUT_PER_CHAR = 0.1
+  const MAX_WORKER_TIMEOUT = 120_000
 
   async function runComparison(
     text1: string,
@@ -31,7 +33,7 @@ export function useComparison() {
     const textLength = Math.max(text1.length, text2.length)
 
     // 硬限制
-    if (textLength >= 500_000) {
+    if (textLength >= 1_000_000) {
       throw new Error(`文件内容过大（${(textLength / 10000).toFixed(1)} 万字），建议拆分后对比`)
     }
 
@@ -69,6 +71,7 @@ export function useComparison() {
     pageMap1?: PageMap,
     pageMap2?: PageMap
   ): Promise<{ segments: SimilarSegment[]; similarity: number }> {
+    const textLength = Math.max(text1.length, text2.length)
     return new Promise((resolve, reject) => {
       try {
         const worker = new ComparisonWorker()
@@ -77,13 +80,17 @@ export function useComparison() {
         progressMessage.value = strategy === 'rabin-karp' ? '正在分析...' : 'MinHash 计算中...'
 
         // 超时保护
+        const dynamicTimeout = Math.min(
+          MAX_WORKER_TIMEOUT,
+          Math.max(WORKER_TIMEOUT_BASE, Math.round(textLength * WORKER_TIMEOUT_PER_CHAR))
+        )
         timeoutId = window.setTimeout(() => {
           worker.terminate()
           currentWorker = null
           isProcessing.value = false
           canCancel.value = false
           reject(new Error('对比超时，文件内容过大或系统繁忙'))
-        }, WORKER_TIMEOUT)
+        }, dynamicTimeout)
 
         worker.onmessage = (e: MessageEvent) => {
           if (e.data.type === 'PROGRESS') {
