@@ -245,7 +245,7 @@ export function useFileParser() {
       const pageCount = pdfDocument.numPages;
 
       // 初始化文本内容和页码映射
-      let textContent = '';
+      const textParts: string[] = [];
       const pageMap: PageMap = { ranges: [], totalPages: pageCount };
 
       // 全量提取所有页数
@@ -269,9 +269,11 @@ export function useFileParser() {
           page: pageNum
         })
 
-        textContent += pageText + '\n';
+        textParts.push(pageText);
         offset += pageText.length + 1;
       }
+
+      const textContent = textParts.join('\n');
       
       // 关闭PDF文档
       await pdfDocument.destroy();
@@ -489,7 +491,7 @@ export function useFileParser() {
             return aNum - bNum;
           });
 
-          const MAX_EXTRACT_SLIDES = 30;
+          const MAX_EXTRACT_SLIDES = 200;
           const extractSlides = slideFiles.slice(0, MAX_EXTRACT_SLIDES);
 
           for (let i = 0; i < extractSlides.length; i++) {
@@ -504,9 +506,6 @@ export function useFileParser() {
           }
 
           properties.页码范围 = `1-${slideFiles.length}`;
-          if (slideFiles.length > MAX_EXTRACT_SLIDES) {
-            textContent += `... 仅显示前${MAX_EXTRACT_SLIDES}张幻灯片，共${slideFiles.length}张 ...\n`;
-          }
         }
       } catch (zipError) {
         console.warn('PPTX 内容提取失败:', zipError);
