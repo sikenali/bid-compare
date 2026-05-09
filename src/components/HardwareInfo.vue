@@ -457,38 +457,31 @@ const {
     gap: 8px;
   }
 
-  /* 字段样式 - 与 setting-row 一致 */
+  /* 字段样式：垂直排列保证表格对齐 */
   .info-field,
   .info-field-full {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    flex-direction: column;
+    gap: 4px;
     width: 100%;
-    min-height: 28px;
-    padding: 6px 0;
   }
 
   .field-label {
-    flex: 0 0 auto;
-    width: 70px;
     font-size: 12px;
     font-weight: 500;
     color: rgba(44, 24, 16, 1);
     font-family: SourceHanSans-Medium;
-    margin: 0;
-    flex-shrink: 0;
   }
 
   .field-value-box {
-    flex: 1;
+    width: 100%;
     background-color: rgba(245, 238, 226, 1);
     border-radius: 6px;
     padding: 6px 8px;
     min-height: 32px;
     display: flex;
     align-items: center;
-    min-width: 0;
+    box-sizing: border-box;
   }
 
   .field-value-box.wide {
@@ -500,7 +493,6 @@ const {
     font-weight: 500;
     color: rgba(44, 24, 16, 1);
     font-family: SourceHanSans-Medium;
-    text-align: right;
     word-break: break-all;
   }
 
@@ -529,14 +521,6 @@ const {
 
   .refresh-icon {
     font-size: 16px;
-  }
-}
-
-/* 小屏手机：单列布局避免内容挤压 */
-@media (max-width: 480px) {
-  .info-multi-columns {
-    grid-template-columns: 1fr;
-    gap: 6px;
   }
 }
 
