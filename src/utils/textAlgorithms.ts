@@ -595,12 +595,34 @@ export function findLSHCandidates(
     .sort((a, b) => b.estimatedSimilarity - a.estimatedSimilarity)
 }
 
-function chunkText(text: string, chunkSize: number = 1000): string[] {
+function chunkText(text: string, chunkSize: number = 1000, overlap: number = 200): string[] {
+  if (chunkSize <= overlap) {
+    throw new Error('chunkSize must be greater than overlap')
+  }
+  if (text.length <= chunkSize) return [text]
+
   const chunks: string[] = []
-  for (let i = 0; i < text.length; i += chunkSize) {
-    chunks.push(text.substring(i, i + chunkSize))
+  let start = 0
+  while (start < text.length) {
+    const end = Math.min(start + chunkSize, text.length)
+    chunks.push(text.substring(start, end))
+    if (end >= text.length) break
+    start += chunkSize - overlap
   }
   return chunks
+}
+
+function buildChunkOffsets(totalLength: number, chunkSize: number, overlap: number): number[] {
+  if (totalLength <= chunkSize) return [0]
+  const offsets: number[] = []
+  let start = 0
+  while (start < totalLength) {
+    offsets.push(start)
+    const end = Math.min(start + chunkSize, totalLength)
+    if (end >= totalLength) break
+    start += chunkSize - overlap
+  }
+  return offsets
 }
 
 /**
@@ -617,10 +639,13 @@ export function findSimilarSegmentsMinHash(
 ): SimilarSegment[] {
   const segments: SimilarSegment[] = []
   const chunkSize = 1000
+  const overlap = 200
   let segmentIdCounter = 0
 
-  const chunks1 = chunkText(text1, chunkSize)
-  const chunks2 = chunkText(text2, chunkSize)
+  const chunks1 = chunkText(text1, chunkSize, overlap)
+  const chunks2 = chunkText(text2, chunkSize, overlap)
+  const chunkOffsets1 = buildChunkOffsets(text1.length, chunkSize, overlap)
+  const chunkOffsets2 = buildChunkOffsets(text2.length, chunkSize, overlap)
 
   if (onCancel?.()) return []
 
@@ -665,8 +690,8 @@ export function findSimilarSegmentsMinHash(
       onCancel
     )
 
-    const offset1 = candidate.chunkIndex1 * chunkSize
-    const offset2 = candidate.chunkIndex2 * chunkSize
+    const offset1 = chunkOffsets1[candidate.chunkIndex1]
+    const offset2 = chunkOffsets2[candidate.chunkIndex2]
 
     for (const seg of blockSegments) {
       seg.id = ++segmentIdCounter
@@ -674,6 +699,13 @@ export function findSimilarSegmentsMinHash(
       if (seg.leftEndIndex !== undefined) seg.leftEndIndex += offset1
       if (seg.rightStartIndex !== undefined) seg.rightStartIndex += offset2
       if (seg.rightEndIndex !== undefined) seg.rightEndIndex += offset2
+
+      seg.leftContent = buildHighlightedHtml(text1, seg.leftStartIndex ?? 0, seg.leftEndIndex ?? 0, 10)
+      seg.rightContent = buildHighlightedHtml(text2, seg.rightStartIndex ?? 0, seg.rightEndIndex ?? 0, 10)
+
+      seg.leftPage = pageMap1 ? formatPageRange(pageMap1, seg.leftStartIndex ?? 0, seg.leftEndIndex ?? 0) : '第1/1页'
+      seg.rightPage = pageMap2 ? formatPageRange(pageMap2, seg.rightStartIndex ?? 0, seg.rightEndIndex ?? 0) : '第1/1页'
+
       segments.push(seg)
     }
 
