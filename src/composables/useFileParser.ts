@@ -224,7 +224,7 @@ export function useFileParser() {
   };
 
   // 解析PDF文件
-  const parsePdfFile = async (file: File): Promise<FileParseResult> => {
+  const parsePdfFile = async (file: File, signal?: AbortSignal): Promise<FileParseResult> => {
     try {
       // 读取文件为ArrayBuffer
       const dataBuffer = await file.arrayBuffer();
@@ -254,6 +254,7 @@ export function useFileParser() {
       // 逐页提取文本，同时构建页码映射
       let offset = 0
       for (let pageNum = 1; pageNum <= extractPageCount; pageNum++) {
+        if (signal?.aborted) throw new DOMException('用户取消了文件解析', 'AbortError')
         const page = await pdfDocument.getPage(pageNum);
         const textContentResult = await page.getTextContent();
 
@@ -447,7 +448,7 @@ export function useFileParser() {
   };
 
   // 解析PPTX文件
-  const parsePptxFile = async (file: File): Promise<FileParseResult> => {
+  const parsePptxFile = async (file: File, signal?: AbortSignal): Promise<FileParseResult> => {
     try {
       const arrayBuffer = await file.arrayBuffer();
 
@@ -495,6 +496,7 @@ export function useFileParser() {
           const extractSlides = slideFiles.slice(0, MAX_EXTRACT_SLIDES);
 
           for (let i = 0; i < extractSlides.length; i++) {
+            if (signal?.aborted) throw new DOMException('用户取消了文件解析', 'AbortError')
             const slideXmlContent = await extractSlides[i].async('string');
             textContent += `幻灯片 ${i + 1}\n`;
             const textMatches = slideXmlContent.match(/<a:t[^>]*>([^<]+)<\/a:t>/gi) || [];
@@ -530,7 +532,8 @@ export function useFileParser() {
   };
 
   // 根据文件类型选择解析方法
-  const parseFile = async (file: File): Promise<FileParseResult> => {
+  const parseFile = async (file: File, signal?: AbortSignal): Promise<FileParseResult> => {
+    if (signal?.aborted) throw new DOMException('用户取消了文件解析', 'AbortError')
     const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
     
     switch (fileExtension) {
@@ -541,13 +544,13 @@ export function useFileParser() {
       case 'doc':
         return parseDocFile(file);
       case 'pdf':
-        return parsePdfFile(file);
+        return parsePdfFile(file, signal);
       case 'xlsx':
       case 'xls':
         return parseXlsxFile(file);
       case 'pptx':
       case 'ppt':
-        return parsePptxFile(file);
+        return parsePptxFile(file, signal);
       default:
         return {
           content: '',

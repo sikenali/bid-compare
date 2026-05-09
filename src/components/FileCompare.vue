@@ -54,7 +54,8 @@ const {
   canCancel,
   parseError: comparisonParseError,
   runComparison,
-  cancelComparison
+  cancelComparison,
+  getAbortSignal
 } = useComparison()
 
 // 响应式数据
@@ -423,12 +424,12 @@ const handleCompare = async () => {
     progress.value = 0
 
     // 解析左侧文件
-    const leftResult = await parseFile(leftFileInfo.value.file)
+    const leftResult = await parseFile(leftFileInfo.value.file, getAbortSignal())
     if (leftResult.error) throw new Error(leftResult.error)
     leftFileContent.value = leftResult.content
 
     // 解析右侧文件
-    const rightResult = await parseFile(rightFileInfo.value.file)
+    const rightResult = await parseFile(rightFileInfo.value.file, getAbortSignal())
     if (rightResult.error) throw new Error(rightResult.error)
     rightFileContent.value = rightResult.content
 

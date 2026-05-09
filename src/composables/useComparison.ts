@@ -18,6 +18,7 @@ export function useComparison() {
 
   let currentWorker: Worker | null = null
   let timeoutId: number | null = null
+  let abortController: AbortController | null = null
 
   const WORKER_TIMEOUT_BASE = 60_000
   const WORKER_TIMEOUT_PER_CHAR = 0.1
@@ -37,6 +38,7 @@ export function useComparison() {
       throw new Error(`文件内容过大（${(textLength / 10000).toFixed(1)} 万字），建议拆分后对比`)
     }
 
+    abortController = new AbortController()
     isProcessing.value = true
     progress.value = 0
     progressMessage.value = '准备中...'
@@ -138,12 +140,20 @@ export function useComparison() {
   }
 
   function cancelComparison() {
+    if (abortController) {
+      abortController.abort()
+      abortController = null
+    }
     if (currentWorker) {
       currentWorker.postMessage({ type: 'CANCEL' })
       currentWorker.terminate()
       currentWorker = null
     }
     cleanup()
+  }
+
+  function getAbortSignal(): AbortSignal | undefined {
+    return abortController?.signal
   }
 
   function cleanup() {
@@ -164,6 +174,7 @@ export function useComparison() {
     canCancel,
     parseError,
     runComparison,
-    cancelComparison
+    cancelComparison,
+    getAbortSignal
   }
 }
