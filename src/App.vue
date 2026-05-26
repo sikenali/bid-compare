@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { RiExchangeLine, RiFileLine, RiFileInfoLine, RiSettings3Line, RiCpuLine } from '@remixicon/vue'
+import { RiExchangeLine, RiFileLine, RiFileInfoLine, RiSettings3Line, RiCpuLine, RiFileExcelLine } from '@remixicon/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -53,6 +53,7 @@ const activeMenu = computed(() => {
   if (route.path === '/property-check' || route.path === '/property-check-result') return 'property-check'
   if (route.path === '/hardware-info') return 'hardware-info'
   if (route.path === '/settings') return 'system-settings'
+  if (route.path === '/batch-compare') return 'batch-compare'
   return 'file-compare'
 })
 
@@ -68,10 +69,13 @@ const handleMenuClick = (menu: string) => {
     case 'hardware-info':
       router.push('/hardware-info')
       break
-    case 'system-settings':
-      router.push('/settings')
-      break
-  }
+      case 'system-settings':
+        router.push('/settings')
+        break
+      case 'batch-compare':
+        router.push('/batch-compare')
+        break
+    }
   // 移动端点击菜单后自动关闭
   closeMobileMenu()
 }
@@ -146,6 +150,14 @@ const handleMenuClick = (menu: string) => {
           >
             <RiCpuLine class="nav-icon" />
             <span class="nav-text">硬件信息</span>
+          </button>
+          <button
+            class="nav-item"
+            :class="{ active: activeMenu === 'batch-compare' }"
+            @click="handleMenuClick('batch-compare')"
+          >
+            <RiFileExcelLine class="nav-icon" />
+            <span class="nav-text">批量对比</span>
           </button>
           <button
             class="nav-item"

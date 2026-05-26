@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useSettings } from '../composables/useSettings'
+import { getDefaultSensitiveWords, saveSensitiveWords, loadSensitiveWords } from '../utils/sensitiveWords'
 import {
   RiSettings3Line,
   RiText,
   RiFileDownloadLine,
   RiRobot2Line,
   RiFileWordLine,
-  RiMarkdownLine
+  RiMarkdownLine,
+  RiImageLine,
+  RiFilterLine,
+  RiSearchLine,
+  RiCloseLine
 } from '@remixicon/vue'
 
 const {
@@ -16,6 +21,39 @@ const {
   cancelSettings: handleCancelSettings,
   resetToDefault: handleResetToDefault
 } = useSettings()
+
+const sensitiveWordsInput = ref('')
+const sensitiveWords = ref<string[]>([])
+
+onMounted(() => {
+  sensitiveWords.value = loadSensitiveWords()
+  sensitiveWordsInput.value = sensitiveWords.value.join(', ')
+})
+
+const updateSensitiveWords = () => {
+  const words = sensitiveWordsInput.value
+    .split(/[,，\n、]/)
+    .map(w => w.trim())
+    .filter(w => w.length > 0)
+  sensitiveWords.value = [...new Set(words)]
+  saveSensitiveWords(sensitiveWords.value)
+}
+
+const addSensitiveWord = () => {
+  updateSensitiveWords()
+}
+
+const removeSensitiveWord = (word: string) => {
+  sensitiveWords.value = sensitiveWords.value.filter(w => w !== word)
+  sensitiveWordsInput.value = sensitiveWords.value.join(', ')
+  saveSensitiveWords(sensitiveWords.value)
+}
+
+const resetSensitiveWords = () => {
+  sensitiveWords.value = getDefaultSensitiveWords()
+  sensitiveWordsInput.value = sensitiveWords.value.join(', ')
+  saveSensitiveWords(sensitiveWords.value)
+}
 
 const handleReset = () => {
   handleResetToDefault()
@@ -262,6 +300,134 @@ const aiModels = [
               <input type="checkbox" v-model="settings.includeCharts" />
               <span class="slider"></span>
             </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 查重设置卡片 -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon duplicate">
+            <RiFilterLine class="icon" />
+          </div>
+          <h2 class="card-title">查重参数设置</h2>
+        </div>
+        <div class="card-content">
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <label class="setting-label">查重段落数量</label>
+              <p class="setting-desc">批量对比时每个文件提取的段落数</p>
+            </div>
+            <div class="number-stepper">
+              <button class="stepper-btn" @click="settings.paragraphCount = Math.max(1, settings.paragraphCount - 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <input type="text" :value="settings.paragraphCount" class="stepper-input" @input="settings.paragraphCount = clampNumber($event.target.value, 1, 50)" />
+              <button class="stepper-btn" @click="settings.paragraphCount = Math.min(50, settings.paragraphCount + 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <label class="setting-label">最小查重字数</label>
+              <p class="setting-desc">标记为重复的最少连续字符数</p>
+            </div>
+            <div class="number-stepper">
+              <button class="stepper-btn" @click="settings.minDupChars = Math.max(5, settings.minDupChars - 5)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <input type="text" :value="settings.minDupChars" class="stepper-input" @input="settings.minDupChars = clampNumber($event.target.value, 5, 200)" />
+              <button class="stepper-btn" @click="settings.minDupChars = Math.min(200, settings.minDupChars + 5)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <label class="setting-label">相同条款剔除</label>
+              <p class="setting-desc">启用后自动剔除招标文件中完全相同的条款</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" v-model="settings.clauseRemovalEnabled" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <label class="setting-label">剔除颗粒度</label>
+              <p class="setting-desc">条款剔除的最小连续相同字符数</p>
+            </div>
+            <div class="number-stepper">
+              <button class="stepper-btn" @click="settings.clauseRemovalGranularity = Math.max(2, settings.clauseRemovalGranularity - 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <input type="text" :value="settings.clauseRemovalGranularity" class="stepper-input" @input="settings.clauseRemovalGranularity = clampNumber($event.target.value, 2, 50)" />
+              <button class="stepper-btn" @click="settings.clauseRemovalGranularity = Math.min(50, settings.clauseRemovalGranularity + 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <label class="setting-label">水印文字剔除</label>
+              <p class="setting-desc">解析时自动过滤常见水印文字</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" v-model="settings.removeWatermark" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <label class="setting-label">图片查重</label>
+              <p class="setting-desc">开启后对比文档中的雷同图片</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" v-model="settings.enableImageCompare" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 敏感词管理卡片 -->
+      <div class="settings-card">
+        <div class="card-header">
+          <div class="card-icon sensitive">
+            <RiSearchLine class="icon" />
+          </div>
+          <h2 class="card-title">敏感词管理</h2>
+        </div>
+        <div class="card-content">
+          <div class="setting-row" style="align-items: flex-start;">
+            <div class="setting-label-group">
+              <label class="setting-label">敏感词列表</label>
+              <p class="setting-desc">输入敏感词，用逗号或换行分隔</p>
+            </div>
+          </div>
+          <textarea
+            v-model="sensitiveWordsInput"
+            class="sensitive-input"
+            rows="4"
+            placeholder="输入敏感词，用逗号或换行分隔..."
+            @input="updateSensitiveWords"
+          ></textarea>
+          <div class="sensitive-tags">
+            <span
+              v-for="word in sensitiveWords"
+              :key="word"
+              class="sensitive-tag"
+            >
+              {{ word }}
+              <button class="tag-remove" @click="removeSensitiveWord(word)">
+                <RiCloseLine class="tag-remove-icon" />
+              </button>
+            </span>
+          </div>
+          <div class="sensitive-actions">
+            <button class="btn-small" @click="resetSensitiveWords">恢复默认</button>
+            <span class="sensitive-count">共 {{ sensitiveWords.length }} 个敏感词</span>
           </div>
         </div>
       </div>

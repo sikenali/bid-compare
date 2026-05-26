@@ -12,6 +12,14 @@ export interface FileCompareSettings {
   ignoreWhitespace: boolean
   ignoreCase: boolean
   ignoreInvisibleChars: boolean
+  // 查重参数
+  paragraphCount: number
+  minDupChars: number
+  clauseRemovalEnabled: boolean
+  clauseRemovalGranularity: number
+  removeWatermark: boolean
+  // 图片查重
+  enableImageCompare: boolean
   // AI模型设置
   selectedModel: string
   apiKey: string
@@ -33,6 +41,12 @@ export const defaultSettings: FileCompareSettings = {
   ignoreWhitespace: true,
   ignoreCase: false,
   ignoreInvisibleChars: true,
+  paragraphCount: 5,
+  minDupChars: 10,
+  clauseRemovalEnabled: false,
+  clauseRemovalGranularity: 5,
+  removeWatermark: true,
+  enableImageCompare: false,
   selectedModel: 'deepseek',
   apiKey: '',
   apiEndpoint: '',

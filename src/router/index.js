@@ -5,6 +5,7 @@ import PropertyCheck from '../components/PropertyCheck.vue'
 import PropertyCheckResult from '../components/PropertyCheckResult.vue'
 import HardwareInfo from '../components/HardwareInfo.vue'
 import SystemSettings from '../components/SystemSettings.vue'
+import BatchCompare from '../components/BatchCompare.vue'
 
 const routes = [
   {
@@ -48,6 +49,12 @@ const routes = [
     meta: {
       title: '文件对对碰 - 系统设置'
     }
+  },
+  {
+    path: '/batch-compare',
+    name: 'BatchCompare',
+    component: BatchCompare,
+    meta: { title: '文件对对碰 - 批量对比' }
   },
   // 404 通配符路由 - 重定向到首页
   {

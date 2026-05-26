@@ -26,7 +26,13 @@ import { useRecentRecords } from '../composables/useRecentRecords'
 import { useAIModel } from '../composables/useAIModel'
 import { useComparison } from '../composables/useComparison'
 import type { ComparisonSettings, SimilarSegment } from '../utils/textAlgorithms'
+import { removeCommonClauses } from '../utils/textAlgorithms'
+import { removeWatermarks } from '../utils/watermark'
+import { searchSensitiveWords, loadSensitiveWords } from '../utils/sensitiveWords'
+import type { SensitiveSearchResult } from '../utils/sensitiveWords'
 import { storeCompareResult, deleteCompareResult } from '../utils/compareResultStore'
+import { computeImageHash, hammingDistance, calculateImageSimilarity, loadImageAsDataUrl } from '../utils/imageCompare'
+import type { ImageDuplicate } from '../utils/imageCompare'
 import FileUpload from './FileUpload.vue'
 import RecentRecords from './RecentRecords.vue'
 
@@ -433,8 +439,22 @@ const handleCompare = async () => {
     if (rightResult.error) throw new Error(rightResult.error)
     rightFileContent.value = rightResult.content
 
+        // 应用水印剔除
+    let leftContent = leftResult.content
+    let rightContent = rightResult.content
+    if (settings.removeWatermark) {
+      leftContent = removeWatermarks(leftContent)
+      rightContent = removeWatermarks(rightContent)
+    }
+
+    // 应用相同条款剔除
+    if (settings.clauseRemovalEnabled) {
+      progressMessage.value = '正在剔除相同条款...'
+      ;[leftContent, rightContent] = removeCommonClauses(leftContent, rightContent, settings.clauseRemovalGranularity)
+    }
+
     // 文件大小警告
-    const totalChars = leftResult.content.length + rightResult.content.length
+    const totalChars = leftContent.length + rightContent.length
     if (totalChars > 800_000) {
       comparisonParseError.value = `文件内容较大（${(totalChars / 10000).toFixed(1)} 万字），对比可能需要较长时间，请耐心等待...`
     }
@@ -449,14 +469,20 @@ const handleCompare = async () => {
     }
 
     const result = await runComparison(
-      leftResult.content,
-      rightResult.content,
+      leftContent,
+      rightContent,
       comparisonSettings,
       leftResult.pageMap,
       rightResult.pageMap
     )
 
-    // 保存对比结果到模块级存储
+    // 执行图片对比
+    let imageDuplicates: ImageDuplicate[] = []
+    if (settings.enableImageCompare && leftImages.value.length > 0 && rightImages.value.length > 0) {
+      imageDuplicates = await runImageComparison()
+    }
+
+    // 保存对比结果到模块级存储（含原始内容用于上下文查看）
     const compareResult = {
       segments: result.segments,
       leftFileName: leftFileInfo.value.name,
@@ -464,7 +490,10 @@ const handleCompare = async () => {
       textSimilarity: `${result.similarity}%`,
       similarSegmentsCount: result.segments.length,
       leftTotalPages: leftResult.pageMap?.totalPages || 1,
-      rightTotalPages: rightResult.pageMap?.totalPages || 1
+      rightTotalPages: rightResult.pageMap?.totalPages || 1,
+      leftFileContent: leftContent,
+      rightFileContent: rightContent,
+      imageDuplicates
     }
 
     // 使用模块级存储替代 sessionStorage + window 全局变量
@@ -486,6 +515,112 @@ const handleCompare = async () => {
     isProcessing.value = false
     comparisonParseError.value = (error as Error).message
   }
+}
+
+// 图片对比
+const leftImages = ref<{ url: string; name: string }[]>([])
+const rightImages = ref<{ url: string; name: string }[]>([])
+
+const handleLeftImageUpload = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (!input.files) return
+  for (const f of input.files) {
+    const url = URL.createObjectURL(f)
+    leftImages.value.push({ url, name: f.name })
+  }
+  input.value = ''
+}
+
+const handleRightImageUpload = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (!input.files) return
+  for (const f of input.files) {
+    const url = URL.createObjectURL(f)
+    rightImages.value.push({ url, name: f.name })
+  }
+  input.value = ''
+}
+
+const removeLeftImage = (idx: number) => {
+  URL.revokeObjectURL(leftImages.value[idx].url)
+  leftImages.value.splice(idx, 1)
+}
+
+const removeRightImage = (idx: number) => {
+  URL.revokeObjectURL(rightImages.value[idx].url)
+  rightImages.value.splice(idx, 1)
+}
+
+const imageDuplicateResults = ref<ImageDuplicate[]>([])
+
+const runImageComparison = async (): Promise<ImageDuplicate[]> => {
+  if (!settings.enableImageCompare) return []
+  if (leftImages.value.length === 0 || rightImages.value.length === 0) return []
+
+  progressMessage.value = '正在进行图片对比...'
+  const duplicates: ImageDuplicate[] = []
+  let idCounter = 0
+
+  const computeAll = async (images: { url: string; name: string }[]) => {
+    const results: { url: string; hash: string; name: string; index: number }[] = []
+    for (let i = 0; i < images.length; i++) {
+      const data = await loadImageAsDataUrl(images[i].url)
+      if (data) {
+        const hash = computeImageHash(data)
+        results.push({ url: images[i].url, hash, name: images[i].name, index: i })
+      }
+    }
+    return results
+  }
+
+  const leftHashes = await computeAll(leftImages.value)
+  const rightHashes = await computeAll(rightImages.value)
+
+  for (const lh of leftHashes) {
+    for (const rh of rightHashes) {
+      const sim = calculateImageSimilarity(lh.hash, rh.hash)
+      if (sim >= settings.imageSimilarityThreshold) {
+        duplicates.push({
+          id: ++idCounter,
+          leftImage: lh.url,
+          rightImage: rh.url,
+          similarity: sim,
+          leftPage: lh.name,
+          rightPage: rh.name,
+          leftIndex: lh.index,
+          rightIndex: rh.index,
+        })
+      }
+    }
+  }
+
+  duplicates.sort((a, b) => b.similarity - a.similarity)
+  return duplicates
+}
+
+// 敏感词搜索
+const showSensitiveResult = ref(false)
+const sensitiveResult = ref<SensitiveSearchResult>({ matches: [], totalCount: 0, wordsFound: [] })
+
+const handleSensitiveSearch = () => {
+  if (!leftFileContent.value && !rightFileContent.value) {
+    comparisonParseError.value = '请先解析文件'
+    return
+  }
+  const words = loadSensitiveWords()
+  if (!words.length) {
+    comparisonParseError.value = '请先在系统设置中配置敏感词'
+    return
+  }
+  const leftMatches = leftFileContent.value ? searchSensitiveWords(leftFileContent.value, words) : { matches: [], totalCount: 0, wordsFound: [] }
+  const rightMatches = rightFileContent.value ? searchSensitiveWords(rightFileContent.value, words) : { matches: [], totalCount: 0, wordsFound: [] }
+
+  sensitiveResult.value = {
+    matches: [...leftMatches.matches, ...rightMatches.matches],
+    totalCount: leftMatches.totalCount + rightMatches.totalCount,
+    wordsFound: [...new Set([...leftMatches.wordsFound, ...rightMatches.wordsFound])]
+  }
+  showSensitiveResult.value = true
 }
 
 // 取消对比
@@ -836,12 +971,80 @@ const generateWordReport = () => {
         <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
         <span class="btn-text">{{ isViewingHistory ? '请重新上传文件' : '一键对比' }}</span>
       </button>
+      <button class="sensitive-btn" @click="handleSensitiveSearch" :disabled="!leftFileContent && !rightFileContent || isProcessing">
+        <RiSearchLine class="sensitive-btn-icon" />
+        <span>敏感词检索</span>
+      </button>
       <!-- 进度显示 -->
       <div v-if="isProcessing" class="progress-display">
         <div class="progress-bar-bg">
           <div class="progress-bar-fill" :style="{ width: `${Math.round(progress * 100)}%` }"></div>
         </div>
         <span class="progress-text">{{ progressMessage || '正在处理中...' }} {{ Math.round(progress * 100) }}%</span>
+      </div>
+    </div>
+
+    <!-- 图片上传区域 -->
+    <div class="image-upload-section" v-if="settings.enableImageCompare">
+      <div class="image-section-header">
+        <RiImageLine class="image-section-icon" />
+        <span>图片查重</span>
+        <span class="image-section-hint">上传文档中的图片进行雷同检测</span>
+      </div>
+      <div class="image-upload-columns">
+        <div class="image-column">
+          <div class="image-column-label">左侧图片</div>
+          <label class="image-upload-btn">
+            <RiImageLine />
+            <span>添加图片</span>
+            <input type="file" accept="image/*" multiple @change="handleLeftImageUpload" />
+          </label>
+          <div class="image-preview-list">
+            <div v-for="(img, idx) in leftImages" :key="idx" class="image-preview-item">
+              <img :src="img.url" :alt="img.name" class="image-preview-thumb" />
+              <button class="image-preview-remove" @click="removeLeftImage(idx)">×</button>
+            </div>
+          </div>
+        </div>
+        <div class="image-column">
+          <div class="image-column-label">右侧图片</div>
+          <label class="image-upload-btn">
+            <RiImageLine />
+            <span>添加图片</span>
+            <input type="file" accept="image/*" multiple @change="handleRightImageUpload" />
+          </label>
+          <div class="image-preview-list">
+            <div v-for="(img, idx) in rightImages" :key="idx" class="image-preview-item">
+              <img :src="img.url" :alt="img.name" class="image-preview-thumb" />
+              <button class="image-preview-remove" @click="removeRightImage(idx)">×</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 敏感词结果弹窗 -->
+    <div v-if="showSensitiveResult" class="help-modal-overlay" @click="showSensitiveResult = false">
+      <div class="sensitive-result-modal" @click.stop>
+        <div class="help-modal-header">
+          <h3>敏感词检索结果</h3>
+          <button class="help-close-btn" @click="showSensitiveResult = false">×</button>
+        </div>
+        <div class="sensitive-result-body">
+          <div class="sensitive-summary">
+            <span>共发现 <strong>{{ sensitiveResult.totalCount }}</strong> 处敏感词匹配</span>
+            <span>涉及敏感词：<strong>{{ sensitiveResult.wordsFound.join('、') }}</strong></span>
+          </div>
+          <div class="sensitive-match-list">
+            <div v-for="(match, idx) in sensitiveResult.matches" :key="idx" class="sensitive-match-item">
+              <div class="sensitive-match-word">
+                <span class="match-badge">{{ match.word }}</span>
+                <span class="match-line">第 {{ match.line }} 行</span>
+              </div>
+              <div class="sensitive-match-context">{{ match.context }}</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1055,25 +1258,51 @@ const generateWordReport = () => {
 
 /* 对比按钮 */
 .compare-main-btn {
-  position: relative;
-  width: 100%;
-  max-width: 100%;
-  height: 56px;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
-  color: white;
-  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
-  transition: all 0.3s ease;
+  gap: 10px;
+  padding: 14px 36px;
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
   font-size: 16px;
   font-weight: 600;
   font-family: SourceHanSans-SemiBold;
-  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.35);
+}
+
+.sensitive-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, rgba(46, 89, 132, 1) 0%, rgba(60, 110, 160, 1) 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(46, 89, 132, 0.35);
+}
+
+.sensitive-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sensitive-btn:hover:not(:disabled) {
+  box-shadow: 0 8px 24px rgba(46, 89, 132, 0.45);
+  transform: translateY(-2px);
+}
+
+.sensitive-btn-icon {
+  font-size: 18px;
 }
 
 .compare-main-btn::before {
@@ -2008,13 +2237,202 @@ const generateWordReport = () => {
 
 .help-modal,
 .history-modal {
-  background-color: rgba(248, 244, 233, 1);
-  border-radius: 12px;
-  width: 600px;
-  max-height: 80vh;
-  overflow: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 560px;
+  max-height: 70vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(44, 24, 16, 0.3);
+  animation: modalSlideIn 0.3s ease;
+}
+
+/* 图片上传区域 */
+.image-upload-section {
+  padding: 16px 20px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
   border: 1px solid rgba(166, 124, 82, 0.2);
+  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+}
+
+.image-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-SemiBold;
+}
+
+.image-section-icon {
+  font-size: 18px;
+  color: rgba(46, 89, 132, 1);
+}
+
+.image-section-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(101, 70, 40, 0.6);
+}
+
+.image-upload-columns {
+  display: flex;
+  gap: 16px;
+}
+
+.image-column {
+  flex: 1;
+  min-width: 0;
+}
+
+.image-column-label {
+  font-size: 12px;
+  color: rgba(101, 70, 40, 0.8);
+  margin-bottom: 8px;
+}
+
+.image-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px dashed rgba(166, 124, 82, 0.4);
+  border-radius: 6px;
+  background: rgba(248, 244, 233, 0.3);
+  cursor: pointer;
+  font-size: 13px;
+  color: rgba(101, 70, 40, 0.8);
+  transition: all 0.2s;
+}
+
+.image-upload-btn:hover {
+  border-color: rgba(166, 124, 82, 0.7);
+  background: rgba(248, 244, 233, 0.6);
+}
+
+.image-upload-btn input[type="file"] {
+  display: none;
+}
+
+.image-preview-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.image-preview-item {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+}
+
+.image-preview-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-preview-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(196, 30, 58, 0.85);
+  color: white;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.image-preview-item:hover .image-preview-remove {
+  opacity: 1;
+}
+
+.sensitive-result-modal {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(44, 24, 16, 0.3);
+  animation: modalSlideIn 0.3s ease;
+}
+
+.sensitive-result-body {
+  padding: 16px 24px;
+  overflow-y: auto;
+  max-height: calc(80vh - 80px);
+}
+
+.sensitive-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px 16px;
+  background: rgba(245, 238, 226, 0.6);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: rgba(44, 24, 16, 1);
+}
+
+.sensitive-match-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sensitive-match-item {
+  padding: 10px 14px;
+  background: rgba(248, 244, 233, 0.4);
+  border: 1px solid rgba(166, 124, 82, 0.15);
+  border-radius: 8px;
+}
+
+.sensitive-match-word {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.match-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  background: rgba(196, 30, 58, 0.12);
+  color: rgba(196, 30, 58, 1);
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+}
+
+.match-line {
+  font-size: 12px;
+  color: rgba(101, 70, 40, 0.7);
+}
+
+.sensitive-match-context {
+  font-size: 13px;
+  color: rgba(101, 70, 40, 1);
+  line-height: 1.5;
+  word-break: break-all;
 }
 
 .help-modal-header,

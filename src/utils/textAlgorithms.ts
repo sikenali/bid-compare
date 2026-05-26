@@ -83,6 +83,46 @@ export function buildHighlightedHtml(
 /**
  * 通过字符索引查找对应页码（二分查找）
  */
+/**
+ * 移除两个文档中的相同条款（标准模板条款）
+ * @param text1 文档1内容
+ * @param text2 文档2内容
+ * @param minChars 最小匹配字符数（低于此长度的不视为条款）
+ * @returns [处理后的text1, 处理后的text2]
+ */
+export function removeCommonClauses(
+  text1: string,
+  text2: string,
+  minChars: number = 10
+): [string, string] {
+  // 按句号、分号、换行切分为子句
+  const splitClauses = (text: string): string[] => {
+    const raw = text.split(/(?<=[。；;．])\s*/)
+    return raw.map(s => s.trim()).filter(s => s.length >= minChars)
+  }
+
+  const clauses1 = splitClauses(text1)
+  const clauses2 = splitClauses(text2)
+
+  if (clauses1.length === 0 || clauses2.length === 0) {
+    return [text1, text2]
+  }
+
+  const set2 = new Set(clauses2.map(c => c.replace(/\s+/g, '')))
+
+  const filtered1 = clauses1.filter(c => !set2.has(c.replace(/\s+/g, '')))
+  const filtered2 = clauses2.filter(c => {
+    const normalized = c.replace(/\s+/g, '')
+    return !new Set(filtered1.map(f => f.replace(/\s+/g, ''))).has(normalized)
+  })
+
+  // 重新过滤text2（基于text1过滤后保留的）
+  const filtered1Set = new Set(filtered1.map(c => c.replace(/\s+/g, '')))
+  const finalFiltered2 = clauses2.filter(c => !filtered1Set.has(c.replace(/\s+/g, '')))
+
+  return [filtered1.join('\n'), finalFiltered2.join('\n')]
+}
+
 export function findPageByIndex(pageMap: PageMap, charIndex: number): number {
   let left = 0
   let right = pageMap.ranges.length - 1

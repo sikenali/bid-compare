@@ -11,7 +11,8 @@ import {
   RiListCheck,
   RiExchange2Line,
   RiArrowLeftSLine,
-  RiArrowRightSLine
+  RiArrowRightSLine,
+  RiImageLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx'
 import { useSettings } from '../composables/useSettings'
@@ -42,6 +43,15 @@ const textSimilarity = ref('0%')
 const similarSegmentsCount = ref(0)
 const leftFileContent = ref('')
 const rightFileContent = ref('')
+
+// 图片雷同结果
+const imageDuplicates = ref<any[]>([])
+
+// 上下文查看
+const showContextModal = ref(false)
+const contextSegment = ref<SimilarSegment | null>(null)
+const contextSide = ref<'left' | 'right'>('left')
+const contextFullText = ref('')
 
 // AI分析相关
 const showAIAnalysis = ref(false)
@@ -150,6 +160,13 @@ const initData = () => {
     leftTotalPages.value = resultData.leftTotalPages || 1
     rightTotalPages.value = resultData.rightTotalPages || 1
 
+    // 加载原始文本内容（用于上下文查看）
+    leftFileContent.value = resultData.leftFileContent || ''
+    rightFileContent.value = resultData.rightFileContent || ''
+
+    // 加载图片雷同结果
+    imageDuplicates.value = resultData.imageDuplicates || []
+
     // 调试日志
     console.log('加载对比结果:', {
       leftFileName: leftFileName.value,
@@ -228,6 +245,35 @@ const handleAIAnalysis = async () => {
     aiModelResponse.value = `AI分析失败: ${(error as Error).message}`
     showAIAnalysis.value = true
   }
+}
+
+const getContextAround = (segment: SimilarSegment, side: 'left' | 'right', contextChars: number = 200): string => {
+  const fullText = side === 'left' ? leftFileContent.value : rightFileContent.value
+  if (!fullText) return '（无原文内容）'
+
+  const startIdx = side === 'left' ? (segment.leftStartIndex ?? -1) : (segment.rightStartIndex ?? -1)
+  const endIdx = side === 'left' ? (segment.leftEndIndex ?? -1) : (segment.rightEndIndex ?? -1)
+
+  if (startIdx < 0 || endIdx < 0) return '（无位置信息）'
+
+  const ctxStart = Math.max(0, startIdx - contextChars)
+  const ctxEnd = Math.min(fullText.length, endIdx + contextChars)
+
+  let before = fullText.substring(ctxStart, startIdx)
+  let match = fullText.substring(startIdx, endIdx)
+  let after = fullText.substring(endIdx, ctxEnd)
+
+  if (ctxStart > 0) before = '...' + before.slice(-contextChars)
+  if (ctxEnd < fullText.length) after = after.slice(0, contextChars) + '...'
+
+  return before + '【' + match + '】' + after
+}
+
+const viewContext = (segment: SimilarSegment, side: 'left' | 'right') => {
+  contextSegment.value = segment
+  contextSide.value = side
+  contextFullText.value = getContextAround(segment, side)
+  showContextModal.value = true
 }
 
 const handleBack = () => {
@@ -747,10 +793,10 @@ const visibleConnections = computed(() => {
         <div class="table-body" v-highlight-tooltip>
           <div v-for="segment in pageSegments" :key="segment.id" class="table-row">
             <div class="col col-index">{{ segment.id }}</div>
-            <div class="col col-content" v-html="sanitizeWithHighlight(segment.leftContent)"></div>
+            <div class="col col-content clickable" @click="viewContext(segment, 'left')" :title="'点击查看' + leftFileName + '上下文'" v-html="sanitizeWithHighlight(segment.leftContent)"></div>
             <div class="col col-position">{{ segment.leftPage }}</div>
             <div class="col col-position">{{ segment.rightPage }}</div>
-            <div class="col col-content" v-html="sanitizeWithHighlight(segment.rightContent)"></div>
+            <div class="col col-content clickable" @click="viewContext(segment, 'right')" :title="'点击查看' + rightFileName + '上下文'" v-html="sanitizeWithHighlight(segment.rightContent)"></div>
           </div>
         </div>
       </div>
@@ -776,6 +822,55 @@ const visibleConnections = computed(() => {
           <button class="page-btn" :disabled="currentPage >= totalPages" @click="nextPage">
             <RiArrowRightSLine />
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 图片雷同检测结果 -->
+    <div v-if="imageDuplicates.length" class="image-duplicate-section">
+      <div class="section-header">
+        <div class="title-section">
+          <RiImageLine class="title-icon" />
+          <h2 class="list-title">图片雷同检测</h2>
+        </div>
+        <div class="section-header-stats">
+          <span class="image-count-badge">发现 {{ imageDuplicates.length }} 组雷同图片</span>
+        </div>
+      </div>
+      <div class="image-duplicate-grid">
+        <div v-for="(dup, idx) in imageDuplicates" :key="dup.id" class="image-duplicate-card">
+          <div class="image-duplicate-pair">
+            <div class="image-duplicate-side">
+              <span class="image-side-label">左侧</span>
+              <img :src="dup.leftImage" class="image-duplicate-img" />
+              <span class="image-name">{{ dup.leftPage }}</span>
+            </div>
+            <div class="image-duplicate-vs">
+              <span class="vs-badge">{{ dup.similarity }}%</span>
+            </div>
+            <div class="image-duplicate-side">
+              <span class="image-side-label">右侧</span>
+              <img :src="dup.rightImage" class="image-duplicate-img" />
+              <span class="image-name">{{ dup.rightPage }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 上下文查看弹窗 -->
+    <div v-if="showContextModal" class="help-modal-overlay" @click="showContextModal = false">
+      <div class="context-modal" @click.stop>
+        <div class="help-modal-header">
+          <h3>{{ contextSide === 'left' ? leftFileName : rightFileName }} - 上下文</h3>
+          <button class="help-close-btn" @click="showContextModal = false">×</button>
+        </div>
+        <div class="context-modal-body">
+          <div class="context-segment-info">
+            <span class="context-segment-id">片段 #{{ contextSegment?.id }}</span>
+            <span class="context-segment-pos">{{ contextSide === 'left' ? contextSegment?.leftPage : contextSegment?.rightPage }}</span>
+          </div>
+          <pre class="context-pre">{{ contextFullText }}</pre>
         </div>
       </div>
     </div>
@@ -2039,6 +2134,164 @@ const visibleConnections = computed(() => {
   font-size: 12px;
   color: rgba(166, 124, 82, 1);
   border-right: 1px solid rgba(230, 215, 191, 0.3);
+}
+
+.col-content.clickable {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.col-content.clickable:hover {
+  background-color: rgba(255, 215, 0, 0.15);
+}
+
+/* 图片雷同检测 */
+.image-duplicate-section {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  overflow: hidden;
+}
+
+.section-header-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.image-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: rgba(46, 89, 132, 0.1);
+  color: rgba(46, 89, 132, 1);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+}
+
+.image-duplicate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.image-duplicate-card {
+  border: 1px solid rgba(166, 124, 82, 0.15);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(248, 244, 233, 0.3);
+}
+
+.image-duplicate-pair {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.image-duplicate-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.image-side-label {
+  font-size: 11px;
+  color: rgba(101, 70, 40, 0.6);
+  font-weight: 500;
+}
+
+.image-duplicate-img {
+  width: 100%;
+  max-height: 120px;
+  object-fit: contain;
+  border-radius: 4px;
+  border: 1px solid rgba(166, 124, 82, 0.1);
+}
+
+.image-name {
+  font-size: 11px;
+  color: rgba(101, 70, 40, 0.7);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.image-duplicate-vs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.vs-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 4px 8px;
+  background: rgba(196, 30, 58, 0.1);
+  color: rgba(196, 30, 58, 1);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: SourceHanSans-Bold;
+}
+
+.context-modal {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(44, 24, 16, 0.3);
+  animation: modalSlideIn 0.3s ease;
+}
+
+.context-modal-body {
+  padding: 16px 24px;
+  overflow-y: auto;
+  max-height: calc(80vh - 80px);
+}
+
+.context-segment-info {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(245, 238, 226, 0.6);
+  border-radius: 8px;
+  font-size: 13px;
+  color: rgba(101, 70, 40, 1);
+}
+
+.context-segment-id {
+  font-weight: 600;
+  color: rgba(196, 30, 58, 1);
+}
+
+.context-pre {
+  font-family: 'Microsoft YaHei', 'SourceHanSans', monospace;
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: rgba(44, 24, 16, 1);
+  background: rgba(248, 244, 233, 0.3);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.1);
+  max-height: 50vh;
+  overflow-y: auto;
 }
 
 /* 分页控件 */

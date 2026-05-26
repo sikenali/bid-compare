@@ -11,6 +11,9 @@ interface CompareResultData {
   similarSegmentsCount: number
   leftTotalPages?: number
   rightTotalPages?: number
+  leftFileContent?: string
+  rightFileContent?: string
+  imageDuplicates?: any[]
 }
 
 interface PropertyCheckResultData {
