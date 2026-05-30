@@ -112,7 +112,7 @@ const handleBatchCompare = async () => {
     }
 
     const comparisonSettings: ComparisonSettings = {
-      minDuplicateWords: settings.minDuplicateWords,
+      minDuplicateWords: settings.minDupChars,
       textSimilarityThreshold: settings.textSimilarityThreshold,
       ignoreCase: settings.ignoreCase,
       ignorePunctuation: settings.ignorePunctuation,

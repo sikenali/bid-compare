@@ -1,10 +1,13 @@
 import { ref } from 'vue'
 import {
   selectStrategy,
+  selectSmartStrategy,
   findSimilarSegments,
+  findSimilarSegmentsMyers,
   calculateTextSimilarity,
   type SimilarSegment,
   type ComparisonSettings,
+  type ComparisonStrategy,
   type PageMap
 } from '../utils/textAlgorithms'
 import ComparisonWorker from '../workers/comparison.worker?worker'
@@ -29,7 +32,8 @@ export function useComparison() {
     text2: string,
     settings: ComparisonSettings,
     pageMap1?: PageMap,
-    pageMap2?: PageMap
+    pageMap2?: PageMap,
+    forceStrategy?: ComparisonStrategy
   ): Promise<{ segments: SimilarSegment[]; similarity: number }> {
     const textLength = Math.max(text1.length, text2.length)
 
@@ -45,18 +49,21 @@ export function useComparison() {
     canCancel.value = false
     parseError.value = ''
 
-    const strategy = selectStrategy(textLength)
+    // 使用强制策略或智能策略选择
+    const strategy = forceStrategy || selectSmartStrategy(text1, text2)
 
     try {
-      if (strategy === 'lcs') {
-        // 小文件：使用暴力 LCS 算法，结果最准确
-        progressMessage.value = '正在对比...'
-        const segments = findSimilarSegments(text1, text2, settings, 10, pageMap1, pageMap2)
+      // 小文件和中等文件在主线程处理
+      if (strategy === 'lcs' || strategy === 'myers') {
+        progressMessage.value = strategy === 'lcs' ? '正在对比...' : '精确比对中...'
+        const segments = strategy === 'lcs' 
+          ? findSimilarSegments(text1, text2, settings, 10, pageMap1, pageMap2)
+          : findSimilarSegmentsMyers(text1, text2, settings.minDupChars, 10, pageMap1, pageMap2)
         const similarity = calculateTextSimilarity(text1, text2, settings)
         isProcessing.value = false
         return { segments, similarity }
       } else {
-        // 中/大文件：Worker
+        // 大文件：Worker
         return runWorkerComparison(text1, text2, settings, strategy, pageMap1, pageMap2)
       }
     } catch (error) {
@@ -69,7 +76,7 @@ export function useComparison() {
     text1: string,
     text2: string,
     settings: ComparisonSettings,
-    strategy: string,
+    strategy: ComparisonStrategy,
     pageMap1?: PageMap,
     pageMap2?: PageMap
   ): Promise<{ segments: SimilarSegment[]; similarity: number }> {
@@ -79,7 +86,24 @@ export function useComparison() {
         const worker = new ComparisonWorker()
         currentWorker = worker
         canCancel.value = true
-        progressMessage.value = strategy === 'rabin-karp' ? '正在分析...' : 'MinHash 计算中...'
+        
+        // 根据策略设置不同的进度消息
+        switch (strategy) {
+          case 'rabin-karp':
+            progressMessage.value = '正在分析...'
+            break
+          case 'minhash':
+            progressMessage.value = 'MinHash 计算中...'
+            break
+          case 'simhash':
+            progressMessage.value = 'SimHash 粗筛中...'
+            break
+          case 'smart':
+            progressMessage.value = '智能分析中...'
+            break
+          default:
+            progressMessage.value = '正在分析...'
+        }
 
         // 超时保护
         const dynamicTimeout = Math.min(

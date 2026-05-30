@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import {
   RiWindowsLine,
   RiWifiLine,
   RiFingerprintLine,
-  RiRestartLine
+  RiRestartLine,
+  RiComputerLine,
+  RiServerLine
 } from '@remixicon/vue'
 import { useHardwareInfo } from '../composables/useHardwareInfo'
 
@@ -15,11 +18,21 @@ const {
   error,
   refresh
 } = useHardwareInfo()
+
+// 当前激活的标签页
+const activeTab = ref('system')
+
+// 导航标签配置
+const navTabs = [
+  { key: 'system', label: '操作系统', icon: RiWindowsLine },
+  { key: 'network', label: '网络信息', icon: RiWifiLine },
+  { key: 'fingerprint', label: '设备指纹', icon: RiFingerprintLine }
+]
 </script>
 
 <template>
   <div class="hardware-info-container">
-    <!-- 页面标题 -->
+    <!-- 页面标题区 -->
     <div class="page-header">
       <div class="title-row">
         <div>
@@ -30,7 +43,7 @@ const {
           <button class="refresh-btn" @click="refresh" :disabled="isLoading" title="刷新">
             <RiRestartLine class="refresh-icon" :class="{ spinning: isLoading }" />
           </button>
-          <span v-if="!isLoading" class="sample-badge">实时数据</span>
+          <span class="sample-badge">实时数据</span>
         </div>
       </div>
     </div>
@@ -47,18 +60,28 @@ const {
       <button class="retry-btn" @click="refresh">重试</button>
     </div>
 
-    <!-- 信息卡片列表 -->
-    <div v-else class="info-cards">
-      <!-- 操作系统信息 -->
-      <div v-if="systemInfo" class="info-card">
-        <div class="card-header">
-          <div class="icon-container" :style="{ backgroundColor: systemInfo.iconBg }">
-            <RiWindowsLine class="card-icon" :style="{ color: systemInfo.iconColor }" />
-          </div>
-          <h2 class="card-title">{{ systemInfo.title }}</h2>
-        </div>
-        <div class="card-body">
-          <div class="info-multi-columns">
+    <!-- 内容区 - 左侧导航 + 右侧内容 -->
+    <div v-else class="info-layout">
+      <!-- 左侧导航 -->
+      <nav class="info-nav">
+        <button
+          v-for="tab in navTabs"
+          :key="tab.key"
+          class="nav-tab"
+          :class="{ active: activeTab === tab.key }"
+          @click="activeTab = tab.key"
+        >
+          <component :is="tab.icon" class="nav-tab-icon" />
+          <span class="nav-tab-label">{{ tab.label }}</span>
+        </button>
+      </nav>
+
+      <!-- 右侧内容 -->
+      <div class="info-content">
+        <!-- 操作系统信息 -->
+        <div v-if="activeTab === 'system' && systemInfo" class="info-section">
+          <h2 class="section-title">{{ systemInfo.title }}</h2>
+          <div class="info-grid">
             <div
               v-for="(item, itemIndex) in systemInfo.items"
               :key="itemIndex"
@@ -71,18 +94,11 @@ const {
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 网络信息 -->
-      <div v-if="networkInfo" class="info-card">
-        <div class="card-header">
-          <div class="icon-container" :style="{ backgroundColor: networkInfo.iconBg }">
-            <RiWifiLine class="card-icon" :style="{ color: networkInfo.iconColor }" />
-          </div>
-          <h2 class="card-title">{{ networkInfo.title }}</h2>
-        </div>
-        <div class="card-body">
-          <div class="info-multi-columns">
+        <!-- 网络信息 -->
+        <div v-if="activeTab === 'network' && networkInfo" class="info-section">
+          <h2 class="section-title">{{ networkInfo.title }}</h2>
+          <div class="info-grid">
             <div
               v-for="(item, itemIndex) in networkInfo.items"
               :key="itemIndex"
@@ -95,18 +111,11 @@ const {
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 设备指纹信息 -->
-      <div v-if="fingerprintInfo" class="info-card">
-        <div class="card-header">
-          <div class="icon-container" :style="{ backgroundColor: fingerprintInfo.iconBg }">
-            <RiFingerprintLine class="card-icon" :style="{ color: fingerprintInfo.iconColor }" />
-          </div>
-          <h2 class="card-title">{{ fingerprintInfo.title }}</h2>
-        </div>
-        <div class="card-body">
-          <div class="info-full-width">
+        <!-- 设备指纹信息 -->
+        <div v-if="activeTab === 'fingerprint' && fingerprintInfo" class="info-section">
+          <h2 class="section-title">{{ fingerprintInfo.title }}</h2>
+          <div class="info-list">
             <div
               v-for="(item, itemIndex) in fingerprintInfo.items"
               :key="itemIndex"
@@ -128,21 +137,28 @@ const {
 .hardware-info-container {
   width: 100%;
   height: 100%;
-  overflow: auto;
+  overflow-y: auto;
+  padding: 24px;
   background-color: rgba(248, 244, 233, 1);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* 页面头部 */
+/* 页面标题区 */
 .page-header {
-  padding: 16px 24px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: rgba(44, 24, 16, 1);
+  margin: 0;
+  font-family: SourceHanSans-Bold;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: rgba(101, 70, 40, 0.7);
+  margin: 4px 0 0 0;
 }
 
 .title-row {
@@ -158,29 +174,32 @@ const {
 }
 
 .refresh-btn {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border: none;
   border-radius: 8px;
-  background-color: transparent;
+  background-color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
+  border: 1px solid rgba(166, 124, 82, 0.2);
 }
 
 .refresh-btn:hover:not(:disabled) {
   background-color: rgba(139, 0, 0, 0.1);
+  border-color: rgba(139, 0, 0, 0.3);
 }
 
 .refresh-btn:disabled {
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .refresh-icon {
   font-size: 18px;
-  color: rgba(107, 79, 52, 1);
+  color: rgba(101, 70, 40, 0.8);
   transition: transform 0.3s ease;
 }
 
@@ -197,28 +216,152 @@ const {
 .sample-badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 12px;
-  background-color: rgba(220, 252, 231, 1);
-  border-radius: 999px;
+  padding: 6px 14px;
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 20px;
   font-size: 12px;
   font-weight: 500;
-  color: rgba(34, 139, 34, 1);
-  font-family: SourceHanSans-Medium;
+  color: rgba(76, 175, 80, 1);
 }
 
-.page-title {
-  font-size: 20px;
-  font-weight: 700;
+/* 布局 - 左侧导航 + 右侧内容 */
+.info-layout {
+  display: flex;
+  gap: 24px;
+  min-height: calc(100vh - 180px);
+}
+
+/* 左侧导航 */
+.info-nav {
+  width: 180px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-self: flex-start;
+  position: sticky;
+  top: 24px;
+}
+
+.nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(101, 70, 40, 0.8);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.nav-tab:hover {
+  background: rgba(255, 255, 255, 0.6);
   color: rgba(44, 24, 16, 1);
-  margin: 0 0 4px 0;
-  font-family: SourceHanSans-Bold;
 }
 
-.page-subtitle {
-  font-size: 12px;
-  color: rgba(101, 70, 40, 1);
-  margin: 0;
-  font-family: SourceHanSans-Regular;
+.nav-tab.active {
+  background: rgba(139, 0, 0, 0.08);
+  color: rgba(139, 0, 0, 1);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.1);
+}
+
+.nav-tab-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.nav-tab.active .nav-tab-icon {
+  color: rgba(139, 0, 0, 1);
+}
+
+.nav-tab-label {
+  flex: 1;
+}
+
+/* 右侧内容 */
+.info-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.info-section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid rgba(166, 124, 82, 0.15);
+  box-shadow: 0 2px 12px rgba(44, 24, 16, 0.06);
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.15);
+  font-family: SourceHanSans-SemiBold;
+}
+
+/* 信息网格 */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* 信息列表 */
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 信息字段 */
+.info-field,
+.info-field-full {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 14px;
+  color: rgba(101, 70, 40, 0.8);
+  font-weight: 500;
+}
+
+.field-value-box {
+  background-color: rgba(248, 244, 233, 0.5);
+  border: 1px solid rgba(166, 124, 82, 0.15);
+  border-radius: 8px;
+  padding: 12px 14px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.field-value-box.wide {
+  padding: 14px;
+}
+
+.field-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(44, 24, 16, 1);
+  line-height: 1.4;
+}
+
+.field-value.mono {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  word-break: break-all;
 }
 
 /* 加载状态 */
@@ -239,11 +382,15 @@ const {
   animation: spin 0.8s linear infinite;
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .loading-text {
   margin-top: 16px;
   font-size: 14px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
+  color: rgba(101, 70, 40, 0.8);
 }
 
 /* 错误状态 */
@@ -257,281 +404,56 @@ const {
 
 .error-text {
   font-size: 14px;
-  color: rgba(220, 38, 38, 1);
-  font-family: SourceHanSans-Regular;
+  color: rgba(196, 30, 58, 1);
   margin-bottom: 16px;
 }
 
 .retry-btn {
-  padding: 8px 24px;
-  border: 1px solid rgba(139, 0, 0, 1);
+  padding: 10px 24px;
+  border: 1px solid rgba(139, 0, 0, 0.3);
   border-radius: 8px;
   background-color: transparent;
   color: rgba(139, 0, 0, 1);
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  font-family: SourceHanSans-Medium;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
 .retry-btn:hover {
   background-color: rgba(139, 0, 0, 0.1);
 }
 
-/* 信息卡片 */
-.info-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-
-/* 指纹信息卡片占满整行 */
-.info-card:last-child {
-  grid-column: 1 / -1;
-}
-
-.info-card {
-  background-color: rgba(255, 255, 255, 1);
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  padding: 24px;
-}
-
-/* 卡片头部 */
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.icon-container {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.card-icon {
-  font-size: 20px;
-}
-
-.card-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  margin: 0;
-  font-family: SourceHanSans-SemiBold;
-}
-
-/* 卡片内容 */
-.card-body {
-  margin-top: 24px;
-}
-
-/* 多列布局（系统信息/网络信息） */
-.info-multi-columns {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-}
-
-/* 全宽布局（指纹信息） */
-.info-full-width {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* 信息字段 */
-.info-field,
-.info-field-full {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.field-label {
-  font-size: 14px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
-}
-
-.field-value-box {
-  background-color: rgba(245, 238, 226, 1);
-  border-radius: 8px;
-  padding: 12px;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-}
-
-.field-value-box.wide {
-  padding: 16px;
-}
-
-.field-value {
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Medium;
-  line-height: 1.4;
-}
-
-.field-value.mono {
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  word-break: break-all;
-}
-
 /* 移动端响应式 */
 @media (max-width: 768px) {
-  .hardware-info-container {
-    gap: 12px;
-    padding: 12px;
-  }
-
-  .info-cards {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    width: 100%;
-  }
-
-  .info-card {
-    width: 100%;
-    max-width: 100%;
-    background-color: rgba(255, 255, 255, 1);
-    border: 0.7px solid rgba(216, 191, 156, 1);
-    border-radius: 10px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-    padding: 12px;
-    box-sizing: border-box;
-    overflow: hidden;
-  }
-
-  .card-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-
-  .icon-container {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    border-radius: 6px;
-  }
-
-  .card-icon {
-    font-size: 16px;
-  }
-
-  .card-title {
-    font-size: 14px;
-    font-weight: 600;
-    margin: 0;
-  }
-
-  .card-body {
-    margin-top: 0;
-    display: flex;
+  .info-layout {
     flex-direction: column;
-    gap: 8px;
   }
 
-  /* 系统信息/网络信息 - 与 settings-card 一致的样式 */
-  .info-multi-columns {
-    display: grid;
+  .info-nav {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .nav-tab {
+    white-space: nowrap;
+  }
+
+  .info-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  /* 指纹信息 - 与 settings-card 一致的样式 */
-  .info-full-width {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  /* 字段样式：垂直排列保证表格对齐 */
-  .info-field,
-  .info-field-full {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    width: 100%;
-  }
-
-  .field-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: rgba(44, 24, 16, 1);
-    font-family: SourceHanSans-Medium;
-  }
-
-  .field-value-box {
-    width: 100%;
-    background-color: rgba(245, 238, 226, 1);
-    border-radius: 6px;
-    padding: 6px 8px;
-    min-height: 32px;
-    display: flex;
-    align-items: center;
-    box-sizing: border-box;
-  }
-
-  .field-value-box.wide {
-    padding: 6px 8px;
-  }
-
-  .field-value {
-    font-size: 12px;
-    font-weight: 500;
-    color: rgba(44, 24, 16, 1);
-    font-family: SourceHanSans-Medium;
-    word-break: break-all;
-  }
-
-  .field-value.mono {
-    font-family: 'Courier New', monospace;
-    font-size: 11px;
-  }
-
-  .page-title {
-    font-size: 18px;
+    gap: 12px;
   }
 
   .page-header {
-    display: none;
+    margin-bottom: 16px;
   }
 
-  .sample-badge {
-    padding: 3px 8px;
-    font-size: 10px;
-  }
-
-  .refresh-btn {
-    width: 28px;
-    height: 28px;
-  }
-
-  .refresh-icon {
-    font-size: 16px;
-  }
-}
-
-/* 平板端优化 */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .info-cards {
-    gap: 20px;
-  }
-
-  .info-multi-columns {
-    gap: 20px;
+  .title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 }
 </style>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useSettings } from '../composables/useSettings'
-import { getDefaultSensitiveWords, saveSensitiveWords, loadSensitiveWords } from '../utils/sensitiveWords'
 import {
   RiSettings3Line,
   RiText,
@@ -11,7 +10,6 @@ import {
   RiMarkdownLine,
   RiImageLine,
   RiFilterLine,
-  RiSearchLine,
   RiCloseLine
 } from '@remixicon/vue'
 
@@ -22,38 +20,17 @@ const {
   resetToDefault: handleResetToDefault
 } = useSettings()
 
-const sensitiveWordsInput = ref('')
-const sensitiveWords = ref<string[]>([])
+// 当前激活的标签页
+const activeTab = ref('algorithm')
 
-onMounted(() => {
-  sensitiveWords.value = loadSensitiveWords()
-  sensitiveWordsInput.value = sensitiveWords.value.join(', ')
-})
-
-const updateSensitiveWords = () => {
-  const words = sensitiveWordsInput.value
-    .split(/[,，\n、]/)
-    .map(w => w.trim())
-    .filter(w => w.length > 0)
-  sensitiveWords.value = [...new Set(words)]
-  saveSensitiveWords(sensitiveWords.value)
-}
-
-const addSensitiveWord = () => {
-  updateSensitiveWords()
-}
-
-const removeSensitiveWord = (word: string) => {
-  sensitiveWords.value = sensitiveWords.value.filter(w => w !== word)
-  sensitiveWordsInput.value = sensitiveWords.value.join(', ')
-  saveSensitiveWords(sensitiveWords.value)
-}
-
-const resetSensitiveWords = () => {
-  sensitiveWords.value = getDefaultSensitiveWords()
-  sensitiveWordsInput.value = sensitiveWords.value.join(', ')
-  saveSensitiveWords(sensitiveWords.value)
-}
+// 导航标签配置
+const navTabs = [
+  { key: 'algorithm', label: '对比算法', icon: RiSettings3Line },
+  { key: 'preprocess', label: '文本预处理', icon: RiText },
+  { key: 'features', label: '参数设置', icon: RiFilterLine },
+  { key: 'export', label: '导出设置', icon: RiFileDownloadLine },
+  { key: 'ai', label: 'AI 模型', icon: RiRobot2Line }
+]
 
 const handleReset = () => {
   handleResetToDefault()
@@ -72,7 +49,7 @@ const exportFormats = [
   { value: 'markdown', label: 'Markdown', icon: RiMarkdownLine }
 ]
 
-// AI 模型选项 - 使用自定义 SVG 图标
+// AI 模型选项
 const aiModels = [
   {
     value: 'deepseek',
@@ -81,16 +58,16 @@ const aiModels = [
     iconSvg: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>`
   },
   {
-    value: 'kimi',
-    label: 'Kimi',
-    iconColor: '#10B981',
-    iconSvg: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/><path d="M7 9h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/></svg>`
+    value: 'qwen',
+    label: 'Qwen 通义千问',
+    iconColor: '#6236FF',
+    iconSvg: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>`
   },
   {
-    value: 'doubao',
-    label: '豆包',
-    iconColor: '#059669',
-    iconSvg: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>`
+    value: 'openai',
+    label: 'OpenAI',
+    iconColor: '#10A37F',
+    iconSvg: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494zM3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646zM2.34 7.896a4.485 4.485 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.676l5.815 3.355-2.02 1.168a.076.076 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.872zm16.597 3.855-5.833-3.387L15.119 7.2a.076.076 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.407-.667zm2.01-3.023-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zm-12.64 4.135-2.02-1.164a.08.08 0 0 1-.038-.057V6.075a4.5 4.5 0 0 1 7.375-3.453l-.142.08L8.704 5.46a.795.795 0 0 0-.393.681zm1.097-2.365 2.602-1.5 2.607 1.5v2.999l-2.597 1.5-2.607-1.5z"/></svg>`
   }
 ]
 </script>
@@ -107,17 +84,28 @@ const aiModels = [
       </div>
     </div>
 
-    <!-- 设置表单区 -->
-    <div class="settings-form">
-      <!-- 对比算法设置卡片 -->
-      <div class="settings-card">
-        <div class="card-header">
-          <div class="card-icon algorithm">
-            <RiSettings3Line class="icon" />
-          </div>
-          <h2 class="card-title">对比算法设置</h2>
-        </div>
-        <div class="card-content">
+    <!-- 设置内容区 - 左侧导航 + 右侧内容 -->
+    <div class="settings-layout">
+      <!-- 左侧导航 -->
+      <nav class="settings-nav">
+        <button
+          v-for="tab in navTabs"
+          :key="tab.key"
+          class="nav-tab"
+          :class="{ active: activeTab === tab.key }"
+          @click="activeTab = tab.key"
+        >
+          <component :is="tab.icon" class="nav-tab-icon" />
+          <span class="nav-tab-label">{{ tab.label }}</span>
+        </button>
+      </nav>
+
+      <!-- 右侧设置内容 -->
+      <div class="settings-content">
+        <!-- 对比算法设置 -->
+        <div v-if="activeTab === 'algorithm'" class="settings-section">
+          <h2 class="section-title">对比算法设置</h2>
+          
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">N-gram 大小</label>
@@ -133,21 +121,23 @@ const aiModels = [
               </button>
             </div>
           </div>
+
           <div class="setting-row">
             <div class="setting-label-group">
-              <label class="setting-label">最小匹配长度</label>
-              <p class="setting-desc">连续匹配的最小字符数</p>
+              <label class="setting-label">最小查重字数</label>
+              <p class="setting-desc">标记为重复的最少连续字符数</p>
             </div>
             <div class="number-stepper">
-              <button class="stepper-btn" @click="settings.minDuplicateWords = Math.max(1, settings.minDuplicateWords - 1)">
+              <button class="stepper-btn" @click="settings.minDupChars = Math.max(5, settings.minDupChars - 5)">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               </button>
-              <input type="text" :value="settings.minDuplicateWords" class="stepper-input" @input="settings.minDuplicateWords = clampNumber($event.target.value, 1, 100)" />
-              <button class="stepper-btn" @click="settings.minDuplicateWords = Math.min(100, settings.minDuplicateWords + 1)">
+              <input type="text" :value="settings.minDupChars" class="stepper-input" @input="settings.minDupChars = clampNumber($event.target.value, 5, 200)" />
+              <button class="stepper-btn" @click="settings.minDupChars = Math.min(200, settings.minDupChars + 5)">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               </button>
             </div>
           </div>
+
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">相似度阈值</label>
@@ -163,6 +153,7 @@ const aiModels = [
               </button>
             </div>
           </div>
+
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">图像相似度阈值</label>
@@ -178,6 +169,7 @@ const aiModels = [
               </button>
             </div>
           </div>
+
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">最大结果数</label>
@@ -194,17 +186,11 @@ const aiModels = [
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 文本预处理设置卡片 -->
-      <div class="settings-card">
-        <div class="card-header">
-          <div class="card-icon preprocess">
-            <RiText class="icon" />
-          </div>
-          <h2 class="card-title">文本预处理设置</h2>
-        </div>
-        <div class="card-content">
+        <!-- 文本预处理设置 -->
+        <div v-if="activeTab === 'preprocess'" class="settings-section">
+          <h2 class="section-title">文本预处理设置</h2>
+          
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">忽略大小写</label>
@@ -215,6 +201,7 @@ const aiModels = [
               <span class="slider"></span>
             </label>
           </div>
+
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">忽略标点符号</label>
@@ -225,6 +212,7 @@ const aiModels = [
               <span class="slider"></span>
             </label>
           </div>
+
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">忽略空白字符</label>
@@ -235,6 +223,7 @@ const aiModels = [
               <span class="slider"></span>
             </label>
           </div>
+
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">忽略不可见字符</label>
@@ -246,18 +235,112 @@ const aiModels = [
             </label>
           </div>
         </div>
-      </div>
 
-      <!-- 导出设置卡片 -->
-      <div class="settings-card">
-        <div class="card-header">
-          <div class="card-icon export">
-            <RiFileDownloadLine class="icon" />
+        <!-- 查重参数设置 -->
+        <div v-if="activeTab === 'features'" class="settings-section">
+          <h2 class="section-title">参数设置</h2>
+          
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <label class="setting-label">水印文字剔除</label>
+              <p class="setting-desc">解析时自动过滤常见水印文字</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" v-model="settings.removeWatermark" />
+              <span class="slider"></span>
+            </label>
           </div>
-          <h2 class="card-title">导出设置</h2>
+
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <label class="setting-label">相同条款剔除</label>
+              <p class="setting-desc">启用后自动剔除招标文件中完全相同的条款</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" v-model="settings.clauseRemovalEnabled" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row" v-if="settings.clauseRemovalEnabled">
+            <div class="setting-label-group">
+              <label class="setting-label">剔除颗粒度</label>
+              <p class="setting-desc">条款剔除的最小连续相同字符数</p>
+            </div>
+            <div class="number-stepper">
+              <button class="stepper-btn" @click="settings.clauseRemovalGranularity = Math.max(2, settings.clauseRemovalGranularity - 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <input type="text" :value="settings.clauseRemovalGranularity" class="stepper-input" @input="settings.clauseRemovalGranularity = clampNumber($event.target.value, 2, 50)" />
+              <button class="stepper-btn" @click="settings.clauseRemovalGranularity = Math.min(50, settings.clauseRemovalGranularity + 1)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <label class="setting-label">图片查重</label>
+              <p class="setting-desc">开启后对比文档中的雷同图片</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" v-model="settings.enableImageCompare" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row" v-if="settings.enableImageCompare">
+            <div class="setting-label-group">
+              <label class="setting-label">OCR 文字识别</label>
+              <p class="setting-desc">开启后对图片进行文字识别并对比</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" v-model="settings.enableOCRCompare" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row" v-if="settings.enableOCRCompare">
+            <div class="setting-label-group">
+              <label class="setting-label">OCR 识别语言</label>
+              <p class="setting-desc">选择图片文字识别的语言</p>
+            </div>
+            <select v-model="settings.ocrLanguage" class="select-input">
+              <option value="chi_sim+eng">中文简体 + 英文</option>
+              <option value="chi_tra+eng">中文繁体 + 英文</option>
+              <option value="eng">英文</option>
+              <option value="chi_sim">中文简体</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <label class="setting-label">多文件对比</label>
+              <p class="setting-desc">开启后可同时对比多个文件（3个以上）</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" v-model="settings.enableMultiFileCompare" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row" v-if="settings.enableMultiFileCompare">
+            <div class="setting-label-group">
+              <label class="setting-label">最大文件数量</label>
+              <p class="setting-desc">单次对比最多支持的文件数</p>
+            </div>
+            <input type="number" 
+                   v-model.number="settings.maxMultiFileCount" 
+                   min="3" 
+                   max="20"
+                   class="number-input" />
+          </div>
         </div>
-        <div class="card-content">
-          <!-- 默认导出格式 -->
+
+        <!-- 导出设置 -->
+        <div v-if="activeTab === 'export'" class="settings-section">
+          <h2 class="section-title">导出设置</h2>
+          
           <div class="setting-row radio-row">
             <div class="setting-label-group">
               <label class="setting-label">默认导出格式</label>
@@ -279,7 +362,7 @@ const aiModels = [
               </label>
             </div>
           </div>
-          <!-- 包含高亮样式 -->
+
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">包含高亮样式</label>
@@ -290,7 +373,7 @@ const aiModels = [
               <span class="slider"></span>
             </label>
           </div>
-          <!-- 包含统计图表 -->
+
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">包含统计图表</label>
@@ -302,146 +385,11 @@ const aiModels = [
             </label>
           </div>
         </div>
-      </div>
 
-      <!-- 查重设置卡片 -->
-      <div class="settings-card">
-        <div class="card-header">
-          <div class="card-icon duplicate">
-            <RiFilterLine class="icon" />
-          </div>
-          <h2 class="card-title">查重参数设置</h2>
-        </div>
-        <div class="card-content">
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">查重段落数量</label>
-              <p class="setting-desc">批量对比时每个文件提取的段落数</p>
-            </div>
-            <div class="number-stepper">
-              <button class="stepper-btn" @click="settings.paragraphCount = Math.max(1, settings.paragraphCount - 1)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-              <input type="text" :value="settings.paragraphCount" class="stepper-input" @input="settings.paragraphCount = clampNumber($event.target.value, 1, 50)" />
-              <button class="stepper-btn" @click="settings.paragraphCount = Math.min(50, settings.paragraphCount + 1)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-            </div>
-          </div>
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">最小查重字数</label>
-              <p class="setting-desc">标记为重复的最少连续字符数</p>
-            </div>
-            <div class="number-stepper">
-              <button class="stepper-btn" @click="settings.minDupChars = Math.max(5, settings.minDupChars - 5)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-              <input type="text" :value="settings.minDupChars" class="stepper-input" @input="settings.minDupChars = clampNumber($event.target.value, 5, 200)" />
-              <button class="stepper-btn" @click="settings.minDupChars = Math.min(200, settings.minDupChars + 5)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-            </div>
-          </div>
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">相同条款剔除</label>
-              <p class="setting-desc">启用后自动剔除招标文件中完全相同的条款</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.clauseRemovalEnabled" />
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">剔除颗粒度</label>
-              <p class="setting-desc">条款剔除的最小连续相同字符数</p>
-            </div>
-            <div class="number-stepper">
-              <button class="stepper-btn" @click="settings.clauseRemovalGranularity = Math.max(2, settings.clauseRemovalGranularity - 1)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-              <input type="text" :value="settings.clauseRemovalGranularity" class="stepper-input" @input="settings.clauseRemovalGranularity = clampNumber($event.target.value, 2, 50)" />
-              <button class="stepper-btn" @click="settings.clauseRemovalGranularity = Math.min(50, settings.clauseRemovalGranularity + 1)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-            </div>
-          </div>
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">水印文字剔除</label>
-              <p class="setting-desc">解析时自动过滤常见水印文字</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.removeWatermark" />
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">图片查重</label>
-              <p class="setting-desc">开启后对比文档中的雷同图片</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.enableImageCompare" />
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <!-- 敏感词管理卡片 -->
-      <div class="settings-card">
-        <div class="card-header">
-          <div class="card-icon sensitive">
-            <RiSearchLine class="icon" />
-          </div>
-          <h2 class="card-title">敏感词管理</h2>
-        </div>
-        <div class="card-content">
-          <div class="setting-row" style="align-items: flex-start;">
-            <div class="setting-label-group">
-              <label class="setting-label">敏感词列表</label>
-              <p class="setting-desc">输入敏感词，用逗号或换行分隔</p>
-            </div>
-          </div>
-          <textarea
-            v-model="sensitiveWordsInput"
-            class="sensitive-input"
-            rows="4"
-            placeholder="输入敏感词，用逗号或换行分隔..."
-            @input="updateSensitiveWords"
-          ></textarea>
-          <div class="sensitive-tags">
-            <span
-              v-for="word in sensitiveWords"
-              :key="word"
-              class="sensitive-tag"
-            >
-              {{ word }}
-              <button class="tag-remove" @click="removeSensitiveWord(word)">
-                <RiCloseLine class="tag-remove-icon" />
-              </button>
-            </span>
-          </div>
-          <div class="sensitive-actions">
-            <button class="btn-small" @click="resetSensitiveWords">恢复默认</button>
-            <span class="sensitive-count">共 {{ sensitiveWords.length }} 个敏感词</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- AI模型设置卡片 -->
-      <div class="settings-card">
-        <div class="card-header">
-          <div class="card-icon ai-model">
-            <RiRobot2Line class="icon" />
-          </div>
-          <h2 class="card-title">AI 模型设置</h2>
-        </div>
-        <div class="card-content">
-          <!-- AI 模型选择 -->
+        <!-- AI 模型设置 -->
+        <div v-if="activeTab === 'ai'" class="settings-section">
+          <h2 class="section-title">AI 模型设置</h2>
+          
           <div class="setting-row radio-row">
             <div class="setting-label-group">
               <label class="setting-label">AI 模型</label>
@@ -463,6 +411,7 @@ const aiModels = [
               </label>
             </div>
           </div>
+
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">API 端点</label>
@@ -470,20 +419,22 @@ const aiModels = [
             </div>
             <input type="text" v-model="settings.apiEndpoint" class="setting-input api-input" placeholder="https://api.example.com" />
           </div>
+
           <div class="setting-row">
             <div class="setting-label-group">
-              <label class="setting-label">API 密钥</label>
-              <p class="setting-desc">输入您的 API Key 以使用 AI 分析</p>
+              <label class="setting-label">API Key</label>
+              <p class="setting-desc">用于身份验证的 API 密钥</p>
             </div>
             <input type="password" v-model="settings.apiKey" class="setting-input api-input" placeholder="sk-..." />
           </div>
         </div>
-      </div>
 
-      <!-- 操作按钮区 -->
-      <div class="action-buttons">
-        <button class="btn btn-reset" @click="handleReset">重置</button>
-        <button class="btn btn-save" @click="handleSaveSettings">保存</button>
+        <!-- 操作按钮 -->
+        <div class="action-buttons">
+          <button class="btn btn-reset" @click="handleReset">恢复默认</button>
+          <button class="btn btn-cancel" @click="handleCancelSettings">取消</button>
+          <button class="btn btn-save" @click="handleSaveSettings">保存设置</button>
+        </div>
       </div>
     </div>
   </div>
@@ -493,364 +444,200 @@ const aiModels = [
 .system-settings-container {
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  overflow-y: auto;
+  padding: 24px;
   background-color: rgba(248, 244, 233, 1);
-  gap: 20px;
-  font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* 页面标题区 */
 .page-header {
-  padding: 16px 24px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
-}
-
-.title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  margin-bottom: 24px;
 }
 
 .page-title {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   color: rgba(44, 24, 16, 1);
-  margin: 0 0 4px 0;
+  margin: 0;
   font-family: SourceHanSans-Bold;
 }
 
 .page-subtitle {
-  font-size: 12px;
-  color: rgba(166, 124, 82, 1);
-  margin: 0;
-  font-family: SourceHanSans-Regular;
+  font-size: 14px;
+  color: rgba(101, 70, 40, 0.7);
+  margin: 4px 0 0 0;
 }
 
-/* 设置表单区 */
-.settings-form {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+/* 布局 - 左侧导航 + 右侧内容 */
+.settings-layout {
+  display: flex;
+  gap: 24px;
+  min-height: calc(100vh - 180px);
 }
 
-/* 设置卡片 */
-.settings-card {
-  background-color: rgba(255, 255, 255, 1);
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  padding: 20px;
+/* 左侧导航 */
+.settings-nav {
+  width: 180px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-self: flex-start;
+  position: sticky;
+  top: 24px;
 }
 
-.card-header {
+.nav-tab {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.card-icon {
-  width: 36px;
-  height: 36px;
+  gap: 10px;
+  padding: 12px 16px;
+  border: none;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: transparent;
+  color: rgba(101, 70, 40, 0.8);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
 }
 
-.card-icon.algorithm {
-  background-color: rgba(219, 234, 254, 1);
+.nav-tab:hover {
+  background: rgba(255, 255, 255, 0.6);
+  color: rgba(44, 24, 16, 1);
 }
 
-.card-icon.preprocess {
-  background-color: rgba(220, 252, 231, 1);
+.nav-tab.active {
+  background: rgba(139, 0, 0, 0.08);
+  color: rgba(139, 0, 0, 1);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.1);
 }
 
-.card-icon.export {
-  background-color: rgba(254, 243, 199, 1);
+.nav-tab-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
-.card-icon.ai-model {
-  background-color: rgba(233, 213, 255, 1);
+.nav-tab.active .nav-tab-icon {
+  color: rgba(139, 0, 0, 1);
 }
 
-.card-icon .icon {
-  font-size: 18px;
+.nav-tab-label {
+  flex: 1;
 }
 
-.card-icon.algorithm .icon {
-  color: rgba(37, 99, 235, 1);
+/* 右侧内容 */
+.settings-content {
+  flex: 1;
+  min-width: 0;
 }
 
-.card-icon.preprocess .icon {
-  color: rgba(34, 139, 34, 1);
+.settings-section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid rgba(166, 124, 82, 0.15);
+  box-shadow: 0 2px 12px rgba(44, 24, 16, 0.06);
 }
 
-.card-icon.export .icon {
-  color: rgba(217, 119, 6, 1);
-}
-
-.card-icon.ai-model .icon {
-  color: rgba(126, 34, 206, 1);
-}
-
-.card-title {
+.section-title {
   font-size: 16px;
   font-weight: 600;
   color: rgba(44, 24, 16, 1);
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.15);
   font-family: SourceHanSans-SemiBold;
-  margin: 0;
-}
-
-.card-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
 }
 
 /* 设置行 */
 .setting-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  min-height: 32px;
-  box-sizing: border-box;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.08);
+}
+
+.setting-row:last-child {
+  border-bottom: none;
+}
+
+.setting-row.radio-row {
+  align-items: flex-start;
 }
 
 .setting-label-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   flex: 1;
+  min-width: 0;
 }
 
 .setting-label {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Medium;
-  margin: 0 0 2px 0;
 }
 
 .setting-desc {
-  font-size: 11px;
-  color: rgba(101, 70, 40, 1);
-  font-family: SourceHanSans-Regular;
+  font-size: 12px;
+  color: rgba(101, 70, 40, 0.6);
   margin: 0;
-  line-height: 1.3;
-}
-
-/* 输入框 - 按照设计图样式 */
-.setting-input {
-  width: 120px;
-  height: 28px;
-  padding: 4px 8px;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(44, 24, 16, 1);
-  background-color: rgba(245, 238, 226, 1);
-  font-family: SourceHanSans-Medium;
-  text-align: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  flex-shrink: 0;
-  box-sizing: border-box;
-}
-
-.setting-input:hover {
-  background-color: rgba(235, 228, 216, 1);
-  border-color: rgba(139, 0, 0, 0.2);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.setting-input.api-input {
-  width: 280px;
-  text-align: left;
-}
-
-.setting-input:focus {
-  outline: none;
-  border-color: rgba(139, 0, 0, 1);
-  background-color: rgba(255, 255, 255, 1);
-  box-shadow: 0 0 0 4px rgba(139, 0, 0, 0.1);
-  transform: translateY(0);
 }
 
 /* 数字步进器 */
 .number-stepper {
   display: flex;
   align-items: center;
-  gap: 0;
-  flex-shrink: 0;
+  gap: 2px;
+  background: rgba(248, 244, 233, 0.5);
   border-radius: 8px;
-  overflow: hidden;
-  border: 2px solid rgba(216, 191, 156, 0.6);
-  background-color: rgba(255, 255, 255, 1);
-  transition: all 0.3s ease;
-}
-
-.number-stepper:hover {
-  border-color: rgba(139, 0, 0, 0.4);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 4px;
 }
 
 .stepper-btn {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border: none;
-  background-color: rgba(245, 238, 226, 1);
-  color: rgba(139, 0, 0, 1);
+  border-radius: 6px;
+  background: white;
+  color: rgba(101, 70, 40, 0.8);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  padding: 0;
+  transition: all 0.2s;
 }
 
 .stepper-btn:hover {
-  background-color: rgba(139, 0, 0, 0.1);
-}
-
-.stepper-btn:active {
-  background-color: rgba(139, 0, 0, 0.2);
-  transform: scale(0.95);
+  background: rgba(46, 89, 132, 0.1);
+  color: rgba(46, 89, 132, 1);
 }
 
 .stepper-input {
-  width: 56px;
-  height: 36px;
+  width: 48px;
+  height: 28px;
   border: none;
-  border-left: 1px solid rgba(216, 191, 156, 0.3);
-  border-right: 1px solid rgba(216, 191, 156, 0.3);
-  background-color: rgba(255, 255, 255, 1);
-  color: rgba(44, 24, 16, 1);
-  font-size: 14px;
-  font-weight: 600;
+  background: transparent;
   text-align: center;
-  font-family: SourceHanSans-SemiBold;
-  flex-shrink: 0;
-  outline: none;
-  -moz-appearance: textfield;
-}
-
-.stepper-input::-webkit-outer-spin-button,
-.stepper-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Radio 按钮组 */
-.radio-group {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.radio-row {
-  align-items: center;
-}
-
-.radio-box-item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 8px;
-  border: 1.5px solid rgba(216, 191, 156, 0.4);
-  border-radius: 5px;
-  background-color: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.radio-box-item input[type="radio"] {
-  opacity: 0;
-  width: 0;
-  height: 0;
-  position: absolute;
-}
-
-.radio-box-item:hover {
-  background-color: rgba(245, 238, 226, 1);
-  border-color: rgba(139, 0, 0, 0.3);
-}
-
-.radio-box-item.active {
-  background-color: rgba(139, 0, 0, 0.08);
-  border-color: rgba(139, 0, 0, 1);
-}
-
-.radio-box {
-  width: 10px;
-  height: 10px;
-  border: 1.5px solid rgba(166, 124, 82, 0.5);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
-}
-
-.radio-box-item.active .radio-box {
-  border-color: rgba(139, 0, 0, 1);
-  background-color: rgba(139, 0, 0, 1);
-}
-
-.radio-box-inner {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background-color: transparent;
-  transition: all 0.3s ease;
-}
-
-.radio-box-item.active .radio-box-inner {
-  background-color: white;
-}
-
-.radio-box-icon-svg {
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.radio-box-icon-svg :deep(svg) {
-  width: 100%;
-  height: 100%;
-}
-
-.radio-box-label {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 500;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Medium;
-  white-space: nowrap;
-  transition: color 0.3s ease;
+  color: rgba(44, 24, 16, 1);
 }
 
-.radio-box-item.active .radio-box-label {
-  color: rgba(139, 0, 0, 1);
-  font-weight: 600;
+.stepper-input:focus {
+  outline: none;
 }
 
-/* 开关按钮 */
+/* 开关 */
 .switch {
   position: relative;
-  display: inline-block;
-  width: 40px;
-  height: 20px;
+  width: 44px;
+  height: 24px;
   flex-shrink: 0;
 }
 
@@ -867,63 +654,202 @@ const aiModels = [
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(216, 191, 156, 0.4);
-  transition: 0.3s;
+  background: rgba(166, 124, 82, 0.3);
   border-radius: 24px;
+  transition: 0.3s;
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 14px;
-  width: 14px;
+  height: 18px;
+  width: 18px;
   left: 3px;
   bottom: 3px;
-  background-color: white;
-  transition: 0.3s;
+  background: white;
   border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: 0.3s;
 }
 
-input:checked + .slider {
-  background-color: rgba(139, 0, 0, 1);
+.switch input:checked + .slider {
+  background: rgba(139, 0, 0, 0.8);
 }
 
-input:checked + .slider:before {
+.switch input:checked + .slider:before {
   transform: translateX(20px);
+}
+
+/* 数字输入框 */
+.number-input {
+  width: 80px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(166, 124, 82, 0.3);
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+  background: white;
+  color: rgba(44, 24, 16, 1);
+}
+
+.number-input:focus {
+  outline: none;
+  border-color: rgba(46, 89, 132, 0.5);
+}
+
+/* 文本输入框 */
+.setting-input {
+  width: 240px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(166, 124, 82, 0.3);
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  color: rgba(44, 24, 16, 1);
+}
+
+.setting-input:focus {
+  outline: none;
+  border-color: rgba(46, 89, 132, 0.5);
+}
+
+.api-input {
+  width: 300px;
+}
+
+.select-input {
+  width: 200px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(166, 124, 82, 0.3);
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  color: rgba(44, 24, 16, 1);
+  cursor: pointer;
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: rgba(46, 89, 132, 0.5);
+}
+
+/* 单选按钮组 */
+.radio-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.radio-box-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid rgba(166, 124, 82, 0.25);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.radio-box-item:hover {
+  border-color: rgba(139, 0, 0, 0.4);
+}
+
+.radio-box-item.active {
+  border-color: rgba(139, 0, 0, 0.8);
+  background: rgba(139, 0, 0, 0.05);
+}
+
+.radio-box-item input {
+  display: none;
+}
+
+.radio-box {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(166, 124, 82, 0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.radio-box-item.active .radio-box {
+  border-color: rgba(139, 0, 0, 1);
+}
+
+.radio-box-inner {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  transition: all 0.2s;
+}
+
+.radio-box-item.active .radio-box-inner {
+  background: rgba(139, 0, 0, 1);
+}
+
+.radio-box-icon,
+.radio-box-icon-svg {
+  width: 18px;
+  height: 18px;
+  color: rgba(101, 70, 40, 0.7);
+}
+
+.radio-box-item.active .radio-box-icon,
+.radio-box-item.active .radio-box-icon-svg {
+  color: rgba(139, 0, 0, 1);
+}
+
+.radio-box-label {
+  font-size: 13px;
+  color: rgba(44, 24, 16, 0.9);
 }
 
 /* 操作按钮区 */
 .action-buttons {
-  grid-column: 1 / -1;
   display: flex;
   justify-content: center;
   gap: 16px;
-  margin-top: 8px;
-  padding-bottom: 20px;
+  margin-top: 24px;
+  padding: 20px 0;
 }
 
 .btn {
-  width: 160px;
+  width: 140px;
   height: 40px;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
 }
 
 .btn-reset {
-  background-color: rgba(255, 255, 255, 1);
-  color: rgba(139, 0, 0, 1);
-  border: 1px solid rgba(139, 0, 0, 0.3);
+  background: white;
+  color: rgba(101, 70, 40, 0.8);
+  border: 1px solid rgba(166, 124, 82, 0.3);
 }
 
 .btn-reset:hover {
-  background-color: rgba(139, 0, 0, 0.05);
-  border-color: rgba(139, 0, 0, 1);
+  background: rgba(248, 244, 233, 0.5);
+  border-color: rgba(166, 124, 82, 0.5);
+}
+
+.btn-cancel {
+  background: white;
+  color: rgba(101, 70, 40, 0.8);
+  border: 1px solid rgba(166, 124, 82, 0.3);
+}
+
+.btn-cancel:hover {
+  background: rgba(248, 244, 233, 0.5);
+  border-color: rgba(166, 124, 82, 0.5);
 }
 
 .btn-save {
@@ -934,161 +860,34 @@ input:checked + .slider:before {
 
 .btn-save:hover {
   box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
-/* 移动端响应式优化 */
+/* 移动端响应式 */
 @media (max-width: 768px) {
-  .system-settings-container {
-    padding-bottom: 100px;
-    gap: 12px;
-    overflow-y: auto;
-    height: 100%;
+  .settings-layout {
+    flex-direction: column;
   }
 
-  .settings-form {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding-bottom: 0;
-  }
-
-  .settings-card {
-    padding: 12px;
-    overflow: visible;
-  }
-
-  .card-header {
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-
-  .card-icon {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-  }
-
-  .card-icon .icon {
-    font-size: 16px;
-  }
-
-  .card-title {
-    font-size: 14px;
-  }
-
-  .card-content {
-    gap: 10px;
-  }
-
-  .setting-row {
+  .settings-nav {
+    width: 100%;
     flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 12px;
-    padding: 8px 0;
-    flex-wrap: wrap;
+    overflow-x: auto;
+    padding-bottom: 8px;
   }
 
-  .setting-label-group {
-    flex: 1;
-    min-width: 0;
-    text-align: left;
+  .nav-tab {
+    white-space: nowrap;
   }
 
-  .setting-label {
-    font-size: 13px;
-  }
-
-  .setting-desc {
-    font-size: 11px;
-  }
-
-  .setting-input {
-    width: 100%;
-  }
-
-  .setting-input.api-input {
-    width: 100%;
-  }
-
-  .number-stepper {
-    flex-shrink: 0;
-  }
-
-  .switch {
-    flex-shrink: 0;
-  }
-
-  .radio-group {
-    width: 100%;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .radio-box-item {
-    padding: 6px 10px;
-    flex-shrink: 0;
-  }
-
-  .radio-box-icon-svg {
-    width: 14px;
-    height: 14px;
-  }
-
-  .radio-box-label {
-    font-size: 12px;
-  }
-
-  .page-title {
-    font-size: 18px;
-  }
-
-  .action-buttons {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: rgba(248, 244, 233, 1);
-    padding: 10px 16px;
-    z-index: 100;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
-    margin-top: 0;
-  }
-
-  .btn {
-    width: 100%;
-    height: 44px;
-    font-size: 14px;
-  }
-}
-
-/* 平板端优化 */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .settings-form {
-    gap: 16px;
-  }
-}
-
-/* 移动端隐藏 page-header */
-@media (max-width: 768px) {
-  .page-header {
-    display: none;
-  }
-}
-
-/* 超小屏幕手机 */
-@media (max-width: 400px) {
   .setting-row {
     flex-direction: column;
     align-items: flex-start;
+    gap: 12px;
   }
 
-  .setting-label-group {
+  .setting-input,
+  .api-input {
     width: 100%;
   }
 }

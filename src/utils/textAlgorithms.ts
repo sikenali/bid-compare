@@ -28,6 +28,278 @@ export interface ComparisonSettings {
   ignoreWhitespace: boolean
 }
 
+// ========== SimHash 算法实现 ==========
+// 用于快速粗筛，百万字秒级过滤
+
+// SimHash 配置
+const SIMHASH_BITS = 64
+const SIMHASH_WINDOW = 5
+
+/**
+ * 计算字符串的哈希值（使用 FNV-1a 算法）
+ */
+function fnv1aHash(str: string): number {
+  let hash = 0xcbf29ce484222325n // FNV offset basis
+  const prime = 0x100000001b3n // FNV prime
+
+  for (let i = 0; i < str.length; i++) {
+    hash ^= BigInt(str.charCodeAt(i))
+    hash = (hash * prime) & 0xffffffffffffffffn // 保持 64 位
+  }
+
+  return Number(hash)
+}
+
+/**
+ * 计算 SimHash 指纹
+ * @param text 输入文本
+ * @param window 滑动窗口大小，默认 5
+ * @returns 64 位 SimHash 指纹
+ */
+export function computeSimHash(text: string, window: number = SIMHASH_WINDOW): number {
+  if (!text || text.length === 0) return 0
+
+  // 初始化 64 位向量
+  const v = new Array(SIMHASH_BITS).fill(0)
+
+  // 按窗口切分文本
+  for (let i = 0; i <= text.length - window; i++) {
+    const word = text.substring(i, i + window)
+    const hash = fnv1aHash(word)
+
+    // 对每一位进行加权
+    for (let j = 0; j < SIMHASH_BITS; j++) {
+      if (hash & (1n << BigInt(j))) {
+        v[j]++
+      } else {
+        v[j]--
+      }
+    }
+  }
+
+  // 生成最终的 64 位指纹
+  let fingerprint = 0n
+  for (let j = 0; j < SIMHASH_BITS; j++) {
+    if (v[j] > 0) {
+      fingerprint |= 1n << BigInt(j)
+    }
+  }
+
+  return Number(fingerprint)
+}
+
+/**
+ * 计算两个 SimHash 指纹的汉明距离
+ */
+export function hammingDistance(hash1: number, hash2: number): number {
+  let xor = BigInt(hash1) ^ BigInt(hash2)
+  let distance = 0
+
+  while (xor > 0n) {
+    distance++
+    xor &= xor - 1n // Brian Kernighan's algorithm
+  }
+
+  return distance
+}
+
+/**
+ * SimHash 粗筛结果
+ */
+export interface SimHashCandidate {
+  leftIndex: number
+  rightIndex: number
+  distance: number
+  estimatedSimilarity: number
+}
+
+/**
+ * 使用 SimHash 进行快速粗筛
+ * @param text1 文档1
+ * @param text2 文档2
+ * @param windowSize 窗口大小
+ * @param threshold 汉明距离阈值（默认 3，距离≤3 视为高度相似）
+ * @returns 候选匹配对
+ */
+export function simHashFilter(
+  text1: string,
+  text2: string,
+  windowSize: number = 1000,
+  overlap: number = 200,
+  threshold: number = 3,
+  maxChunks: number = 500
+): SimHashCandidate[] {
+  // 将文档切分为块
+  const chunks1 = chunkTextForSimHash(text1, windowSize, overlap)
+  const chunks2 = chunkTextForSimHash(text2, windowSize, overlap)
+
+  // 限制最大块数，避免性能问题
+  const limitedChunks1 = chunks1.slice(0, maxChunks)
+  const limitedChunks2 = chunks2.slice(0, maxChunks)
+
+  // 计算每个块的 SimHash
+  const hashes1 = limitedChunks1.map(chunk => computeSimHash(chunk))
+  const hashes2 = limitedChunks2.map(chunk => computeSimHash(chunk))
+
+  // 使用分桶（LSH）优化比对，避免O(n*m)双重循环
+  const BAND_SIZE = 8  // 每8位作为一个桶键
+  const candidates: SimHashCandidate[] = []
+  const usedPairs = new Set<string>()
+
+  // 构建文档2的桶索引
+  const bucketIndex = new Map<string, number[]>()
+  for (let j = 0; j < hashes2.length; j++) {
+    const hash = hashes2[j]
+    // 将64位哈希分成8个8位的桶
+    for (let band = 0; band < 8; band++) {
+      const shift = band * BAND_SIZE
+      const bucketKey = (hash >> shift) & 0xFF
+      const key = `${band}_${bucketKey}`
+      if (!bucketIndex.has(key)) {
+        bucketIndex.set(key, [])
+      }
+      bucketIndex.get(key)!.push(j)
+    }
+  }
+
+  // 对文档1的每个块，在桶中查找候选
+  for (let i = 0; i < hashes1.length; i++) {
+    const hash = hashes1[i]
+    const potentialMatches = new Set<number>()
+
+    // 从8个桶中收集候选
+    for (let band = 0; band < 8; band++) {
+      const shift = band * BAND_SIZE
+      const bucketKey = (hash >> shift) & 0xFF
+      const key = `${band}_${bucketKey}`
+      const matches = bucketIndex.get(key)
+      if (matches) {
+        for (const j of matches) {
+          potentialMatches.add(j)
+        }
+      }
+    }
+
+    // 验证候选对
+    for (const j of potentialMatches) {
+      const pairKey = `${i}_${j}`
+      if (usedPairs.has(pairKey)) continue
+      usedPairs.add(pairKey)
+
+      const distance = hammingDistance(hashes1[i], hashes2[j])
+      if (distance <= threshold) {
+        candidates.push({
+          leftIndex: i,
+          rightIndex: j,
+          distance,
+          estimatedSimilarity: 1 - distance / SIMHASH_BITS
+        })
+      }
+    }
+  }
+
+  // 按相似度排序，只返回前100个最佳候选
+  candidates.sort((a, b) => b.estimatedSimilarity - a.estimatedSimilarity)
+  return candidates.slice(0, 100)
+}
+
+/**
+ * 为 SimHash 切分文本块
+ */
+function chunkTextForSimHash(
+  text: string,
+  chunkSize: number,
+  overlap: number
+): string[] {
+  if (text.length <= chunkSize) return [text]
+
+  const chunks: string[] = []
+  let start = 0
+
+  while (start < text.length) {
+    const end = Math.min(start + chunkSize, text.length)
+    chunks.push(text.substring(start, end))
+    if (end >= text.length) break
+    start += chunkSize - overlap
+  }
+
+  return chunks
+}
+
+/**
+ * 基于 SimHash 的快速粗筛比对
+ * 用于大文件（>50K字符）的快速过滤
+ */
+export function findSimilarSegmentsSimHash(
+  text1: string,
+  text2: string,
+  settings: ComparisonSettings,
+  onProgress?: (progress: number) => void,
+  onCancel?: () => boolean,
+  pageMap1?: PageMap,
+  pageMap2?: PageMap
+): SimilarSegment[] {
+  const segments: SimilarSegment[] = []
+  let segmentId = 0
+
+  // 第一步：SimHash 粗筛
+  if (onProgress) onProgress(0.1)
+  const candidates = simHashFilter(text1, text2)
+  if (onProgress) onProgress(0.3)
+
+  if (onCancel?.()) return []
+
+  // 第二步：对候选对进行精比
+  const chunkSize = 1000
+  const overlap = 200
+
+  for (let ci = 0; ci < candidates.length; ci++) {
+    if (onCancel?.()) return segments
+
+    const candidate = candidates[ci]
+    const start1 = candidate.leftIndex * (chunkSize - overlap)
+    const end1 = Math.min(start1 + chunkSize, text1.length)
+    const start2 = candidate.rightIndex * (chunkSize - overlap)
+    const end2 = Math.min(start2 + chunkSize, text2.length)
+
+    const chunk1 = text1.substring(start1, end1)
+    const chunk2 = text2.substring(start2, end2)
+
+    // 使用 Rabin-Karp 进行精比
+    const chunkSegments = findSimilarSegmentsRabinKarp(
+      chunk1,
+      chunk2,
+      settings,
+      50,
+      undefined,
+      onCancel
+    )
+
+    // 调整位置索引
+    for (const seg of chunkSegments) {
+      seg.id = ++segmentId
+      if (seg.leftStartIndex !== undefined) seg.leftStartIndex += start1
+      if (seg.leftEndIndex !== undefined) seg.leftEndIndex += start1
+      if (seg.rightStartIndex !== undefined) seg.rightStartIndex += start2
+      if (seg.rightEndIndex !== undefined) seg.rightEndIndex += start2
+
+      seg.leftContent = buildHighlightedHtml(text1, seg.leftStartIndex ?? 0, seg.leftEndIndex ?? 0, 10)
+      seg.rightContent = buildHighlightedHtml(text2, seg.rightStartIndex ?? 0, seg.rightEndIndex ?? 0, 10)
+
+      seg.leftPage = pageMap1 ? formatPageRange(pageMap1, seg.leftStartIndex ?? 0, seg.leftEndIndex ?? 0) : '第1/1页'
+      seg.rightPage = pageMap2 ? formatPageRange(pageMap2, seg.rightStartIndex ?? 0, seg.rightEndIndex ?? 0) : '第1/1页'
+
+      segments.push(seg)
+    }
+
+    if (onProgress) {
+      onProgress(0.3 + 0.7 * ((ci + 1) / Math.max(1, candidates.length)))
+    }
+  }
+
+  return mergeOverlappingSegments(segments)
+}
+
 // 估算页码（基于字符位置）
 // 这是一个后备方案，当无法获取真实页数时使用
 const estimatePage = (charPosition: number, totalPages: number = 1): string => {
@@ -213,7 +485,7 @@ export function findSimilarSegments(
   const preprocessed2 = preprocessText(text2, settings)
   const m = preprocessed1.processed.length
   const n = preprocessed2.processed.length
-  const minMatchLength = settings.minDuplicateWords
+  const minMatchLength = settings.minDupChars
 
   const matchedPositions = new Set<string>()
   const segments: SimilarSegment[] = []
@@ -331,7 +603,7 @@ export function findSimilarSegmentsRabinKarp(
   const preprocessed2 = preprocessText(text2, settings)
   const m = preprocessed1.processed.length
   const n = preprocessed2.processed.length
-  const windowSize = settings.minDuplicateWords
+  const windowSize = settings.minDupChars
 
   if (windowSize > m || windowSize > n) return []
 
@@ -402,7 +674,7 @@ export function findSimilarSegmentsRabinKarp(
           matchLen++
         }
 
-        if (matchLen >= settings.minDuplicateWords) {
+        if (matchLen >= settings.minDupChars) {
           matchedPairs.add(pairKey)
 
           // 关键修复：将预处理后的索引映射回原文本索引
@@ -498,16 +770,56 @@ export function findSimilarSegmentsBlockMatch(
   return segments
 }
 
-export type ComparisonStrategy = 'lcs' | 'rabin-karp' | 'minhash'
+export type ComparisonStrategy = 'lcs' | 'rabin-karp' | 'minhash' | 'simhash' | 'myers' | 'smart'
 
 // 选择对比策略
 export function selectStrategy(textLength: number): ComparisonStrategy {
   // 小文件（< 3K 字符）：使用暴力 LCS，结果最准确
-  // 中文件（3K-50K）：使用 Rabin-Karp 滚动哈希，性能 O(m+n)
-  // 大文件（> 50K）：使用 MinHash + LSH，避免内存溢出
+  // 中小文件（3K-10K）：使用 Myers Diff，精确比对
+  // 中文件（10K-50K）：使用 Rabin-Karp 滚动哈希，性能 O(m+n)
+  // 大文件（50K-200K）：使用 MinHash + LSH，避免内存溢出
+  // 超大文件（> 200K）：使用 SimHash 快速粗筛
   if (textLength < 3_000) return 'lcs'
+  if (textLength < 10_000) return 'myers'
   if (textLength < 50_000) return 'rabin-karp'
-  return 'minhash'
+  if (textLength < 200_000) return 'minhash'
+  return 'simhash'
+}
+
+// 智能策略选择 - 根据文本特征自动选择
+export function selectSmartStrategy(text1: string, text2: string): ComparisonStrategy {
+  const totalLength = text1.length + text2.length
+  
+  // 如果总长度很小，直接使用 LCS
+  if (totalLength < 6_000) return 'lcs'
+  
+  // 检查文本是否包含大量重复内容（如标准条款）
+  const hasRepetitiveContent = checkRepetitiveContent(text1) || checkRepetitiveContent(text2)
+  
+  if (hasRepetitiveContent) {
+    // 如果有大量重复内容，使用 SimHash 粗筛
+    return 'simhash'
+  }
+  
+  // 根据总长度选择
+  return selectStrategy(totalLength)
+}
+
+/**
+ * 检查文本是否包含大量重复内容
+ */
+function checkRepetitiveContent(text: string): boolean {
+  if (text.length < 1000) return false
+  
+  // 按段落切分
+  const paragraphs = text.split(/\n\s*\n/)
+  if (paragraphs.length < 5) return false
+  
+  // 统计段落重复率
+  const uniqueParagraphs = new Set(paragraphs.map(p => p.trim()))
+  const repeatRate = 1 - uniqueParagraphs.size / paragraphs.length
+  
+  return repeatRate > 0.3 // 如果重复率超过 30%，认为有大量重复内容
 }
 
 // ========== MinHash + LSH 算法 ==========
@@ -801,5 +1113,284 @@ export function mergeOverlappingSegments(
   }
 
   return merged
+}
+
+// ========== Myers Diff 算法实现 ==========
+// 用于精确比对，定位到字符级
+
+/**
+ * Myers Diff 算法 - 计算两个序列的编辑距离
+ * 适用于中等长度文本（<10K字符）
+ */
+
+interface DiffEdit {
+  type: 'insert' | 'delete' | 'equal' | 'replace'
+  oldStart: number
+  oldEnd: number
+  newStart: number
+  newEnd: number
+}
+
+/**
+ * Myers Diff 算法核心实现
+ * 时间复杂度: O((n+m)d)，d=编辑距离
+ */
+export function myersDiff(
+  oldSeq: string[],
+  newSeq: string[],
+  maxInputLength: number = 8000
+): DiffEdit[] {
+  const n = oldSeq.length
+  const m = newSeq.length
+  const max = n + m
+
+  // 内存限制检查：trace数组大小为O(d²)，d为编辑距离
+  // 对于长度为L的输入，最坏情况d=2L，内存消耗为O(L²)
+  // 限制输入总长度不超过阈值，避免内存溢出
+  if (n + m > maxInputLength) {
+    throw new Error(`Myers Diff 输入过长（${n + m} 字符），建议使用其他算法`)
+  }
+
+  if (max === 0) return []
+
+  // V 数组：存储每个 k 值对应的最远 x 坐标
+  const v = new Array(2 * max + 1).fill(0)
+  const trace: number[][] = []
+
+  // D 从 0 到 max
+  for (let d = 0; d <= max; d++) {
+    trace.push([...v])
+
+    for (let k = -d; k <= d; k += 2) {
+      let x: number
+
+      if (k === -d || (k !== d && v[k - 1 + max] < v[k + 1 + max])) {
+        x = v[k + 1 + max] // 向下移动（插入）
+      } else {
+        x = v[k - 1 + max] + 1 // 向右移动（删除）
+      }
+
+      let y = x - k
+
+      // 沿对角线移动（匹配）
+      while (x < n && y < m && oldSeq[x] === newSeq[y]) {
+        x++
+        y++
+      }
+
+      v[k + max] = x
+
+      if (x >= n && y >= m) {
+        return backtrack(trace, n, m, max)
+      }
+    }
+  }
+
+  return backtrack(trace, n, m, max)
+}
+
+/**
+ * 回溯构建编辑路径
+ */
+function backtrack(
+  trace: number[][],
+  n: number,
+  m: number,
+  max: number
+): DiffEdit[] {
+  const edits: DiffEdit[] = []
+  let x = n
+  let y = m
+
+  for (let d = trace.length - 1; d >= 0; d--) {
+    const v = trace[d]
+    const k = x - y
+    let prevK: number
+
+    if (k === -d || (k !== d && v[k - 1 + max] < v[k + 1 + max])) {
+      prevK = k + 1
+    } else {
+      prevK = k - 1
+    }
+
+    const prevX = v[prevK + max]
+    const prevY = prevX - prevK
+
+    // 对角线移动（匹配）
+    while (x > prevX && y > prevY) {
+      x--
+      y--
+      edits.push({
+        type: 'equal',
+        oldStart: x,
+        oldEnd: x + 1,
+        newStart: y,
+        newEnd: y + 1
+      })
+    }
+
+    if (d > 0) {
+      if (x === prevX) {
+        // 插入
+        y--
+        edits.push({
+          type: 'insert',
+          oldStart: x,
+          oldEnd: x,
+          newStart: y,
+          newEnd: y + 1
+        })
+      } else {
+        // 删除
+        x--
+        edits.push({
+          type: 'delete',
+          oldStart: x,
+          oldEnd: x + 1,
+          newStart: y,
+          newEnd: y
+        })
+      }
+    }
+  }
+
+  return edits.reverse()
+}
+
+/**
+ * 使用 Myers Diff 查找相似片段
+ * @param text1 文本1
+ * @param text2 文本2
+ * @param minMatch 最小匹配长度
+ * @returns 相似片段数组
+ */
+export function findSimilarSegmentsMyers(
+  text1: string,
+  text2: string,
+  minMatch: number = 2,
+  contextLength: number = 10,
+  pageMap1?: PageMap,
+  pageMap2?: PageMap,
+  onProgress?: (progress: number) => void,
+  onCancel?: () => boolean
+): SimilarSegment[] {
+  const segments: SimilarSegment[] = []
+  let segmentId = 0
+
+  // 将文本转换为字符数组
+  const oldSeq = Array.from(text1)
+  const newSeq = Array.from(text2)
+
+  // 计算编辑脚本，如果失败则降级到Rabin-Karp
+  let edits: DiffEdit[]
+  try {
+    if (onProgress) onProgress(0.3)
+    edits = myersDiff(oldSeq, newSeq)
+  } catch (error) {
+    // Myers Diff内存不足，降级到Rabin-Karp
+    console.warn('Myers Diff 失败，降级到 Rabin-Karp:', error)
+    const settings: ComparisonSettings = {
+      minDuplicateWords: minMatch,
+      textSimilarityThreshold: 75,
+      ignoreCase: false,
+      ignorePunctuation: false,
+      ignoreWhitespace: false
+    }
+    return findSimilarSegmentsRabinKarp(text1, text2, settings, contextLength, onProgress, onCancel, pageMap1, pageMap2)
+  }
+
+  // 提取连续相等的片段
+  let i = 0
+  while (i < edits.length) {
+    if (edits[i].type === 'equal') {
+      const start = i
+      while (i < edits.length && edits[i].type === 'equal') {
+        i++
+      }
+
+      const matchLength = i - start
+      if (matchLength >= minMatch) {
+        const leftStart = edits[start].oldStart
+        const leftEnd = edits[i - 1].oldEnd
+        const rightStart = edits[start].newStart
+        const rightEnd = edits[i - 1].newEnd
+
+        segments.push({
+          id: ++segmentId,
+          similarity: '100%',
+          similarityValue: 100,
+          leftContent: buildHighlightedHtml(text1, leftStart, leftEnd, contextLength),
+          rightContent: buildHighlightedHtml(text2, rightStart, rightEnd, contextLength),
+          leftPage: pageMap1 ? formatPageRange(pageMap1, leftStart, leftEnd) : '第1/1页',
+          rightPage: pageMap2 ? formatPageRange(pageMap2, rightStart, rightEnd) : '第1/1页',
+          level: 'high',
+          leftStartIndex: leftStart,
+          leftEndIndex: leftEnd,
+          rightStartIndex: rightStart,
+          rightEndIndex: rightEnd
+        })
+      }
+    } else {
+      i++
+    }
+  }
+
+  return segments
+}
+
+/**
+ * 基于 Myers Diff 的智能比对
+ * 自动选择最佳策略
+ */
+export function findSimilarSegmentsSmart(
+  text1: string,
+  text2: string,
+  settings: ComparisonSettings,
+  onProgress?: (progress: number) => void,
+  onCancel?: () => boolean,
+  pageMap1?: PageMap,
+  pageMap2?: PageMap
+): SimilarSegment[] {
+  const textLength = text1.length + text2.length
+
+  // 小文本：使用 Myers Diff
+  if (textLength < 10_000) {
+    if (onProgress) onProgress(0.5)
+    const segments = findSimilarSegmentsMyers(
+      text1,
+      text2,
+      settings.minDupChars,
+      10,
+      pageMap1,
+      pageMap2
+    )
+    if (onProgress) onProgress(1)
+    return segments
+  }
+
+  // 中等文本：使用 Rabin-Karp
+  if (textLength < 100_000) {
+    return findSimilarSegmentsRabinKarp(
+      text1,
+      text2,
+      settings,
+      10,
+      onProgress,
+      onCancel,
+      pageMap1,
+      pageMap2
+    )
+  }
+
+  // 大文本：使用 SimHash 粗筛
+  return findSimilarSegmentsSimHash(
+    text1,
+    text2,
+    settings,
+    onProgress,
+    onCancel,
+    pageMap1,
+    pageMap2
+  )
 }
 

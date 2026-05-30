@@ -2,6 +2,9 @@ import {
   findSimilarSegments,
   findSimilarSegmentsRabinKarp,
   findSimilarSegmentsMinHash,
+  findSimilarSegmentsSimHash,
+  findSimilarSegmentsMyers,
+  findSimilarSegmentsSmart,
   type ComparisonSettings,
   type SimilarSegment,
   type PageMap
@@ -12,7 +15,7 @@ interface ComparisonMessage {
   text1: string
   text2: string
   settings: ComparisonSettings
-  strategy: 'lcs' | 'rabin-karp' | 'minhash'
+  strategy: 'lcs' | 'rabin-karp' | 'minhash' | 'simhash' | 'myers' | 'smart'
   pageMap1?: PageMap
   pageMap2?: PageMap
 }
@@ -29,8 +32,33 @@ self.onmessage = function (e: MessageEvent<WorkerMessage>) {
   }
 
   if (e.data.type === 'START') {
-    handleComparison(e.data)
+    // 验证消息数据
+    const data = e.data as ComparisonMessage
+    if (!validateMessage(data)) {
+      self.postMessage({
+        type: 'ERROR',
+        message: '消息数据验证失败：缺少必要字段'
+      })
+      return
+    }
+    handleComparison(data)
   }
+}
+
+/**
+ * 验证消息数据完整性
+ */
+function validateMessage(data: ComparisonMessage): boolean {
+  if (!data || typeof data !== 'object') return false
+  if (data.type !== 'START') return false
+  if (typeof data.text1 !== 'string' || typeof data.text2 !== 'string') return false
+  if (!data.settings || typeof data.settings !== 'object') return false
+  if (typeof data.settings.minDupChars !== 'number') return false
+  
+  const validStrategies = ['lcs', 'rabin-karp', 'minhash', 'simhash', 'myers', 'smart']
+  if (!validStrategies.includes(data.strategy)) return false
+  
+  return true
 }
 
 function handleComparison(data: ComparisonMessage) {
@@ -76,6 +104,47 @@ function handleComparison(data: ComparisonMessage) {
           (progress) => {
             if (!cancelled) {
               self.postMessage({ type: 'PROGRESS', progress, message: 'MinHash 计算中...' })
+            }
+          },
+          () => cancelled,
+          pageMap1,
+          pageMap2
+        )
+        similarity = estimateSimilarityFromSegments(segments, text1.length)
+        break
+      case 'simhash':
+        // SimHash 快速粗筛 - 用于大文件
+        segments = findSimilarSegmentsSimHash(
+          text1, text2, settings,
+          (progress) => {
+            if (!cancelled) {
+              self.postMessage({ type: 'PROGRESS', progress, message: 'SimHash 粗筛中...' })
+            }
+          },
+          () => cancelled,
+          pageMap1,
+          pageMap2
+        )
+        similarity = estimateSimilarityFromSegments(segments, text1.length)
+        break
+      case 'myers':
+        // Myers Diff 精确比对 - 用于中等长度文本
+        segments = findSimilarSegmentsMyers(
+          text1, text2,
+          settings.minDupChars,
+          10,
+          pageMap1,
+          pageMap2
+        )
+        similarity = estimateSimilarityFromSegments(segments, text1.length)
+        break
+      case 'smart':
+        // 智能策略 - 自动选择最佳算法
+        segments = findSimilarSegmentsSmart(
+          text1, text2, settings,
+          (progress) => {
+            if (!cancelled) {
+              self.postMessage({ type: 'PROGRESS', progress, message: '智能分析中...' })
             }
           },
           () => cancelled,

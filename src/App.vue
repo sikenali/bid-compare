@@ -153,14 +153,6 @@ const handleMenuClick = (menu: string) => {
           </button>
           <button
             class="nav-item"
-            :class="{ active: activeMenu === 'batch-compare' }"
-            @click="handleMenuClick('batch-compare')"
-          >
-            <RiFileExcelLine class="nav-icon" />
-            <span class="nav-text">批量对比</span>
-          </button>
-          <button
-            class="nav-item"
             :class="{ active: activeMenu === 'system-settings' }"
             @click="handleMenuClick('system-settings')"
           >

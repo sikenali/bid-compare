@@ -20,6 +20,12 @@ export interface FileCompareSettings {
   removeWatermark: boolean
   // 图片查重
   enableImageCompare: boolean
+  // OCR设置
+  ocrLanguage: string
+  enableOCRCompare: boolean
+  // 多文件对比
+  enableMultiFileCompare: boolean
+  maxMultiFileCount: number
   // AI模型设置
   selectedModel: string
   apiKey: string
@@ -47,6 +53,10 @@ export const defaultSettings: FileCompareSettings = {
   clauseRemovalGranularity: 5,
   removeWatermark: true,
   enableImageCompare: false,
+  ocrLanguage: 'chi_sim+eng',
+  enableOCRCompare: false,
+  enableMultiFileCompare: false,
+  maxMultiFileCount: 3,
   selectedModel: 'deepseek',
   apiKey: '',
   apiEndpoint: '',

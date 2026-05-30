@@ -25,10 +25,8 @@ interface AIAnalysisResult {
 // API Endpoint 白名单
 const ALLOWED_ENDPOINTS = [
   'api.openai.com',
-  'generativelanguage.googleapis.com',
-  'api.anthropic.com',
   'api.deepseek.com',
-  'api.moonshot.cn',
+  'dashscope.aliyuncs.com',
   'api.qwen.ai'
 ]
 
@@ -46,19 +44,12 @@ const validateEndpoint = (endpoint: string): boolean => {
 // 获取默认 endpoint
 const getDefaultEndpoint = (model: string): string => {
   switch (model) {
-    case 'gpt-3.5':
-    case 'gpt-4':
+    case 'openai':
       return 'https://api.openai.com/v1/chat/completions'
-    case 'gemini':
-      return 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent'
-    case 'claude':
-      return 'https://api.anthropic.com/v1/messages'
     case 'deepseek':
       return 'https://api.deepseek.com/v1/chat/completions'
-    case 'kimi':
-      return 'https://api.moonshot.cn/v1/chat/completions'
-    case 'doubao':
-      return 'https://ark.cn-beijing.volces.com/api/v3/chat/completions'
+    case 'qwen':
+      return 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'
     default:
       throw new Error('不支持的AI模型')
   }
@@ -76,36 +67,15 @@ export function useAIModel() {
   // 根据模型类型获取API配置
   const getAPIConfig = (settings: FileCompareSettings) => {
     switch (settings.selectedModel) {
-      case 'gpt-3.5':
-      case 'gpt-4':
+      case 'openai':
         return {
           apiUrl: settings.apiEndpoint || 'https://api.openai.com/v1/chat/completions',
-          model: settings.selectedModel,
+          model: 'gpt-4o-mini',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${settings.apiKey}`
           }
         }
-      case 'gemini':
-        return {
-          apiUrl: settings.apiEndpoint || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
-          model: 'gemini-pro',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${settings.apiKey}`
-          }
-        }
-      case 'claude':
-        return {
-          apiUrl: settings.apiEndpoint || 'https://api.anthropic.com/v1/messages',
-          model: 'claude-3-opus-20240229',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': settings.apiKey,
-            'anthropic-version': '2023-06-01'
-          }
-        }
-      // DeepSeek/Kimi/豆包 兼容 OpenAI API 格式
       case 'deepseek':
         return {
           apiUrl: settings.apiEndpoint || 'https://api.deepseek.com/v1/chat/completions',
@@ -115,19 +85,10 @@ export function useAIModel() {
             'Authorization': `Bearer ${settings.apiKey}`
           }
         }
-      case 'kimi':
+      case 'qwen':
         return {
-          apiUrl: settings.apiEndpoint || 'https://api.moonshot.cn/v1/chat/completions',
-          model: 'moonshot-v1-8k',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${settings.apiKey}`
-          }
-        }
-      case 'doubao':
-        return {
-          apiUrl: settings.apiEndpoint || 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-          model: settings.apiEndpoint?.includes('ep-') ? '' : 'doubao-pro-32k',
+          apiUrl: settings.apiEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+          model: 'qwen-turbo',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${settings.apiKey}`
@@ -136,6 +97,29 @@ export function useAIModel() {
       default:
         throw new Error('不支持的AI模型')
     }
+  }
+
+  // 构建分析提示词
+  const buildPrompt = (leftFileContent: string, rightFileContent: string, similarity: string, similarSegments: any[]): string => {
+    return `你是一个专业的文件对比分析助手，请对以下文件对比结果进行深入分析，提供总结、关键发现和改进建议。
+
+文件对比结果：
+相似度：${similarity}
+雷同片段数量：${similarSegments.length}
+
+左侧文件内容（前1000字符）：
+${leftFileContent.substring(0, 1000)}...
+
+右侧文件内容（前1000字符）：
+${rightFileContent.substring(0, 1000)}...
+
+雷同片段详情：
+${JSON.stringify(similarSegments.slice(0, 5), null, 2)}
+
+请按以下格式输出：
+1. 总结：简要说明对比结果
+2. 关键发现：列出主要的雷同点
+3. 改进建议：给出减少重复的建议`
   }
 
   // 调用AI模型进行文件对比分析
@@ -168,61 +152,21 @@ export function useAIModel() {
       // 获取API配置
       const apiConfig = getAPIConfig(settings)
 
-      // 准备请求数据
-      let requestData: any
-      
-      // 根据不同模型准备不同的请求格式
-      switch (settings.selectedModel) {
-        case 'gpt-3.5':
-        case 'gpt-4':
-          requestData = {
-            model: apiConfig.model,
-            messages: [
-              {
-                role: 'system',
-                content: '你是一个专业的文件对比分析助手，请对以下文件对比结果进行深入分析，提供总结、关键发现和改进建议。'
-              },
-              {
-                role: 'user',
-                content: `文件对比结果：\n\n相似度：${similarity}\n\n雷同片段数量：${similarSegments.length}\n\n左侧文件内容：${leftFileContent.substring(0, 1000)}...\n\n右侧文件内容：${rightFileContent.substring(0, 1000)}...\n\n雷同片段：${JSON.stringify(similarSegments.slice(0, 3))}`
-              }
-            ],
-            temperature: 0.3,
-            max_tokens: 1000
+      // 所有模型使用 OpenAI 兼容格式
+      const requestData = {
+        model: apiConfig.model,
+        messages: [
+          {
+            role: 'system',
+            content: '你是一个专业的文件对比分析助手，请对文件对比结果进行深入分析，提供总结、关键发现和改进建议。用中文回答。'
+          },
+          {
+            role: 'user',
+            content: buildPrompt(leftFileContent, rightFileContent, similarity, similarSegments)
           }
-          break
-        case 'gemini':
-          requestData = {
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `你是一个专业的文件对比分析助手，请对以下文件对比结果进行深入分析，提供总结、关键发现和改进建议。\n\n文件对比结果：\n\n相似度：${similarity}\n\n雷同片段数量：${similarSegments.length}\n\n左侧文件内容：${leftFileContent.substring(0, 1000)}...\n\n右侧文件内容：${rightFileContent.substring(0, 1000)}...\n\n雷同片段：${JSON.stringify(similarSegments.slice(0, 3))}`
-                  }
-                ]
-              }
-            ],
-            generationConfig: {
-              temperature: 0.3,
-              maxOutputTokens: 1000
-            }
-          }
-          break
-        case 'claude':
-          requestData = {
-            model: apiConfig.model,
-            messages: [
-              {
-                role: 'user',
-                content: `你是一个专业的文件对比分析助手，请对以下文件对比结果进行深入分析，提供总结、关键发现和改进建议。\n\n文件对比结果：\n\n相似度：${similarity}\n\n雷同片段数量：${similarSegments.length}\n\n左侧文件内容：${leftFileContent.substring(0, 1000)}...\n\n右侧文件内容：${rightFileContent.substring(0, 1000)}...\n\n雷同片段：${JSON.stringify(similarSegments.slice(0, 3))}`
-              }
-            ],
-            temperature: 0.3,
-            max_tokens: 1000
-          }
-          break
-        default:
-          throw new Error('不支持的AI模型')
+        ],
+        temperature: 0.3,
+        max_tokens: 1500
       }
 
       // 发送API请求
@@ -238,32 +182,42 @@ export function useAIModel() {
         throw new Error(`API请求失败：${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`)
       }
 
-      // 解析响应数据
+      // 解析响应数据（所有模型使用 OpenAI 兼容格式）
       const responseData = await response.json()
-      
-      // 处理不同模型的响应格式
-      let aiResponse: string
-      switch (settings.selectedModel) {
-        case 'gpt-3.5':
-        case 'gpt-4':
-          aiResponse = responseData.choices[0].message.content
-          break
-        case 'gemini':
-          aiResponse = responseData.candidates[0].content.parts[0].text
-          break
-        case 'claude':
-          aiResponse = responseData.content[0].text
-          break
-        default:
-          throw new Error('不支持的AI模型')
-      }
+      const aiResponse = responseData.choices[0].message.content
 
       // 解析AI响应为结构化数据
-      // 这里简单处理，实际应用中可以使用更复杂的解析逻辑
+      const lines = aiResponse.split('\n').filter((line: string) => line.trim())
+      const summaryLines: string[] = []
+      const insights: string[] = []
+      const suggestions: string[] = []
+
+      let currentSection = 'summary'
+      for (const line of lines) {
+        if (line.includes('总结') || line.includes('Summary')) {
+          currentSection = 'summary'
+          const content = line.replace(/^#+\s*/, '').replace(/^(总结|Summary)[：:]\s*/, '')
+          if (content) summaryLines.push(content)
+        } else if (line.includes('关键发现') || line.includes('发现') || line.includes('Insight')) {
+          currentSection = 'insights'
+        } else if (line.includes('改进建议') || line.includes('建议') || line.includes('Suggestion')) {
+          currentSection = 'suggestions'
+        } else if (line.startsWith('-') || line.startsWith('•') || line.match(/^\d+\./)) {
+          const content = line.replace(/^[-•]\s*/, '').replace(/^\d+\.\s*/, '')
+          if (currentSection === 'insights') {
+            insights.push(content)
+          } else if (currentSection === 'suggestions') {
+            suggestions.push(content)
+          }
+        } else if (currentSection === 'summary' && line.trim()) {
+          summaryLines.push(line.trim())
+        }
+      }
+
       const result: AIAnalysisResult = {
-        summary: aiResponse,
-        insights: aiResponse.split('\n').filter((line: string) => line.startsWith('-')).map((line: string) => line.substring(2)),
-        suggestions: aiResponse.split('\n').filter((line: string) => line.startsWith('建议:')).map((line: string) => line.substring(4))
+        summary: summaryLines.join('\n') || aiResponse.substring(0, 500),
+        insights: insights.length > 0 ? insights : [aiResponse],
+        suggestions: suggestions.length > 0 ? suggestions : ['建议进一步人工审核雷同内容']
       }
 
       analysisResult.value = result

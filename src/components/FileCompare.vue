@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
@@ -27,14 +27,15 @@ import { useAIModel } from '../composables/useAIModel'
 import { useComparison } from '../composables/useComparison'
 import type { ComparisonSettings, SimilarSegment } from '../utils/textAlgorithms'
 import { removeCommonClauses } from '../utils/textAlgorithms'
-import { removeWatermarks } from '../utils/watermark'
-import { searchSensitiveWords, loadSensitiveWords } from '../utils/sensitiveWords'
-import type { SensitiveSearchResult } from '../utils/sensitiveWords'
 import { storeCompareResult, deleteCompareResult } from '../utils/compareResultStore'
 import { computeImageHash, hammingDistance, calculateImageSimilarity, loadImageAsDataUrl } from '../utils/imageCompare'
 import type { ImageDuplicate } from '../utils/imageCompare'
+import { recognizeImages, extractTextFromImage, isOCRAvailable, getSupportedLanguages } from '../utils/ocr'
+import type { OCRResult, OCRConfig } from '../utils/ocr'
 import FileUpload from './FileUpload.vue'
 import RecentRecords from './RecentRecords.vue'
+import MultiFileUpload from './MultiFileUpload.vue'
+import MultiCompareResult from './MultiCompareResult.vue'
 
 const router = useRouter()
 
@@ -79,6 +80,14 @@ const similarSegments = ref(0)
 
 // 标记是否从历史记录恢复（恢复后禁用对比按钮）
 const isViewingHistory = ref(false)
+
+// 多文件对比状态
+const multiFiles = ref<File[]>([])
+const multiFileMode = computed(() => settings.enableMultiFileCompare)
+const showMultiResult = ref(false)
+const multiSimilarityMatrix = ref<number[][]>([])
+const multiDuplicates = ref<any[]>([])
+const multiFileUploadRef = ref<InstanceType<typeof MultiFileUpload> | null>(null)
 
 // AI分析相关
 const showAIAnalysis = ref(false)
@@ -390,33 +399,6 @@ const handleDrop = (event: DragEvent, side: 'left' | 'right') => {
   }
 };
 
-// 文本预处理（根据设置调整）
-const preprocessText = (text: string): string => {
-  // 检查text是否为undefined或null
-  if (!text) {
-    return '';
-  }
-  
-  let processed = text;
-  
-  // 忽略大小写
-  if (settings.ignoreCase) {
-    processed = processed.toLowerCase();
-  }
-  
-  // 忽略标点符号
-  if (settings.ignorePunctuation) {
-    processed = processed.replace(/[\p{P}\p{S}]/gu, '');
-  }
-  
-  // 忽略空格差异
-  if (settings.ignoreWhitespace) {
-    processed = processed.replace(/\s+/g, ' ').trim();
-  }
-  
-  return processed;
-};
-
 // 执行对比
 const handleCompare = async () => {
   if (!leftFileInfo.value.file || !rightFileInfo.value.file) return
@@ -461,7 +443,7 @@ const handleCompare = async () => {
 
     // 执行对比（runComparison 会接管 isProcessing 状态）
     const comparisonSettings: ComparisonSettings = {
-      minDuplicateWords: settings.minDuplicateWords,
+      minDuplicateWords: settings.minDupChars,
       textSimilarityThreshold: settings.textSimilarityThreshold,
       ignoreCase: settings.ignoreCase,
       ignorePunctuation: settings.ignorePunctuation,
@@ -598,29 +580,216 @@ const runImageComparison = async (): Promise<ImageDuplicate[]> => {
   return duplicates
 }
 
-// 敏感词搜索
-const showSensitiveResult = ref(false)
-const sensitiveResult = ref<SensitiveSearchResult>({ matches: [], totalCount: 0, wordsFound: [] })
+// ========== OCR 图片文字识别 ==========
+const ocrAvailable = isOCRAvailable()
+const ocrConfig = computed<OCRConfig>(() => ({
+  language: settings.ocrLanguage
+}))
+const ocrProgress = ref(0)
+const ocrProgressMessage = ref('')
+const isOCRProcessing = ref(false)
+const ocrResults = ref<Array<{ name: string; result: OCRResult }>>([])
+const showOCRResult = ref(false)
+const ocrCompareResult = ref<{
+  leftText: string
+  rightText: string
+  similarity: number
+} | null>(null)
 
-const handleSensitiveSearch = () => {
-  if (!leftFileContent.value && !rightFileContent.value) {
-    comparisonParseError.value = '请先解析文件'
+// 执行 OCR 识别
+const runOCR = async (images: { url: string; name: string }[], side: 'left' | 'right') => {
+  if (!ocrAvailable || images.length === 0) return []
+
+  isOCRProcessing.value = true
+  ocrProgress.value = 0
+  ocrProgressMessage.value = `正在识别${side === 'left' ? '左侧' : '右侧'}图片文字...`
+
+  try {
+    const results = await recognizeImages(
+      images,
+      ocrConfig.value,
+      (current, total, currentImage) => {
+        ocrProgress.value = current / total
+        ocrProgressMessage.value = `正在识别: ${currentImage} (${current}/${total})`
+      }
+    )
+
+    return results
+  } catch (error) {
+    console.error('OCR 识别失败:', error)
+    return []
+  } finally {
+    isOCRProcessing.value = false
+    ocrProgress.value = 0
+    ocrProgressMessage.value = ''
+  }
+}
+
+// OCR 文字对比
+const runOCRComparison = async () => {
+  if (leftImages.value.length === 0 || rightImages.value.length === 0) return
+
+  isOCRProcessing.value = true
+  ocrProgressMessage.value = '正在进行图片文字识别...'
+
+  try {
+    // 识别左侧图片
+    ocrProgressMessage.value = '正在识别左侧图片文字...'
+    const leftResults = await runOCR(leftImages.value, 'left')
+    
+    // 识别右侧图片
+    ocrProgressMessage.value = '正在识别右侧图片文字...'
+    const rightResults = await runOCR(rightImages.value, 'right')
+
+    // 合并文本
+    const leftText = leftResults.map(r => r.result.text).join('\n')
+    const rightText = rightResults.map(r => r.result.text).join('\n')
+
+    // 使用编辑距离算法计算相似度
+    let similarity = 0
+    if (leftText && rightText) {
+      similarity = calculateEditDistanceSimilarity(leftText, rightText)
+    }
+
+    ocrCompareResult.value = {
+      leftText,
+      rightText,
+      similarity
+    }
+
+    ocrResults.value = [...leftResults, ...rightResults]
+    showOCRResult.value = true
+  } catch (error) {
+    console.error('OCR 对比失败:', error)
+  } finally {
+    isOCRProcessing.value = false
+    ocrProgress.value = 0
+    ocrProgressMessage.value = ''
+  }
+}
+
+// 编辑距离相似度计算函数
+const calculateEditDistanceSimilarity = (text1: string, text2: string): number => {
+  const len1 = text1.length
+  const len2 = text2.length
+
+  if (len1 === 0 && len2 === 0) return 100
+  if (len1 === 0 || len2 === 0) return 0
+
+  // 优化：对于长文本，只比较前1000个字符
+  const maxLen = 1000
+  const t1 = text1.substring(0, maxLen)
+  const t2 = text2.substring(0, maxLen)
+
+  // 动态规划计算编辑距离
+  const dp: number[][] = Array.from({ length: t1.length + 1 }, () => Array(t2.length + 1).fill(0))
+
+  for (let i = 0; i <= t1.length; i++) {
+    dp[i][0] = i
+  }
+  for (let j = 0; j <= t2.length; j++) {
+    dp[0][j] = j
+  }
+
+  for (let i = 1; i <= t1.length; i++) {
+    for (let j = 1; j <= t2.length; j++) {
+      const cost = t1[i - 1] === t2[j - 1] ? 0 : 1
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,      // 删除
+        dp[i][j - 1] + 1,      // 插入
+        dp[i - 1][j - 1] + cost // 替换
+      )
+    }
+  }
+
+  const editDistance = dp[t1.length][t2.length]
+  const maxLen2 = Math.max(t1.length, t2.length)
+  const similarityResult = Math.round((1 - editDistance / maxLen2) * 100)
+  return Math.max(0, similarityResult)
+}
+
+// 获取支持的语言列表
+const supportedLanguages = getSupportedLanguages()
+
+// ========== 多文件对比 ==========
+const handleMultiFileCompare = async () => {
+  if (multiFiles.value.length < 2) {
+    comparisonParseError.value = '请至少上传2个文件'
     return
   }
-  const words = loadSensitiveWords()
-  if (!words.length) {
-    comparisonParseError.value = '请先在系统设置中配置敏感词'
-    return
-  }
-  const leftMatches = leftFileContent.value ? searchSensitiveWords(leftFileContent.value, words) : { matches: [], totalCount: 0, wordsFound: [] }
-  const rightMatches = rightFileContent.value ? searchSensitiveWords(rightFileContent.value, words) : { matches: [], totalCount: 0, wordsFound: [] }
 
-  sensitiveResult.value = {
-    matches: [...leftMatches.matches, ...rightMatches.matches],
-    totalCount: leftMatches.totalCount + rightMatches.totalCount,
-    wordsFound: [...new Set([...leftMatches.wordsFound, ...rightMatches.wordsFound])]
+  isProcessing.value = true
+  progressMessage.value = '正在解析文件...'
+  showMultiResult.value = false
+
+  try {
+    // 解析所有文件
+    const parseResults = []
+    for (let i = 0; i < multiFiles.value.length; i++) {
+      progressMessage.value = `正在解析 ${multiFiles.value[i].name}...`
+      progress.value = (i + 1) / multiFiles.value.length * 0.3
+      const result = await parseFile(multiFiles.value[i], getAbortSignal())
+      parseResults.push(result)
+    }
+
+    // 构建相似度矩阵
+    const fileCount = multiFiles.value.length
+    const matrix: number[][] = Array(fileCount).fill(null).map(() => Array(fileCount).fill(0))
+    const allDuplicates: any[] = []
+
+    // 两两对比
+    for (let i = 0; i < fileCount; i++) {
+      for (let j = i + 1; j < fileCount; j++) {
+        progressMessage.value = `正在对比 ${multiFiles.value[i].name} 与 ${multiFiles.value[j].name}...`
+        progress.value = 0.3 + ((i * fileCount + j) / (fileCount * (fileCount - 1) / 2)) * 0.7
+
+        const comparisonSettings: ComparisonSettings = {
+          minDuplicateWords: settings.minDupChars,
+          textSimilarityThreshold: settings.textSimilarityThreshold,
+          ignoreCase: settings.ignoreCase,
+          ignorePunctuation: settings.ignorePunctuation,
+          ignoreWhitespace: settings.ignoreWhitespace
+        }
+
+        const result = await runComparison(
+          parseResults[i].content,
+          parseResults[j].content,
+          comparisonSettings,
+          parseResults[i].pageMap,
+          parseResults[j].pageMap
+        )
+
+        matrix[i][j] = result.similarity
+        matrix[j][i] = result.similarity
+
+        // 收集重复片段
+        result.segments.forEach(seg => {
+          allDuplicates.push({
+            leftFileName: multiFiles.value[i].name,
+            rightFileName: multiFiles.value[j].name,
+            leftContent: seg.leftContent,
+            rightContent: seg.rightContent,
+            similarity: seg.similarityValue
+          })
+        })
+      }
+    }
+
+    multiSimilarityMatrix.value = matrix
+    multiDuplicates.value = allDuplicates
+    showMultiResult.value = true
+  } catch (error) {
+    if ((error as Error).name !== 'AbortError') {
+      comparisonParseError.value = (error as Error).message
+    }
+  } finally {
+    isProcessing.value = false
+    progress.value = 0
   }
-  showSensitiveResult.value = true
+}
+
+const closeMultiResult = () => {
+  showMultiResult.value = false
 }
 
 // 取消对比
@@ -932,8 +1101,8 @@ const generateWordReport = () => {
       </div>
     </div>
 
-    <!-- 文件上传区域 -->
-    <div class="upload-section" :class="{ 'processing': isProcessing }">
+    <!-- 文件上传区域（单文件模式） -->
+    <div v-if="!multiFileMode && !showResults && !showMultiResult" class="upload-section" :class="{ 'processing': isProcessing }">
       <!-- 左侧文件上传 -->
       <FileUpload
         side="left"
@@ -965,15 +1134,11 @@ const generateWordReport = () => {
       </div>
     </div>
 
-    <!-- 对比按钮区域 -->
-    <div class="compare-action-area">
+    <!-- 对比按钮区域（单文件模式） -->
+    <div v-if="!multiFileMode && !showResults && !showMultiResult" class="compare-action-area">
       <button class="compare-main-btn" @click="handleCompare" :disabled="isProcessing || isViewingHistory" :class="{ 'processing': isProcessing }" :title="isViewingHistory ? '请重新上传文件后再进行对比' : '一键对比'">
         <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
         <span class="btn-text">{{ isViewingHistory ? '请重新上传文件' : '一键对比' }}</span>
-      </button>
-      <button class="sensitive-btn" @click="handleSensitiveSearch" :disabled="!leftFileContent && !rightFileContent || isProcessing">
-        <RiSearchLine class="sensitive-btn-icon" />
-        <span>敏感词检索</span>
       </button>
       <!-- 进度显示 -->
       <div v-if="isProcessing" class="progress-display">
@@ -983,6 +1148,41 @@ const generateWordReport = () => {
         <span class="progress-text">{{ progressMessage || '正在处理中...' }} {{ Math.round(progress * 100) }}%</span>
       </div>
     </div>
+
+    <!-- 多文件上传区域（多文件模式） -->
+    <template v-if="multiFileMode && !showResults && !showMultiResult">
+      <MultiFileUpload 
+        ref="multiFileUploadRef"
+        :max-count="settings.maxMultiFileCount"
+        @update:files="multiFiles = $event"
+      />
+      
+      <div class="compare-action-area">
+        <button class="compare-main-btn" 
+                @click="handleMultiFileCompare" 
+                :disabled="isProcessing || multiFiles.length < 2"
+                :class="{ 'processing': isProcessing }">
+          <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
+          <span class="btn-text">多文件对比</span>
+        </button>
+        <!-- 进度显示 -->
+        <div v-if="isProcessing" class="progress-display">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" :style="{ width: `${Math.round(progress * 100)}%` }"></div>
+          </div>
+          <span class="progress-text">{{ progressMessage || '正在处理中...' }} {{ Math.round(progress * 100) }}%</span>
+        </div>
+      </div>
+    </template>
+
+    <!-- 多文件对比结果 -->
+    <MultiCompareResult 
+      v-if="showMultiResult"
+      :file-names="multiFiles.map(f => f.name)"
+      :similarity-matrix="multiSimilarityMatrix"
+      :duplicates="multiDuplicates"
+      @close="closeMultiResult"
+    />
 
     <!-- 图片上传区域 -->
     <div class="image-upload-section" v-if="settings.enableImageCompare">
@@ -1023,25 +1223,73 @@ const generateWordReport = () => {
       </div>
     </div>
 
-    <!-- 敏感词结果弹窗 -->
-    <div v-if="showSensitiveResult" class="help-modal-overlay" @click="showSensitiveResult = false">
-      <div class="sensitive-result-modal" @click.stop>
-        <div class="help-modal-header">
-          <h3>敏感词检索结果</h3>
-          <button class="help-close-btn" @click="showSensitiveResult = false">×</button>
+    <!-- OCR 图片文字识别区域 -->
+    <div class="ocr-section" v-if="ocrAvailable && settings.enableOCRCompare && leftImages.length > 0 && rightImages.length > 0">
+      <div class="ocr-section-header">
+        <RiImageLine class="ocr-section-icon" />
+        <span>图片文字识别</span>
+        <span class="ocr-section-hint">识别图片中的文字并对比</span>
+      </div>
+      <div class="ocr-actions">
+        <button 
+          class="ocr-compare-btn" 
+          @click="runOCRComparison" 
+          :disabled="isOCRProcessing"
+        >
+          <RiExchangeLine class="ocr-btn-icon" />
+          <span>{{ isOCRProcessing ? '识别中...' : '图片文字识别对比' }}</span>
+        </button>
+      </div>
+      <!-- OCR 进度显示 -->
+      <div v-if="isOCRProcessing" class="ocr-progress">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" :style="{ width: `${Math.round(ocrProgress * 100)}%` }"></div>
         </div>
-        <div class="sensitive-result-body">
-          <div class="sensitive-summary">
-            <span>共发现 <strong>{{ sensitiveResult.totalCount }}</strong> 处敏感词匹配</span>
-            <span>涉及敏感词：<strong>{{ sensitiveResult.wordsFound.join('、') }}</strong></span>
+        <span class="progress-text">{{ ocrProgressMessage }} {{ Math.round(ocrProgress * 100) }}%</span>
+      </div>
+    </div>
+
+    <!-- OCR 结果弹窗 -->
+    <div v-if="showOCRResult" class="help-modal-overlay" @click="showOCRResult = false">
+      <div class="ocr-result-modal" @click.stop>
+        <div class="help-modal-header">
+          <h3>图片文字识别结果</h3>
+          <button class="help-close-btn" @click="showOCRResult = false">×</button>
+        </div>
+        <div class="ocr-result-body">
+          <!-- 相似度统计 -->
+          <div class="ocr-compare-summary" v-if="ocrCompareResult">
+            <div class="ocr-similarity-badge">
+              <span class="ocr-similarity-label">文字相似度</span>
+              <span class="ocr-similarity-value" :class="{ 'high': ocrCompareResult.similarity >= 75 }">
+                {{ ocrCompareResult.similarity }}%
+              </span>
+            </div>
           </div>
-          <div class="sensitive-match-list">
-            <div v-for="(match, idx) in sensitiveResult.matches" :key="idx" class="sensitive-match-item">
-              <div class="sensitive-match-word">
-                <span class="match-badge">{{ match.word }}</span>
-                <span class="match-line">第 {{ match.line }} 行</span>
+
+          <!-- 文字内容对比 -->
+          <div class="ocr-text-compare">
+            <div class="ocr-text-column">
+              <div class="ocr-column-header">左侧识别文字</div>
+              <pre class="ocr-text-content">{{ ocrCompareResult?.leftText || '无识别结果' }}</pre>
+            </div>
+            <div class="ocr-text-column">
+              <div class="ocr-column-header">右侧识别文字</div>
+              <pre class="ocr-text-content">{{ ocrCompareResult?.rightText || '无识别结果' }}</pre>
+            </div>
+          </div>
+
+          <!-- 识别详情 -->
+          <div class="ocr-detail-section" v-if="ocrResults.length > 0">
+            <div class="ocr-detail-header">识别详情</div>
+            <div class="ocr-detail-list">
+              <div v-for="(item, idx) in ocrResults" :key="idx" class="ocr-detail-item">
+                <div class="ocr-detail-name">{{ item.name }}</div>
+                <div class="ocr-detail-confidence">
+                  置信度: <span :class="{ 'high': item.result.confidence >= 80 }">{{ item.result.confidence.toFixed(1) }}%</span>
+                </div>
+                <div class="ocr-detail-text">{{ item.result.text.substring(0, 200) }}{{ item.result.text.length > 200 ? '...' : '' }}</div>
               </div>
-              <div class="sensitive-match-context">{{ match.context }}</div>
             </div>
           </div>
         </div>
@@ -1258,10 +1506,14 @@ const generateWordReport = () => {
 
 /* 对比按钮 */
 .compare-main-btn {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  height: 56px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  padding: 14px 36px;
   background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
   color: white;
   border: none;
@@ -1272,37 +1524,7 @@ const generateWordReport = () => {
   font-family: SourceHanSans-SemiBold;
   transition: all 0.3s ease;
   box-shadow: 0 6px 20px rgba(139, 0, 0, 0.35);
-}
-
-.sensitive-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 24px;
-  background: linear-gradient(135deg, rgba(46, 89, 132, 1) 0%, rgba(60, 110, 160, 1) 100%);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
-  transition: all 0.3s ease;
-  box-shadow: 0 6px 20px rgba(46, 89, 132, 0.35);
-}
-
-.sensitive-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.sensitive-btn:hover:not(:disabled) {
-  box-shadow: 0 8px 24px rgba(46, 89, 132, 0.45);
-  transform: translateY(-2px);
-}
-
-.sensitive-btn-icon {
-  font-size: 18px;
+  overflow: hidden;
 }
 
 .compare-main-btn::before {
@@ -2363,75 +2585,240 @@ const generateWordReport = () => {
   opacity: 1;
 }
 
-.sensitive-result-modal {
+/* ========== OCR 图片文字识别样式 ========== */
+.ocr-section {
+  padding: 16px 20px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+}
+
+.ocr-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-SemiBold;
+}
+
+.ocr-section-icon {
+  font-size: 18px;
+  color: rgba(46, 89, 132, 1);
+}
+
+.ocr-section-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(101, 70, 40, 0.6);
+}
+
+.ocr-config {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ocr-lang-label {
+  font-size: 13px;
+  color: rgba(101, 70, 40, 0.8);
+}
+
+.ocr-lang-select {
+  padding: 6px 12px;
+  border: 1px solid rgba(166, 124, 82, 0.3);
+  border-radius: 6px;
+  background: white;
+  font-size: 13px;
+  color: rgba(44, 24, 16, 1);
+  cursor: pointer;
+}
+
+.ocr-lang-select:focus {
+  outline: none;
+  border-color: rgba(46, 89, 132, 0.5);
+}
+
+.ocr-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.ocr-compare-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(46, 89, 132, 0.9), rgba(46, 89, 132, 1));
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(46, 89, 132, 0.3);
+}
+
+.ocr-compare-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(46, 89, 132, 0.4);
+}
+
+.ocr-compare-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ocr-btn-icon {
+  font-size: 16px;
+}
+
+.ocr-progress {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* OCR 结果弹窗 */
+.ocr-result-modal {
   background: white;
   border-radius: 16px;
   width: 90%;
-  max-width: 700px;
-  max-height: 80vh;
+  max-width: 900px;
+  max-height: 85vh;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(44, 24, 16, 0.3);
   animation: modalSlideIn 0.3s ease;
 }
 
-.sensitive-result-body {
+.ocr-result-body {
   padding: 16px 24px;
   overflow-y: auto;
-  max-height: calc(80vh - 80px);
+  max-height: calc(85vh - 80px);
 }
 
-.sensitive-summary {
+.ocr-compare-summary {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding: 12px 16px;
-  background: rgba(245, 238, 226, 0.6);
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 14px;
-  color: rgba(44, 24, 16, 1);
+  justify-content: center;
+  margin-bottom: 20px;
 }
 
-.sensitive-match-list {
+.ocr-similarity-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, rgba(248, 244, 233, 0.8), rgba(245, 238, 226, 0.6));
+  border-radius: 12px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+}
+
+.ocr-similarity-label {
+  font-size: 13px;
+  color: rgba(101, 70, 40, 0.8);
+  margin-bottom: 4px;
+}
+
+.ocr-similarity-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-Bold;
+}
+
+.ocr-similarity-value.high {
+  color: rgba(196, 30, 58, 1);
+}
+
+.ocr-text-compare {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.ocr-text-column {
+  flex: 1;
+  min-width: 0;
+}
+
+.ocr-column-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+}
+
+.ocr-text-content {
+  padding: 12px;
+  background: rgba(248, 244, 233, 0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.1);
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(44, 24, 16, 0.9);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: 'Microsoft YaHei', sans-serif;
+}
+
+.ocr-detail-section {
+  border-top: 1px solid rgba(166, 124, 82, 0.2);
+  padding-top: 16px;
+}
+
+.ocr-detail-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  margin-bottom: 12px;
+}
+
+.ocr-detail-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.sensitive-match-item {
-  padding: 10px 14px;
-  background: rgba(248, 244, 233, 0.4);
-  border: 1px solid rgba(166, 124, 82, 0.15);
+.ocr-detail-item {
+  padding: 10px 12px;
+  background: rgba(248, 244, 233, 0.3);
   border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.1);
 }
 
-.sensitive-match-word {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.match-badge {
-  display: inline-block;
-  padding: 2px 10px;
-  background: rgba(196, 30, 58, 0.12);
-  color: rgba(196, 30, 58, 1);
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
-}
-
-.match-line {
+.ocr-detail-name {
   font-size: 12px;
-  color: rgba(101, 70, 40, 0.7);
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  margin-bottom: 4px;
 }
 
-.sensitive-match-context {
-  font-size: 13px;
-  color: rgba(101, 70, 40, 1);
+.ocr-detail-confidence {
+  font-size: 11px;
+  color: rgba(101, 70, 40, 0.7);
+  margin-bottom: 4px;
+}
+
+.ocr-detail-confidence .high {
+  color: rgba(46, 125, 50, 1);
+}
+
+.ocr-detail-text {
+  font-size: 12px;
+  color: rgba(44, 24, 16, 0.8);
   line-height: 1.5;
+  white-space: pre-wrap;
   word-break: break-all;
 }
 
