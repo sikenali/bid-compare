@@ -18,6 +18,7 @@ import { calculateTextSimilarity } from '../utils/textAlgorithms'
 import { storePropertyCheckResult } from '../utils/compareResultStore'
 import FileUpload from './FileUpload.vue'
 import RecentRecords from './RecentRecords.vue'
+import { BorderBeam } from 'vue3-border-beam'
 
 const router = useRouter()
 
@@ -752,10 +753,12 @@ const generateWordReport = () => {
 
     <!-- 检查按钮区域 -->
     <div class="check-action-area">
-      <button class="start-check-btn" @click="handleCheck" :disabled="isParsing" :class="{ 'processing': isParsing }">
-        <RiExchangeLine class="check-icon" :class="{ 'rotating': isParsing }" />
-        <span class="btn-text">属性检查</span>
-      </button>
+      <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4">
+        <button class="start-check-btn" @click="handleCheck" :disabled="isParsing" :class="{ 'processing': isParsing }">
+          <RiExchangeLine class="check-icon" :class="{ 'rotating': isParsing }" />
+          <span class="btn-text">属性检查</span>
+        </button>
+      </BorderBeam>
       <!-- 进度显示 -->
       <div v-if="isParsing" class="progress-display">
         <div class="progress-bar-bg">
@@ -975,23 +978,20 @@ const generateWordReport = () => {
 
 /* 检查按钮区域 */
 .check-action-area {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 24px;
+  padding: 0;
   gap: 16px;
-  width: 100%;
-  max-width: 1094px; /* 547px * 2 = 两个上传区域的宽度 */
-  margin: 0 auto;
 }
 
 /* 检查按钮 */
 .start-check-btn {
   position: relative;
-  width: 100%;
-  max-width: 100%;
-  height: 56px;
+  width: 870px;
+  height: 40px;
   border: none;
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);

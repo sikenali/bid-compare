@@ -36,6 +36,7 @@ import FileUpload from './FileUpload.vue'
 import RecentRecords from './RecentRecords.vue'
 import MultiFileUpload from './MultiFileUpload.vue'
 import MultiCompareResult from './MultiCompareResult.vue'
+import { BorderBeam } from 'vue3-border-beam'
 
 const router = useRouter()
 
@@ -1136,10 +1137,12 @@ const generateWordReport = () => {
 
     <!-- 对比按钮区域（单文件模式） -->
     <div v-if="!multiFileMode && !showResults && !showMultiResult" class="compare-action-area">
-      <button class="compare-main-btn" @click="handleCompare" :disabled="isProcessing || isViewingHistory" :class="{ 'processing': isProcessing }" :title="isViewingHistory ? '请重新上传文件后再进行对比' : '一键对比'">
-        <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
-        <span class="btn-text">{{ isViewingHistory ? '请重新上传文件' : '一键对比' }}</span>
-      </button>
+      <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4">
+        <button class="compare-main-btn" @click="handleCompare" :disabled="isProcessing || isViewingHistory" :class="{ 'processing': isProcessing }" :title="isViewingHistory ? '请重新上传文件后再进行对比' : '一键对比'">
+          <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
+          <span class="btn-text">{{ isViewingHistory ? '请重新上传文件' : '一键对比' }}</span>
+        </button>
+      </BorderBeam>
       <!-- 进度显示 -->
       <div v-if="isProcessing" class="progress-display">
         <div class="progress-bar-bg">
@@ -1158,13 +1161,15 @@ const generateWordReport = () => {
       />
       
       <div class="compare-action-area">
-        <button class="compare-main-btn" 
-                @click="handleMultiFileCompare" 
-                :disabled="isProcessing || multiFiles.length < 2"
-                :class="{ 'processing': isProcessing }">
-          <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
-          <span class="btn-text">多文件对比</span>
-        </button>
+        <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4">
+          <button class="compare-main-btn" 
+                  @click="handleMultiFileCompare" 
+                  :disabled="isProcessing || multiFiles.length < 2"
+                  :class="{ 'processing': isProcessing }">
+            <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
+            <span class="btn-text">多文件对比</span>
+          </button>
+        </BorderBeam>
         <!-- 进度显示 -->
         <div v-if="isProcessing" class="progress-display">
           <div class="progress-bar-bg">
@@ -1493,23 +1498,20 @@ const generateWordReport = () => {
 
 /* 对比按钮区域 */
 .compare-action-area {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 24px;
+  padding: 0;
   gap: 16px;
-  width: 100%;
-  max-width: 1094px; /* 547px * 2 = 两个上传区域的宽度 */
-  margin: 0 auto;
 }
 
 /* 对比按钮 */
 .compare-main-btn {
   position: relative;
-  width: 100%;
-  max-width: 100%;
-  height: 56px;
+  width: 870px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;

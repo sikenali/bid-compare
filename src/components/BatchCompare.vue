@@ -14,6 +14,7 @@ import { useSettings } from '../composables/useSettings'
 import { useComparison } from '../composables/useComparison'
 import type { ComparisonSettings } from '../utils/textAlgorithms'
 import { removeWatermarks } from '../utils/watermark'
+import { BorderBeam } from 'vue3-border-beam'
 
 const router = useRouter()
 const { settings } = useSettings()
@@ -202,14 +203,16 @@ const handleBatchCompare = async () => {
     </div>
 
     <div class="batch-action-area">
-      <button
-        class="batch-compare-btn"
-        :disabled="isProcessing || files.filter(f => f.file).length < 2"
-        @click="handleBatchCompare"
-      >
-        <RiPercentLine class="batch-compare-icon" />
-        <span>{{ isProcessing ? '正在处理...' : '开始批量对比' }}</span>
-      </button>
+      <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4">
+        <button
+          class="batch-compare-btn"
+          :disabled="isProcessing || files.filter(f => f.file).length < 2"
+          @click="handleBatchCompare"
+        >
+          <RiPercentLine class="batch-compare-icon" />
+          <span>{{ isProcessing ? '正在处理...' : '开始批量对比' }}</span>
+        </button>
+      </BorderBeam>
       <div v-if="isProcessing" class="progress-display">
         <div class="progress-bar-bg">
           <div class="progress-bar-fill" :style="{ width: `${Math.round(progress * 100)}%` }"></div>

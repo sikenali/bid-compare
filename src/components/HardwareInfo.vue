@@ -9,6 +9,7 @@ import {
   RiServerLine
 } from '@remixicon/vue'
 import { useHardwareInfo } from '../composables/useHardwareInfo'
+import { BorderBeam } from 'vue3-border-beam'
 
 const {
   systemInfo,
@@ -57,7 +58,9 @@ const navTabs = [
     <!-- 错误状态 -->
     <div v-else-if="error" class="error-container">
       <p class="error-text">获取硬件信息失败：{{ error }}</p>
-      <button class="retry-btn" @click="refresh">重试</button>
+      <BorderBeam size="sm" color-variant="sunset" theme="dark" :duration="2">
+        <button class="retry-btn" @click="refresh">重试</button>
+      </BorderBeam>
     </div>
 
     <!-- 内容区 - 左侧导航 + 右侧内容 -->
@@ -137,28 +140,36 @@ const navTabs = [
 .hardware-info-container {
   width: 100%;
   height: 100%;
-  overflow-y: auto;
-  padding: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background-color: rgba(248, 244, 233, 1);
+  gap: 12px;
+  font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* 页面标题区 */
 .page-header {
-  margin-bottom: 24px;
+  padding: 16px 24px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
 }
 
 .page-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: rgba(44, 24, 16, 1);
-  margin: 0;
+  margin: 0 0 4px 0;
   font-family: SourceHanSans-Bold;
 }
 
 .page-subtitle {
-  font-size: 14px;
-  color: rgba(101, 70, 40, 0.7);
-  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: rgba(101, 70, 40, 1);
+  margin: 0;
+  font-family: SourceHanSans-Regular;
 }
 
 .title-row {
@@ -217,12 +228,12 @@ const navTabs = [
   display: inline-flex;
   align-items: center;
   padding: 6px 14px;
-  background: rgba(76, 175, 80, 0.1);
-  border: 1px solid rgba(76, 175, 80, 0.3);
+  background: rgba(139, 0, 0, 0.08);
+  border: 1px solid rgba(139, 0, 0, 0.3);
   border-radius: 20px;
   font-size: 12px;
   font-weight: 500;
-  color: rgba(76, 175, 80, 1);
+  color: rgba(139, 0, 0, 1);
 }
 
 /* 布局 - 左侧导航 + 右侧内容 */
@@ -230,6 +241,8 @@ const navTabs = [
   display: flex;
   gap: 24px;
   min-height: calc(100vh - 180px);
+  padding: 0 24px 24px 24px;
+  overflow-y: auto;
 }
 
 /* 左侧导航 */

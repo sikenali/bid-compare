@@ -21,6 +21,7 @@ import { getCompareResult, deleteCompareResult } from '../utils/compareResultSto
 import { sanitizeHTML, sanitizeWithHighlight } from '../utils/sanitize'
 import MarkdownIt from 'markdown-it'
 import type { SimilarSegment } from '../utils/textAlgorithms'
+import { BorderBeam } from 'vue3-border-beam'
 
 // 创建 Markdown 解析器实例
 const md = new MarkdownIt({
@@ -721,10 +722,12 @@ const visibleConnections = computed(() => {
             <RiRestartLine class="back-icon" />
             <span class="back-text">返回</span>
           </button>
-          <button class="export-btn" @click="handleExport">
-            <RiSaveLine class="export-icon" />
-            <span>导出</span>
-          </button>
+          <BorderBeam size="sm" color-variant="sunset" theme="dark" :duration="2">
+            <button class="export-btn" @click="handleExport">
+              <RiSaveLine class="export-icon" />
+              <span>导出</span>
+            </button>
+          </BorderBeam>
         </div>
       </div>
     </div>

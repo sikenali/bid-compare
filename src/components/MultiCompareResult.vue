@@ -9,18 +9,24 @@
     </div>
 
     <div class="result-summary">
-      <div class="summary-card">
-        <span class="summary-label">文件数量</span>
-        <span class="summary-value">{{ fileCount }}</span>
-      </div>
-      <div class="summary-card">
-        <span class="summary-label">重复片段</span>
-        <span class="summary-value">{{ totalDuplicates }}</span>
-      </div>
-      <div class="summary-card">
-        <span class="summary-label">平均相似度</span>
-        <span class="summary-value">{{ averageSimilarity }}%</span>
-      </div>
+      <BorderBeam size="sm" color-variant="ocean" theme="light" :duration="2.5">
+        <div class="summary-card">
+          <span class="summary-label">文件数量</span>
+          <span class="summary-value">{{ fileCount }}</span>
+        </div>
+      </BorderBeam>
+      <BorderBeam size="sm" color-variant="sunset" theme="light" :duration="2.5">
+        <div class="summary-card">
+          <span class="summary-label">重复片段</span>
+          <span class="summary-value">{{ totalDuplicates }}</span>
+        </div>
+      </BorderBeam>
+      <BorderBeam size="sm" color-variant="colorful" theme="light" :duration="2.5">
+        <div class="summary-card">
+          <span class="summary-label">平均相似度</span>
+          <span class="summary-value">{{ averageSimilarity }}%</span>
+        </div>
+      </BorderBeam>
     </div>
 
     <!-- 相似度矩阵 -->
@@ -101,6 +107,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RiFileLine, RiArrowRightLine, RiArrowLeftLine, RiCheckLine } from '@remixicon/vue'
+import { BorderBeam } from 'vue3-border-beam'
 
 interface DuplicatePair {
   leftFileName: string

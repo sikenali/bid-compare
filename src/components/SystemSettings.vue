@@ -12,6 +12,7 @@ import {
   RiFilterLine,
   RiCloseLine
 } from '@remixicon/vue'
+import { BorderBeam } from 'vue3-border-beam'
 
 const {
   settings,
@@ -26,7 +27,7 @@ const activeTab = ref('algorithm')
 // 导航标签配置
 const navTabs = [
   { key: 'algorithm', label: '对比算法', icon: RiSettings3Line },
-  { key: 'preprocess', label: '文本预处理', icon: RiText },
+  { key: 'preprocess', label: '文本设置', icon: RiText },
   { key: 'features', label: '参数设置', icon: RiFilterLine },
   { key: 'export', label: '导出设置', icon: RiFileDownloadLine },
   { key: 'ai', label: 'AI 模型', icon: RiRobot2Line }
@@ -187,9 +188,11 @@ const aiModels = [
           </div>
         </div>
 
-        <!-- 文本预处理设置 -->
+        <!-- 文本设置 -->
+
+        <!-- 文本设置 -->
         <div v-if="activeTab === 'preprocess'" class="settings-section">
-          <h2 class="section-title">文本预处理设置</h2>
+          <h2 class="section-title">文本设置</h2>
           
           <div class="setting-row">
             <div class="setting-label-group">
@@ -433,7 +436,9 @@ const aiModels = [
         <div class="action-buttons">
           <button class="btn btn-reset" @click="handleReset">恢复默认</button>
           <button class="btn btn-cancel" @click="handleCancelSettings">取消</button>
-          <button class="btn btn-save" @click="handleSaveSettings">保存设置</button>
+          <BorderBeam size="sm" color-variant="sunset" theme="dark" :duration="2">
+            <button class="btn btn-save" @click="handleSaveSettings">保存设置</button>
+          </BorderBeam>
         </div>
       </div>
     </div>
@@ -444,28 +449,36 @@ const aiModels = [
 .system-settings-container {
   width: 100%;
   height: 100%;
-  overflow-y: auto;
-  padding: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background-color: rgba(248, 244, 233, 1);
+  gap: 12px;
+  font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* 页面标题区 */
 .page-header {
-  margin-bottom: 24px;
+  padding: 16px 24px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
 }
 
 .page-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: rgba(44, 24, 16, 1);
-  margin: 0;
+  margin: 0 0 4px 0;
   font-family: SourceHanSans-Bold;
 }
 
 .page-subtitle {
-  font-size: 14px;
-  color: rgba(101, 70, 40, 0.7);
-  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: rgba(101, 70, 40, 1);
+  margin: 0;
+  font-family: SourceHanSans-Regular;
 }
 
 /* 布局 - 左侧导航 + 右侧内容 */
@@ -473,6 +486,8 @@ const aiModels = [
   display: flex;
   gap: 24px;
   min-height: calc(100vh - 180px);
+  padding: 0 24px 24px 24px;
+  overflow-y: auto;
 }
 
 /* 左侧导航 */

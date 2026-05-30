@@ -5,23 +5,25 @@
       <span class="file-count">已选择 {{ files.length }} / {{ maxCount }} 个文件</span>
     </div>
     
-    <div class="upload-area" 
-         @dragover.prevent="onDragOver"
-         @dragleave="onDragLeave"
-         @drop.prevent="onDrop"
-         :class="{ 'drag-over': isDragOver }">
-      <input type="file" 
-             ref="fileInput"
-             :accept="acceptTypes"
-             multiple
-             @change="onFileSelect"
-             class="file-input" />
-      <div class="upload-content" @click="triggerFileInput">
-        <RiUploadCloudLine class="upload-icon" />
-        <p>点击或拖拽文件到这里</p>
-        <p class="upload-hint">支持 Word、PDF、PPT、Excel 格式，最多 {{ maxCount }} 个文件</p>
+    <BorderBeam size="line" color-variant="ocean" theme="light" :duration="3">
+      <div class="upload-area" 
+           @dragover.prevent="onDragOver"
+           @dragleave="onDragLeave"
+           @drop.prevent="onDrop"
+           :class="{ 'drag-over': isDragOver }">
+        <input type="file" 
+               ref="fileInput"
+               :accept="acceptTypes"
+               multiple
+               @change="onFileSelect"
+               class="file-input" />
+        <div class="upload-content" @click="triggerFileInput">
+          <RiUploadCloudLine class="upload-icon" />
+          <p>点击或拖拽文件到这里</p>
+          <p class="upload-hint">支持 Word、PDF、PPT、Excel 格式，最多 {{ maxCount }} 个文件</p>
+        </div>
       </div>
-    </div>
+    </BorderBeam>
 
     <div class="file-list" v-if="files.length > 0">
       <div v-for="(file, index) in files" :key="index" class="file-item">
@@ -48,6 +50,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { RiUploadCloudLine, RiFileLine, RiCloseLine, RiDeleteBinLine } from '@remixicon/vue'
+import { BorderBeam } from 'vue3-border-beam'
 
 interface Props {
   maxCount?: number
