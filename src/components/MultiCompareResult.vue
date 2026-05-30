@@ -105,8 +105,11 @@
         <div class="table-body">
           <template v-for="group in pageGroups" :key="group.leftFileName + group.rightFileName">
             <!-- 文件对分组头 -->
-            <div class="pair-group-header">
+            <div class="pair-group-header" @click="toggleGroup(group.leftFileName, group.rightFileName)">
               <div class="pair-group-info">
+                <span class="group-chevron" :class="{ collapsed: isGroupCollapsed(group.leftFileName, group.rightFileName) }">
+                  <RiArrowDownSLine />
+                </span>
                 <RiExchange2Line class="pair-group-icon" />
                 <span class="pair-group-files">
                   <span class="pair-group-file" :title="group.leftFileName">{{ truncateName(group.leftFileName) }}</span>
@@ -120,15 +123,18 @@
               </div>
             </div>
             <!-- 分组内的行 -->
-            <div v-for="dup in group.items" :key="dup.id" class="table-row">
+            <div v-for="dup in group.items" :key="dup.id" class="table-row"
+                 v-show="!isGroupCollapsed(group.leftFileName, group.rightFileName)">
               <div class="col col-index">{{ dup.id }}</div>
               <div class="col col-pair">
                 <span class="pair-name" :title="dup.leftFileName">{{ truncateName(dup.leftFileName) }}</span>
                 <RiArrowRightLine class="pair-arrow" />
                 <span class="pair-name" :title="dup.rightFileName">{{ truncateName(dup.rightFileName) }}</span>
               </div>
-              <div class="col col-content" v-html="dup.leftContent"></div>
-              <div class="col col-content" v-html="dup.rightContent"></div>
+              <div class="col col-content" v-html="dup.leftContent"
+                   @click.stop="openContentModal(dup)"></div>
+              <div class="col col-content" v-html="dup.rightContent"
+                   @click.stop="openContentModal(dup)"></div>
               <div class="col col-similarity" :class="getSimilarityClass(dup.similarity)">
                 {{ dup.similarity }}%
               </div>
@@ -137,10 +143,54 @@
         </div>
       </div>
 
+      <!-- 内容弹窗 -->
+      <div class="content-modal-overlay" v-if="contentModal" @click.self="closeContentModal">
+        <div class="content-modal">
+          <div class="content-modal-header">
+            <div class="content-modal-title">
+              <RiExchange2Line class="modal-title-icon" />
+              <h3>内容对比详情</h3>
+            </div>
+            <button class="modal-close-btn" @click="closeContentModal">
+              <RiCloseLine />
+            </button>
+          </div>
+          <div class="content-modal-subtitle">
+            <RiFileLine class="subtitle-icon" />
+            <span class="subtitle-file" :title="contentModal.leftFileName">{{ truncateName(contentModal.leftFileName) }}</span>
+            <RiArrowRightLine class="subtitle-arrow" />
+            <RiFileLine class="subtitle-icon" />
+            <span class="subtitle-file" :title="contentModal.rightFileName">{{ truncateName(contentModal.rightFileName) }}</span>
+            <span class="subtitle-sim" :class="getSimilarityClass(contentModal.similarity)">{{ contentModal.similarity }}%</span>
+          </div>
+          <div class="content-modal-body">
+            <div class="content-side">
+              <div class="content-side-label">内容 A</div>
+              <div class="content-side-text" v-html="contentModal.leftContent"></div>
+            </div>
+            <div class="content-divider">
+              <RiArrowRightLine />
+            </div>
+            <div class="content-side">
+              <div class="content-side-label">内容 B</div>
+              <div class="content-side-text" v-html="contentModal.rightContent"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 分页控件 -->
       <div class="pagination">
         <div class="pagination-info">
           共 {{ totalRecords }} 条记录，显示第 {{ startRecord }} - {{ endRecord }} 条
+        </div>
+        <div class="page-size-control">
+          <span class="page-size-label">每页</span>
+          <select class="page-size-select" v-model.number="pageSize">
+            <option :value="10">10条</option>
+            <option :value="20">20条</option>
+            <option :value="50">50条</option>
+          </select>
         </div>
         <div class="pagination-controls">
           <button class="page-btn" :disabled="currentPage <= 1" @click="prevPage">
@@ -172,11 +222,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { 
   RiFileLine, RiArrowLeftLine, RiCheckLine, RiTableLine,
   RiDownloadLine, RiExchange2Line, RiArrowLeftSLine, RiArrowRightSLine,
-  RiArrowRightLine
+  RiArrowRightLine, RiArrowDownSLine, RiCloseLine
 } from '@remixicon/vue'
 import { BorderBeam } from 'vue3-border-beam'
 
@@ -206,6 +256,55 @@ defineEmits<{
 const showMatrix = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
+
+// 分组折叠状态
+const collapsedPairs = ref(new Set<string>())
+
+const toggleGroup = (leftName: string, rightName: string) => {
+  const key = `${leftName}||${rightName}`
+  const set = collapsedPairs.value
+  if (set.has(key)) {
+    set.delete(key)
+  } else {
+    set.add(key)
+  }
+  // 触发响应式更新
+  collapsedPairs.value = new Set(set)
+}
+
+const isGroupCollapsed = (leftName: string, rightName: string): boolean => {
+  return collapsedPairs.value.has(`${leftName}||${rightName}`)
+}
+
+// 内容弹窗
+interface ContentModalData {
+  leftContent: string
+  rightContent: string
+  leftFileName: string
+  rightFileName: string
+  similarity: number
+}
+
+const contentModal = ref<ContentModalData | null>(null)
+
+const openContentModal = (dup: DuplicatePair) => {
+  contentModal.value = {
+    leftContent: dup.leftContent,
+    rightContent: dup.rightContent,
+    leftFileName: dup.leftFileName,
+    rightFileName: dup.rightFileName,
+    similarity: dup.similarity,
+  }
+}
+
+const closeContentModal = () => {
+  contentModal.value = null
+}
+
+// 切换每页条数时回到第一页
+watch(pageSize, () => {
+  currentPage.value = 1
+})
 
 const fileCount = computed(() => props.fileNames.length)
 
@@ -746,6 +845,29 @@ const handleExport = () => {
   position: sticky;
   top: 0;
   z-index: 1;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.pair-group-header:hover {
+  background: rgba(245, 238, 226, 0.9);
+}
+
+.group-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-size: 16px;
+  color: rgba(101, 70, 40, 0.5);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+
+.group-chevron.collapsed {
+  transform: rotate(-90deg);
 }
 
 .pair-group-header:first-child {
@@ -909,6 +1031,208 @@ const handleExport = () => {
   background: rgba(139, 0, 0, 1);
   color: white;
   border-color: rgba(139, 0, 0, 1);
+}
+
+/* 内容弹窗 */
+.content-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 40px;
+}
+
+.content-modal {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 1000px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.content-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.15);
+}
+
+.content-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-title-icon {
+  font-size: 18px;
+  color: rgba(46, 89, 132, 1);
+}
+
+.content-modal-title h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+}
+
+.modal-close-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: rgba(101, 70, 40, 0.1);
+  border-radius: 6px;
+  cursor: pointer;
+  color: rgba(44, 24, 16, 0.7);
+  font-size: 18px;
+  transition: all 0.2s;
+}
+
+.modal-close-btn:hover {
+  background: rgba(196, 30, 58, 0.1);
+  color: rgba(196, 30, 58, 1);
+}
+
+.content-modal-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: rgba(248, 244, 233, 0.3);
+  border-bottom: 1px solid rgba(166, 124, 82, 0.1);
+  font-size: 12px;
+}
+
+.subtitle-icon {
+  font-size: 14px;
+  color: rgba(46, 89, 132, 0.7);
+}
+
+.subtitle-file {
+  color: rgba(44, 24, 16, 0.9);
+  font-weight: 500;
+}
+
+.subtitle-arrow {
+  font-size: 12px;
+  color: rgba(166, 124, 82, 0.5);
+}
+
+.subtitle-sim {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.subtitle-sim.high {
+  background: rgba(196, 30, 58, 0.1);
+  color: rgba(196, 30, 58, 1);
+}
+
+.subtitle-sim.medium {
+  background: rgba(255, 152, 0, 0.1);
+  color: rgba(255, 152, 0, 1);
+}
+
+.subtitle-sim.low {
+  background: rgba(76, 175, 80, 0.1);
+  color: rgba(76, 175, 80, 1);
+}
+
+.content-modal-body {
+  display: flex;
+  padding: 20px;
+  gap: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.content-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-side-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(101, 70, 40, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.15);
+}
+
+.content-side-text {
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(44, 24, 16, 0.9);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Courier New', Courier, monospace;
+  background: rgba(248, 244, 233, 0.2);
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(166, 124, 82, 0.1);
+}
+
+.content-side-text :deep(.highlighted-text) {
+  background: rgba(255, 235, 59, 0.5);
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+.content-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  color: rgba(166, 124, 82, 0.3);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* 每页条数选择 */
+.page-size-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-size-label {
+  font-size: 12px;
+  color: rgba(101, 70, 40, 0.7);
+}
+
+.page-size-select {
+  padding: 4px 8px;
+  border: 1px solid rgba(166, 124, 82, 0.3);
+  border-radius: 6px;
+  background: white;
+  color: rgba(44, 24, 16, 1);
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.page-size-select:hover,
+.page-size-select:focus {
+  border-color: rgba(166, 124, 82, 0.6);
 }
 
 /* 无重复提示 */
