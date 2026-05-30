@@ -122,13 +122,10 @@ ipcMain.handle('get-hardware-info', () => {
     const networkInterfaces = os.networkInterfaces()
     const uptime = os.uptime()
 
-    // 操作系统版本（Windows NT 版本号和实际 Windows 版本映射）
+    // 操作系统版本
     let osVersion = `${osType} ${osRelease}`
     if (osType === 'Windows_NT') {
-      // os.release() 返回 NT 内核版本号，如 "10.0.26100"
-      // 通过第三位构建版本号判断具体 Windows 版本
       const buildNumber = parseInt(osRelease.split('.')[2] || '0', 10)
-      
       if (buildNumber >= 26100) {
         osVersion = 'Windows 11 24H2/25H2'
       } else if (buildNumber >= 22621) {
@@ -137,10 +134,6 @@ ipcMain.handle('get-hardware-info', () => {
         osVersion = 'Windows 11'
       } else if (buildNumber >= 19041) {
         osVersion = 'Windows 10'
-      } else if (buildNumber >= 18362) {
-        osVersion = 'Windows 10'
-      } else if (buildNumber >= 17763) {
-        osVersion = 'Windows 10 1809'
       } else if (buildNumber >= 10240) {
         osVersion = 'Windows 10'
       } else if (osRelease.startsWith('6.3')) {
@@ -160,6 +153,7 @@ ipcMain.handle('get-hardware-info', () => {
     const cpuModel = cpus[0]?.model || '未知处理器'
     const cpuCores = cpus.length
     const cpuSpeed = cpus[0]?.speed || 0
+    const cpuSpeedGHz = (cpuSpeed / 1000).toFixed(2)
 
     // 内存信息格式化
     const formatBytes = (bytes) => {
@@ -177,32 +171,75 @@ ipcMain.handle('get-hardware-info', () => {
 
     // 系统类型
     const is64 = arch.includes('64') || arch === 'x64' || arch === 'arm64'
-    const systemType = is64 ? `64 位操作系统, ${arch} 架构` : `32 位操作系统, ${arch} 架构`
+    const systemType = is64 ? `64 位, ${arch}` : `32 位, ${arch}`
 
-    // 网络信息
+    // 用户名
+    const username = process.env.USERNAME || process.env.USER || hostname
+
+    // 设备编号/资产编号（基于硬件信息生成）
+    const generateDeviceId = () => {
+      const components = [hostname, cpuModel, String(totalMem), arch]
+      const hash = components.join('|')
+      let h = 0
+      for (let i = 0; i < hash.length; i++) {
+        const char = hash.charCodeAt(i)
+        h = ((h << 5) - h) + char
+        h = h & h
+      }
+      return 'DEV-' + Math.abs(h).toString(36).toUpperCase().padStart(8, '0')
+    }
+
+    // 网络信息 - 分类有线和无线
+    let wiredMac = '未检测到'
+    let wiredSpeed = '未知'
+    let wirelessMac = '未检测到'
+    let wirelessModel = '未检测到'
+    let bluetoothInfo = '未检测到'
     let ipAddress = '未找到'
-    let macAddress = '未找到'
-    let subnetMask = '未找到'
-    let gateway = '未找到'
-    let networkName = '未找到'
 
     for (const [name, interfaces] of Object.entries(networkInterfaces)) {
       for (const iface of interfaces) {
         if (iface.family === 'IPv4' && !iface.internal) {
-          networkName = name
           ipAddress = iface.address
-          macAddress = iface.mac.toUpperCase().replace(/-/g, ':')
-          subnetMask = iface.netmask
-          gateway = ipAddress.split('.').slice(0, 3).join('.') + '.1'
-          break
+          const mac = iface.mac.toUpperCase().replace(/-/g, ':')
+          
+          // 判断是有线还是无线网卡
+          const nameLower = name.toLowerCase()
+          if (nameLower.includes('wi-fi') || nameLower.includes('wlan') || nameLower.includes('wireless') || nameLower.includes('wifi')) {
+            wirelessMac = mac
+            wirelessModel = name
+          } else if (nameLower.includes('ethernet') || nameLower.includes('以太网') || nameLower.includes('eth')) {
+            wiredMac = mac
+            wiredSpeed = iface.speed ? `${iface.speed} Mbps` : '未知'
+          } else {
+            // 默认当作有线网卡
+            if (wiredMac === '未检测到') {
+              wiredMac = mac
+              wiredSpeed = iface.speed ? `${iface.speed} Mbps` : '未知'
+            }
+          }
         }
       }
-      if (ipAddress !== '未找到') break
+    }
+
+    // 尝试获取蓝牙信息（Windows）
+    try {
+      const { execSync } = require('child_process')
+      if (process.platform === 'win32') {
+        const btOutput = execSync('powershell -Command "Get-PnpDevice -Class Bluetooth | Select-Object -First 1 -Property FriendlyName | ConvertTo-Json"', 
+          { encoding: 'utf-8', timeout: 5000 })
+        const btData = JSON.parse(btOutput)
+        if (btData.FriendlyName) {
+          bluetoothInfo = btData.FriendlyName
+        }
+      }
+    } catch (e) {
+      bluetoothInfo = '无法获取'
     }
 
     // 设备指纹生成
     const generateDeviceFingerprint = () => {
-      const components = [hostname, macAddress, cpuModel, String(totalMem), arch, osRelease]
+      const components = [hostname, wiredMac || wirelessMac, cpuModel, String(totalMem), arch, osRelease]
       const hash = components.join('|')
       let h = 0
       for (let i = 0; i < hash.length; i++) {
@@ -225,17 +262,20 @@ ipcMain.handle('get-hardware-info', () => {
 
     return {
       systemInfo: {
-        title: '操作系统信息',
+        title: '设备信息',
         iconBg: 'rgba(219, 234, 254, 1)',
         iconColor: 'rgba(37, 99, 235, 1)',
         items: [
-          { label: '用户名', value: process.env.USERNAME || process.env.USER || hostname },
-          { label: '操作系统版本', value: osVersion },
-          { label: '处理器', value: `${cpuModel} (${cpuCores} 核 @ ${cpuSpeed} MHz)` },
-          { label: '内存', value: `${totalMemGB} (已用 ${usedMemGB} / ${availMemGB} 可用, ${memPercent}%)` },
-          { label: '系统类型', value: systemType },
+          { label: '设备名称', value: `${osVersion} - ${hostname}` },
+          { label: '设备编号', value: generateDeviceId() },
+          { label: '操作系统', value: osVersion },
+          { label: '系统架构', value: systemType },
+          { label: '处理器 (CPU)', value: `${cpuModel} / ${cpuCores} 核 ${cpuSpeedGHz}GHz` },
+          { label: '设备内存 (RAM)', value: `${totalMemGB} (已用 ${usedMemGB}, ${memPercent}%)` },
+          { label: '用户名', value: username },
           { label: '计算机名称', value: hostname },
-          { label: '运行时间', value: formatUptime(uptime) }
+          { label: '运行时间', value: formatUptime(uptime) },
+          { label: '设备标识', value: deviceFingerprint }
         ]
       },
       networkInfo: {
@@ -243,11 +283,14 @@ ipcMain.handle('get-hardware-info', () => {
         iconBg: 'rgba(254, 243, 199, 1)',
         iconColor: 'rgba(217, 119, 6, 1)',
         items: [
-          { label: '网络适配器', value: networkName },
-          { label: 'IPv4 地址', value: ipAddress },
-          { label: 'MAC 地址', value: macAddress },
-          { label: '子网掩码', value: subnetMask },
-          { label: '默认网关', value: gateway }
+          { label: '本地 IP', value: ipAddress },
+          { label: '有线网卡', value: wiredMac !== '未检测到' ? `${wiredSpeed}` : '未检测到' },
+          { label: '有线 MAC', value: wiredMac },
+          { label: '无线网卡', value: wirelessModel },
+          { label: '无线 MAC', value: wirelessMac },
+          { label: '蓝牙', value: bluetoothInfo },
+          { label: '子网掩码', value: '浏览器无法获取' },
+          { label: '默认网关', value: ipAddress !== '未找到' ? ipAddress.split('.').slice(0, 3).join('.') + '.1' : '未知' }
         ]
       },
       fingerprintInfo: {
@@ -263,7 +306,7 @@ ipcMain.handle('get-hardware-info', () => {
     console.error('获取硬件信息失败:', error)
     return {
       systemInfo: {
-        title: '操作系统信息',
+        title: '设备信息',
         iconBg: 'rgba(219, 234, 254, 1)',
         iconColor: 'rgba(37, 99, 235, 1)',
         items: [{ label: '错误', value: error.message }]

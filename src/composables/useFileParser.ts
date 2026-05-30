@@ -29,6 +29,7 @@ export interface FileParseResult {
   properties: FileProperties;
   pages?: number;
   pageMap?: PageMap;
+  images?: Array<{ name: string; url: string }>;
   error?: string;
 }
 
@@ -193,7 +194,8 @@ export function useFileParser() {
         文本内容长度: textResult.value.length.toString()
       };
 
-      // 提取元数据
+      // 提取元数据和图片
+      let images: Array<{ name: string; url: string }> = [];
       try {
         const JSZipModule = await import('jszip');
         const JSZip = JSZipModule.default;
@@ -204,14 +206,28 @@ export function useFileParser() {
 
         const meta = await extractOfficeMetadata(zip);
         Object.assign(properties, meta);
+
+        // 提取图片
+        const imageFiles = zip.file(/^word\/media\/image\d+\.\w+$/i);
+        for (let i = 0; i < imageFiles.length; i++) {
+          const entry = imageFiles[i];
+          const blob = await entry.async('blob');
+          const url = URL.createObjectURL(blob);
+          const ext = entry.name.split('.').pop() || 'png';
+          images.push({
+            name: `image_${i + 1}.${ext}`,
+            url
+          });
+        }
       } catch (zipError) {
-        console.warn('DOCX 元数据提取失败，使用默认值:', zipError);
+        console.warn('DOCX 元数据/图片提取失败，使用默认值:', zipError);
       }
 
       return {
         content: textResult.value,
         properties,
-        pageMap: buildEstimatedPageMap(textResult.value)
+        pageMap: buildEstimatedPageMap(textResult.value),
+        images
       };
     } catch (error) {
       console.error('解析DOCX文件失败:', error);
@@ -298,34 +314,36 @@ export function useFileParser() {
 
       try {
         // pdfjs-dist v4.x 使用 getMetadata() 异步方法
-        const metadata = await pdfDocument.getMetadata();
-        const info = metadata?.info;
-        
-        if (info) {
-          // 作者
-          if (info.Author) pdfProperties.作者 = info.Author;
+        if (pdfDocument && typeof pdfDocument.getMetadata === 'function') {
+          const metadata = await pdfDocument.getMetadata();
+          const info = metadata?.info;
           
-          // 程序名称 (Producer 或 Creator)
-          if (info.Producer) {
-            pdfProperties.程序名称 = info.Producer;
-          } else if (info.Creator) {
-            pdfProperties.程序名称 = info.Creator;
-          }
-          
-          // 创建时间
-          if (info.CreationDate) {
-            try {
-              const dateStr = info.CreationDate.replace(/^D:/, '').replace(/([+-]\d{2})'(\d{2})'$/, '$1:$2');
-              pdfProperties.创建时间 = new Date(dateStr).toLocaleString();
-            } catch (e) { /* 忽略解析错误 */ }
-          }
-          
-          // 修改时间
-          if (info.ModDate) {
-            try {
-              const dateStr = info.ModDate.replace(/^D:/, '').replace(/([+-]\d{2})'(\d{2})'$/, '$1:$2');
-              pdfProperties.修改时间 = new Date(dateStr).toLocaleString();
-            } catch (e) { /* 忽略解析错误 */ }
+          if (info) {
+            // 作者
+            if (info.Author) pdfProperties.作者 = info.Author;
+            
+            // 程序名称 (Producer 或 Creator)
+            if (info.Producer) {
+              pdfProperties.程序名称 = info.Producer;
+            } else if (info.Creator) {
+              pdfProperties.程序名称 = info.Creator;
+            }
+            
+            // 创建时间
+            if (info.CreationDate) {
+              try {
+                const dateStr = info.CreationDate.replace(/^D:/, '').replace(/([+-]\d{2})'(\d{2})'$/, '$1:$2');
+                pdfProperties.创建时间 = new Date(dateStr).toLocaleString();
+              } catch (e) { /* 忽略解析错误 */ }
+            }
+            
+            // 修改时间
+            if (info.ModDate) {
+              try {
+                const dateStr = info.ModDate.replace(/^D:/, '').replace(/([+-]\d{2})'(\d{2})'$/, '$1:$2');
+                pdfProperties.修改时间 = new Date(dateStr).toLocaleString();
+              } catch (e) { /* 忽略解析错误 */ }
+            }
           }
         }
       } catch (metadataError) {
@@ -337,7 +355,8 @@ export function useFileParser() {
         content: textContent,
         properties: pdfProperties,
         pages: pageCount,
-        pageMap
+        pageMap,
+        images: [] // PDF 图片提取在外部处理
       };
     } catch (error) {
       console.error('PDF解析错误:', error);

@@ -28,6 +28,7 @@ import { useComparison } from '../composables/useComparison'
 import type { ComparisonSettings, SimilarSegment } from '../utils/textAlgorithms'
 import { removeCommonClauses } from '../utils/textAlgorithms'
 import { storeCompareResult, deleteCompareResult } from '../utils/compareResultStore'
+import { removeWatermarks } from '../utils/watermark'
 import { computeImageHash, hammingDistance, calculateImageSimilarity, loadImageAsDataUrl } from '../utils/imageCompare'
 import type { ImageDuplicate } from '../utils/imageCompare'
 import { recognizeImages, extractTextFromImage, isOCRAvailable, getSupportedLanguages } from '../utils/ocr'
@@ -422,6 +423,32 @@ const handleCompare = async () => {
     if (rightResult.error) throw new Error(rightResult.error)
     rightFileContent.value = rightResult.content
 
+    // 自动加载文档中提取的图片
+    if (settings.enableImageCompare || settings.enableOCRCompare) {
+      if (leftResult.images && leftResult.images.length > 0) {
+        leftImages.value = leftResult.images
+      }
+      if (rightResult.images && rightResult.images.length > 0) {
+        rightImages.value = rightResult.images
+      }
+    }
+
+    // 如果开启 OCR，对文档中的图片进行文字识别
+    let ocrTextLeft = ''
+    let ocrTextRight = ''
+    if (settings.enableOCRCompare && ocrAvailable) {
+      if (leftImages.value.length > 0) {
+        progressMessage.value = '正在识别左侧图片文字...'
+        const leftOcrResults = await runOCR(leftImages.value, 'left')
+        ocrTextLeft = leftOcrResults.map(r => r.result.text).join('\n')
+      }
+      if (rightImages.value.length > 0) {
+        progressMessage.value = '正在识别右侧图片文字...'
+        const rightOcrResults = await runOCR(rightImages.value, 'right')
+        ocrTextRight = rightOcrResults.map(r => r.result.text).join('\n')
+      }
+    }
+
         // 应用水印剔除
     let leftContent = leftResult.content
     let rightContent = rightResult.content
@@ -434,6 +461,12 @@ const handleCompare = async () => {
     if (settings.clauseRemovalEnabled) {
       progressMessage.value = '正在剔除相同条款...'
       ;[leftContent, rightContent] = removeCommonClauses(leftContent, rightContent, settings.clauseRemovalGranularity)
+    }
+
+    // 如果开启 OCR，将识别的文字追加到对比内容中
+    if (settings.enableOCRCompare && (ocrTextLeft || ocrTextRight)) {
+      if (ocrTextLeft) leftContent += '\n\n--- OCR 识别文字 ---\n' + ocrTextLeft
+      if (ocrTextRight) rightContent += '\n\n--- OCR 识别文字 ---\n' + ocrTextRight
     }
 
     // 文件大小警告
@@ -1068,7 +1101,7 @@ const generateWordReport = () => {
       <div class="title-row">
         <div>
           <h1 class="page-title">文件对比</h1>
-          <p class="page-subtitle">精准识别两个版本文档之间的内容差异、相似片段和结构变更</p>
+          <p class="page-subtitle">精准识别两个（或以上）版本文档之间的内容差异、相似片段和结构变更</p>
         </div>
         <div class="header-actions">
           <button v-if="recentRecords.length > 0" class="icon-btn-wrapper" @click="toggleHistory">
@@ -1114,6 +1147,16 @@ const generateWordReport = () => {
         :on-clear-file="handleClearFile"
       />
 
+      <!-- 一键对比圆形按钮 -->
+      <div class="compare-circle-wrapper">
+        <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4">
+          <button class="compare-circle-btn" @click="handleCompare" :disabled="isProcessing || isViewingHistory" :title="isViewingHistory ? '请重新上传文件后再进行对比' : '一键对比'">
+            <RiExchangeLine class="compare-circle-icon" :class="{ 'rotating': isProcessing }" />
+            <span class="compare-circle-text">{{ isViewingHistory ? '请重新上传' : '一键对比' }}</span>
+          </button>
+        </BorderBeam>
+      </div>
+
       <!-- 右侧文件上传 -->
       <FileUpload
         side="right"
@@ -1135,21 +1178,12 @@ const generateWordReport = () => {
       </div>
     </div>
 
-    <!-- 对比按钮区域（单文件模式） -->
-    <div v-if="!multiFileMode && !showResults && !showMultiResult" class="compare-action-area">
-      <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4">
-        <button class="compare-main-btn" @click="handleCompare" :disabled="isProcessing || isViewingHistory" :class="{ 'processing': isProcessing }" :title="isViewingHistory ? '请重新上传文件后再进行对比' : '一键对比'">
-          <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
-          <span class="btn-text">{{ isViewingHistory ? '请重新上传文件' : '一键对比' }}</span>
-        </button>
-      </BorderBeam>
-      <!-- 进度显示 -->
-      <div v-if="isProcessing" class="progress-display">
-        <div class="progress-bar-bg">
-          <div class="progress-bar-fill" :style="{ width: `${Math.round(progress * 100)}%` }"></div>
-        </div>
-        <span class="progress-text">{{ progressMessage || '正在处理中...' }} {{ Math.round(progress * 100) }}%</span>
+    <!-- 进度显示（单文件模式） -->
+    <div v-if="!multiFileMode && !showResults && !showMultiResult && isProcessing" class="progress-display">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" :style="{ width: `${Math.round(progress * 100)}%` }"></div>
       </div>
+      <span class="progress-text">{{ progressMessage || '正在处理中...' }} {{ Math.round(progress * 100) }}%</span>
     </div>
 
     <!-- 多文件上传区域（多文件模式） -->
@@ -1158,25 +1192,15 @@ const generateWordReport = () => {
         ref="multiFileUploadRef"
         :max-count="settings.maxMultiFileCount"
         @update:files="multiFiles = $event"
+        @compare="handleMultiFileCompare"
       />
       
-      <div class="compare-action-area">
-        <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4">
-          <button class="compare-main-btn" 
-                  @click="handleMultiFileCompare" 
-                  :disabled="isProcessing || multiFiles.length < 2"
-                  :class="{ 'processing': isProcessing }">
-            <RiExchangeLine class="compare-icon" :class="{ 'rotating': isProcessing }" />
-            <span class="btn-text">多文件对比</span>
-          </button>
-        </BorderBeam>
-        <!-- 进度显示 -->
-        <div v-if="isProcessing" class="progress-display">
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill" :style="{ width: `${Math.round(progress * 100)}%` }"></div>
-          </div>
-          <span class="progress-text">{{ progressMessage || '正在处理中...' }} {{ Math.round(progress * 100) }}%</span>
+      <!-- 进度显示 -->
+      <div v-if="isProcessing" class="progress-display">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" :style="{ width: `${Math.round(progress * 100)}%` }"></div>
         </div>
+        <span class="progress-text">{{ progressMessage || '正在处理中...' }} {{ Math.round(progress * 100) }}%</span>
       </div>
     </template>
 
@@ -1188,71 +1212,6 @@ const generateWordReport = () => {
       :duplicates="multiDuplicates"
       @close="closeMultiResult"
     />
-
-    <!-- 图片上传区域 -->
-    <div class="image-upload-section" v-if="settings.enableImageCompare">
-      <div class="image-section-header">
-        <RiImageLine class="image-section-icon" />
-        <span>图片查重</span>
-        <span class="image-section-hint">上传文档中的图片进行雷同检测</span>
-      </div>
-      <div class="image-upload-columns">
-        <div class="image-column">
-          <div class="image-column-label">左侧图片</div>
-          <label class="image-upload-btn">
-            <RiImageLine />
-            <span>添加图片</span>
-            <input type="file" accept="image/*" multiple @change="handleLeftImageUpload" />
-          </label>
-          <div class="image-preview-list">
-            <div v-for="(img, idx) in leftImages" :key="idx" class="image-preview-item">
-              <img :src="img.url" :alt="img.name" class="image-preview-thumb" />
-              <button class="image-preview-remove" @click="removeLeftImage(idx)">×</button>
-            </div>
-          </div>
-        </div>
-        <div class="image-column">
-          <div class="image-column-label">右侧图片</div>
-          <label class="image-upload-btn">
-            <RiImageLine />
-            <span>添加图片</span>
-            <input type="file" accept="image/*" multiple @change="handleRightImageUpload" />
-          </label>
-          <div class="image-preview-list">
-            <div v-for="(img, idx) in rightImages" :key="idx" class="image-preview-item">
-              <img :src="img.url" :alt="img.name" class="image-preview-thumb" />
-              <button class="image-preview-remove" @click="removeRightImage(idx)">×</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- OCR 图片文字识别区域 -->
-    <div class="ocr-section" v-if="ocrAvailable && settings.enableOCRCompare && leftImages.length > 0 && rightImages.length > 0">
-      <div class="ocr-section-header">
-        <RiImageLine class="ocr-section-icon" />
-        <span>图片文字识别</span>
-        <span class="ocr-section-hint">识别图片中的文字并对比</span>
-      </div>
-      <div class="ocr-actions">
-        <button 
-          class="ocr-compare-btn" 
-          @click="runOCRComparison" 
-          :disabled="isOCRProcessing"
-        >
-          <RiExchangeLine class="ocr-btn-icon" />
-          <span>{{ isOCRProcessing ? '识别中...' : '图片文字识别对比' }}</span>
-        </button>
-      </div>
-      <!-- OCR 进度显示 -->
-      <div v-if="isOCRProcessing" class="ocr-progress">
-        <div class="progress-bar-bg">
-          <div class="progress-bar-fill" :style="{ width: `${Math.round(ocrProgress * 100)}%` }"></div>
-        </div>
-        <span class="progress-text">{{ ocrProgressMessage }} {{ Math.round(ocrProgress * 100) }}%</span>
-      </div>
-    </div>
 
     <!-- OCR 结果弹窗 -->
     <div v-if="showOCRResult" class="help-modal-overlay" @click="showOCRResult = false">
@@ -1496,6 +1455,53 @@ const generateWordReport = () => {
   padding: 0 24px;
 }
 
+/* 一键对比圆形按钮 */
+.compare-circle-wrapper {
+  flex-shrink: 0;
+}
+
+.compare-circle-btn {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.35);
+  transition: all 0.3s ease;
+}
+
+.compare-circle-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(139, 0, 0, 0.45);
+}
+
+.compare-circle-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.compare-circle-icon {
+  font-size: 28px;
+  transition: transform 0.3s ease;
+}
+
+.compare-circle-icon.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+.compare-circle-text {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+}
+
 /* 对比按钮区域 */
 .compare-action-area {
   width: 100%;
@@ -1510,7 +1516,7 @@ const generateWordReport = () => {
 /* 对比按钮 */
 .compare-main-btn {
   position: relative;
-  width: 870px;
+  width: 980px;
   height: 40px;
   display: flex;
   align-items: center;

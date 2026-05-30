@@ -315,18 +315,20 @@ async function getBrowserHardwareInfo(): Promise<HardwareData> {
 
   return {
     systemInfo: {
-      title: '浏览器环境信息',
+      title: '设备信息',
       iconBg: 'rgba(219, 234, 254, 1)',
       iconColor: 'rgba(37, 99, 235, 1)',
       items: [
         { label: '浏览器', value: browserInfo },
         { label: '操作系统', value: osName },
-        { label: '处理器核心', value: cpuCores ? `${cpuCores} 逻辑核心` : '未知' },
-        { label: '设备内存', value: memStr },
         { label: '系统架构', value: systemType },
-        { label: '屏幕信息', value: screenInfo },
+        { label: '处理器 (CPU)', value: cpuCores ? `${cpuName} / ${cpuCores} 线程` : '未知' },
+        { label: '设备内存 (RAM)', value: memStr },
+        { label: 'GPU 显卡', value: webglInfo.renderer !== '未知' ? webglInfo.renderer : '浏览器无法获取显卡型号' },
+        { label: '屏幕尺寸', value: `${screen.width} x ${screen.height} (${pixelRatio}x 像素比)` },
         { label: '语言环境', value: navigator.language },
-        { label: 'GPU 型号', value: webglInfo.renderer }
+        { label: '设备编号', value: deviceFingerprint.substring(0, 16) },
+        { label: '设备名称', value: `${osName} - ${browserInfo}` }
       ]
     },
     networkInfo: {
@@ -334,12 +336,16 @@ async function getBrowserHardwareInfo(): Promise<HardwareData> {
       iconBg: 'rgba(254, 243, 199, 1)',
       iconColor: 'rgba(217, 119, 6, 1)',
       items: [
-        { label: '本地 IP', value: localIP },
+        { label: '本地 IP (WebRTC)', value: localIP },
         { label: '公网 IP', value: publicIP },
         { label: '网络类型', value: networkInfo.type },
         { label: '下行速度', value: networkInfo.downlink },
         { label: '网络质量', value: networkInfo.effectiveType },
-        { label: '延迟', value: networkInfo.rtt },
+        { label: '延迟 (RTT)', value: networkInfo.rtt },
+        { label: '有线网卡', value: '浏览器安全限制，无法获取' },
+        { label: 'MAC 地址', value: '浏览器安全限制，无法获取' },
+        { label: '无线网卡', value: navigator.connection?.type === 'wifi' ? 'WiFi 已连接' : '非 WiFi 连接' },
+        { label: '蓝牙', value: navigator.bluetooth ? '支持 Bluetooth API' : '浏览器不支持' },
         { label: '电池电量', value: batteryInfo.level },
         { label: '充电状态', value: batteryInfo.charging }
       ]
@@ -349,9 +355,6 @@ async function getBrowserHardwareInfo(): Promise<HardwareData> {
       iconBg: 'rgba(252, 231, 243, 1)',
       iconColor: 'rgba(219, 39, 119, 1)',
       items: [
-        { label: 'Canvas 指纹', value: canvasFp, isWide: true },
-        { label: 'WebGL 指纹', value: webglInfo.fingerprint, isWide: true },
-        { label: 'WebGL 渲染器', value: webglInfo.renderer, isWide: true },
         { label: '设备标识', value: deviceFingerprint, isWide: true }
       ]
     }

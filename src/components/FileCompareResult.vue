@@ -288,20 +288,34 @@ const handleExport = async () => {
   }
 
   try {
-    const doc = generateWordReport()
-    const blob = await Packer.toBlob(doc)
-    
-    // 生成文件名：file1vsfile2-文件对比报告.docx
     const leftName = (leftFileName.value || 'file1').replace(/\.[^/.]+$/, '')
     const rightName = (rightFileName.value || 'file2').replace(/\.[^/.]+$/, '')
-    const fileName = `${leftName}vs${rightName}-文件对比报告.docx`
     
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = fileName
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    if (settings.exportFormat === 'markdown') {
+      // 导出 Markdown 格式
+      const mdContent = generateMarkdownReport()
+      const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8' })
+      const fileName = `${leftName}vs${rightName}-文件对比报告.md`
+      
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } else {
+      // 导出 Word 格式
+      const doc = generateWordReport()
+      const blob = await Packer.toBlob(doc)
+      const fileName = `${leftName}vs${rightName}-文件对比报告.docx`
+      
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
   } catch (error) {
     console.error('导出报告失败:', error)
     alert('导出报告失败，请重试')
@@ -388,6 +402,52 @@ function parseHighlightedContent(htmlContent: string): any[] {
     size: 20,
     font: 'Microsoft YaHei'
   })]
+}
+
+// 生成 Markdown 报告
+function generateMarkdownReport(): string {
+  const includeHighlight = settings.includeHighlight
+  let md = ''
+
+  // 报告标题
+  md += '# 文件对比报告\n\n'
+
+  // 统计信息
+  md += '## 一、相似度统计\n\n'
+  md += `- **文本重复率**：${textSimilarity.value}\n`
+  md += `- **雷同片段**：${similarSegmentsCount.value}处\n\n`
+
+  // 文件信息（如果开启图表）
+  if (settings.includeCharts) {
+    md += '## 二、文件信息\n\n'
+    md += '| 项目 | 左侧文件 | 右侧文件 |\n'
+    md += '|------|----------|----------|\n'
+    md += `| 文件名 | ${leftFileName.value || '-'} | ${rightFileName.value || '-'} |\n`
+    md += `| 文本重复率 | ${textSimilarity.value} | ${textSimilarity.value} |\n`
+    md += `| 雷同片段数 | ${similarSegmentsCount.value}处 | ${similarSegmentsCount.value}处 |\n\n`
+  }
+
+  // 雷同片段详情
+  const sectionNum = settings.includeCharts ? '三' : '二'
+  md += `## ${sectionNum}、雷同片段详情\n\n`
+  md += '| 序号 | 左侧文件 | 位置 | 右侧文件 | 位置 |\n'
+  md += '|------|----------|------|----------|------|\n'
+
+  for (const segment of segments.value) {
+    const leftContent = includeHighlight
+      ? (segment.leftContent || '').replace(/<[^>]*>/g, '').replace(/…/g, '').substring(0, 50) + '...'
+      : (segment.leftContent || '').replace(/<[^>]*>/g, '').substring(0, 50) + '...'
+    const rightContent = includeHighlight
+      ? (segment.rightContent || '').replace(/<[^>]*>/g, '').replace(/…/g, '').substring(0, 50) + '...'
+      : (segment.rightContent || '').replace(/<[^>]*>/g, '').substring(0, 50) + '...'
+
+    md += `| ${segment.id} | ${leftContent} | ${segment.leftPage || '-'} | ${rightContent} | ${segment.rightPage || '-'} |\n`
+  }
+
+  md += '\n---\n\n'
+  md += `*报告生成时间：${new Date().toLocaleString()}*\n`
+
+  return md
 }
 
 // 生成Word报告
@@ -718,10 +778,12 @@ const visibleConnections = computed(() => {
           <p class="page-subtitle">显示文档之间的内容差异、相似片段和统计分析</p>
         </div>
         <div class="header-actions">
-          <button class="back-btn" @click="handleBack">
-            <RiRestartLine class="back-icon" />
-            <span class="back-text">返回</span>
-          </button>
+          <BorderBeam size="sm" color-variant="ocean" theme="dark" :duration="2">
+            <button class="back-btn" @click="handleBack">
+              <RiRestartLine class="back-icon" />
+              <span class="back-text">返回</span>
+            </button>
+          </BorderBeam>
           <BorderBeam size="sm" color-variant="sunset" theme="dark" :duration="2">
             <button class="export-btn" @click="handleExport">
               <RiSaveLine class="export-icon" />
@@ -764,10 +826,12 @@ const visibleConnections = computed(() => {
           <h2 class="list-title">相似片段详情</h2>
         </div>
         <div class="list-header-actions">
-          <button class="ai-btn" @click="handleAIAnalysis" :disabled="isLoading">
-            <RiSparkling2Fill class="ai-icon" />
-            <span>{{ isLoading ? 'AI分析中...' : 'AI分析' }}</span>
-          </button>
+          <BorderBeam size="sm" color-variant="sunset" theme="dark" :duration="2">
+            <button class="ai-btn" @click="handleAIAnalysis" :disabled="isLoading">
+              <RiSparkling2Fill class="ai-icon" />
+              <span>{{ isLoading ? 'AI分析中...' : 'AI分析' }}</span>
+            </button>
+          </BorderBeam>
           <div class="list-header-stats">
             <div class="stat-badge stat-badge-100">
               <span class="stat-badge-icon">💯</span>

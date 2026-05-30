@@ -3,6 +3,7 @@ import FileCompare from '../components/FileCompare.vue'
 import FileCompareResult from '../components/FileCompareResult.vue'
 import PropertyCheck from '../components/PropertyCheck.vue'
 import PropertyCheckResult from '../components/PropertyCheckResult.vue'
+import ImageCompare from '../components/ImageCompare.vue'
 import HardwareInfo from '../components/HardwareInfo.vue'
 import SystemSettings from '../components/SystemSettings.vue'
 import BatchCompare from '../components/BatchCompare.vue'
@@ -35,6 +36,12 @@ const routes = [
     name: 'PropertyCheckResult',
     component: PropertyCheckResult,
     meta: { title: '文件对对碰 - 属性检查结果' }
+  },
+  {
+    path: '/image-compare',
+    name: 'ImageCompare',
+    component: ImageCompare,
+    meta: { title: '文件对对碰 - 图片对比' }
   },
   {
     path: '/hardware-info',

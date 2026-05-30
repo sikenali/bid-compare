@@ -53,7 +53,7 @@ function validateMessage(data: ComparisonMessage): boolean {
   if (data.type !== 'START') return false
   if (typeof data.text1 !== 'string' || typeof data.text2 !== 'string') return false
   if (!data.settings || typeof data.settings !== 'object') return false
-  if (typeof data.settings.minDupChars !== 'number') return false
+  if (typeof data.settings.minDuplicateWords !== 'number') return false
   
   const validStrategies = ['lcs', 'rabin-karp', 'minhash', 'simhash', 'myers', 'smart']
   if (!validStrategies.includes(data.strategy)) return false

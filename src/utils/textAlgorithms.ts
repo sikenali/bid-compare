@@ -485,7 +485,7 @@ export function findSimilarSegments(
   const preprocessed2 = preprocessText(text2, settings)
   const m = preprocessed1.processed.length
   const n = preprocessed2.processed.length
-  const minMatchLength = settings.minDupChars
+  const minMatchLength = settings.minDuplicateWords
 
   const matchedPositions = new Set<string>()
   const segments: SimilarSegment[] = []
@@ -603,7 +603,7 @@ export function findSimilarSegmentsRabinKarp(
   const preprocessed2 = preprocessText(text2, settings)
   const m = preprocessed1.processed.length
   const n = preprocessed2.processed.length
-  const windowSize = settings.minDupChars
+  const windowSize = settings.minDuplicateWords
 
   if (windowSize > m || windowSize > n) return []
 
@@ -674,7 +674,7 @@ export function findSimilarSegmentsRabinKarp(
           matchLen++
         }
 
-        if (matchLen >= settings.minDupChars) {
+        if (matchLen >= settings.minDuplicateWords) {
           matchedPairs.add(pairKey)
 
           // 关键修复：将预处理后的索引映射回原文本索引
@@ -1359,7 +1359,7 @@ export function findSimilarSegmentsSmart(
     const segments = findSimilarSegmentsMyers(
       text1,
       text2,
-      settings.minDupChars,
+      settings.minDuplicateWords,
       10,
       pageMap1,
       pageMap2

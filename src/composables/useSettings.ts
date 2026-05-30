@@ -48,7 +48,7 @@ export const defaultSettings: FileCompareSettings = {
   ignoreCase: false,
   ignoreInvisibleChars: true,
   paragraphCount: 5,
-  minDupChars: 10,
+  minDupChars: 8,
   clauseRemovalEnabled: false,
   clauseRemovalGranularity: 5,
   removeWatermark: true,

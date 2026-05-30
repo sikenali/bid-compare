@@ -732,6 +732,16 @@ const generateWordReport = () => {
         :on-clear-file="handleClearFile"
       />
 
+      <!-- 属性检查圆形按钮 -->
+      <div class="check-circle-wrapper">
+        <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4">
+          <button class="check-circle-btn" @click="handleCheck" :disabled="isParsing" :class="{ 'processing': isParsing }">
+            <RiExchangeLine class="check-circle-icon" :class="{ 'rotating': isParsing }" />
+            <span class="check-circle-text">属性检查</span>
+          </button>
+        </BorderBeam>
+      </div>
+
       <!-- 文件B上传 -->
       <FileUpload
         side="right"
@@ -751,21 +761,12 @@ const generateWordReport = () => {
       </div>
     </div>
 
-    <!-- 检查按钮区域 -->
-    <div class="check-action-area">
-      <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4">
-        <button class="start-check-btn" @click="handleCheck" :disabled="isParsing" :class="{ 'processing': isParsing }">
-          <RiExchangeLine class="check-icon" :class="{ 'rotating': isParsing }" />
-          <span class="btn-text">属性检查</span>
-        </button>
-      </BorderBeam>
-      <!-- 进度显示 -->
-      <div v-if="isParsing" class="progress-display">
-        <div class="progress-bar-bg">
-          <div class="progress-bar-fill"></div>
-        </div>
-        <span class="progress-text">正在检查中...</span>
+    <!-- 进度显示 -->
+    <div v-if="isParsing" class="progress-display">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill"></div>
       </div>
+      <span class="progress-text">正在检查中...</span>
     </div>
 
     <!-- 解析错误显示 -->
@@ -976,6 +977,53 @@ const generateWordReport = () => {
   pointer-events: none;
 }
 
+/* 属性检查圆形按钮 */
+.check-circle-wrapper {
+  flex-shrink: 0;
+}
+
+.check-circle-btn {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.35);
+  transition: all 0.3s ease;
+}
+
+.check-circle-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(139, 0, 0, 0.45);
+}
+
+.check-circle-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.check-circle-icon {
+  font-size: 28px;
+  transition: transform 0.3s ease;
+}
+
+.check-circle-icon.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+.check-circle-text {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: SourceHanSans-SemiBold;
+}
+
 /* 检查按钮区域 */
 .check-action-area {
   width: 100%;
@@ -990,7 +1038,7 @@ const generateWordReport = () => {
 /* 检查按钮 */
 .start-check-btn {
   position: relative;
-  width: 870px;
+  width: 980px;
   height: 40px;
   border: none;
   border-radius: 12px;

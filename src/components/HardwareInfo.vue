@@ -41,9 +41,11 @@ const navTabs = [
           <p class="page-subtitle">查看系统硬件和网络信息</p>
         </div>
         <div class="header-actions">
-          <button class="refresh-btn" @click="refresh" :disabled="isLoading" title="刷新">
-            <RiRestartLine class="refresh-icon" :class="{ spinning: isLoading }" />
-          </button>
+          <BorderBeam size="sm" color-variant="ocean" theme="dark" :duration="2">
+            <button class="refresh-btn" @click="refresh" :disabled="isLoading" title="刷新">
+              <RiRestartLine class="refresh-icon" :class="{ spinning: isLoading }" />
+            </button>
+          </BorderBeam>
           <span class="sample-badge">实时数据</span>
         </div>
       </div>
@@ -252,9 +254,17 @@ const navTabs = [
   display: flex;
   flex-direction: column;
   gap: 4px;
-  align-self: flex-start;
-  position: sticky;
-  top: 24px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 2px solid rgba(139, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.1);
+  align-self: stretch;
+}
+
+.info-nav::after {
+  content: '';
+  flex: 1;
 }
 
 .nav-tab {
@@ -302,9 +312,12 @@ const navTabs = [
 .info-content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .info-section {
+  flex: 1;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   padding: 24px;

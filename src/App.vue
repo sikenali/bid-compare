@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { RiExchangeLine, RiFileLine, RiFileInfoLine, RiSettings3Line, RiCpuLine, RiFileExcelLine } from '@remixicon/vue'
+import { RiExchangeLine, RiFileLine, RiFileInfoLine, RiSettings3Line, RiCpuLine, RiFileExcelLine, RiImageLine } from '@remixicon/vue'
+import { useSettings } from './composables/useSettings'
+import { BorderBeam } from 'vue3-border-beam'
 
 const route = useRoute()
 const router = useRouter()
+const { settings } = useSettings()
 
 // 移动端菜单状态
 const isMobileMenuOpen = ref(false)
@@ -51,6 +54,7 @@ onUnmounted(() => {
 const activeMenu = computed(() => {
   if (route.path === '/file-compare' || route.path === '/file-compare-result') return 'file-compare'
   if (route.path === '/property-check' || route.path === '/property-check-result') return 'property-check'
+  if (route.path === '/image-compare') return 'image-compare'
   if (route.path === '/hardware-info') return 'hardware-info'
   if (route.path === '/settings') return 'system-settings'
   if (route.path === '/batch-compare') return 'batch-compare'
@@ -65,6 +69,9 @@ const handleMenuClick = (menu: string) => {
       break
     case 'property-check':
       router.push('/property-check')
+      break
+    case 'image-compare':
+      router.push('/image-compare')
       break
     case 'hardware-info':
       router.push('/hardware-info')
@@ -117,9 +124,11 @@ const handleMenuClick = (menu: string) => {
         <!-- Logo区域 -->
         <div class="logo-section">
           <div class="logo-icon">
-            <div class="logo-seal">
-              <RiExchangeLine class="logo-icon-svg" />
-            </div>
+            <BorderBeam size="sm" color-variant="colorful" theme="dark" :duration="3">
+              <div class="logo-seal">
+                <RiExchangeLine class="logo-icon-svg" />
+              </div>
+            </BorderBeam>
           </div>
           <h1 class="logo-title">文件对对碰</h1>
           <p class="logo-subtitle">智能文档比对工具</p>
@@ -144,6 +153,15 @@ const handleMenuClick = (menu: string) => {
             <span class="nav-text">属性检查</span>
           </button>
           <button
+            v-if="settings.enableImageCompare"
+            class="nav-item"
+            :class="{ active: activeMenu === 'image-compare' }"
+            @click="handleMenuClick('image-compare')"
+          >
+            <RiImageLine class="nav-icon" />
+            <span class="nav-text">图片对比</span>
+          </button>
+          <button
             class="nav-item"
             :class="{ active: activeMenu === 'hardware-info' }"
             @click="handleMenuClick('hardware-info')"
@@ -164,7 +182,7 @@ const handleMenuClick = (menu: string) => {
         <!-- 底部版本信息 -->
         <div class="version-info">
           <p class="version-title">@2026 sikenali</p>
-          <p class="version-subtitle">Vibe Coding</p>
+          <p class="version-subtitle">LightOS Walk Coding</p>
         </div>
       </aside>
     </Transition>

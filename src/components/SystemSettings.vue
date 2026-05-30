@@ -30,11 +30,19 @@ const navTabs = [
   { key: 'preprocess', label: '文本设置', icon: RiText },
   { key: 'features', label: '参数设置', icon: RiFilterLine },
   { key: 'export', label: '导出设置', icon: RiFileDownloadLine },
-  { key: 'ai', label: 'AI 模型', icon: RiRobot2Line }
+  { key: 'ai', label: '模型设置', icon: RiRobot2Line }
 ]
 
 const handleReset = () => {
-  handleResetToDefault()
+  if (window.confirm('确定要恢复默认设置吗？所有修改将丢失。')) {
+    handleResetToDefault()
+  }
+}
+
+const handleSaveWithConfirm = () => {
+  if (window.confirm('确定要保存当前设置吗？')) {
+    handleSaveSettings()
+  }
 }
 
 // 数字范围限制工具函数
@@ -54,21 +62,15 @@ const exportFormats = [
 const aiModels = [
   {
     value: 'deepseek',
-    label: 'DeepSeek',
-    iconColor: '#4D6BFE',
-    iconSvg: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>`
+    label: 'DeepSeek'
   },
   {
     value: 'qwen',
-    label: 'Qwen 通义千问',
-    iconColor: '#6236FF',
-    iconSvg: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>`
+    label: 'Qwen'
   },
   {
     value: 'openai',
-    label: 'OpenAI',
-    iconColor: '#10A37F',
-    iconSvg: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494zM3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646zM2.34 7.896a4.485 4.485 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.676l5.815 3.355-2.02 1.168a.076.076 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.872zm16.597 3.855-5.833-3.387L15.119 7.2a.076.076 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.407-.667zm2.01-3.023-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zm-12.64 4.135-2.02-1.164a.08.08 0 0 1-.038-.057V6.075a4.5 4.5 0 0 1 7.375-3.453l-.142.08L8.704 5.46a.795.795 0 0 0-.393.681zm1.097-2.365 2.602-1.5 2.607 1.5v2.999l-2.597 1.5-2.607-1.5z"/></svg>`
+    label: 'OpenAI'
   }
 ]
 </script>
@@ -103,9 +105,9 @@ const aiModels = [
 
       <!-- 右侧设置内容 -->
       <div class="settings-content">
-        <!-- 对比算法设置 -->
+        <!-- 对比算法 -->
         <div v-if="activeTab === 'algorithm'" class="settings-section">
-          <h2 class="section-title">对比算法设置</h2>
+          <h2 class="section-title">对比算法</h2>
           
           <div class="setting-row">
             <div class="setting-label-group">
@@ -284,7 +286,7 @@ const aiModels = [
           <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">图片查重</label>
-              <p class="setting-desc">开启后对比文档中的雷同图片</p>
+              <p class="setting-desc">开启后只对比上传图片中的雷同文字</p>
             </div>
             <label class="switch">
               <input type="checkbox" v-model="settings.enableImageCompare" />
@@ -292,10 +294,10 @@ const aiModels = [
             </label>
           </div>
 
-          <div class="setting-row" v-if="settings.enableImageCompare">
+          <div class="setting-row">
             <div class="setting-label-group">
               <label class="setting-label">OCR 文字识别</label>
-              <p class="setting-desc">开启后对图片进行文字识别并对比</p>
+              <p class="setting-desc">开启后对 Word/PDF 中的图片进行文字识别对比</p>
             </div>
             <label class="switch">
               <input type="checkbox" v-model="settings.enableOCRCompare" />
@@ -389,9 +391,9 @@ const aiModels = [
           </div>
         </div>
 
-        <!-- AI 模型设置 -->
+        <!-- 模型设置 -->
         <div v-if="activeTab === 'ai'" class="settings-section">
-          <h2 class="section-title">AI 模型设置</h2>
+          <h2 class="section-title">模型设置</h2>
           
           <div class="setting-row radio-row">
             <div class="setting-label-group">
@@ -409,7 +411,6 @@ const aiModels = [
                 <span class="radio-box">
                   <span class="radio-box-inner"></span>
                 </span>
-                <span class="radio-box-icon-svg" v-html="model.iconSvg" :style="{ color: model.iconColor }"></span>
                 <span class="radio-box-label">{{ model.label }}</span>
               </label>
             </div>
@@ -433,12 +434,15 @@ const aiModels = [
         </div>
 
         <!-- 操作按钮 -->
-        <div class="action-buttons">
-          <button class="btn btn-reset" @click="handleReset">恢复默认</button>
-          <button class="btn btn-cancel" @click="handleCancelSettings">取消</button>
-          <BorderBeam size="sm" color-variant="sunset" theme="dark" :duration="2">
-            <button class="btn btn-save" @click="handleSaveSettings">保存设置</button>
-          </BorderBeam>
+        <div class="action-buttons-card">
+          <div class="action-buttons">
+            <BorderBeam size="sm" color-variant="mono" theme="light" :duration="2.5">
+              <button class="btn btn-reset" @click="handleReset">恢复默认</button>
+            </BorderBeam>
+            <BorderBeam size="sm" color-variant="sunset" theme="dark" :duration="2">
+              <button class="btn btn-save" @click="handleSaveWithConfirm">保存设置</button>
+            </BorderBeam>
+          </div>
         </div>
       </div>
     </div>
@@ -497,9 +501,17 @@ const aiModels = [
   display: flex;
   flex-direction: column;
   gap: 4px;
-  align-self: flex-start;
-  position: sticky;
-  top: 24px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 2px solid rgba(139, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.1);
+  align-self: stretch;
+}
+
+.settings-nav::after {
+  content: '';
+  flex: 1;
 }
 
 .nav-tab {
@@ -547,9 +559,12 @@ const aiModels = [
 .settings-content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .settings-section {
+  flex: 1;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   padding: 24px;
@@ -730,7 +745,8 @@ const aiModels = [
 }
 
 .api-input {
-  width: 300px;
+  width: 100%;
+  max-width: 400px;
 }
 
 .select-input {
@@ -825,13 +841,20 @@ const aiModels = [
   color: rgba(44, 24, 16, 0.9);
 }
 
-/* 操作按钮区 */
+/* 操作按钮卡片区 */
+.action-buttons-card {
+  margin-top: 24px;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  border: 1px solid rgba(166, 124, 82, 0.15);
+  box-shadow: 0 2px 12px rgba(44, 24, 16, 0.06);
+}
+
 .action-buttons {
   display: flex;
   justify-content: center;
   gap: 16px;
-  margin-top: 24px;
-  padding: 20px 0;
 }
 
 .btn {
@@ -852,17 +875,6 @@ const aiModels = [
 }
 
 .btn-reset:hover {
-  background: rgba(248, 244, 233, 0.5);
-  border-color: rgba(166, 124, 82, 0.5);
-}
-
-.btn-cancel {
-  background: white;
-  color: rgba(101, 70, 40, 0.8);
-  border: 1px solid rgba(166, 124, 82, 0.3);
-}
-
-.btn-cancel:hover {
   background: rgba(248, 244, 233, 0.5);
   border-color: rgba(166, 124, 82, 0.5);
 }
