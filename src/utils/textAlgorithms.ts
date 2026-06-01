@@ -38,7 +38,7 @@ const SIMHASH_WINDOW = 5
 /**
  * 计算字符串的哈希值（使用 FNV-1a 算法）
  */
-function fnv1aHash(str: string): number {
+function fnv1aHash(str: string): bigint {
   let hash = 0xcbf29ce484222325n // FNV offset basis
   const prime = 0x100000001b3n // FNV prime
 
@@ -47,7 +47,7 @@ function fnv1aHash(str: string): number {
     hash = (hash * prime) & 0xffffffffffffffffn // 保持 64 位
   }
 
-  return Number(hash)
+  return hash
 }
 
 /**
@@ -69,7 +69,7 @@ export function computeSimHash(text: string, window: number = SIMHASH_WINDOW): n
 
     // 对每一位进行加权
     for (let j = 0; j < SIMHASH_BITS; j++) {
-      if (BigInt(hash) & (1n << BigInt(j))) {
+      if (hash & (1n << BigInt(j))) {
         v[j]++
       } else {
         v[j]--
