@@ -283,6 +283,7 @@ export function findSimilarSegmentsSimHash(
       undefined,
       onCancel
     )
+    if (ci < 5) console.log(`[simhash-rk] ci=${ci} chunk1=${chunk1.length} chunk2=${chunk2.length} rkSegments=${chunkSegments.length}`)
 
     // 调整位置索引
     for (const seg of chunkSegments) {
