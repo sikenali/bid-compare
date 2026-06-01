@@ -785,35 +785,25 @@ export type ComparisonStrategy = 'lcs' | 'rabin-karp' | 'minhash' | 'simhash' | 
 
 // 选择对比策略
 export function selectStrategy(textLength: number): ComparisonStrategy {
-  // 小文件（< 3K 字符）：使用暴力 LCS，结果最准确
-  // 中小文件（3K-10K）：使用 Myers Diff，精确比对
-  // 中文件（10K-50K）：使用 Rabin-Karp 滚动哈希，性能 O(m+n)
-  // 大文件（50K-200K）：使用 MinHash + LSH，避免内存溢出
-  // 超大文件（> 200K）：使用 SimHash 快速粗筛
   if (textLength < 3_000) return 'lcs'
   if (textLength < 10_000) return 'myers'
-  if (textLength < 50_000) return 'rabin-karp'
-  if (textLength < 200_000) return 'minhash'
+  if (textLength < 500_000) return 'rabin-karp'
   return 'simhash'
 }
 
 // 智能策略选择 - 根据文本特征自动选择
 export function selectSmartStrategy(text1: string, text2: string): ComparisonStrategy {
-  const totalLength = text1.length + text2.length
+  const maxLen = Math.max(text1.length, text2.length)
   
-  // 如果总长度很小，直接使用 LCS
-  if (totalLength < 6_000) return 'lcs'
+  if (maxLen < 3_000) return 'lcs'
   
-  // 检查文本是否包含大量重复内容（如标准条款）
   const hasRepetitiveContent = checkRepetitiveContent(text1) || checkRepetitiveContent(text2)
   
-  if (hasRepetitiveContent) {
-    // 如果有大量重复内容，使用 SimHash 粗筛
+  if (hasRepetitiveContent && maxLen >= 500_000) {
     return 'simhash'
   }
   
-  // 根据总长度选择
-  return selectStrategy(totalLength)
+  return selectStrategy(maxLen)
 }
 
 /**
