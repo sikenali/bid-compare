@@ -274,11 +274,12 @@ export function findSimilarSegmentsSimHash(
     const chunk1 = text1.substring(start1, end1)
     const chunk2 = text2.substring(start2, end2)
 
-    // 使用 Rabin-Karp 进行精比
+    // 使用 Rabin-Karp 进行精比（用较小窗口4，因为SimHash粗筛已确保语义相似）
+    const refineSettings = { ...settings, minDuplicateWords: Math.min(settings.minDuplicateWords, 4) }
     const chunkSegments = findSimilarSegmentsRabinKarp(
       chunk1,
       chunk2,
-      settings,
+      refineSettings,
       50,
       undefined,
       onCancel
