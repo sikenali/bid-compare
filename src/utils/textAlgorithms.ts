@@ -126,7 +126,7 @@ export function simHashFilter(
   text2: string,
   windowSize: number = 1000,
   overlap: number = 200,
-  threshold: number = 3,
+  threshold: number = 10,
   maxChunks: number = 500
 ): SimHashCandidate[] {
   // 将文档切分为块
@@ -181,25 +181,34 @@ export function simHashFilter(
     }
 
     // 验证候选对
+    let passed = 0, failed = 0, minDist = 999
     for (const j of potentialMatches) {
       const pairKey = `${i}_${j}`
       if (usedPairs.has(pairKey)) continue
       usedPairs.add(pairKey)
 
       const distance = hammingDistance(hashes1[i], hashes2[j])
+      minDist = Math.min(minDist, distance)
       if (distance <= threshold) {
+        passed++
         candidates.push({
           leftIndex: i,
           rightIndex: j,
           distance,
           estimatedSimilarity: 1 - distance / SIMHASH_BITS
         })
+      } else {
+        failed++
       }
+    }
+    if (potentialMatches.size > 0 && i % 20 === 0) {
+      console.log(`[simhash] i=${i} potential=${potentialMatches.size} passed=${passed} failed=${failed} minDist=${minDist}`)
     }
   }
 
   // 按相似度排序，只返回前100个最佳候选
   candidates.sort((a, b) => b.estimatedSimilarity - a.estimatedSimilarity)
+  console.log(`[simhash] chunks1=${limitedChunks1.length} chunks2=${limitedChunks2.length} bucketEntries=${bucketIndex.size} candidates=${candidates.length}`)
   return candidates.slice(0, 100)
 }
 
