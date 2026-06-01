@@ -491,6 +491,7 @@ const handleCompare = async () => {
       leftResult.pageMap,
       rightResult.pageMap
     )
+    console.log(`[compare] result segments=${result.segments.length} similarity=${result.similarity} leftContentLen=${leftContent.length} rightContentLen=${rightContent.length}`)
 
     // 执行图片对比
     let imageDuplicates: ImageDuplicate[] = []

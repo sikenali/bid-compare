@@ -51,6 +51,7 @@ export function useComparison() {
 
     // 使用强制策略或智能策略选择
     const strategy = forceStrategy || selectSmartStrategy(text1, text2)
+    console.log(`[compare] strategy=${strategy} len1=${text1.length} len2=${text2.length} minDup=${settings.minDuplicateWords}`)
 
     try {
       // 小文件和中等文件在主线程处理
