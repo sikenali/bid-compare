@@ -56,8 +56,8 @@ function fnv1aHash(str: string): bigint {
  * @param window 滑动窗口大小，默认 5
  * @returns 64 位 SimHash 指纹
  */
-export function computeSimHash(text: string, window: number = SIMHASH_WINDOW): number {
-  if (!text || text.length === 0) return 0
+export function computeSimHash(text: string, window: number = SIMHASH_WINDOW): bigint {
+  if (!text || text.length === 0) return 0n
 
   // 初始化 64 位向量
   const v = new Array(SIMHASH_BITS).fill(0)
@@ -85,14 +85,14 @@ export function computeSimHash(text: string, window: number = SIMHASH_WINDOW): n
     }
   }
 
-  return Number(fingerprint)
+  return fingerprint
 }
 
 /**
  * 计算两个 SimHash 指纹的汉明距离
  */
-export function hammingDistance(hash1: number, hash2: number): number {
-  let xor = BigInt(hash1) ^ BigInt(hash2)
+export function hammingDistance(hash1: bigint, hash2: bigint): number {
+  let xor = hash1 ^ hash2
   let distance = 0
 
   while (xor > 0n) {
@@ -153,7 +153,7 @@ export function simHashFilter(
     // 将64位哈希分成8个8位的桶
     for (let band = 0; band < 8; band++) {
       const shift = band * BAND_SIZE
-      const bucketKey = (hash >> shift) & 0xFF
+      const bucketKey = Number((hash >> BigInt(shift)) & 0xFFn)
       const key = `${band}_${bucketKey}`
       if (!bucketIndex.has(key)) {
         bucketIndex.set(key, [])
@@ -170,7 +170,7 @@ export function simHashFilter(
     // 从8个桶中收集候选
     for (let band = 0; band < 8; band++) {
       const shift = band * BAND_SIZE
-      const bucketKey = (hash >> shift) & 0xFF
+      const bucketKey = Number((hash >> BigInt(shift)) & 0xFFn)
       const key = `${band}_${bucketKey}`
       const matches = bucketIndex.get(key)
       if (matches) {
