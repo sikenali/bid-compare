@@ -69,7 +69,7 @@ export function computeSimHash(text: string, window: number = SIMHASH_WINDOW): n
 
     // 对每一位进行加权
     for (let j = 0; j < SIMHASH_BITS; j++) {
-      if (hash & (1n << BigInt(j))) {
+      if (BigInt(hash) & (1n << BigInt(j))) {
         v[j]++
       } else {
         v[j]--
