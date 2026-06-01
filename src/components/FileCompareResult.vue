@@ -850,10 +850,10 @@ const visibleConnections = computed(() => {
         <!-- 表头 -->
         <div class="table-header">
           <div class="col col-index">序号</div>
-          <div class="col col-content">{{ leftFileName || '文件A' }}</div>
+          <div class="col col-content" :title="leftFileName || '文件A'">{{ leftFileName || '文件A' }}</div>
           <div class="col col-position">位置</div>
           <div class="col col-position">位置</div>
-          <div class="col col-content">{{ rightFileName || '文件B' }}</div>
+          <div class="col col-content" :title="rightFileName || '文件B'">{{ rightFileName || '文件B' }}</div>
         </div>
 
         <!-- 表体 -->
@@ -2079,6 +2079,9 @@ const visibleConnections = computed(() => {
 .table-header .col-content {
   justify-content: flex-start;
   padding-left: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .table-header .col-position {
