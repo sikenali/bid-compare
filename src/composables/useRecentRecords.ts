@@ -55,14 +55,11 @@ const loadFromStorage = (recordType: string) => {
       store.recentRecords.length = 0
       parsed.forEach(record => store.recentRecords.push(record))
       store.showRecentRecords = parsed.length > 0
-      console.log(`📂 [${recordType}] 加载历史记录: ${parsed.length} 条`)
     } else {
       store.recentRecords.length = 0
       store.showRecentRecords = false
-      console.log(`📂 [${recordType}] 历史记录为空`)
     }
   } catch (error) {
-    console.error(`[${recordType}] 加载最近记录失败:`, error)
     store.recentRecords.length = 0
     store.showRecentRecords = false
   }
@@ -92,14 +89,12 @@ const saveToStorage = (recordType: string) => {
       store.showRecentRecords = store.recentRecords.length > 0
       return // 保存成功，退出
     } catch (e) {
-      console.warn(`[${recordType}] localStorage 配额不足，尝试删除最旧记录... (剩余重试: ${maxRetries - 1})`)
       // 删除最旧的记录
       if (store.recentRecords.length > 1) {
         store.recentRecords.pop()
         maxRetries--
       } else {
         // 如果只有一条记录还是失败，清空
-        console.error(`[${recordType}] 无法保存记录，localStorage 配额已满`)
         store.recentRecords.length = 0
         store.showRecentRecords = false
         localStorage.removeItem(storageKey)
@@ -109,7 +104,6 @@ const saveToStorage = (recordType: string) => {
   }
 
   // 超过最大重试次数，强制清空
-  console.error(`[${recordType}] 超过最大重试次数，强制清空记录`)
   store.recentRecords.length = 0
   store.showRecentRecords = false
   localStorage.removeItem(storageKey)
@@ -132,7 +126,6 @@ export function useRecentRecords(recordType: 'fileCompare' | 'propertyCheck') {
       store.recentRecords.pop()
     }
     saveToStorage(recordType)
-    console.log(`✅ [${recordType}] 已添加记录:`, newRecord.filename)
   }
 
   // 删除单条记录
@@ -141,7 +134,6 @@ export function useRecentRecords(recordType: 'fileCompare' | 'propertyCheck') {
     if (index !== -1) {
       store.recentRecords.splice(index, 1)
       saveToStorage(recordType)
-      console.log(`✅ [${recordType}] 已删除记录, ID: ${id}`)
     }
   }
 
@@ -150,7 +142,6 @@ export function useRecentRecords(recordType: 'fileCompare' | 'propertyCheck') {
     store.recentRecords.length = 0
     store.showRecentRecords = false
     localStorage.removeItem(`${recordType}RecentRecords`)
-    console.log(`✅ [${recordType}] 已清除所有记录`)
   }
 
   // 手动触发加载（供外部调用）
@@ -160,13 +151,11 @@ export function useRecentRecords(recordType: 'fileCompare' | 'propertyCheck') {
 
   // 组件挂载时加载
   onMounted(() => {
-    console.log(`📂 [${recordType}] onMounted - 加载历史记录...`)
     loadFromStorage(recordType)
   })
 
   // keep-alive 激活时重新加载
   onActivated(() => {
-    console.log(`📂 [${recordType}] onActivated - 重新加载历史记录...`)
     loadFromStorage(recordType)
   })
 

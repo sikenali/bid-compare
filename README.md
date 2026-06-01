@@ -1,4 +1,4 @@
-﻿# 📄 文件对对碰 — 专业文档对比工具
+# 📄 文件对对碰 — 专业文档对比工具
 
 <p align="center">
   <strong>🎯 精准识别文档差异 · 🤖 AI 智能分析 · 📦 跨平台桌面应用</strong>
@@ -35,6 +35,8 @@
 | **🔎 OCR 识别** | Tesseract.js 浏览器端 OCR，识别图片中的文字内容 |
 | **🎨 国潮古风 UI** | 中国传统美学配色（#F8F4E9 底），边框流光动效，沉浸式体验 |
 | **📦 跨平台桌面** | Electron 41 驱动，Windows / macOS / Linux 原生安装包 |
+| **🔒 隐私安全** | 所有数据本地存储，仅本浏览器可访问，不上传服务器 |
+| **📱 响应式设计** | 完美适配桌面端与移动端，触摸操作友好 |
 
 ---
 
@@ -49,12 +51,13 @@
 | **多格式支持** | Word (.docx)、PDF (.pdf)、Excel (.xlsx)、PowerPoint (.pptx)、纯文本 (.txt) |
 | **三阶对比算法** | SimHash（64-bit FNV-1a 指纹）→ LCS（最长公共子序列）→ Myers 差异算法 |
 | **高亮渲染** | 相同内容金色高亮标注 + 悬浮 tooltip 展示完整原文，差异用双色区分 |
+| **全文预览** | 预览界面显示完整文档内容，高亮标记重复片段 |
 | **相似度统计** | 实时计算整体重复率、相似片段数量、平均相似度 |
 | **分页结果** | 大文档结果自动分页，每页 10 个片段，支持逐页浏览 |
 | **上下文查看** | 点击相似片段弹出上下文 Modal，展示匹配段落周围内容 |
 | **AI 差异分析** | 一键调用大模型，生成差异分析报告、风险建议 |
-| **结果导出** | 导出 Word (.docx) 或 Markdown (.md) 格式对比报告 |
-| **历史记录** | localStorage 持久化最近 10 条记录，支持删除和重新查看 |
+| **结果导出** | 导出 Word (.docx) 或 Markdown (.md) 格式对比报告，相同内容高亮显示 |
+| **历史记录** | localStorage 持久化最近 10 条记录，仅本浏览器可访问，支持删除和重新查看 |
 | **Web Worker** | 大文件（>100K 字符）自动启用 Worker 线程，避免阻塞 UI |
 | **水印移除** | 45+ 正则匹配中英文常见文档水印（内部资料、机密、免责声明等） |
 | **去重预处理** | 移除两文件中完全相同的公共段落，降低噪音 |
@@ -74,6 +77,7 @@
 | N-gram 大小 | 3 | SimHash 滑动窗口的 N-gram 长度 |
 | 最小重复字数 | 8 | 判定为雷同的最小连续字符数 |
 | 文本相似度阈值 | 75% | 标记为高相似度的最低百分比 |
+| 图像相似度阈值 | 70% | 标记为高相似度图片的最低百分比 |
 | 最大结果数 | 100 | 返回的最大相似片段数量 |
 | 忽略大小写 | ✅ | 对比时忽略英文字母大小写 |
 | 忽略标点符号 | ❌ | 对比时忽略中文/英文标点符号 |
@@ -83,7 +87,6 @@
 | 启用水印移除 | ✅ | 自动过滤文档水印文字 |
 | 启用图片对比 | ❌ | 从文档中提取图片进行 dHash 对比 |
 | 启用 OCR | ❌ | 对文档中的图片进行 OCR 文字识别 |
-| 导出格式 | Word | 选择 Word (.docx) 或 Markdown (.md) |
 
 ---
 
@@ -140,12 +143,11 @@
 
 | 功能项 | 说明 |
 |--------|------|
-| **多文件上传** | 3–10 文件拖拽上传，文件类型图标标识 |
+| **多文件上传** | 3–10 文件拖拽上传，文件类型图标标识，格式提示悬浮显示 |
 | **全两两对比** | 自动对所有文件配对执行文本对比 |
-| **相似度矩阵** | 颜色编码矩阵可视化（绿 → 黄 → 红 渐变） |
-| **平均相似度** | 显示每对文件的平均相似度百分比 |
-| **重复计数** | 统计每对文件中的相似片段数量 |
-| **批量导出** | 导出批量对比结果报告 |
+| **相似度矩阵** | 颜色编码矩阵可视化（绿 → 黄 → 红 渐变），显示相似度和重复数量 |
+| **点击跳转** | 点击矩阵单元格自动跳转到对应表格位置 |
+| **批量导出** | 导出批量对比结果报告，相同内容高亮显示 |
 
 ---
 
@@ -168,12 +170,12 @@
 五标签页配置面板，所有设置自动持久化到 localStorage。
 
 | 标签页 | 包含设置 |
-|--------|----------|
-| **算法** | N-gram 大小、SimHash 精度 |
-| **文本** | 最小重复字数、忽略规则（大小写/标点/空格/不可见字符） |
-| **参数** | 相似度阈值、最大结果数、子句移除、水印移除 |
-| **导出** | 导出格式（Word / Markdown） |
-| **模型** | AI 模型选择（DeepSeek / 通义千问 / OpenAI）、API Key、API Endpoint |
+|--------|---------|
+| **对比算法** | N-gram 大小、最小查重字数、文本/图像相似度阈值、最大结果数 |
+| **文本设置** | 忽略规则（大小写/标点/空格/不可见字符） |
+| **参数设置** | 相同条款剔除、水印移除、图片对比、OCR 识别、多文件对比、最大文件数 |
+| **导出设置** | 默认导出格式、包含高亮样式、包含统计图表 |
+| **模型设置** | AI 模型选择（DeepSeek / 通义千问 / OpenAI）、API Key、API Endpoint |
 
 ---
 
@@ -197,10 +199,9 @@ AI 分析引擎会自动将对比结果结构化为 JSON，发送给模型生成
 
 | 配置项 | 默认值 |
 |--------|--------|
-| 识别语言 | \chi_sim+eng\（中文简体 + 英文） |
+| 识别语言 | chi_sim+eng（中文简体 + 英文） |
 | 识别对象 | 文档中嵌入的图片（DOCX/PDF） |
 | 触发方式 | 对比设置中启用「图片 OCR」开关 |
-| 性能监控 | 控制台输出识别进度日志 |
 | 结果利用 | OCR 文字参与文本对比分析 |
 
 ---
@@ -212,10 +213,11 @@ AI 分析引擎会自动将对比结果结构化为 JSON，发送给模型生成
 | 层级 | 技术 | 版本 | 用途 |
 |------|------|------|------|
 | **桌面框架** | Electron | 41.2.0 | 跨平台桌面应用运行时，IPC 通信 |
-| **前端框架** | Vue 3 | 3.5.24 | Composition API + \<script setup>\ 组合式开发 |
+| **前端框架** | Vue 3 | 3.5.24 | Composition API + `<script setup>` 组合式开发 |
 | **开发语言** | TypeScript | 5.9.3 | 全栈类型安全 |
 | **构建工具** | Vite | 7.2.4 | 极速 HMR、按需编译、相对路径输出 |
 | **路由** | Vue Router 4 | 4.6.3 | Hash 历史模式（兼容 file://） |
+| **状态管理** | Vue Reactivity | 内置 | Composable 响应式状态管理 |
 | **图标** | Remix Icon | 4.7.0 | @remixicon/vue 矢量图标 |
 | **打包** | electron-builder | 26.8.1 | NSIS / DMG / AppImage 安装包生成 |
 
@@ -226,7 +228,7 @@ AI 分析引擎会自动将对比结果结构化为 JSON，发送给模型生成
 | **mammoth** | ^1.9.1 | .docx → HTML/文本 解析 |
 | **pdfjs-dist** | ^4.9.155 | .pdf 文本提取 + 页面渲染 |
 | **xlsx** | ^0.18.5 | .xlsx 工作表解析 |
-| **docx** | ^9.2.0 | Word 对比报告生成 |
+| **docx** | ^9.2.0 | Word 对比报告生成（支持高亮） |
 | **JSZip** | ^3.10.1 | Office ZIP 包底层处理 |
 
 ### 图像与 OCR
@@ -273,7 +275,7 @@ AI 分析引擎会自动将对比结果结构化为 JSON，发送给模型生成
 │  └────────────────────────────────────────────────────────────┘  │
 │                                                                  │
 │  ┌────────────────────────────────────────────────────────────┐  │
-│  │             6 Composables (组合式函数层)                     │  │
+│  │             6 Composables (组合式函数层)                      │  │
 │  │  useFileParser · useSettings · useAIModel                  │  │
 │  │  useComparison · useRecentRecords · useHardwareInfo        │  │
 │  └────────────────────────────────────────────────────────────┘  │
@@ -283,15 +285,15 @@ AI 分析引擎会自动将对比结果结构化为 JSON，发送给模型生成
 │  │  textAlgorithms  (SimHash · LCS · Myers diff)              │  │
 │  │  compareResultStore (Map 存储 · 自动 ID)                    │  │
 │  │  sanitize  (DOMPurify · 高亮属性注入)                       │  │
-│  │  ocr  (Tesseract.js 封装)                                   │  │
-│  │  imageCompare  (dHash 8×8 · 汉明距离)                      │  │
+│  │  ocr  (Tesseract.js 封装)                                  │  │
+│  │  imageCompare  (dHash 8×8 · 汉明距离)                       │  │
 │  │  watermark  (45+ 中英文正则)                                │  │
-│  │  extractImages  (DOCX/PDF 图片提取)                         │  │
+│  │  extractImages  (DOCX/PDF 图片提取)                        │  │
 │  └────────────────────────────────────────────────────────────┘  │
 │                                                                  │
 │  ┌────────────────────────────────────────────────────────────┐  │
 │  │  Web Worker: comparison.worker.ts                          │  │
-│  │  → 大文件(>100K)对比卸载到 Worker 线程                      │  │
+│  │  → 大文件(>100K)对比卸载到 Worker 线程                     │  │
 │  └────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -311,6 +313,7 @@ AI 分析引擎会自动将对比结果结构化为 JSON，发送给模型生成
   → 相似片段查找 + 索引映射
   → compareResultStore 存储 (Map<id, result>)
   → 页面渲染：高亮内容 (DOMPurify 安全过滤) + tooltip 悬浮
+  → 预览界面：全文展示 + 重复片段高亮
   → AI 分析 (useAIModel → DeepSeek/Qwen/OpenAI)
   → 导出 (docx 库生成 Word / markdown-it 生成 Markdown)
 ```
@@ -319,15 +322,15 @@ AI 分析引擎会自动将对比结果结构化为 JSON，发送给模型生成
 
 | 路径 | 组件 | 标题 |
 |------|------|------|
-| \/\ | → 重定向至 \/file-compare\ | 文件对比 |
-| \/file-compare\ | \FileCompare\ | 文件对比 |
-| \/file-compare-result\ | \FileCompareResult\ | 对比结果 |
-| \/property-check\ | \PropertyCheck\ | 属性检查 |
-| \/property-check-result\ | \PropertyCheckResult\ | 属性检查结果 |
-| \/image-compare\ | \ImageCompare\ | 图片对比 |
-| \/batch-compare\ | \BatchCompare\ | 批量对比 |
-| \/hardware-info\ | \HardwareInfo\ | 硬件信息 |
-| \/settings\ | \SystemSettings\ | 系统设置 |
+| `/` | → 重定向至 `/file-compare` | 文件对比 |
+| `/file-compare` | `\FileCompare\` | 文件对比 |
+| `/file-compare-result` | `\FileCompareResult\` | 对比结果 |
+| `/property-check` | `\PropertyCheck\` | 属性检查 |
+| `/property-check-result` | `\PropertyCheckResult\` | 属性检查结果 |
+| `/image-compare` | `\ImageCompare\` | 图片对比 |
+| `/batch-compare` | `\BatchCompare\` | 批量对比 |
+| `/hardware-info` | `\HardwareInfo\` | 硬件信息 |
+| `/settings` | `\SystemSettings\` | 系统设置 |
 
 ---
 
@@ -349,73 +352,70 @@ bid-assistant/
 │   ├── 📁 router/
 │   │   └── index.js               # 8 路由配置 (createWebHashHistory)
 │   │
-│   ├── 📁 components/             # 12 功能组件
-│   │   ├── FileCompare.vue        # 核心：双文件对比 (~1400 行)
-│   │   ├── FileCompareResult.vue  # 对比结果：分页 + 上下文 + AI + 导出
-│   │   ├── FileUpload.vue         # 可复用拖拽上传 (文件类型图标)
-│   │   ├── PropertyCheck.vue      # 13 字段元数据属性检查
+│   ├── 📁 components/              # 12 功能组件
+│   │   ├── FileCompare.vue         # 核心：双文件对比
+│   │   ├── FileCompareResult.vue   # 对比结果：分页 + 全文预览 + AI + 导出
+│   │   ├── FileUpload.vue          # 可复用拖拽上传 (文件类型图标)
+│   │   ├── PropertyCheck.vue       # 13 字段元数据属性检查
 │   │   ├── PropertyCheckResult.vue # 属性结果 (三级筛选 + Word 导出)
-│   │   ├── ImageCompare.vue       # 双图 dHash 感知哈希对比
-│   │   ├── BatchCompare.vue       # 3-10 文件批量对比
-│   │   ├── MultiFileUpload.vue    # 可复用多文件拖拽上传
-│   │   ├── MultiCompareResult.vue # 批量结果 (矩阵 + 导出)
-│   │   ├── HardwareInfo.vue       # 三标签硬件信息 (OS/网络/指纹)
-│   │   ├── SystemSettings.vue     # 五标签设置面板 (算法/文本/参数/导出/模型)
-│   │   └── RecentRecords.vue      # 可复用历史记录 (类型隔离, 10 条上限)
+│   │   ├── ImageCompare.vue        # 双图 dHash 感知哈希对比
+│   │   ├── BatchCompare.vue        # 3-10 文件批量对比
+│   │   ├── MultiFileUpload.vue     # 可复用多文件拖拽上传
+│   │   ├── MultiCompareResult.vue  # 批量结果 (矩阵 + 导出)
+│   │   ├── HardwareInfo.vue        # 三标签硬件信息 (OS/网络/指纹)
+│   │   ├── SystemSettings.vue      # 五标签设置面板
+│   │   └── RecentRecords.vue       # 可复用历史记录 (类型隔离, 10 条上限)
 │   │
-│   ├── 📁 composables/            # 6 组合式函数
-│   │   ├── useFileParser.ts       # 文档解析：mammoth/pdfjs-dist/xlsx/text
-│   │   ├── useComparison.ts       # 对比调度：策略选择 + Worker/主线程 + 进度
-│   │   ├── useSettings.ts         # 响应式设置单例 (localStorage 持久化)
-│   │   ├── useRecentRecords.ts    # 类型化历史记录管理器
-│   │   ├── useAIModel.ts          # AI 模型 API 调用 (DeepSeek/Qwen/OpenAI)
-│   │   └── useHardwareInfo.ts     # IPC + Navigator 硬件信息获取
+│   ├── 📁 composables/             # 6 组合式函数
+│   │   ├── useFileParser.ts        # 文档解析：mammoth/pdfjs-dist/xlsx/text
+│   │   ├── useComparison.ts        # 对比调度：策略选择 + Worker/主线程 + 进度
+│   │   ├── useSettings.ts          # 响应式设置单例 (localStorage 持久化)
+│   │   ├── useRecentRecords.ts     # 类型化历史记录管理器
+│   │   ├── useAIModel.ts           # AI 模型 API 调用 (DeepSeek/Qwen/OpenAI)
+│   │   └── useHardwareInfo.ts       # IPC + Navigator 硬件信息获取
 │   │
-│   ├── 📁 utils/                  # 7 工具模块
-│   │   ├── textAlgorithms.ts      # 核心：SimHash · LCS · Myers diff · 聚簇
+│   ├── 📁 utils/                   # 7 工具模块
+│   │   ├── textAlgorithms.ts        # 核心：SimHash · LCS · Myers diff · 聚簇
 │   │   ├── compareResultStore.ts   # Map 存储：ID 生成 · set/get · 大小限制
-│   │   ├── sanitize.ts            # DOMPurify 安全过滤 + highlight 属性
+│   │   ├── sanitize.ts             # DOMPurify 安全过滤 + highlight 属性
 │   │   ├── ocr.ts                 # Tesseract.js 封装 (chi_sim+eng, 进度)
-│   │   ├── imageCompare.ts        # dHash 算法 (8×8 → 汉明距离 → 相似度%)
-│   │   ├── watermark.ts           # 45+ 中英文文档水印正则匹配
-│   │   └── extractImages.ts       # DOCX(word/media/) / PDF 图片提取
+│   │   ├── imageCompare.ts         # dHash 算法 (8×8 → 汉明距离 → 相似度%)
+│   │   ├── watermark.ts            # 45+ 中英文文档水印正则匹配
+│   │   └── extractImages.ts        # DOCX(word/media/) / PDF 图片提取
 │   │
 │   ├── 📁 workers/
-│   │   └── comparison.worker.ts   # Web Worker: 大文件对比卸载
+│   │   └── comparison.worker.ts    # Web Worker: 大文件对比卸载
 │   │
 │   ├── 📁 directives/
-│   │   └── highlightTooltip.ts    # v-highlight-tooltip 自定义指令
+│   │   └── highlightTooltip.ts     # v-highlight-tooltip 自定义指令
 │   │
 │   ├── 📁 plugins/
 │   │   └── icons.js               # RemixIcon 全局注册
 │   │
 │   ├── 📁 types/
-│   │   └── electron.d.ts          # window.electronAPI 类型声明
+│   │   └── electron.d.ts           # window.electronAPI 类型声明
 │   │
-│   ├── 📁 assets/
-│   │   └── styles/
-│   │       └── variables.css      # CSS 自定义属性 (国潮配色 #F8F4E9)
-│   │
-│   └── 📁 components/             # (同上)
+│   └── 📁 assets/
+│       └── styles/
+│           └── variables.css       # CSS 自定义属性 (国潮配色 #F8F4E9)
 │
 ├── 📁 public/
-│   └── logo-icon.svg              # 应用 logo 源文件 (国潮风格)
+│   └── logo-icon.svg               # 应用 logo 源文件 (国潮风格)
 │
 ├── 📁 scripts/
-│   └── generate-icon.js           # SVG → PNG / ICO (sharp)
+│   └── generate-icon.js            # SVG → PNG / ICO (sharp)
 │
-├── 📁 docs/                       # 示例文档
+├── 📁 docs/                        # 示例文档
 │   ├── 1.docx / 2.docx            # Word 对比样例
 │   ├── document1.pdf / document2.pdf
 │   └── superpowers/               # 技术规格/计划文档
 │
-    └── 📁 release/                    # 打包输出 (构建后生成)
-        ├── win-unpacked/
-        ├── 文件对对碰 Setup *.exe
-        ├── 文件对对碰-*.dmg
-        └── 文件对对碰-*.AppImage
+└── 📁 release/                     # 打包输出 (构建后生成)
+    ├── win-unpacked/
+    ├── 文件对对碰 Setup *.exe
+    ├── 文件对对碰-*.dmg
+    └── 文件对对碰-*.AppImage
 ```
-
 
 ---
 
@@ -529,11 +529,15 @@ npm run generate-icon
 
 ### Q: 数据存在哪里？隐私安全吗？
 
-**A:** 所有数据完全本地化：对比结果存储在内存 Map 和 localStorage 中，不上传任何文件内容到外部服务器。AI 分析功能仅在你主动点击「AI 分析」时才会将对比结果摘要发送到你配置的 API 端点。
+**A:** 所有数据完全本地化：对比结果存储在内存 Map 和 localStorage 中，**仅本浏览器可访问**，不上传任何文件内容到外部服务器。AI 分析功能仅在你主动点击「AI 分析」时才会将对比结果摘要发送到你配置的 API 端点。
 
 ### Q: OCR 识别效果不理想？
 
 **A:** 确保对比设置中已开启「启用 OCR」。默认语言为 `chi_sim+eng`（中文简体 + 英文）。如需其他语言支持，可在 `src/utils/ocr.ts` 中调整 `language` 参数。
+
+### Q: 历史记录如何保护隐私？
+
+**A:** 历史记录使用浏览器 localStorage 存储，每个浏览器独立管理，切换浏览器或清除浏览器数据后记录会丢失或被清除。
 
 ---
 

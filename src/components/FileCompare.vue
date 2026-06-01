@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
@@ -27,6 +27,7 @@ import { useAIModel } from '../composables/useAIModel'
 import { useComparison } from '../composables/useComparison'
 import type { ComparisonSettings, SimilarSegment } from '../utils/textAlgorithms'
 import { removeCommonClauses } from '../utils/textAlgorithms'
+import { htmlToMarkdown } from '../utils/sanitize'
 import { storeCompareResult, deleteCompareResult } from '../utils/compareResultStore'
 import { removeWatermarks } from '../utils/watermark'
 import { computeImageHash, hammingDistance, calculateImageSimilarity, loadImageAsDataUrl } from '../utils/imageCompare'
@@ -88,8 +89,17 @@ const multiFiles = ref<File[]>([])
 const multiFileMode = computed(() => settings.enableMultiFileCompare)
 const showMultiResult = ref(false)
 const multiSimilarityMatrix = ref<number[][]>([])
-const multiDuplicates = ref<any[]>([])
+const multiDuplicateGroups = ref<any[]>([])
 const multiFileUploadRef = ref<InstanceType<typeof MultiFileUpload> | null>(null)
+
+watch(showMultiResult, (val) => {
+  if (val) {
+    nextTick(() => {
+      const el = document.querySelector('.multi-compare-result')
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+})
 
 // AI分析相关
 const showAIAnalysis = ref(false)
@@ -481,7 +491,10 @@ const handleCompare = async () => {
       textSimilarityThreshold: settings.textSimilarityThreshold,
       ignoreCase: settings.ignoreCase,
       ignorePunctuation: settings.ignorePunctuation,
-      ignoreWhitespace: settings.ignoreWhitespace
+      ignoreWhitespace: settings.ignoreWhitespace,
+      ignoreInvisibleChars: settings.ignoreInvisibleChars,
+      ngramSize: settings.ngramSize,
+      paragraphCount: settings.paragraphCount
     }
 
     const result = await runComparison(
@@ -491,7 +504,6 @@ const handleCompare = async () => {
       leftResult.pageMap,
       rightResult.pageMap
     )
-    console.log(`[compare] result segments=${result.segments.length} similarity=${result.similarity} leftContentLen=${leftContent.length} rightContentLen=${rightContent.length}`)
 
     // 执行图片对比
     let imageDuplicates: ImageDuplicate[] = []
@@ -651,7 +663,6 @@ const runOCR = async (images: { url: string; name: string }[], side: 'left' | 'r
 
     return results
   } catch (error) {
-    console.error('OCR 识别失败:', error)
     return []
   } finally {
     isOCRProcessing.value = false
@@ -695,7 +706,7 @@ const runOCRComparison = async () => {
     ocrResults.value = [...leftResults, ...rightResults]
     showOCRResult.value = true
   } catch (error) {
-    console.error('OCR 对比失败:', error)
+    // OCR 对比失败
   } finally {
     isOCRProcessing.value = false
     ocrProgress.value = 0
@@ -770,7 +781,7 @@ const handleMultiFileCompare = async () => {
     // 构建相似度矩阵
     const fileCount = multiFiles.value.length
     const matrix: number[][] = Array(fileCount).fill(null).map(() => Array(fileCount).fill(0))
-    const allDuplicates: any[] = []
+    const allGroups: any[] = []
 
     // 两两对比
     for (let i = 0; i < fileCount; i++) {
@@ -783,7 +794,10 @@ const handleMultiFileCompare = async () => {
           textSimilarityThreshold: settings.textSimilarityThreshold,
           ignoreCase: settings.ignoreCase,
           ignorePunctuation: settings.ignorePunctuation,
-          ignoreWhitespace: settings.ignoreWhitespace
+          ignoreWhitespace: settings.ignoreWhitespace,
+          ignoreInvisibleChars: settings.ignoreInvisibleChars,
+          ngramSize: settings.ngramSize,
+          paragraphCount: settings.paragraphCount
         }
 
         const result = await runComparison(
@@ -797,21 +811,25 @@ const handleMultiFileCompare = async () => {
         matrix[i][j] = result.similarity
         matrix[j][i] = result.similarity
 
-        // 收集重复片段
-        result.segments.forEach(seg => {
-          allDuplicates.push({
+        // 每个文件对作为一个独立分组
+        allGroups.push({
+          leftFileName: multiFiles.value[i].name,
+          rightFileName: multiFiles.value[j].name,
+          items: result.segments.map(seg => ({
             leftFileName: multiFiles.value[i].name,
             rightFileName: multiFiles.value[j].name,
             leftContent: seg.leftContent,
             rightContent: seg.rightContent,
+            leftPage: seg.leftPage,
+            rightPage: seg.rightPage,
             similarity: seg.similarityValue
-          })
+          }))
         })
       }
     }
 
     multiSimilarityMatrix.value = matrix
-    multiDuplicates.value = allDuplicates
+    multiDuplicateGroups.value = allGroups
     showMultiResult.value = true
   } catch (error) {
     if ((error as Error).name !== 'AbortError') {
@@ -866,38 +884,47 @@ const handleExportReport = async () => {
 
 // 生成 Markdown 报告
 const generateMarkdownReport = (): string => {
-  let markdown = '# 文件对比报告\n\n';
+  let md = '# 文件对比报告\n\n';
   
-  // 添加相似度统计
-  markdown += '## 相似度统计\n\n';
-  markdown += `- 文本重复率：${textSimilarity.value}\n`;
-  markdown += `- 相似片段数：${similarSegmentsList.value.length}\n\n`;
+  // 元数据
+  md += `> **生成时间**：${new Date().toLocaleString()}  \n`;
+  md += `> **左侧文件**：${leftFileInfo.value.name}  \n`;
+  md += `> **右侧文件**：${rightFileInfo.value.name}  \n\n`;
   
-  // 添加文件信息
-  markdown += '## 文件信息\n\n';
-  markdown += `- 左侧文件：${leftFileInfo.value.name}\n`;
-  markdown += `- 右侧文件：${rightFileInfo.value.name}\n\n`;
+  md += '---\n\n';
   
-  // 添加详细对比结果
-  markdown += '## 详细对比结果\n\n';
+  // 相似度统计
+  md += '## 一、相似度统计\n\n';
+  md += '| 指标 | 数值 |\n';
+  md += '|------|------|\n';
+  md += `| 文本重复率 | ${textSimilarity.value} |\n`;
+  md += `| 雷同片段数 | ${similarSegmentsList.value.length}处 |\n\n`;
+  
+  md += '---\n\n';
+  
+  // 详细对比结果
+  md += '## 二、雷同片段详情\n\n';
+  
   similarSegmentsList.value.forEach((segment, index) => {
-    markdown += `### 片段 ${index + 1}\n\n`;
-    markdown += `- 相似度：${segment.similarity}\n`;
-    markdown += `- 左侧页码：${segment.leftPage}\n`;
-    markdown += `- 右侧页码：${segment.rightPage}\n\n`;
+    const leftClean = htmlToMarkdown(segment.leftContent || '');
+    const rightClean = htmlToMarkdown(segment.rightContent || '');
     
-    // 清理 HTML 标签
-    const leftClean = segment.leftContent.replace(/<[^>]*>/g, '');
-    const rightClean = segment.rightContent.replace(/<[^>]*>/g, '');
-    
-    markdown += '**左侧内容：**\n\n';
-    markdown += leftClean + '\n\n';
-    markdown += '**右侧内容：**\n\n';
-    markdown += rightClean + '\n\n';
-    markdown += '---\n\n';
+    md += `### 第 ${index + 1} 段\n\n`;
+    md += `| 项目 | 内容 |\n`;
+    md += `|------|------|\n`;
+    md += `| 相似度 | ${segment.similarity} |\n`;
+    md += `| 左侧位置 | ${segment.leftPage || '-'} |\n`;
+    md += `| 右侧位置 | ${segment.rightPage || '-'} |\n\n`;
+    md += `**左侧内容：**\n\n`;
+    md += leftClean.split('\n').map(l => `> ${l}`).join('\n') + '\n\n';
+    md += `**右侧内容：**\n\n`;
+    md += rightClean.split('\n').map(l => `> ${l}`).join('\n') + '\n\n';
+    md += '---\n\n';
   });
   
-  return markdown;
+  md += `*报告由 Bid Assistant 生成于 ${new Date().toLocaleString()}*\n`;
+  
+  return md;
 };
 
 // 生成Word报告内容
@@ -1210,7 +1237,7 @@ const generateWordReport = () => {
       v-if="showMultiResult"
       :file-names="multiFiles.map(f => f.name)"
       :similarity-matrix="multiSimilarityMatrix"
-      :duplicates="multiDuplicates"
+      :duplicate-groups="multiDuplicateGroups"
       @close="closeMultiResult"
     />
 
@@ -1409,7 +1436,7 @@ const generateWordReport = () => {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
-  z-index: 100;
+  z-index: 10;
 }
 
 .icon-btn-wrapper:hover .icon-btn-tooltip {
@@ -3108,18 +3135,18 @@ const generateWordReport = () => {
   .compare-main-btn {
     width: 100%;
     max-width: none;
-    height: 44px;
+    height: 52px;
     border-radius: 10px;
-    font-size: 14px;
+    font-size: 15px;
     box-sizing: border-box;
   }
 
   .compare-icon {
-    font-size: 20px;
+    font-size: 22px;
   }
 
   .btn-text {
-    font-size: 14px;
+    font-size: 15px;
   }
 
   .progress-display {

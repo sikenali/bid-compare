@@ -22,7 +22,7 @@ export function sanitizeHTML(html: string): string {
       'tr', 'th', 'td', 'mark', 'del', 'ins', 'sub', 'sup'
     ],
     // 允许的安全属性
-    ALLOWED_ATTR: ['href', 'title', 'class', 'id', 'target', 'rel', 'data-full-text'],
+    ALLOWED_ATTR: ['href', 'title', 'class', 'id', 'target', 'rel', 'data-full-text', 'data-segment-id'],
     // 允许的协议
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
     // 移除注释
@@ -90,4 +90,49 @@ export function escapeHtml(text: string): string {
   }
 
   return text.replace(/[&<>"']/g, (m) => map[m])
+}
+
+/**
+ * 将高亮 HTML 转换为 Markdown 格式文本
+ * - `<span class="highlighted-text">xxx</span>` → `**xxx**`
+ * - 其他 HTML 标签被移除
+ * - 处理 HTML 实体解码
+ * @param html 带高亮标记的 HTML 字符串
+ * @returns Markdown 格式文本
+ */
+export function htmlToMarkdown(html: string): string {
+  if (!html) return ''
+
+  // 1. 将高亮 span 替换为 markdown 粗体标记
+  let md = html.replace(
+    /<span class="highlighted-text">([\s\S]*?)<\/span>/g,
+    (_match, content) => {
+      const inner = content.replace(/<[^>]*>/g, '')
+      const decoded = inner
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#039;/g, "'")
+        .replace(/&#x27;/g, "'")
+      return `**${decoded}**`
+    }
+  )
+
+  // 2. 移除剩余所有 HTML 标签
+  md = md.replace(/<[^>]*>/g, '')
+
+  // 3. 解码剩余的 HTML 实体
+  md = md
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&#x27;/g, "'")
+
+  // 4. 清理多余空白
+  md = md.replace(/\n{3,}/g, '\n\n').trim()
+
+  return md
 }

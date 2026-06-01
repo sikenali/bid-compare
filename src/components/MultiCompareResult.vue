@@ -61,10 +61,14 @@
               </td>
               <td v-for="(colFile, colIdx) in fileNames" :key="colIdx" 
                   class="matrix-cell"
-                  :class="getSimilarityClass(similarityMatrix[rowIdx]?.[colIdx])">
+                  :class="getSimilarityClass(similarityMatrix[rowIdx]?.[colIdx])"
+                  :data-row="rowIdx"
+                  :data-col="colIdx"
+                  @click="handleMatrixCellClick(rowIdx, colIdx)">
                 <span v-if="rowIdx === colIdx" class="diagonal">-</span>
                 <span v-else-if="similarityMatrix[rowIdx]?.[colIdx] !== undefined">
-                  {{ similarityMatrix[rowIdx][colIdx] }}%
+                  <span class="sim-value">{{ similarityMatrix[rowIdx][colIdx] }}%</span>
+                  <span class="dup-count">({{ getDuplicateCount(file, colFile) }}处)</span>
                 </span>
                 <span v-else class="no-data">-</span>
               </td>
@@ -75,7 +79,7 @@
     </div>
 
     <!-- 重复片段详情 -->
-    <div class="duplicate-details" v-if="duplicates.length > 0">
+    <div class="duplicate-details" v-if="duplicateGroups && duplicateGroups.length > 0">
       <div class="duplicate-header-bar">
         <div class="duplicate-title-section">
           <RiExchange2Line class="duplicate-title-icon" />
@@ -93,44 +97,43 @@
         </div>
       </div>
 
-      <!-- 对比数据表 -->
-      <div class="data-table">
-        <div class="table-header">
-          <div class="col col-index">序号</div>
-          <div class="col col-pair">文件对</div>
-          <div class="col col-content">内容A</div>
-          <div class="col col-content">内容B</div>
-          <div class="col col-similarity">相似度</div>
+      <!-- 每个文件对一张独立表格 -->
+      <div class="pair-tables" v-for="(group, gIdx) in duplicateGroups" :key="gIdx"
+           :ref="el => setTableRef(el, gIdx)">
+        <!-- 表格头（可折叠） -->
+        <div class="table-group-header" @click="toggleGroup(gIdx)">
+          <span class="group-chevron" :class="{ collapsed: isGroupCollapsed(gIdx) }">
+            <RiArrowDownSLine />
+          </span>
+          <RiExchange2Line class="pair-group-icon" />
+          <span class="pair-group-files">
+            <span class="pair-group-file" :title="group.leftFileName">{{ truncateName(group.leftFileName) }}</span>
+            <RiArrowRightLine class="pair-group-arrow" />
+            <span class="pair-group-file" :title="group.rightFileName">{{ truncateName(group.rightFileName) }}</span>
+          </span>
+          <span class="pair-group-sim" :class="getSimilarityClass(getPairSimilarity(group.leftFileName, group.rightFileName))">
+            相似度 {{ getPairSimilarity(group.leftFileName, group.rightFileName) }}%
+          </span>
+          <span class="pair-group-count">{{ group.items.length }} 处重复</span>
         </div>
-        <div class="table-body">
-          <template v-for="group in pageGroups" :key="group.leftFileName + group.rightFileName">
-            <!-- 文件对分组头 -->
-            <div class="pair-group-header" @click="toggleGroup(group.leftFileName, group.rightFileName)">
-              <div class="pair-group-info">
-                <span class="group-chevron" :class="{ collapsed: isGroupCollapsed(group.leftFileName, group.rightFileName) }">
-                  <RiArrowDownSLine />
-                </span>
-                <RiExchange2Line class="pair-group-icon" />
-                <span class="pair-group-files">
-                  <span class="pair-group-file" :title="group.leftFileName">{{ truncateName(group.leftFileName) }}</span>
-                  <RiArrowRightLine class="pair-group-arrow" />
-                  <span class="pair-group-file" :title="group.rightFileName">{{ truncateName(group.rightFileName) }}</span>
-                </span>
-                <span class="pair-group-sim" :class="getSimilarityClass(getPairSimilarity(group.leftFileName, group.rightFileName))">
-                  整体相似度 {{ getPairSimilarity(group.leftFileName, group.rightFileName) }}%
-                </span>
-                <span class="pair-group-count">{{ group.items.length }} 处重复</span>
-              </div>
+
+        <!-- 表格体 -->
+        <div class="data-table" v-show="!isGroupCollapsed(gIdx)">
+          <div class="table-header">
+            <div class="col col-index">序号</div>
+            <div class="col col-content col-content-left">
+              <RiFileLine class="header-file-icon" />
+              <span :title="group.leftFileName">{{ truncateName(group.leftFileName) }}</span>
             </div>
-            <!-- 分组内的行 -->
-            <div v-for="dup in group.items" :key="dup.id" class="table-row"
-                 v-show="!isGroupCollapsed(group.leftFileName, group.rightFileName)">
-              <div class="col col-index">{{ dup.id }}</div>
-              <div class="col col-pair">
-                <span class="pair-name" :title="dup.leftFileName">{{ truncateName(dup.leftFileName) }}</span>
-                <RiArrowRightLine class="pair-arrow" />
-                <span class="pair-name" :title="dup.rightFileName">{{ truncateName(dup.rightFileName) }}</span>
-              </div>
+            <div class="col col-content col-content-right">
+              <RiFileLine class="header-file-icon" />
+              <span :title="group.rightFileName">{{ truncateName(group.rightFileName) }}</span>
+            </div>
+            <div class="col col-similarity">相似度</div>
+          </div>
+          <div class="table-body">
+            <div v-for="(dup, dIdx) in group.items" :key="dIdx" class="table-row">
+              <div class="col col-index">{{ dIdx + 1 }}</div>
               <div class="col col-content" v-html="dup.leftContent"
                    @click.stop="openContentModal(dup)"></div>
               <div class="col col-content" v-html="dup.rightContent"
@@ -139,7 +142,7 @@
                 {{ dup.similarity }}%
               </div>
             </div>
-          </template>
+          </div>
         </div>
       </div>
 
@@ -165,51 +168,17 @@
           </div>
           <div class="content-modal-body">
             <div class="content-side">
-              <div class="content-side-label">内容 A</div>
+              <div class="content-side-label" :title="contentModal.leftFileName">{{ truncateName(contentModal.leftFileName) }}</div>
               <div class="content-side-text" v-html="contentModal.leftContent"></div>
             </div>
             <div class="content-divider">
               <RiArrowRightLine />
             </div>
             <div class="content-side">
-              <div class="content-side-label">内容 B</div>
+              <div class="content-side-label" :title="contentModal.rightFileName">{{ truncateName(contentModal.rightFileName) }}</div>
               <div class="content-side-text" v-html="contentModal.rightContent"></div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- 分页控件 -->
-      <div class="pagination">
-        <div class="pagination-info">
-          共 {{ totalRecords }} 条记录，显示第 {{ startRecord }} - {{ endRecord }} 条
-        </div>
-        <div class="page-size-control">
-          <span class="page-size-label">每页</span>
-          <select class="page-size-select" v-model.number="pageSize">
-            <option :value="10">10条</option>
-            <option :value="20">20条</option>
-            <option :value="50">50条</option>
-          </select>
-        </div>
-        <div class="pagination-controls">
-          <button class="page-btn" :disabled="currentPage <= 1" @click="prevPage">
-            <RiArrowLeftSLine />
-          </button>
-          <template v-for="page in pageNumbers" :key="page">
-            <span v-if="page === -1" class="page-ellipsis">...</span>
-            <button
-              v-else
-              class="page-number"
-              :class="{ active: page === currentPage }"
-              @click="goToPage(page)"
-            >
-              {{ page }}
-            </button>
-          </template>
-          <button class="page-btn" :disabled="currentPage >= totalPages" @click="nextPage">
-            <RiArrowRightSLine />
-          </button>
         </div>
       </div>
     </div>
@@ -222,16 +191,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import { 
   RiFileLine, RiArrowLeftLine, RiCheckLine, RiTableLine,
-  RiDownloadLine, RiExchange2Line, RiArrowLeftSLine, RiArrowRightSLine,
+  RiDownloadLine, RiExchange2Line,
   RiArrowRightLine, RiArrowDownSLine, RiCloseLine
 } from '@remixicon/vue'
 import { BorderBeam } from 'vue3-border-beam'
+import { htmlToMarkdown } from '../utils/sanitize'
+import { useSettings } from '../composables/useSettings'
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, ShadingType } from 'docx'
 
 interface DuplicatePair {
-  id?: number
   leftFileName: string
   rightFileName: string
   leftContent: string
@@ -241,39 +212,50 @@ interface DuplicatePair {
   rightPage?: string
 }
 
+interface DuplicateGroup {
+  leftFileName: string
+  rightFileName: string
+  items: DuplicatePair[]
+}
+
 interface Props {
   fileNames: string[]
   similarityMatrix: number[][]
-  duplicates: DuplicatePair[]
+  duplicateGroups: DuplicateGroup[]
 }
 
 const props = defineProps<Props>()
+
+const { settings } = useSettings()
 
 defineEmits<{
   (e: 'close'): void
 }>()
 
 const showMatrix = ref(false)
-const currentPage = ref(1)
-const pageSize = ref(10)
 
-// 分组折叠状态
-const collapsedPairs = ref(new Set<string>())
+// 各表格独立折叠控制（按索引）
+const collapsedIndices = ref(new Set<number>())
 
-const toggleGroup = (leftName: string, rightName: string) => {
-  const key = `${leftName}||${rightName}`
-  const set = collapsedPairs.value
-  if (set.has(key)) {
-    set.delete(key)
-  } else {
-    set.add(key)
-  }
-  // 触发响应式更新
-  collapsedPairs.value = new Set(set)
+// 表格 DOM 引用
+const tableRefs = ref<(HTMLElement | null)[]>([])
+
+const setTableRef = (el: any, idx: number) => {
+  tableRefs.value[idx] = el
 }
 
-const isGroupCollapsed = (leftName: string, rightName: string): boolean => {
-  return collapsedPairs.value.has(`${leftName}||${rightName}`)
+const toggleGroup = (idx: number) => {
+  const set = collapsedIndices.value
+  if (set.has(idx)) {
+    set.delete(idx)
+  } else {
+    set.add(idx)
+  }
+  collapsedIndices.value = new Set(set)
+}
+
+const isGroupCollapsed = (idx: number): boolean => {
+  return collapsedIndices.value.has(idx)
 }
 
 // 内容弹窗
@@ -301,60 +283,25 @@ const closeContentModal = () => {
   contentModal.value = null
 }
 
-// 切换每页条数时回到第一页
-watch(pageSize, () => {
-  currentPage.value = 1
-})
-
 const fileCount = computed(() => props.fileNames.length)
 
-const totalDuplicates = computed(() => props.duplicates.length)
+const totalDuplicates = computed(() => {
+  return props.duplicateGroups.reduce((acc, g) => acc + g.items.length, 0)
+})
 
 const averageSimilarity = computed(() => {
-  if (props.duplicates.length === 0) return 0
-  const sum = props.duplicates.reduce((acc, dup) => acc + dup.similarity, 0)
-  return Math.round(sum / props.duplicates.length)
+  const all = props.duplicateGroups.flatMap(g => g.items)
+  if (all.length === 0) return 0
+  const sum = all.reduce((acc, dup) => acc + dup.similarity, 0)
+  return Math.round(sum / all.length)
 })
 
 const count100Similarity = computed(() => {
-  return props.duplicates.filter(d => d.similarity === 100).length
+  return props.duplicateGroups.flatMap(g => g.items).filter(d => d.similarity === 100).length
 })
 
 const countHighSimilarity = computed(() => {
-  return props.duplicates.filter(d => d.similarity >= 75).length
-})
-
-const sortedDuplicates = computed(() => {
-  return [...props.duplicates]
-    .sort((a, b) => {
-      // 先按文件对分组排序
-      const pairA = a.leftFileName + a.rightFileName
-      const pairB = b.leftFileName + b.rightFileName
-      if (pairA !== pairB) return pairA.localeCompare(pairB)
-      return b.similarity - a.similarity
-    })
-    .map((dup, idx) => ({ ...dup, id: idx + 1 }))
-})
-
-// 按文件对分组
-interface DuplicateGroup {
-  leftFileName: string
-  rightFileName: string
-  items: DuplicatePair[]
-}
-
-const pairGroups = computed(() => {
-  const groups: DuplicateGroup[] = []
-  const all = sortedDuplicates.value
-  for (const dup of all) {
-    const last = groups[groups.length - 1]
-    if (last && last.leftFileName === dup.leftFileName && last.rightFileName === dup.rightFileName) {
-      last.items.push(dup)
-    } else {
-      groups.push({ leftFileName: dup.leftFileName, rightFileName: dup.rightFileName, items: [dup] })
-    }
-  }
-  return groups
+  return props.duplicateGroups.flatMap(g => g.items).filter(d => d.similarity >= 75).length
 })
 
 // 从矩阵获取文件对相似度
@@ -363,72 +310,6 @@ const getPairSimilarity = (leftName: string, rightName: string): number => {
   const rightIdx = props.fileNames.indexOf(rightName)
   if (leftIdx === -1 || rightIdx === -1) return 0
   return props.similarityMatrix[leftIdx]?.[rightIdx] || 0
-}
-
-// 分页相关
-const totalRecords = computed(() => sortedDuplicates.value.length)
-const totalPages = computed(() => Math.max(1, Math.ceil(totalRecords.value / pageSize.value)))
-const startRecord = computed(() => totalRecords.value === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1)
-const endRecord = computed(() => totalRecords.value === 0 ? 0 : Math.min(currentPage.value * pageSize.value, totalRecords.value))
-
-const pageDuplicates = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return sortedDuplicates.value.slice(start, end)
-})
-
-// 当前页按文件对分组
-const pageGroups = computed(() => {
-  const groups: DuplicateGroup[] = []
-  for (const dup of pageDuplicates.value) {
-    const last = groups[groups.length - 1]
-    if (last && last.leftFileName === dup.leftFileName && last.rightFileName === dup.rightFileName) {
-      last.items.push(dup)
-    } else {
-      groups.push({ leftFileName: dup.leftFileName, rightFileName: dup.rightFileName, items: [dup] })
-    }
-  }
-  return groups
-})
-
-const pageNumbers = computed(() => {
-  const pages: number[] = []
-  const total = totalPages.value
-  const current = currentPage.value
-  
-  if (total <= 7) {
-    for (let i = 1; i <= total; i++) pages.push(i)
-  } else {
-    if (current <= 4) {
-      for (let i = 1; i <= 5; i++) pages.push(i)
-      pages.push(-1) // 省略号
-      pages.push(total)
-    } else if (current >= total - 3) {
-      pages.push(1)
-      pages.push(-1)
-      for (let i = total - 4; i <= total; i++) pages.push(i)
-    } else {
-      pages.push(1)
-      pages.push(-1)
-      for (let i = current - 1; i <= current + 1; i++) pages.push(i)
-      pages.push(-1)
-      pages.push(total)
-    }
-  }
-  
-  return pages
-})
-
-const prevPage = () => {
-  if (currentPage.value > 1) currentPage.value--
-}
-
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) currentPage.value++
-}
-
-const goToPage = (page: number) => {
-  if (page > 0 && page <= totalPages.value) currentPage.value = page
 }
 
 const truncateName = (name: string): string => {
@@ -444,20 +325,107 @@ const getSimilarityClass = (value: number | undefined): string => {
   return 'minimal'
 }
 
+const htmlToHighlightedRuns = (html: string): TextRun[] => {
+  if (!html) return [new TextRun('')]
+  
+  const runs: TextRun[] = []
+  const regex = /<span class="highlighted-text">([^<]*)<\/span>/g
+  let lastIndex = 0
+  let match
+  
+  while ((match = regex.exec(html)) !== null) {
+    if (match.index > lastIndex) {
+      const normalText = html.substring(lastIndex, match.index).replace(/<[^>]*>/g, '')
+      if (normalText) {
+        runs.push(new TextRun({ text: normalText }))
+      }
+    }
+    runs.push(new TextRun({ 
+      text: match[1],
+      highlight: 'yellow',
+      bold: true
+    }))
+    lastIndex = regex.lastIndex
+  }
+  
+  if (lastIndex < html.length) {
+    const remainingText = html.substring(lastIndex).replace(/<[^>]*>/g, '')
+    if (remainingText) {
+      runs.push(new TextRun({ text: remainingText }))
+    }
+  }
+  
+  return runs.length > 0 ? runs : [new TextRun('')]
+}
+
+const stripHighlightAndConvert = (html: string): string => {
+  if (!html) return ''
+  return html
+    .replace(/<span class="highlighted-text">([^<]*)<\/span>/g, '**$1**')
+    .replace(/<[^>]*>/g, '')
+}
+
+const getDuplicateCount = (fileA: string, fileB: string): number => {
+  const group = props.duplicateGroups.find(g => 
+    (g.leftFileName === fileA && g.rightFileName === fileB) ||
+    (g.leftFileName === fileB && g.rightFileName === fileA)
+  )
+  return group?.items.length || 0
+}
+
+const handleMatrixCellClick = (rowIdx: number, colIdx: number) => {
+  if (rowIdx === colIdx) return
+  const fileA = props.fileNames[rowIdx]
+  const fileB = props.fileNames[colIdx]
+  const groupIdx = props.duplicateGroups.findIndex(g =>
+    (g.leftFileName === fileA && g.rightFileName === fileB) ||
+    (g.leftFileName === fileB && g.rightFileName === fileA)
+  )
+  if (groupIdx === -1) return
+  
+  if (isGroupCollapsed(groupIdx)) {
+    toggleGroup(groupIdx)
+  }
+  
+  nextTick(() => {
+    const tableEl = tableRefs.value[groupIdx]
+    if (tableEl) {
+      tableEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      tableEl.classList.add('highlight-flash')
+      setTimeout(() => tableEl.classList.remove('highlight-flash'), 1500)
+    }
+  })
+}
+
 // 导出功能
 const handleExport = () => {
-  if (sortedDuplicates.value.length === 0) {
+  if (totalDuplicates.value === 0) {
     alert('没有可导出的对比数据')
     return
   }
 
+  if (settings.exportFormat === 'word') {
+    generateWordReport()
+    return
+  }
+
+  const md = generateMarkdownReport()
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `多文件对比报告-${new Date().getTime()}.md`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+const generateMarkdownReport = (): string => {
   let md = '# 多文件对比报告\n\n'
-  
-  // 统计信息
-  md += '## 统计信息\n\n'
-  md += `- 文件数量：${fileCount.value}\n`
-  md += `- 重复片段：${totalDuplicates.value}处\n`
-  md += `- 平均相似度：${averageSimilarity.value}%\n\n`
+
+  md += '> **统计信息**\n\n'
+  md += `- **文件数量**：${fileCount.value}\n`
+  md += `- **重复片段**：${totalDuplicates.value} 处\n`
+  md += `- **平均相似度**：${averageSimilarity.value}%\n\n`
 
   // 相似度矩阵
   md += '## 相似度矩阵\n\n'
@@ -479,31 +447,74 @@ const handleExport = () => {
   })
   md += '\n'
 
-  // 重复片段详情（按文件对分组）
+  // 每个文件对独立板块
   md += '## 重复片段详情\n\n'
-  let prevLeft = ''
-  let prevRight = ''
-  sortedDuplicates.value.forEach(dup => {
-    if (dup.leftFileName !== prevLeft || dup.rightFileName !== prevRight) {
-      const pairSim = getPairSimilarity(dup.leftFileName, dup.rightFileName)
-      md += `\n**${truncateName(dup.leftFileName)} ↔ ${truncateName(dup.rightFileName)}（整体相似度 ${pairSim}%）**\n\n`
-      md += '| 序号 | 内容A | 内容B | 相似度 |\n'
-      md += '|------|-------|-------|--------|\n'
-      prevLeft = dup.leftFileName
-      prevRight = dup.rightFileName
-    }
-    const leftContent = (dup.leftContent || '').replace(/<[^>]*>/g, '').replace(/…/g, '').substring(0, 30) + '...'
-    const rightContent = (dup.rightContent || '').replace(/<[^>]*>/g, '').replace(/…/g, '').substring(0, 30) + '...'
-    md += `| ${dup.id} | ${leftContent} | ${rightContent} | ${dup.similarity}% |\n`
+  props.duplicateGroups.forEach((group, gIdx) => {
+    const pairSim = getPairSimilarity(group.leftFileName, group.rightFileName)
+    md += `### ${gIdx + 1}. ${truncateName(group.leftFileName)} ↔ ${truncateName(group.rightFileName)}\n\n`
+    md += `相似度：**${pairSim}%**\n\n`
+    md += '| 序号 | 内容 | 内容 | 相似度 |\n'
+    md += '|------|------|------|--------|\n'
+    group.items.forEach((dup, dIdx) => {
+      const leftContent = stripHighlightAndConvert(dup.leftContent || '').substring(0, 60)
+      const rightContent = stripHighlightAndConvert(dup.rightContent || '').substring(0, 60)
+      md += `| ${dIdx + 1} | ${leftContent} | ${rightContent} | ${dup.similarity}% |\n`
+    })
+    md += '\n'
   })
 
-  md += '\n---\n\n'
+  md += '---\n\n'
   md += `*报告生成时间：${new Date().toLocaleString()}*\n`
+  return md
+}
 
-  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
+const generateWordReport = async () => {
+  const children: (Paragraph | Table)[] = []
+  children.push(new Paragraph({ children: [new TextRun({ text: '多文件对比报告', bold: true, size: 32 })], alignment: AlignmentType.CENTER }))
+  children.push(new Paragraph({ children: [new TextRun({ text: `文件数量：${fileCount.value}  重复片段：${totalDuplicates.value}  平均相似度：${averageSimilarity.value}%`, size: 20 })] }))
+  children.push(new Paragraph({ children: [new TextRun({ text: '' })] }))
+
+  props.duplicateGroups.forEach((group, gIdx) => {
+    const pairSim = getPairSimilarity(group.leftFileName, group.rightFileName)
+
+    children.push(new Paragraph({ children: [new TextRun({ text: `${gIdx + 1}. ${truncateName(group.leftFileName)} ↔ ${truncateName(group.rightFileName)}`, bold: true, size: 24 })] }))
+    children.push(new Paragraph({ children: [new TextRun({ text: `相似度：${pairSim}%`, size: 20 })] }))
+    children.push(new Paragraph({ children: [new TextRun({ text: '' })] }))
+
+    const rows: TableRow[] = [
+      new TableRow({
+        tableHeader: true,
+        children: [
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '序号', bold: true })] })], width: { size: 500, type: WidthType.DXA } }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: truncateName(group.leftFileName), bold: true })] })], width: { size: 3000, type: WidthType.DXA } }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: truncateName(group.rightFileName), bold: true })] })], width: { size: 3000, type: WidthType.DXA } }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '相似度', bold: true })] })], width: { size: 1000, type: WidthType.DXA } }),
+        ]
+      })
+    ]
+
+    group.items.forEach((dup, dIdx) => {
+      rows.push(new TableRow({
+        children: [
+          new TableCell({ children: [new Paragraph({ children: [new TextRun(String(dIdx + 1))] })] }),
+          new TableCell({ children: [new Paragraph({ children: htmlToHighlightedRuns(dup.leftContent || '') })] }),
+          new TableCell({ children: [new Paragraph({ children: htmlToHighlightedRuns(dup.rightContent || '') })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${dup.similarity}%`, bold: true, color: dup.similarity >= 75 ? 'C41E3A' : dup.similarity >= 50 ? 'FF9800' : '4CAF50' })] })] }),
+        ]
+      }))
+    })
+
+    children.push(new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } }))
+    children.push(new Paragraph({ children: [new TextRun({ text: '' })] }))
+  })
+
+  children.push(new Paragraph({ children: [new TextRun({ text: `报告生成时间：${new Date().toLocaleString()}`, size: 16, italics: true })] }))
+
+  const doc = new Document({ sections: [{ children }] })
+  const blob = await Packer.toBlob(doc)
   const link = document.createElement('a')
   link.href = URL.createObjectURL(blob)
-  link.download = `多文件对比报告-${new Date().getTime()}.md`
+  link.download = `多文件对比报告-${new Date().getTime()}.docx`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
@@ -661,10 +672,25 @@ const handleExport = () => {
 .matrix-cell {
   transition: all 0.2s;
   font-weight: 500;
+  cursor: pointer;
+  position: relative;
 }
 
 .matrix-cell:hover {
   background: rgba(248, 244, 233, 0.5);
+  transform: scale(1.02);
+}
+
+.matrix-cell .sim-value {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.matrix-cell .dup-count {
+  display: block;
+  font-size: 10px;
+  color: rgba(101, 70, 40, 0.6);
+  margin-top: 2px;
 }
 
 .matrix-cell.high {
@@ -758,11 +784,136 @@ const handleExport = () => {
   font-size: 14px;
 }
 
+/* 文件对独立表格容器 */
+.pair-tables {
+  margin-bottom: 24px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.pair-tables:last-child {
+  margin-bottom: 0;
+}
+
+/* 表格头（可折叠） */
+.table-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(245, 238, 226, 0.7);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+  font-size: 13px;
+}
+
+.table-group-header:hover {
+  background: rgba(245, 238, 226, 1);
+}
+
+.table-group-header .group-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-size: 16px;
+  color: rgba(101, 70, 40, 0.5);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+
+.table-group-header .group-chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.table-group-header .pair-group-icon {
+  font-size: 14px;
+  color: rgba(46, 89, 132, 0.7);
+  flex-shrink: 0;
+}
+
+.table-group-header .pair-group-files {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-SemiBold;
+}
+
+.table-group-header .pair-group-file {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-group-header .pair-group-arrow {
+  font-size: 12px;
+  color: rgba(166, 124, 82, 0.5);
+  flex-shrink: 0;
+}
+
+.table-group-header .pair-group-sim {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.table-group-header .pair-group-sim.high {
+  background: rgba(196, 30, 58, 0.1);
+  color: rgba(196, 30, 58, 1);
+}
+
+.table-group-header .pair-group-sim.medium {
+  background: rgba(255, 152, 0, 0.1);
+  color: rgba(255, 152, 0, 1);
+}
+
+.table-group-header .pair-group-sim.low {
+  background: rgba(76, 175, 80, 0.1);
+  color: rgba(76, 175, 80, 1);
+}
+
+.table-group-header .pair-group-count {
+  font-size: 11px;
+  color: rgba(101, 70, 40, 0.6);
+  margin-left: auto;
+}
+
 /* 数据表格 */
 .data-table {
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  border-radius: 8px;
-  overflow: hidden;
+  border-top: 1px solid rgba(166, 124, 82, 0.12);
+}
+
+.table-body {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.table-row {
+  display: flex;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.1);
+  transition: background 0.2s;
+}
+
+.table-row:hover {
+  background: rgba(248, 244, 233, 0.3);
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+/* 数据表格 */
+.data-table {
+  border-top: 1px solid rgba(166, 124, 82, 0.12);
 }
 
 .table-header {
@@ -784,159 +935,46 @@ const handleExport = () => {
   flex-shrink: 0;
 }
 
-.col-pair {
-  width: 140px;
-  flex-shrink: 0;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  justify-content: center;
-}
-
-.pair-name {
-  font-size: 11px;
-  color: rgba(44, 24, 16, 0.9);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 52px;
-}
-
-.pair-arrow {
-  font-size: 12px;
-  color: rgba(166, 124, 82, 0.6);
-  flex-shrink: 0;
-}
-
 .col-content {
   flex: 1;
   min-width: 0;
   text-align: left;
 }
 
-.col-similarity {
-  width: 70px;
-  flex-shrink: 0;
-  text-align: center;
-  font-weight: 600;
+.col-content-left {
+  border-right: 1px solid rgba(166, 124, 82, 0.1);
 }
 
-.table-body {
-  max-height: 500px;
-  overflow-y: auto;
+.col-content-right {
+  border-left: 1px solid rgba(166, 124, 82, 0.1);
 }
 
-.table-row {
-  display: flex;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.1);
-  transition: background 0.2s;
-}
-
-.table-row:hover {
-  background: rgba(248, 244, 233, 0.3);
-}
-
-/* 文件对分组头 */
-.pair-group-header {
-  background: rgba(245, 238, 226, 0.6);
-  border-bottom: 1px solid rgba(166, 124, 82, 0.15);
-  border-top: 1px solid rgba(166, 124, 82, 0.15);
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  cursor: pointer;
-  user-select: none;
-  transition: background 0.2s;
-}
-
-.pair-group-header:hover {
-  background: rgba(245, 238, 226, 0.9);
-}
-
-.group-chevron {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  font-size: 16px;
-  color: rgba(101, 70, 40, 0.5);
-  transition: transform 0.25s ease;
-  flex-shrink: 0;
-}
-
-.group-chevron.collapsed {
-  transform: rotate(-90deg);
-}
-
-.pair-group-header:first-child {
-  border-top: none;
-}
-
-.pair-group-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  font-size: 12px;
-}
-
-.pair-group-icon {
+.header-file-icon {
   font-size: 14px;
-  color: rgba(46, 89, 132, 0.7);
+  color: rgba(46, 89, 132, 0.8);
   flex-shrink: 0;
 }
 
-.pair-group-files {
+/* 分组列头（基于文件名的动态列标签） */
+.pair-group-column-headers {
+  display: flex;
+  background: rgba(245, 238, 226, 0.4);
+  border-bottom: 1px solid rgba(166, 124, 82, 0.12);
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 0.8);
+  position: sticky;
+  top: 36px;
+  z-index: 1;
+}
+
+.pair-group-column-headers .col {
+  padding: 6px 12px;
+  text-align: center;
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
-}
-
-.pair-group-file {
-  max-width: 80px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pair-group-arrow {
-  font-size: 12px;
-  color: rgba(166, 124, 82, 0.5);
-  flex-shrink: 0;
-}
-
-.pair-group-sim {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-  margin-left: 4px;
-}
-
-.pair-group-sim.high {
-  background: rgba(196, 30, 58, 0.1);
-  color: rgba(196, 30, 58, 1);
-}
-
-.pair-group-sim.medium {
-  background: rgba(255, 152, 0, 0.1);
-  color: rgba(255, 152, 0, 1);
-}
-
-.pair-group-sim.low {
-  background: rgba(76, 175, 80, 0.1);
-  color: rgba(76, 175, 80, 1);
-}
-
-.pair-group-count {
-  font-size: 11px;
-  color: rgba(101, 70, 40, 0.6);
-  margin-left: auto;
+  gap: 6px;
+  justify-content: center;
 }
 
 .table-row:last-child {
@@ -944,7 +982,7 @@ const handleExport = () => {
 }
 
 .table-row .col {
-  padding: 10px 12px;
+  padding: 6px 4px;
   font-size: 12px;
   color: rgba(44, 24, 16, 0.9);
   overflow: hidden;
@@ -953,17 +991,27 @@ const handleExport = () => {
 }
 
 .table-row .col-content {
+  background: rgba(248, 244, 233, 0.3);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin: 4px 6px;
+  white-space: normal;
+  max-height: none;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
 .table-row .col-content:hover {
+  background: rgba(245, 238, 226, 0.6);
   color: rgba(46, 89, 132, 1);
 }
 
 .table-row .col-content :deep(.highlighted-text) {
-  background: rgba(255, 235, 59, 0.5);
+  background: rgba(255, 215, 0, 0.9);
   padding: 0 2px;
   border-radius: 2px;
+  font-weight: 500;
+  color: rgba(44, 24, 16, 1);
 }
 
 .table-row .col-similarity.high {
@@ -978,59 +1026,11 @@ const handleExport = () => {
   color: rgba(76, 175, 80, 1);
 }
 
-/* 分页控件 */
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: rgba(248, 244, 233, 0.3);
-  border-radius: 8px;
-}
-
-.pagination-info {
-  font-size: 12px;
-  color: rgba(101, 70, 40, 0.8);
-}
-
-.pagination-controls {
-  display: flex;
-  gap: 4px;
-}
-
-.page-btn,
-.page-number {
-  min-width: 32px;
-  height: 32px;
-  padding: 0 8px;
-  border: 1px solid rgba(166, 124, 82, 0.3);
-  border-radius: 6px;
-  background: white;
-  color: rgba(44, 24, 16, 1);
-  font-size: 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.page-btn:hover:not(:disabled),
-.page-number:hover {
-  background: rgba(248, 244, 233, 0.8);
-  border-color: rgba(166, 124, 82, 0.5);
-}
-
-.page-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.page-number.active {
-  background: rgba(139, 0, 0, 1);
-  color: white;
-  border-color: rgba(139, 0, 0, 1);
+.col-similarity {
+  width: 70px;
+  flex-shrink: 0;
+  text-align: center;
+  font-weight: 600;
 }
 
 /* 内容弹窗 */
@@ -1206,35 +1206,6 @@ const handleExport = () => {
   flex-shrink: 0;
 }
 
-/* 每页条数选择 */
-.page-size-control {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.page-size-label {
-  font-size: 12px;
-  color: rgba(101, 70, 40, 0.7);
-}
-
-.page-size-select {
-  padding: 4px 8px;
-  border: 1px solid rgba(166, 124, 82, 0.3);
-  border-radius: 6px;
-  background: white;
-  color: rgba(44, 24, 16, 1);
-  font-size: 12px;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.page-size-select:hover,
-.page-size-select:focus {
-  border-color: rgba(166, 124, 82, 0.6);
-}
-
 /* 无重复提示 */
 .no-duplicates {
   text-align: center;
@@ -1251,5 +1222,16 @@ const handleExport = () => {
 .no-duplicates p {
   margin: 0;
   font-size: 14px;
+}
+
+/* 矩阵单元格点击高亮闪烁 */
+@keyframes highlight-flash {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.5), 0 0 20px rgba(196, 30, 58, 0.3); }
+}
+
+.highlight-flash {
+  animation: highlight-flash 0.5s ease-in-out 2;
+  border-radius: 10px;
 }
 </style>

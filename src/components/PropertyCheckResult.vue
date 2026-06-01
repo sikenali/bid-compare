@@ -51,15 +51,14 @@ const loadData = () => {
     if (result) {
       try {
         data = JSON.parse(result)
-        sessionStorage.removeItem('propertyCheckResult') // 读取后清理
+        sessionStorage.removeItem('propertyCheckResult')
       } catch (e) {
-        console.error('解析 sessionStorage 失败', e)
+        // ignore
       }
     }
   }
 
   if (!data) {
-    console.warn('未找到属性检查结果数据')
     return
   }
 
@@ -70,32 +69,20 @@ const loadData = () => {
     warningCount.value = data.warningProperties || 0
     leftFileName.value = data.leftFileName || '文件 A'
     rightFileName.value = data.rightFileName || '文件 B'
-    console.log('加载属性检查结果:', {
-      leftFileName: leftFileName.value,
-      rightFileName: rightFileName.value,
-      propertyCount: propertyDetails.value.length,
-      fromStore: !!resultId
-    })
   } catch (error) {
-    console.error('解析属性检查结果失败:', error)
     router.push('/property-check')
   }
 }
 
 onMounted(() => {
-  console.log('PropertyCheckResult - onMounted')
   loadData()
 })
 
-// 如果组件被 keep-alive 缓存，激活时重新加载数据
 onActivated(() => {
-  console.log('PropertyCheckResult - onActivated')
   loadData()
 })
 
-// 监听路由查询参数变化，重新加载数据
 watch(() => route.query.t, () => {
-  console.log('PropertyCheckResult - route.query.t changed')
   loadData()
 })
 
@@ -182,7 +169,6 @@ const handleExport = async () => {
     link.click()
     document.body.removeChild(link)
   } catch (error) {
-    console.error('导出报告失败:', error)
     alert('导出报告失败，请重试')
   }
 }

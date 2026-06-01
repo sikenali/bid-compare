@@ -1,10 +1,19 @@
 <template>
   <div class="multi-file-upload">
-    <div class="upload-header">
-      <h3>文件上传</h3>
-      <span class="file-count">已选择 {{ files.length }} / {{ maxCount }} 个文件</span>
+    <!-- 标题区域 -->
+    <div class="upload-title-section">
+      <div class="upload-title">
+        <span class="title-decoration" style="background-color: rgba(139,0,0,1)"></span>
+        <span class="title-text">MULTI-DOCUMENT SOURCE</span>
+      </div>
+      <span class="file-count-badge">
+        <span class="count-current">{{ files.length }}</span>
+        <span class="count-separator">/</span>
+        <span class="count-max">{{ maxCount }}</span>
+      </span>
     </div>
-    
+
+    <!-- 上传区域 -->
     <BorderBeam size="line" color-variant="ocean" theme="light" :duration="3">
       <div class="upload-area" 
            @dragover.prevent="onDragOver"
@@ -20,13 +29,21 @@
         
         <!-- 无文件时显示上传提示 -->
         <div v-if="files.length === 0" class="upload-content" @click="triggerFileInput">
-          <RiUploadCloudLine class="upload-icon" />
-          <p>点击或拖拽文件到这里</p>
-          <p class="upload-hint">支持 Word、PDF、PPT、Excel 格式，最多 {{ maxCount }} 个文件</p>
+          <div class="upload-icon-wrapper">
+            <RiUploadCloud2Line class="upload-icon" />
+          </div>
+          <p class="upload-main-text">拖拽文件到此处或点击上传</p>
+          <div class="upload-format-icons">
+            <div class="format-icon-wrapper" v-for="fmt in formatIcons" :key="fmt.type">
+              <component :is="fmt.icon" class="format-icon-svg" />
+              <span class="format-tooltip">{{ fmt.label }}</span>
+            </div>
+          </div>
+          <p class="upload-size-text">最多 {{ maxCount }} 个文件</p>
         </div>
 
         <!-- 有文件时显示文件列表 -->
-        <div v-else class="file-list-inside">
+        <div v-else class="file-list-container">
           <div class="file-list-header">
             <span class="file-list-title">已选择文件</span>
             <button class="add-more-btn" @click="triggerFileInput">
@@ -35,22 +52,22 @@
             </button>
           </div>
           <div class="file-list-scroll">
-            <div v-for="(file, index) in files" :key="index" class="file-item-inside">
-              <div class="file-info-inside">
-                <div class="file-icon-wrapper" :style="{ backgroundColor: getFileTypeInfo(file).bg }">
+            <div v-for="(file, index) in files" :key="index" class="file-item-card">
+              <div class="file-info-row">
+                <div class="file-icon-badge" :style="{ backgroundColor: getFileTypeInfo(file).bg }">
                   <component :is="getFileTypeInfo(file).icon" class="file-icon-svg" :style="{ color: getFileTypeInfo(file).color }" />
                 </div>
-                <div class="file-details">
-                  <div class="file-name">{{ file.name }}</div>
-                  <div class="file-meta">
+                <div class="file-details-col">
+                  <div class="file-name" :title="file.name">{{ file.name }}</div>
+                  <div class="file-meta-line">
                     <span>{{ getFileTypeInfo(file).label }}</span>
                     <span class="meta-dot">·</span>
                     <span>{{ formatSize(file.size) }}</span>
                   </div>
                 </div>
               </div>
-              <button class="remove-btn-inside" @click="removeFile(index)" title="移除文件">
-                <RiCloseLine />
+              <button class="remove-btn-card" @click="removeFile(index)" title="移除文件">
+                <RiCloseCircleLine class="remove-icon" />
               </button>
             </div>
           </div>
@@ -76,8 +93,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { 
-  RiUploadCloudLine, RiFileLine, RiCloseLine, RiExchangeLine, RiAddLine,
-  RiFileWordLine, RiFileExcelLine, RiFilePptLine, RiFileTextLine, RiFilePdfLine
+  RiUploadCloud2Line, RiFileLine, RiCloseCircleLine, RiExchangeLine, RiAddLine,
+  RiFileWord2Line, RiFileExcel2Line, RiSlideshow2Line, RiFilePdf2Line, RiFileTextLine
 } from '@remixicon/vue'
 import { BorderBeam } from 'vue3-border-beam'
 
@@ -100,6 +117,14 @@ const files = ref<File[]>([])
 const isDragOver = ref(false)
 const fileInput = ref<HTMLInputElement>()
 
+const formatIcons = [
+  { type: 'word', icon: RiFileWord2Line, label: 'Word' },
+  { type: 'excel', icon: RiFileExcel2Line, label: 'Excel' },
+  { type: 'ppt', icon: RiSlideshow2Line, label: 'PPT' },
+  { type: 'pdf', icon: RiFilePdf2Line, label: 'PDF' },
+  { type: 'txt', icon: RiFileTextLine, label: 'TXT' }
+]
+
 const triggerFileInput = () => {
   fileInput.value?.click()
 }
@@ -109,7 +134,6 @@ const onFileSelect = (event: Event) => {
   if (input.files) {
     addFiles(Array.from(input.files))
   }
-  // 重置input值，允许重复选择同一文件
   input.value = ''
 }
 
@@ -124,11 +148,9 @@ const onDrop = (event: DragEvent) => {
 }
 
 const addFiles = (newFiles: File[]) => {
-  // 过滤已存在的文件（按文件名去重）
   const existingNames = new Set(files.value.map(f => f.name))
   const uniqueNewFiles = newFiles.filter(f => !existingNames.has(f.name))
   
-  // 限制数量
   const remaining = props.maxCount - files.value.length
   const toAdd = uniqueNewFiles.slice(0, remaining)
   
@@ -152,20 +174,19 @@ const formatSize = (bytes: number): string => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-// 获取文件类型信息
 const getFileTypeInfo = (file: File) => {
   const ext = file.name.split('.').pop()?.toLowerCase() || ''
   const typeMap: Record<string, { icon: any; label: string; bg: string; color: string }> = {
-    'docx': { icon: RiFileWordLine, label: 'Word', bg: 'rgba(46, 111, 182, 0.1)', color: 'rgba(46, 111, 182, 1)' },
-    'doc': { icon: RiFileWordLine, label: 'Word', bg: 'rgba(46, 111, 182, 0.1)', color: 'rgba(46, 111, 182, 1)' },
-    'xlsx': { icon: RiFileExcelLine, label: 'Excel', bg: 'rgba(33, 115, 70, 0.1)', color: 'rgba(33, 115, 70, 1)' },
-    'xls': { icon: RiFileExcelLine, label: 'Excel', bg: 'rgba(33, 115, 70, 0.1)', color: 'rgba(33, 115, 70, 1)' },
-    'pptx': { icon: RiFilePptLine, label: 'PPT', bg: 'rgba(196, 68, 24, 0.1)', color: 'rgba(196, 68, 24, 1)' },
-    'ppt': { icon: RiFilePptLine, label: 'PPT', bg: 'rgba(196, 68, 24, 0.1)', color: 'rgba(196, 68, 24, 1)' },
-    'pdf': { icon: RiFilePdfLine, label: 'PDF', bg: 'rgba(196, 30, 58, 0.1)', color: 'rgba(196, 30, 58, 1)' },
-    'txt': { icon: RiFileTextLine, label: 'TXT', bg: 'rgba(101, 70, 40, 0.1)', color: 'rgba(101, 70, 40, 1)' }
+    'docx': { icon: RiFileWord2Line, label: 'Word 文档', bg: 'rgba(219,234,254,1)', color: 'rgba(37,99,235,1)' },
+    'doc': { icon: RiFileWord2Line, label: 'Word 文档', bg: 'rgba(219,234,254,1)', color: 'rgba(37,99,235,1)' },
+    'xlsx': { icon: RiFileExcel2Line, label: 'Excel 表格', bg: 'rgba(220,252,231,1)', color: 'rgba(34,139,34,1)' },
+    'xls': { icon: RiFileExcel2Line, label: 'Excel 表格', bg: 'rgba(220,252,231,1)', color: 'rgba(34,139,34,1)' },
+    'pptx': { icon: RiSlideshow2Line, label: 'PPT 演示', bg: 'rgba(254,243,199,1)', color: 'rgba(217,119,6,1)' },
+    'ppt': { icon: RiSlideshow2Line, label: 'PPT 演示', bg: 'rgba(254,243,199,1)', color: 'rgba(217,119,6,1)' },
+    'pdf': { icon: RiFilePdf2Line, label: 'PDF 文档', bg: 'rgba(254,242,242,1)', color: 'rgba(220,38,38,1)' },
+    'txt': { icon: RiFileTextLine, label: '文本文件', bg: 'rgba(243,244,246,1)', color: 'rgba(107,114,128,1)' }
   }
-  return typeMap[ext] || { icon: RiFileLine, label: ext.toUpperCase() || '文件', bg: 'rgba(101, 70, 40, 0.1)', color: 'rgba(101, 70, 40, 1)' }
+  return typeMap[ext] || { icon: RiFileLine, label: '未知类型', bg: 'rgba(243,244,246,1)', color: 'rgba(107,114,128,1)' }
 }
 
 defineExpose({ clearFiles, files })
@@ -173,179 +194,215 @@ defineExpose({ clearFiles, files })
 
 <style scoped>
 .multi-file-upload {
-  padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
   border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  box-shadow: 0 4px 16px rgba(44, 24, 16, 0.08);
   display: flex;
   flex-direction: column;
 }
 
-.upload-header {
+/* 标题区域 */
+.upload-title-section {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
-.upload-header h3 {
-  margin: 0;
-  font-size: 14px;
+.upload-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title-decoration {
+  width: 5px;
+  height: 24px;
+  border-radius: 2px;
+}
+
+.title-text {
+  font-size: 18px;
   font-weight: 600;
   color: rgba(44, 24, 16, 1);
   font-family: SourceHanSans-SemiBold;
+  letter-spacing: 1px;
 }
 
-.file-count {
+.file-count-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: 4px 12px;
+  background: rgba(245, 238, 226, 0.6);
+  border-radius: 16px;
+  border: 1px solid rgba(166, 124, 82, 0.2);
+}
+
+.count-current {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(139, 0, 0, 1);
+  font-family: SourceHanSans-Bold;
+}
+
+.count-separator {
+  font-size: 12px;
+  color: rgba(166, 124, 82, 0.5);
+}
+
+.count-max {
   font-size: 12px;
   color: rgba(101, 70, 40, 0.7);
 }
 
+/* 上传区域 */
 .upload-area {
-  border: 2px dashed rgba(166, 124, 82, 0.3);
-  border-radius: 8px;
-  padding: 24px;
-  text-align: center;
+  border: 2px dashed rgba(216, 191, 156, 0.7);
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 1);
   cursor: pointer;
   transition: all 0.3s ease;
+  min-height: 200px;
 }
 
-.upload-area:hover,
+.upload-area:hover {
+  border-color: rgba(139, 0, 0, 1);
+  box-shadow: 0 6px 24px rgba(139, 0, 0, 0.12);
+}
+
 .upload-area.drag-over {
-  border-color: rgba(46, 89, 132, 0.6);
+  border-color: rgba(46, 89, 132, 1);
   background: rgba(248, 244, 233, 0.5);
+  transform: scale(1.01);
 }
 
 .file-input {
   display: none;
 }
 
+/* 无文件状态 */
 .upload-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.upload-icon {
-  font-size: 32px;
-  color: rgba(46, 89, 132, 0.6);
-  margin-bottom: 8px;
-}
-
-.upload-content p {
-  margin: 0;
-  font-size: 14px;
-  color: rgba(44, 24, 16, 0.8);
-}
-
-.upload-hint {
-  font-size: 12px !important;
-  color: rgba(101, 70, 40, 0.6) !important;
-  margin-top: 4px !important;
-}
-
-.file-list {
-  margin-top: 12px;
-  max-height: 240px;
-  overflow-y: auto;
-}
-
-.file-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 12px;
-  background: rgba(248, 244, 233, 0.3);
-  border-radius: 6px;
-  margin-bottom: 6px;
-  transition: background 0.2s;
-}
-
-.file-item:hover {
-  background: rgba(248, 244, 233, 0.5);
-}
-
-.file-info {
-  display: flex;
-  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
   gap: 8px;
-  min-width: 0;
-  flex: 1;
 }
 
-.file-icon {
-  font-size: 16px;
-  color: rgba(46, 89, 132, 0.8);
-  flex-shrink: 0;
-}
-
-.file-name {
-  font-size: 13px;
-  color: rgba(44, 24, 16, 1);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.file-size {
-  font-size: 11px;
-  color: rgba(101, 70, 40, 0.6);
-  flex-shrink: 0;
-  margin-left: 8px;
-}
-
-.remove-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: rgba(196, 30, 58, 0.6);
-  padding: 4px;
-  border-radius: 4px;
+.upload-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 9999px;
+  background-color: rgba(245, 238, 226, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0;
+  margin-bottom: 24px;
+  transition: all 0.3s ease;
 }
 
-.remove-btn:hover {
-  color: rgba(196, 30, 58, 1);
-  background: rgba(196, 30, 58, 0.1);
+.upload-area:hover .upload-icon-wrapper {
+  background-color: rgba(245, 238, 226, 0.8);
+  transform: scale(1.05);
 }
 
-/* 文件列表在 upload-area 内部 */
-.upload-area.has-files {
-  text-align: left;
-  padding: 16px;
+.upload-icon {
+  font-size: 40px;
+  color: rgba(166, 124, 82, 1);
 }
 
-.file-list-inside {
+.upload-main-text {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-Medium;
+  margin-bottom: 16px;
+}
+
+.upload-format-icons {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.format-icon-wrapper {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: rgba(245, 238, 226, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.format-icon-wrapper:hover {
+  background-color: rgba(245, 238, 226, 1);
+  transform: translateY(-2px);
+}
+
+.format-icon-svg {
+  font-size: 20px;
+  color: rgba(166, 124, 82, 1);
+}
+
+.format-tooltip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background-color: rgba(44, 24, 16, 0.9);
+  color: white;
+  font-size: 11px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.format-icon-wrapper:hover .format-tooltip {
+  opacity: 1;
+}
+
+.upload-size-text {
+  font-size: 12px;
+  color: rgba(166, 124, 82, 1);
+}
+
+/* 文件列表状态 */
+.file-list-container {
+  padding: 16px;
 }
 
 .file-list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .file-list-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: rgba(44, 24, 16, 1);
+  font-family: SourceHanSans-SemiBold;
 }
 
 .add-more-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
+  padding: 6px 12px;
   border: 1px dashed rgba(166, 124, 82, 0.4);
-  border-radius: 4px;
+  border-radius: 6px;
   background: transparent;
   color: rgba(101, 70, 40, 0.8);
   font-size: 12px;
@@ -354,8 +411,9 @@ defineExpose({ clearFiles, files })
 }
 
 .add-more-btn:hover {
-  border-color: rgba(46, 89, 132, 0.6);
-  background: rgba(248, 244, 233, 0.5);
+  border-color: rgba(139, 0, 0, 1);
+  background: rgba(139, 0, 0, 0.05);
+  color: rgba(139, 0, 0, 1);
 }
 
 .add-icon {
@@ -365,35 +423,39 @@ defineExpose({ clearFiles, files })
 .file-list-scroll {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
 }
 
-.file-item-inside {
+.file-item-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
+  padding: 12px 14px;
   background: rgba(248, 244, 233, 0.4);
-  border-radius: 6px;
-  transition: background 0.2s;
+  border-radius: 8px;
+  transition: all 0.2s;
+  border: 1px solid transparent;
 }
 
-.file-item-inside:hover {
+.file-item-card:hover {
   background: rgba(248, 244, 233, 0.6);
+  border-color: rgba(166, 124, 82, 0.2);
 }
 
-.file-info-inside {
+.file-info-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
   flex: 1;
 }
 
-.file-icon-wrapper {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+.file-icon-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -401,90 +463,70 @@ defineExpose({ clearFiles, files })
 }
 
 .file-icon-svg {
-  font-size: 18px;
+  font-size: 20px;
 }
 
-.file-details {
+.file-details-col {
   min-width: 0;
   flex: 1;
 }
 
-.file-details .file-name {
-  font-size: 13px;
+.file-details-col .file-name {
+  font-size: 14px;
   font-weight: 500;
   color: rgba(44, 24, 16, 1);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin-bottom: 2px;
 }
 
-.file-meta {
+.file-meta-line {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: rgba(101, 70, 40, 0.6);
-  margin-top: 2px;
+  gap: 6px;
+  font-size: 12px;
+  color: rgba(101, 70, 40, 0.7);
 }
 
 .meta-dot {
   color: rgba(166, 124, 82, 0.4);
 }
 
-.remove-btn-inside {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: rgba(196, 30, 58, 0.6);
-  padding: 4px;
-  border-radius: 4px;
+.remove-btn-card {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
   transition: all 0.2s;
+  border: none;
+  background: transparent;
   flex-shrink: 0;
 }
 
-.remove-btn-inside:hover {
-  color: rgba(196, 30, 58, 1);
+.remove-btn-card:hover {
   background: rgba(196, 30, 58, 0.1);
 }
 
-.upload-actions {
-  margin-top: 12px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.clear-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border: 1px solid rgba(166, 124, 82, 0.3);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.8);
-  color: rgba(101, 70, 40, 0.8);
-  font-size: 12px;
-  cursor: pointer;
+.remove-icon {
+  font-size: 20px;
+  color: rgba(220, 38, 38, 0.7);
   transition: all 0.2s;
 }
 
-.clear-btn:hover {
-  background: rgba(196, 30, 58, 0.1);
-  border-color: rgba(196, 30, 58, 0.3);
-  color: rgba(196, 30, 58, 1);
-}
-
-.btn-icon {
-  font-size: 14px;
+.remove-btn-card:hover .remove-icon {
+  color: rgba(220, 38, 38, 1);
+  transform: scale(1.1);
 }
 
 /* 多文件对比圆形按钮 */
 .compare-circle-wrapper {
   display: flex;
   justify-content: center;
-  margin-top: 16px;
+  margin-top: 20px;
 }
 
 .compare-circle-btn {
@@ -526,5 +568,144 @@ defineExpose({ clearFiles, files })
   font-size: 12px;
   font-weight: 600;
   font-family: SourceHanSans-SemiBold;
+}
+
+/* 移动端响应式优化 */
+@media (max-width: 768px) {
+  .multi-file-upload {
+    padding: 16px;
+  }
+
+  .upload-title-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .title-text {
+    font-size: 16px;
+  }
+
+  .upload-area {
+    min-height: 180px;
+  }
+
+  .upload-icon-wrapper {
+    width: 64px;
+    height: 64px;
+  }
+
+  .upload-icon {
+    font-size: 32px;
+  }
+
+  .upload-main-text {
+    font-size: 15px;
+  }
+
+  .upload-format-icons {
+    gap: 8px;
+  }
+
+  .format-icon-wrapper {
+    width: 36px;
+    height: 36px;
+  }
+
+  .format-icon-svg {
+    font-size: 18px;
+  }
+
+  .upload-size-text {
+    font-size: 11px;
+  }
+
+  .file-list-scroll {
+    max-height: 200px;
+  }
+
+  .file-item-card {
+    padding: 10px 12px;
+  }
+
+  .file-icon-badge {
+    width: 36px;
+    height: 36px;
+  }
+
+  .file-icon-svg {
+    font-size: 18px;
+  }
+
+  .file-details-col .file-name {
+    font-size: 13px;
+  }
+
+  .file-meta-line {
+    font-size: 11px;
+  }
+
+  .compare-circle-wrapper {
+    margin-top: 16px;
+  }
+
+  .compare-circle-btn {
+    width: 80px;
+    height: 80px;
+  }
+
+  .compare-circle-icon {
+    font-size: 24px;
+  }
+
+  .compare-circle-text {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .multi-file-upload {
+    padding: 12px;
+  }
+
+  .upload-area {
+    min-height: 160px;
+  }
+
+  .upload-icon-wrapper {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 16px;
+  }
+
+  .upload-icon {
+    font-size: 28px;
+  }
+
+  .upload-format-icons {
+    gap: 6px;
+  }
+
+  .format-icon-wrapper {
+    width: 32px;
+    height: 32px;
+  }
+
+  .format-icon-svg {
+    font-size: 16px;
+  }
+
+  .file-list-scroll {
+    max-height: 160px;
+  }
+
+  .compare-circle-btn {
+    width: 70px;
+    height: 70px;
+  }
+
+  .compare-circle-icon {
+    font-size: 22px;
+  }
 }
 </style>

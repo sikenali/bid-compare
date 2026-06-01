@@ -394,7 +394,6 @@ export function useHardwareInfo() {
       fingerprintInfo.value = data.fingerprintInfo
     } catch (err) {
       error.value = (err as Error).message
-      console.error('获取硬件信息失败:', err)
     } finally {
       isLoading.value = false
     }

@@ -470,7 +470,6 @@ const handleExportReport = async () => {
     link.click()
     document.body.removeChild(link)
   } catch (error) {
-    console.error('导出报告失败:', error)
     alert('导出报告失败，请重试')
   }
 }
@@ -916,7 +915,7 @@ const generateWordReport = () => {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
-  z-index: 100;
+  z-index: 10;
 }
 
 .icon-btn-wrapper:hover .icon-btn-tooltip {

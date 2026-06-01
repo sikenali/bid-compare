@@ -771,6 +771,7 @@ const aiModels = [
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  min-width: 240px;
 }
 
 .radio-box-item {
@@ -894,6 +895,7 @@ const aiModels = [
 @media (max-width: 768px) {
   .settings-layout {
     flex-direction: column;
+    padding: 16px;
   }
 
   .settings-nav {
@@ -901,21 +903,93 @@ const aiModels = [
     flex-direction: row;
     overflow-x: auto;
     padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
   }
 
   .nav-tab {
     white-space: nowrap;
+    padding: 10px 16px;
+    font-size: 13px;
   }
 
   .setting-row {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+    padding: 12px 0;
+  }
+
+  .setting-label {
+    font-size: 13px;
+  }
+
+  .setting-description {
+    font-size: 11px;
   }
 
   .setting-input,
   .api-input {
     width: 100%;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .setting-toggle {
+    width: 48px;
+    height: 28px;
+  }
+
+  .toggle-slider {
+    width: 24px;
+    height: 24px;
+  }
+
+  .toggle-slider::before {
+    width: 44px;
+    height: 24px;
+  }
+
+  .action-btn {
+    padding: 10px 20px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+
+  .setting-section {
+    padding: 16px;
+  }
+
+  .section-title {
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-layout {
+    padding: 12px;
+  }
+
+  .nav-tab {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .setting-row {
+    padding: 10px 0;
+  }
+
+  .setting-label {
+    font-size: 12px;
+  }
+
+  .setting-description {
+    font-size: 10px;
+  }
+
+  .action-btn {
+    width: 100%;
+    padding: 12px 16px;
   }
 }
 </style>

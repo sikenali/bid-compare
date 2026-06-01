@@ -37,7 +37,7 @@ export async function extractImagesFromDocx(file: File): Promise<Array<{ name: s
       })
     }
   } catch (error) {
-    console.error('DOCX 图片提取失败:', error)
+    // ignore
   }
   
   return images
@@ -95,7 +95,7 @@ export async function extractImagesFromPdf(
     
     await pdf.destroy()
   } catch (error) {
-    console.error('PDF 图片提取失败:', error)
+    // ignore
   }
   
   return images

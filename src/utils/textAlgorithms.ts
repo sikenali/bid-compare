@@ -26,6 +26,9 @@ export interface ComparisonSettings {
   ignoreCase: boolean
   ignorePunctuation: boolean
   ignoreWhitespace: boolean
+  ignoreInvisibleChars: boolean
+  ngramSize?: number
+  paragraphCount?: number
 }
 
 // ========== SimHash 算法实现 ==========
@@ -201,14 +204,10 @@ export function simHashFilter(
         failed++
       }
     }
-    if (potentialMatches.size > 0 && i % 20 === 0) {
-      console.log(`[simhash] i=${i} potential=${potentialMatches.size} passed=${passed} failed=${failed} minDist=${minDist}`)
-    }
   }
 
   // 按相似度排序，只返回前100个最佳候选
   candidates.sort((a, b) => b.estimatedSimilarity - a.estimatedSimilarity)
-  console.log(`[simhash] chunks1=${limitedChunks1.length} chunks2=${limitedChunks2.length} bucketEntries=${bucketIndex.size} candidates=${candidates.length}`)
   return candidates.slice(0, 100)
 }
 
@@ -284,7 +283,6 @@ export function findSimilarSegmentsSimHash(
       undefined,
       onCancel
     )
-    if (ci < 5) console.log(`[simhash-rk] ci=${ci} chunk1=${chunk1.length} chunk2=${chunk2.length} rkSegments=${chunkSegments.length}`)
 
     // 调整位置索引
     for (const seg of chunkSegments) {
@@ -457,13 +455,13 @@ export function preprocessText(
     const char = text[i]
     let skip = false
 
-    if (settings.ignoreCase) {
-      // 小写转换不影响索引映射
-    }
     if (settings.ignorePunctuation && /[\p{P}\p{S}]/u.test(char)) {
       skip = true
     }
     if (settings.ignoreWhitespace && /\s/.test(char)) {
+      skip = true
+    }
+    if (settings.ignoreInvisibleChars && isInvisibleChar(char)) {
       skip = true
     }
 
@@ -475,11 +473,30 @@ export function preprocessText(
 
   if (settings.ignoreWhitespace) {
     processed = processed.trim()
-    // trim 后索引映射需要同步调整（这里简化处理：trim 只影响首尾空白，
-    // 由于空白已被跳过，indexMap 已不包含空白字符的索引，无需额外调整）
   }
 
   return { processed, indexMap }
+}
+
+function isInvisibleChar(char: string): boolean {
+  const code = char.charCodeAt(0)
+  return (
+    code === 0x200B || // 零宽空格
+    code === 0x200C || // 零宽非连接符
+    code === 0x200D || // 零宽连接符
+    code === 0xFEFF || // 字节顺序标记 BOM
+    code === 0x00A0 || // 不间断空格
+    code === 0x2060 || // 单词连接器
+    code === 0x180E || // 蒙古文元音分隔符（已废弃）
+    code === 0x2800 || // 盲文空白
+    code === 0x2061 || // 功能性连接符
+    code === 0x2062 || // 隐形乘号
+    code === 0x2063 || // 隐形分隔符
+    code === 0x2064 || // 隐形加号
+    code === 0xFFFC || // 对象替换字符
+    (code >= 0x2028 && code <= 0x202F) || // 行/段落分隔符、各种空白
+    (code >= 0x3000 && code <= 0x3000) // CJK 全角空格
+  )
 }
 
 // 基于最长公共子串的相似片段查找（暴力 LCS 算法）
@@ -614,7 +631,7 @@ export function findSimilarSegmentsRabinKarp(
   const preprocessed2 = preprocessText(text2, settings)
   const m = preprocessed1.processed.length
   const n = preprocessed2.processed.length
-  const windowSize = settings.minDuplicateWords
+  const windowSize = settings.ngramSize || settings.minDuplicateWords
 
   if (windowSize > m || windowSize > n) return []
 
@@ -661,11 +678,25 @@ export function findSimilarSegmentsRabinKarp(
 
   const matchedPairs = new Set<string>()
   const segments: SimilarSegment[] = []
+  const usedText1 = new Set<number>()
   let processed = 0
+  let skipTo = -1
+
+  const computeHash = (pos: number) => {
+    let h1 = 0, h2 = 0
+    for (let k = 0; k < windowSize; k++) {
+      h1 = (h1 * HASH1_BASE + preprocessed2.processed.charCodeAt(pos + k)) % HASH1_MOD
+      h2 = (h2 * HASH2_BASE + preprocessed2.processed.charCodeAt(pos + k)) % HASH2_MOD
+    }
+    hash1 = h1; hash2 = h2
+  }
 
   for (let j = 0; j <= n - windowSize; j++) {
     if (onCancel?.()) return segments
-    if (j > 0) {
+    if (j < skipTo) continue
+    if (j === skipTo) {
+      computeHash(j)
+    } else if (j > 0) {
       hash1 = ((hash1 - preprocessed2.processed.charCodeAt(j - 1) * high1) * HASH1_BASE + preprocessed2.processed.charCodeAt(j + windowSize - 1)) % HASH1_MOD
       hash2 = ((hash2 - preprocessed2.processed.charCodeAt(j - 1) * high2) * HASH2_BASE + preprocessed2.processed.charCodeAt(j + windowSize - 1)) % HASH2_MOD
       if (hash1 < 0) hash1 += HASH1_MOD
@@ -678,6 +709,7 @@ export function findSimilarSegmentsRabinKarp(
       for (const i of positions) {
         const pairKey = `${i},${j}`
         if (matchedPairs.has(pairKey)) continue
+        if (usedText1.has(i)) continue
 
         // 验证实际内容
         let matchLen = windowSize
@@ -688,7 +720,17 @@ export function findSimilarSegmentsRabinKarp(
         if (matchLen >= settings.minDuplicateWords) {
           matchedPairs.add(pairKey)
 
-          // 关键修复：将预处理后的索引映射回原文本索引
+          // 标记 text1 已用位置，防止同段匹配多个 text2 位置
+          for (let k = 0; k < matchLen; k++) {
+            usedText1.add(i + k)
+          }
+
+          // 连续匹配块中跳过后续重叠窗口
+          if (matchLen > windowSize) {
+            skipTo = Math.max(skipTo, j + matchLen - windowSize + 1)
+          }
+
+          // 将预处理后的索引映射回原文本索引
           const origStart1 = preprocessed1.indexMap[i]
           const origEnd1 = preprocessed1.indexMap[i + matchLen - 1] + 1
           const origStart2 = preprocessed2.indexMap[j]
@@ -1072,13 +1114,15 @@ export function findSimilarSegmentsMinHash(
 
 // ========== 重叠片段合并 ==========
 
-function areOverlapping(seg1: SimilarSegment, seg2: SimilarSegment): boolean {
-  const s1Start = seg1.leftStartIndex ?? 0
-  const s1End = seg1.leftEndIndex ?? 0
-  const s2Start = seg2.leftStartIndex ?? 0
-  const s2End = seg2.leftEndIndex ?? 0
+const MERGE_GAP = 10
 
-  return s2Start < s1End && s2End > s1Start
+function areOverlapping(seg1: SimilarSegment, seg2: SimilarSegment): boolean {
+  const leftOverlap = (seg2.leftStartIndex ?? 0) < (seg1.leftEndIndex ?? 0) + MERGE_GAP
+    && (seg2.leftEndIndex ?? 0) > (seg1.leftStartIndex ?? 0)
+  const rightOverlap = (seg2.rightStartIndex ?? 0) < (seg1.rightEndIndex ?? 0) + MERGE_GAP
+    && (seg2.rightEndIndex ?? 0) > (seg1.rightStartIndex ?? 0)
+
+  return leftOverlap && rightOverlap
 }
 
 function mergeTwoSegments(seg1: SimilarSegment, seg2: SimilarSegment): void {
@@ -1093,6 +1137,8 @@ function mergeTwoSegments(seg1: SimilarSegment, seg2: SimilarSegment): void {
 /**
  * 合并重叠片段
  */
+const MIN_SEGMENT_CHARS = 20
+
 export function mergeOverlappingSegments(
   segments: SimilarSegment[]
 ): SimilarSegment[] {
@@ -1262,12 +1308,14 @@ function backtrack(
  * 使用 Myers Diff 查找相似片段
  * @param text1 文本1
  * @param text2 文本2
+ * @param settings 对比设置
  * @param minMatch 最小匹配长度
  * @returns 相似片段数组
  */
 export function findSimilarSegmentsMyers(
   text1: string,
   text2: string,
+  settings: ComparisonSettings,
   minMatch: number = 2,
   contextLength: number = 10,
   pageMap1?: PageMap,
@@ -1278,29 +1326,29 @@ export function findSimilarSegmentsMyers(
   const segments: SimilarSegment[] = []
   let segmentId = 0
 
-  // 将文本转换为字符数组
-  const oldSeq = Array.from(text1)
-  const newSeq = Array.from(text2)
+  const preprocessed1 = preprocessText(text1, settings)
+  const preprocessed2 = preprocessText(text2, settings)
 
-  // 计算编辑脚本，如果失败则降级到Rabin-Karp
+  const oldSeq = Array.from(preprocessed1.processed)
+  const newSeq = Array.from(preprocessed2.processed)
+
   let edits: DiffEdit[]
   try {
     if (onProgress) onProgress(0.3)
     edits = myersDiff(oldSeq, newSeq)
   } catch (error) {
-    // Myers Diff内存不足，降级到Rabin-Karp
-    console.warn('Myers Diff 失败，降级到 Rabin-Karp:', error)
-    const settings: ComparisonSettings = {
-      minDuplicateWords: minMatch,
-      textSimilarityThreshold: 75,
-      ignoreCase: false,
-      ignorePunctuation: false,
-      ignoreWhitespace: false
-    }
-    return findSimilarSegmentsRabinKarp(text1, text2, settings, contextLength, onProgress, onCancel, pageMap1, pageMap2)
+    return findSimilarSegmentsRabinKarp(
+      preprocessed1.processed,
+      preprocessed2.processed,
+      settings,
+      contextLength,
+      onProgress,
+      onCancel,
+      pageMap1,
+      pageMap2
+    )
   }
 
-  // 提取连续相等的片段
   let i = 0
   while (i < edits.length) {
     if (edits[i].type === 'equal') {
@@ -1316,19 +1364,24 @@ export function findSimilarSegmentsMyers(
         const rightStart = edits[start].newStart
         const rightEnd = edits[i - 1].newEnd
 
+        const origStart1 = preprocessed1.indexMap[leftStart]
+        const origEnd1 = preprocessed1.indexMap[leftEnd - 1] + 1
+        const origStart2 = preprocessed2.indexMap[rightStart]
+        const origEnd2 = preprocessed2.indexMap[rightEnd - 1] + 1
+
         segments.push({
           id: ++segmentId,
           similarity: '100%',
           similarityValue: 100,
-          leftContent: buildHighlightedHtml(text1, leftStart, leftEnd, contextLength),
-          rightContent: buildHighlightedHtml(text2, rightStart, rightEnd, contextLength),
-          leftPage: pageMap1 ? formatPageRange(pageMap1, leftStart, leftEnd) : '第1/1页',
-          rightPage: pageMap2 ? formatPageRange(pageMap2, rightStart, rightEnd) : '第1/1页',
+          leftContent: buildHighlightedHtml(text1, origStart1, origEnd1, contextLength),
+          rightContent: buildHighlightedHtml(text2, origStart2, origEnd2, contextLength),
+          leftPage: pageMap1 ? formatPageRange(pageMap1, origStart1, origEnd1) : '第1/1页',
+          rightPage: pageMap2 ? formatPageRange(pageMap2, origStart2, origEnd2) : '第1/1页',
           level: 'high',
-          leftStartIndex: leftStart,
-          leftEndIndex: leftEnd,
-          rightStartIndex: rightStart,
-          rightEndIndex: rightEnd
+          leftStartIndex: origStart1,
+          leftEndIndex: origEnd1,
+          rightStartIndex: origStart2,
+          rightEndIndex: origEnd2
         })
       }
     } else {
@@ -1354,22 +1407,23 @@ export function findSimilarSegmentsSmart(
 ): SimilarSegment[] {
   const textLength = text1.length + text2.length
 
-  // 小文本：使用 Myers Diff
   if (textLength < 10_000) {
     if (onProgress) onProgress(0.5)
     const segments = findSimilarSegmentsMyers(
       text1,
       text2,
+      settings,
       settings.minDuplicateWords,
       10,
       pageMap1,
-      pageMap2
+      pageMap2,
+      onProgress,
+      onCancel
     )
     if (onProgress) onProgress(1)
     return segments
   }
 
-  // 中等文本：使用 Rabin-Karp
   if (textLength < 100_000) {
     return findSimilarSegmentsRabinKarp(
       text1,
@@ -1383,7 +1437,6 @@ export function findSimilarSegmentsSmart(
     )
   }
 
-  // 大文本：使用 SimHash 粗筛
   return findSimilarSegmentsSimHash(
     text1,
     text2,

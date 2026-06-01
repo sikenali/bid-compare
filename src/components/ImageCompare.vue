@@ -328,7 +328,7 @@ const runImageComparison = async () => {
     imageDuplicates.value.sort((a, b) => b.similarity - a.similarity)
     progress.value = 1
   } catch (error) {
-    console.error('图片对比失败:', error)
+    // 图片对比失败
   } finally {
     isProcessing.value = false
   }
@@ -353,7 +353,6 @@ const runOCR = async (images: Array<{ url: string; name: string }>, side: 'left'
     )
     return results
   } catch (error) {
-    console.error('OCR 识别失败:', error)
     return []
   } finally {
     isOCRProcessing.value = false
@@ -393,7 +392,7 @@ const runOCRComparison = async () => {
     ocrResults.value = [...leftResults, ...rightResults]
     showOCRResult.value = true
   } catch (error) {
-    console.error('OCR 对比失败:', error)
+    // OCR 对比失败
   } finally {
     isOCRProcessing.value = false
     ocrProgress.value = 0

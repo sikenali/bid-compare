@@ -124,7 +124,7 @@ const extractOfficeMetadata = async (zip: any): Promise<Partial<FileProperties>>
       if (companyMatch?.[1]) properties.公司 = companyMatch[1];
     }
   } catch (error) {
-    console.warn('提取 Office 元数据失败:', error);
+    // ignore
   }
 
   return properties;
@@ -220,7 +220,7 @@ export function useFileParser() {
           });
         }
       } catch (zipError) {
-        console.warn('DOCX 元数据/图片提取失败，使用默认值:', zipError);
+        // ignore
       }
 
       return {
@@ -230,7 +230,6 @@ export function useFileParser() {
         images
       };
     } catch (error) {
-      console.error('解析DOCX文件失败:', error);
       return {
         content: '',
         properties: {},
@@ -347,7 +346,7 @@ export function useFileParser() {
           }
         }
       } catch (metadataError) {
-        console.warn('PDF 元数据提取失败:', metadataError);
+        // ignore
       }
       
       // 返回解析结果
@@ -359,8 +358,7 @@ export function useFileParser() {
         images: [] // PDF 图片提取在外部处理
       };
     } catch (error) {
-      console.error('PDF解析错误:', error);
-      // 如果解析失败，返回基本信息，不显示错误给用户
+      // PDF解析错误
       return {
         content: 'PDF文件内容（浏览器环境下无法直接解析）',
         properties: {
@@ -448,7 +446,7 @@ export function useFileParser() {
         const meta = await extractOfficeMetadata(zip);
         Object.assign(properties, meta);
       } catch (zipError) {
-        console.warn('XLSX 元数据提取失败，使用默认值:', zipError);
+        // ignore
       }
 
       return {
@@ -457,7 +455,6 @@ export function useFileParser() {
         pageMap: buildEstimatedPageMap(textContent)
       };
     } catch (error) {
-      console.error('解析XLSX文件失败:', error);
       return {
         content: '',
         properties: {},
@@ -529,7 +526,7 @@ export function useFileParser() {
           properties.页码范围 = `1-${slideFiles.length}`;
         }
       } catch (zipError) {
-        console.warn('PPTX 内容提取失败:', zipError);
+        // ignore
         textContent = 'PPTX演示内容（浏览器环境下解析受限）\n';
       }
 
@@ -541,7 +538,6 @@ export function useFileParser() {
         pageMap: buildEstimatedPageMap(textContent)
       };
     } catch (error) {
-      console.error('解析PPTX文件失败:', error);
       return {
         content: '',
         properties: {},

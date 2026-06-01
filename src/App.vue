@@ -194,6 +194,29 @@ const handleMenuClick = (menu: string) => {
   </div>
 </template>
 
+<style>
+/* 全局移动端优化 */
+@media (max-width: 768px) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+
+  button {
+    touch-action: manipulation;
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 14px;
+  }
+}
+</style>
+
 <style scoped>
 .app-container {
   display: flex;

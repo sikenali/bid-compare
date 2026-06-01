@@ -12,13 +12,14 @@ import {
   RiExchange2Line,
   RiArrowLeftSLine,
   RiArrowRightSLine,
-  RiImageLine
+  RiImageLine,
+  RiEyeLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx'
 import { useSettings } from '../composables/useSettings'
 import { useAIModel } from '../composables/useAIModel'
 import { getCompareResult, deleteCompareResult } from '../utils/compareResultStore'
-import { sanitizeHTML, sanitizeWithHighlight } from '../utils/sanitize'
+import { sanitizeHTML, sanitizeWithHighlight, htmlToMarkdown } from '../utils/sanitize'
 import MarkdownIt from 'markdown-it'
 import type { SimilarSegment } from '../utils/textAlgorithms'
 import { BorderBeam } from 'vue3-border-beam'
@@ -44,6 +45,29 @@ const textSimilarity = ref('0%')
 const similarSegmentsCount = ref(0)
 const leftFileContent = ref('')
 const rightFileContent = ref('')
+const leftTotalPages = ref(1)
+const rightTotalPages = ref(1)
+
+// 页码显示
+const leftPageDisplay = computed(() => `第 1 / ${leftTotalPages.value} 页`)
+const rightPageDisplay = computed(() => `第 1 / ${rightTotalPages.value} 页`)
+
+// 是否有内容预览
+const hasPreviewContent = computed(() => {
+  return leftFileContent.value.length > 0 || rightFileContent.value.length > 0
+})
+
+// 根据设置过滤结果（显示所有）
+const filteredSegments = computed(() => {
+  const threshold = settings.textSimilarityThreshold || 75
+  
+  return segments.value
+    .filter(s => s.similarityValue >= threshold)
+    .sort((a, b) => b.similarityValue - a.similarityValue)
+})
+
+// 实际找到的总数量（用于显示）
+const totalFoundCount = computed(() => filteredSegments.value.length)
 
 // 图片雷同结果
 const imageDuplicates = ref<any[]>([])
@@ -54,13 +78,52 @@ const contextSegment = ref<SimilarSegment | null>(null)
 const contextSide = ref<'left' | 'right'>('left')
 const contextFullText = ref('')
 
+// 预览模态框
+const showPreviewModal = ref(false)
+const previewTargetId = ref<number | null>(null)
+const previewLeftRef = ref<HTMLElement | null>(null)
+const previewRightRef = ref<HTMLElement | null>(null)
+let previewIsScrolling = false
+
+const openPreviewForSegment = (segment: SimilarSegment, side: 'left' | 'right' = 'left') => {
+  previewTargetId.value = segment.id
+  previewTargetSide.value = side
+  showPreviewModal.value = true
+  nextTick(() => {
+    scrollToPreviewSegment(segment.id, side)
+  })
+}
+
+const previewTargetSide = ref<'left' | 'right'>('left')
+
+const scrollToPreviewSegment = (id: number, side: 'left' | 'right' = 'left') => {
+  const panel = side === 'left' ? previewLeftRef.value : previewRightRef.value
+  if (!panel) return
+  // Also clear highlight from the opposite panel
+  const otherPanel = side === 'left' ? previewRightRef.value : previewLeftRef.value
+  if (otherPanel) {
+    otherPanel.querySelector('.preview-segment-target')?.classList.remove('preview-segment-target')
+  }
+  panel.querySelector('.preview-segment-target')?.classList.remove('preview-segment-target')
+  const el = panel.querySelector(`[data-segment-id="${id}"]`) as HTMLElement | null
+  if (!el) return
+  el.classList.add('preview-segment-target')
+  const panelTop = panel.scrollTop
+  const elTop = el.offsetTop
+  const panelHeight = panel.clientHeight
+  panel.scrollTop = elTop - panelHeight / 2 + el.offsetHeight / 2
+}
+
+watch(showPreviewModal, (val) => {
+  if (!val) {
+    previewTargetId.value = null
+    previewTargetSide.value = 'left'
+  }
+})
+
 // AI分析相关
 const showAIAnalysis = ref(false)
 const aiModelResponse = ref('')
-
-// 文件真实页数
-const leftTotalPages = ref(1)
-const rightTotalPages = ref(1)
 
 // 同步滚动状态
 const syncScroll = ref(true)
@@ -83,16 +146,16 @@ const rightPageIndicatorTop = ref(12)
 let isScrolling = false
 
 // 计算属性
-const totalPages = computed(() => Math.ceil(segments.value.length / pageSize.value))
+const totalPages = computed(() => Math.ceil(filteredSegments.value.length / pageSize.value))
 const startRecord = computed(() => (currentPage.value - 1) * pageSize.value + 1)
-const endRecord = computed(() => Math.min(currentPage.value * pageSize.value, segments.value.length))
-const totalRecords = computed(() => segments.value.length)
+const endRecord = computed(() => Math.min(currentPage.value * pageSize.value, filteredSegments.value.length))
+const totalRecords = computed(() => filteredSegments.value.length)
 
 // 当前页数据
 const pageSegments = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   const end = start + pageSize.value
-  return segments.value.slice(start, end)
+  return filteredSegments.value.slice(start, end)
 })
 
 // 页码列表
@@ -142,41 +205,27 @@ const initData = () => {
     if (sessionResult) {
       try {
         resultData = JSON.parse(sessionResult)
-        sessionStorage.removeItem('compareResult') // 读取后清理
+        sessionStorage.removeItem('compareResult')
       } catch (e) {
-        console.error('解析 sessionStorage 失败', e)
+        // ignore
       }
     }
   }
 
   if (resultData) {
     segments.value = resultData.segments || []
-    // 确保文件名正确显示
     leftFileName.value = resultData.leftFileName && resultData.leftFileName !== '' ? resultData.leftFileName : '左侧文件'
     rightFileName.value = resultData.rightFileName && resultData.rightFileName !== '' ? resultData.rightFileName : '右侧文件'
     textSimilarity.value = resultData.textSimilarity || '0%'
     similarSegmentsCount.value = resultData.similarSegmentsCount || segments.value.length
 
-    // 读取真实页数
     leftTotalPages.value = resultData.leftTotalPages || 1
     rightTotalPages.value = resultData.rightTotalPages || 1
 
-    // 加载原始文本内容（用于上下文查看）
     leftFileContent.value = resultData.leftFileContent || ''
     rightFileContent.value = resultData.rightFileContent || ''
 
-    // 加载图片雷同结果
     imageDuplicates.value = resultData.imageDuplicates || []
-
-    // 调试日志
-    console.log('加载对比结果:', {
-      leftFileName: leftFileName.value,
-      rightFileName: rightFileName.value,
-      segmentCount: segments.value.length,
-      fromStore: !!resultId
-    })
-  } else {
-    console.warn('未找到对比结果数据')
   }
 }
 
@@ -187,19 +236,14 @@ const initData = () => {
 
 // 在组件挂载时初始化数据
 onMounted(() => {
-  console.log('FileCompareResult - onMounted')
   initData()
 })
 
-// 如果组件被 keep-alive 缓存，激活时重新加载数据
 onActivated(() => {
-  console.log('FileCompareResult - onActivated')
   initData()
 })
 
-// 监听路由查询参数变化，重新加载数据
 watch(() => route.query.t, () => {
-  console.log('FileCompareResult - route.query.t changed')
   initData()
 })
 
@@ -317,7 +361,6 @@ const handleExport = async () => {
       document.body.removeChild(link)
     }
   } catch (error) {
-    console.error('导出报告失败:', error)
     alert('导出报告失败，请重试')
   }
 }
@@ -406,46 +449,62 @@ function parseHighlightedContent(htmlContent: string): any[] {
 
 // 生成 Markdown 报告
 function generateMarkdownReport(): string {
-  const includeHighlight = settings.includeHighlight
+  const segmentsData = filteredSegments.value
   let md = ''
 
   // 报告标题
   md += '# 文件对比报告\n\n'
 
+  // 元数据
+  md += `> **生成时间**：${new Date().toLocaleString()}  \n`
+  md += `> **左侧文件**：${leftFileName.value || '-'}  \n`
+  md += `> **右侧文件**：${rightFileName.value || '-'}  \n\n`
+
+  md += '---\n\n'
+
   // 统计信息
   md += '## 一、相似度统计\n\n'
-  md += `- **文本重复率**：${textSimilarity.value}\n`
-  md += `- **雷同片段**：${similarSegmentsCount.value}处\n\n`
+  md += '| 指标 | 数值 |\n'
+  md += '|------|------|\n'
+  md += `| 文本重复率 | ${textSimilarity.value} |\n`
+  md += `| 雷同片段 | ${similarSegmentsCount.value}处 |\n\n`
 
-  // 文件信息（如果开启图表）
-  if (settings.includeCharts) {
-    md += '## 二、文件信息\n\n'
-    md += '| 项目 | 左侧文件 | 右侧文件 |\n'
-    md += '|------|----------|----------|\n'
-    md += `| 文件名 | ${leftFileName.value || '-'} | ${rightFileName.value || '-'} |\n`
-    md += `| 文本重复率 | ${textSimilarity.value} | ${textSimilarity.value} |\n`
-    md += `| 雷同片段数 | ${similarSegmentsCount.value}处 | ${similarSegmentsCount.value}处 |\n\n`
-  }
+  md += '---\n\n'
 
-  // 雷同片段详情
-  const sectionNum = settings.includeCharts ? '三' : '二'
-  md += `## ${sectionNum}、雷同片段详情\n\n`
-  md += '| 序号 | 左侧文件 | 位置 | 右侧文件 | 位置 |\n'
-  md += '|------|----------|------|----------|------|\n'
+  // 雷同片段详情 - 表格总览
+  md += '## 二、雷同片段总览\n\n'
+  md += '| 序号 | 左侧内容（摘要） | 位置 | 右侧内容（摘要） | 位置 |\n'
+  md += '|------|------------------|------|------------------|------|\n'
 
-  for (const segment of segments.value) {
-    const leftContent = includeHighlight
-      ? (segment.leftContent || '').replace(/<[^>]*>/g, '').replace(/…/g, '').substring(0, 50) + '...'
-      : (segment.leftContent || '').replace(/<[^>]*>/g, '').substring(0, 50) + '...'
-    const rightContent = includeHighlight
-      ? (segment.rightContent || '').replace(/<[^>]*>/g, '').replace(/…/g, '').substring(0, 50) + '...'
-      : (segment.rightContent || '').replace(/<[^>]*>/g, '').substring(0, 50) + '...'
+  for (const segment of segmentsData) {
+    const leftBrief = htmlToMarkdown(segment.leftContent || '').replace(/…/g, '').substring(0, 60).replace(/\s+/g, ' ').trim()
+    const rightBrief = htmlToMarkdown(segment.rightContent || '').replace(/…/g, '').substring(0, 60).replace(/\s+/g, ' ').trim()
 
-    md += `| ${segment.id} | ${leftContent} | ${segment.leftPage || '-'} | ${rightContent} | ${segment.rightPage || '-'} |\n`
+    md += `| ${segment.id} | ${leftBrief || '-'} | ${segment.leftPage || '-'} | ${rightBrief || '-'} | ${segment.rightPage || '-'} |\n`
   }
 
   md += '\n---\n\n'
-  md += `*报告生成时间：${new Date().toLocaleString()}*\n`
+
+  // 详细对比
+  md += '## 三、雷同片段详情\n\n'
+
+  for (const segment of segmentsData) {
+    const leftClean = htmlToMarkdown(segment.leftContent || '')
+    const rightClean = htmlToMarkdown(segment.rightContent || '')
+
+    md += `### 第 ${segment.id} 段\n\n`
+    md += `| 项目 | 内容 |\n`
+    md += `|------|------|\n`
+    md += `| 左侧位置 | ${segment.leftPage || '-'} |\n`
+    md += `| 右侧位置 | ${segment.rightPage || '-'} |\n\n`
+    md += `**左侧文件：**\n\n`
+    md += leftClean.split('\n').map(l => `> ${l}`).join('\n') + '\n\n'
+    md += `**右侧文件：**\n\n`
+    md += rightClean.split('\n').map(l => `> ${l}`).join('\n') + '\n\n'
+    md += '---\n\n'
+  }
+
+  md += `*报告由 Bid Assistant 生成于 ${new Date().toLocaleString()}*\n`
 
   return md
 }
@@ -596,7 +655,7 @@ function generateWordReport(): Document {
   ]
 
   // 添加数据行
-  segments.value.forEach(segment => {
+  filteredSegments.value.forEach(segment => {
     const leftRuns = includeHighlight ? parseHighlightedContent(segment.leftContent) : [new TextRun({ text: segment.leftContent.replace(/<[^>]*>/g, ''), size: 20, font: 'Microsoft YaHei' })]
     const rightRuns = includeHighlight ? parseHighlightedContent(segment.rightContent) : [new TextRun({ text: segment.rightContent.replace(/<[^>]*>/g, ''), size: 20, font: 'Microsoft YaHei' })]
 
@@ -673,44 +732,40 @@ const nextPage = () => {
   }
 }
 
-// 滚动到指定页码对应的内容位置 (已简化，适配片段模式)
+// 滚动到指定页码对应的内容位置
 const scrollToPage = (page: number) => {
-  // 在片段模式下，暂时禁用复杂的滚动定位，仅保留页码状态
-  // 如果需要精确定位到某个片段，可以在此扩展逻辑
-  console.log('切换到页码:', page)
+  // 片段模式下滚动定位
 }
 
 // 是否有上一处差异
 const hasPrevDiff = computed(() => {
-  return segments.value.length > 0
+  return filteredSegments.value.length > 0
 })
 
 // 是否有下一处差异
 const hasNextDiff = computed(() => {
-  return segments.value.length > 0
+  return filteredSegments.value.length > 0
 })
 
 // 计算100%相似度的片段数量
 const count100Similarity = computed(() => {
-  return segments.value.filter(s => s.similarityValue >= 100).length
+  return filteredSegments.value.filter(s => s.similarityValue >= 100).length
 })
 
 // 计算达到相似度阈值的片段数量
 const countThresholdSimilarity = computed(() => {
   const threshold = settings.textSimilarityThreshold || 75
-  return segments.value.filter(s => s.similarityValue >= threshold).length
+  return filteredSegments.value.filter(s => s.similarityValue >= threshold).length
 })
 
 // 上一处差异
 const goToPrevDiff = () => {
   // TODO: 实现跳转到上一处差异的逻辑
-  console.log('上一处差异')
 }
 
 // 下一处差异
 const goToNextDiff = () => {
   // TODO: 实现跳转到下一处差异的逻辑
-  console.log('下一处差异')
 }
 
 // 跟踪哪个面板有焦点
@@ -766,6 +821,134 @@ const connections = computed(() => {
 const visibleConnections = computed(() => {
   return connections.value
 })
+
+// 解析段落（按换行符分割）
+const parseParagraphs = (text: string): Array<{ text: string; startIndex: number; endIndex: number }> => {
+  const paragraphs: Array<{ text: string; startIndex: number; endIndex: number }> = []
+  let currentPos = 0
+  
+  const lines = text.split(/[\n\r]+/)
+  
+  for (const line of lines) {
+    const lineLength = line.length
+    paragraphs.push({
+      text: line,
+      startIndex: currentPos,
+      endIndex: currentPos + lineLength
+    })
+    currentPos += lineLength + 1
+  }
+  
+  return paragraphs
+}
+
+// 检查段落是否包含重复片段
+const getHighlightedParagraphHtml = (
+  paragraph: { text: string; startIndex: number; endIndex: number },
+  segments: SimilarSegment[],
+  type: 'left' | 'right'
+): string => {
+  const overlappingSegments = segments.filter(seg => {
+    const segStart = type === 'left' ? seg.leftStartIndex : seg.rightStartIndex
+    const segEnd = type === 'left' ? seg.leftEndIndex : seg.rightEndIndex
+    return segStart < paragraph.endIndex && segEnd > paragraph.startIndex
+  })
+  
+  if (overlappingSegments.length === 0) {
+    return escapeHtml(paragraph.text)
+  }
+  
+  overlappingSegments.sort((a, b) => {
+    const aStart = type === 'left' ? a.leftStartIndex : a.rightStartIndex
+    const bStart = type === 'left' ? b.leftStartIndex : b.rightStartIndex
+    return aStart - bStart
+  })
+  
+  let html = ''
+  let currentPos = paragraph.startIndex
+  
+  for (const seg of overlappingSegments) {
+    const segStart = type === 'left' ? seg.leftStartIndex : seg.rightStartIndex
+    const segEnd = type === 'left' ? seg.leftEndIndex : seg.rightEndIndex
+    
+    const localStart = Math.max(segStart, paragraph.startIndex) - paragraph.startIndex
+    const localEnd = Math.min(segEnd, paragraph.endIndex) - paragraph.startIndex
+    
+    if (localStart > currentPos - paragraph.startIndex) {
+      html += escapeHtml(paragraph.text.substring(currentPos - paragraph.startIndex, localStart))
+    }
+    
+    const highlightedText = paragraph.text.substring(localStart, localEnd)
+    html += `<span class="text-highlight" data-segment-id="${seg.id}" data-similarity="${seg.similarityValue}">${escapeHtml(highlightedText)}</span>`
+    
+    currentPos = segEnd
+  }
+  
+  if (currentPos - paragraph.startIndex < paragraph.text.length) {
+    html += escapeHtml(paragraph.text.substring(currentPos - paragraph.startIndex))
+  }
+  
+  return html
+}
+
+// 构建段落式全文内容
+const buildFullTextHtml = (
+  fullText: string,
+  segments: SimilarSegment[],
+  type: 'left' | 'right'
+): string => {
+  if (!fullText) return ''
+  
+  const paragraphs = parseParagraphs(fullText)
+  
+  let html = '<div class="full-text-content">'
+  
+  for (let i = 0; i < paragraphs.length; i++) {
+    const para = paragraphs[i]
+    const hasHighlight = segments.some(seg => {
+      const segStart = type === 'left' ? seg.leftStartIndex : seg.rightStartIndex
+      const segEnd = type === 'left' ? seg.leftEndIndex : seg.rightEndIndex
+      return segStart < para.endIndex && segEnd > para.startIndex
+    })
+    
+    const paraHtml = getHighlightedParagraphHtml(para, segments, type)
+    
+    html += `<div class="doc-paragraph ${hasHighlight ? 'has-highlight' : ''}" data-p-index="${i}">${paraHtml}</div>`
+  }
+  
+  html += '</div>'
+  return html
+}
+
+const escapeHtml = (text: string): string => {
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.innerHTML
+}
+
+const previewLeftHtml = computed(() => {
+  return buildFullTextHtml(leftFileContent.value, filteredSegments.value, 'left')
+})
+
+const previewRightHtml = computed(() => {
+  return buildFullTextHtml(rightFileContent.value, filteredSegments.value, 'right')
+})
+
+const handlePreviewLeftScroll = () => {
+  if (previewIsScrolling) return
+  if (!previewLeftRef.value || !previewRightRef.value) return
+  previewIsScrolling = true
+  previewRightRef.value.scrollTop = previewLeftRef.value.scrollTop
+  requestAnimationFrame(() => { previewIsScrolling = false })
+}
+
+const handlePreviewRightScroll = () => {
+  if (previewIsScrolling) return
+  if (!previewLeftRef.value || !previewRightRef.value) return
+  previewIsScrolling = true
+  previewLeftRef.value.scrollTop = previewRightRef.value.scrollTop
+  requestAnimationFrame(() => { previewIsScrolling = false })
+}
 </script>
 
 <template>
@@ -826,6 +1009,12 @@ const visibleConnections = computed(() => {
           <h2 class="list-title">相似片段详情</h2>
         </div>
         <div class="list-header-actions">
+          <BorderBeam size="sm" color-variant="ocean" theme="dark" :duration="2">
+            <button class="preview-btn" @click="showPreviewModal = true">
+              <RiEyeLine class="preview-icon" />
+              <span>预览</span>
+            </button>
+          </BorderBeam>
           <BorderBeam size="sm" color-variant="sunset" theme="dark" :duration="2">
             <button class="ai-btn" @click="handleAIAnalysis" :disabled="isLoading">
               <RiSparkling2Fill class="ai-icon" />
@@ -833,13 +1022,13 @@ const visibleConnections = computed(() => {
             </button>
           </BorderBeam>
           <div class="list-header-stats">
+            <div class="stat-badge stat-badge-total">
+              <span class="stat-badge-icon">📊</span>
+              <span>共 {{ segments.length }} 处（≥{{ settings.textSimilarityThreshold }}%：{{ countThresholdSimilarity }}处）</span>
+            </div>
             <div class="stat-badge stat-badge-100">
               <span class="stat-badge-icon">💯</span>
               <span>100%相同：{{ count100Similarity }}个</span>
-            </div>
-            <div class="stat-badge stat-badge-threshold">
-              <span class="stat-badge-icon">🎯</span>
-              <span>≥{{ settings.textSimilarityThreshold }}%：{{ countThresholdSimilarity }}个</span>
             </div>
           </div>
         </div>
@@ -860,10 +1049,10 @@ const visibleConnections = computed(() => {
         <div class="table-body" v-highlight-tooltip>
           <div v-for="segment in pageSegments" :key="segment.id" class="table-row">
             <div class="col col-index">{{ segment.id }}</div>
-            <div class="col col-content clickable" @click="viewContext(segment, 'left')" :title="'点击查看' + leftFileName + '上下文'" v-html="sanitizeWithHighlight(segment.leftContent)"></div>
+            <div class="col col-content clickable" @click="openPreviewForSegment(segment, 'left')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.leftContent)"></div>
             <div class="col col-position">{{ segment.leftPage }}</div>
             <div class="col col-position">{{ segment.rightPage }}</div>
-            <div class="col col-content clickable" @click="viewContext(segment, 'right')" :title="'点击查看' + rightFileName + '上下文'" v-html="sanitizeWithHighlight(segment.rightContent)"></div>
+            <div class="col col-content clickable" @click="openPreviewForSegment(segment, 'right')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.rightContent)"></div>
           </div>
         </div>
       </div>
@@ -919,6 +1108,61 @@ const visibleConnections = computed(() => {
               <span class="image-side-label">右侧</span>
               <img :src="dup.rightImage" class="image-duplicate-img" />
               <span class="image-name">{{ dup.rightPage }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 预览弹窗 -->
+    <div v-if="showPreviewModal" class="help-modal-overlay" @click="showPreviewModal = false">
+      <div class="preview-modal" @click.stop>
+        <div class="help-modal-header">
+          <h3>
+            全文预览 — {{ segments.length }} 处重复片段
+          </h3>
+          <button class="help-close-btn" @click="showPreviewModal = false">×</button>
+        </div>
+        <div class="preview-panel-headers">
+          <div class="preview-panel-header">
+            <div class="panel-header-top">
+              <span class="panel-file-name">{{ leftFileName || '文件A' }}</span>
+              <span class="panel-page-info">{{ leftPageDisplay }}</span>
+            </div>
+            <div class="panel-header-bottom">
+              <span class="highlight-hint">🔍 黄色高亮为重复片段</span>
+            </div>
+          </div>
+          <div class="preview-panel-header-sep"></div>
+          <div class="preview-panel-header right">
+            <div class="panel-header-top">
+              <span class="panel-file-name">{{ rightFileName || '文件B' }}</span>
+              <span class="panel-page-info">{{ rightPageDisplay }}</span>
+            </div>
+            <div class="panel-header-bottom">
+              <span class="highlight-hint">🔍 黄色高亮为重复片段</span>
+            </div>
+          </div>
+        </div>
+        <div class="preview-modal-body">
+          <div class="preview-panel" ref="previewLeftRef" @scroll="handlePreviewLeftScroll">
+            <div class="preview-panel-inner" v-if="leftFileContent">
+              <div class="preview-placeholder" v-if="!leftFileContent">左侧文件无内容</div>
+              <div v-html="sanitizeWithHighlight(previewLeftHtml)"></div>
+            </div>
+            <div class="preview-empty" v-else>
+              <div class="empty-icon">📄</div>
+              <div class="empty-text">左侧文件无内容预览</div>
+            </div>
+          </div>
+          <div class="preview-divider"></div>
+          <div class="preview-panel" ref="previewRightRef" @scroll="handlePreviewRightScroll">
+            <div class="preview-panel-inner" v-if="rightFileContent">
+              <div v-html="sanitizeWithHighlight(previewRightHtml)"></div>
+            </div>
+            <div class="preview-empty" v-else>
+              <div class="empty-icon">📄</div>
+              <div class="empty-text">右侧文件无内容预览</div>
             </div>
           </div>
         </div>
@@ -1956,6 +2200,36 @@ const visibleConnections = computed(() => {
   animation: sparkle-pulse 1.5s ease-in-out infinite;
 }
 
+.list-header-actions .preview-btn {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  background: linear-gradient(135deg, rgba(46, 89, 132, 1) 0%, rgba(70, 130, 180, 1) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s;
+  font-family: SourceHanSans-SemiBold;
+  box-shadow: 0 2px 8px rgba(46, 89, 132, 0.3);
+  white-space: nowrap;
+}
+
+.list-header-actions .preview-btn:hover {
+  box-shadow: 0 4px 12px rgba(46, 89, 132, 0.4);
+  transform: translateY(-1px);
+}
+
+.list-header-actions .preview-icon {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 1);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
 @keyframes sparkle-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.15); }
@@ -2001,6 +2275,21 @@ const visibleConnections = computed(() => {
 
 .stat-badge-threshold .stat-badge-icon {
   color: rgba(59, 130, 246, 1);
+}
+
+.stat-badge-total {
+  background: linear-gradient(135deg, rgba(139, 0, 0, 0.08), rgba(196, 30, 58, 0.08));
+  color: rgba(139, 0, 0, 1);
+  font-weight: 600;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(139, 0, 0, 0.15);
+  white-space: nowrap;
+}
+
+.stat-badge-total .stat-badge-icon {
+  color: rgba(139, 0, 0, 1);
 }
 
 /* Word 预览列表样式 */
@@ -2110,12 +2399,12 @@ const visibleConnections = computed(() => {
 }
 
 .table-row .col {
+  min-width: 0;
   padding: 8px 12px;
   font-size: 13px;
   color: rgba(44, 24, 16, 1);
   font-family: SourceHanSans-Regular;
   line-height: 1.5;
-  /* 确保 grid item 能正确包含子元素 */
   display: flex;
   align-items: stretch;
 }
@@ -2129,6 +2418,7 @@ const visibleConnections = computed(() => {
 
 /* 确保高亮在表格内容中正确显示 */
 .table-row .col-content {
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -2137,13 +2427,12 @@ const visibleConnections = computed(() => {
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 6px;
   border: 1px solid rgba(166, 124, 82, 0.15);
-  min-height: 32px;
-  max-height: 32px;
-  /* 使用 flex: 1 填充可用空间 */
+  height: 32px;
   flex: 1;
   display: block;
   position: relative;
   cursor: default;
+  box-sizing: border-box;
 }
 
 .table-row .col-content :deep(.highlighted-text) {
@@ -2314,6 +2603,364 @@ const visibleConnections = computed(() => {
   font-size: 14px;
   font-weight: 700;
   font-family: SourceHanSans-Bold;
+}
+
+.help-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+  background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(245,238,226,0.5) 100%);
+}
+
+.help-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 1);
+  font-family: 'Microsoft YaHei', 'Source Han Sans', sans-serif;
+}
+
+.help-close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background-color: rgba(248, 244, 233, 0.8);
+  color: rgba(107, 79, 52, 1);
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.help-close-btn:hover {
+  background-color: rgba(139, 0, 0, 0.1);
+  color: rgba(139, 0, 0, 1);
+}
+
+/* 通用弹窗遮罩 */
+.help-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.preview-modal {
+  background: white;
+  border-radius: 8px;
+  width: calc(100vw - 48px);
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(44, 24, 16, 0.2), 0 2px 10px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(166, 124, 82, 0.2);
+  animation: modalSlideIn 0.3s ease;
+}
+
+.preview-modal-body {
+  display: flex;
+  height: calc(90vh - 60px);
+  overflow: hidden;
+}
+
+.preview-panel {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #f8f4e9;
+  background-image: 
+    linear-gradient(90deg, rgba(166, 124, 82, 0.03) 0%, transparent 8%, transparent 92%, rgba(166, 124, 82, 0.03) 100%);
+}
+
+.preview-panel-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 48px 56px;
+  background: white;
+  box-shadow: 0 2px 20px rgba(44, 24, 16, 0.1);
+  min-height: 100%;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #2c1810;
+  font-family: 'Microsoft YaHei', 'Source Han Sans', 'SimSun', serif;
+  letter-spacing: 0.02em;
+}
+
+.full-text-content {
+  font-family: 'Microsoft YaHei', 'Source Han Sans', 'SimSun', serif;
+  font-size: 14px;
+  line-height: 2;
+  text-align: justify;
+  word-break: break-word;
+  white-space: pre-wrap;
+  color: #2c1810;
+}
+
+.doc-paragraph {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(166, 124, 82, 0.08);
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.doc-paragraph:last-child {
+  border-bottom: none;
+}
+
+.doc-paragraph.has-highlight {
+  background-color: rgba(255, 248, 230, 0.8);
+  border-left: 3px solid rgba(255, 215, 0, 0.6);
+  padding-left: 12px;
+  margin-left: -15px;
+  border-radius: 0 4px 4px 0;
+}
+
+.doc-paragraph.has-highlight::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(to bottom, rgba(255, 215, 0, 0.8), rgba(255, 180, 0, 0.6));
+  border-radius: 2px;
+}
+
+.text-highlight {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.5) 0%, rgba(255, 180, 0, 0.4) 100%) !important;
+  color: #8b0000 !important;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  box-shadow: 0 1px 3px rgba(139, 0, 0, 0.15);
+  border-bottom: 2px solid rgba(139, 0, 0, 0.3);
+}
+
+.text-highlight:hover {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.8) 0%, rgba(255, 180, 0, 0.7) 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(139, 0, 0, 0.25);
+}
+
+.text-highlight::after {
+  content: attr(data-similarity);
+  font-size: 9px;
+  background: rgba(139, 0, 0, 0.8);
+  color: white;
+  padding: 1px 4px;
+  border-radius: 8px;
+  margin-left: 4px;
+  vertical-align: super;
+}
+
+.preview-panel-headers {
+  display: flex;
+  border-bottom: 2px solid rgba(139, 0, 0, 0.3);
+  background: rgba(245, 238, 226, 0.5);
+}
+
+.preview-panel-header {
+  flex: 1;
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 0.9);
+  font-family: 'Microsoft YaHei', 'Source Han Sans', sans-serif;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(245,238,226,0.3) 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.panel-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(44, 24, 16, 0.95);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  margin-right: 12px;
+}
+
+.panel-page-info {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(139, 0, 0, 0.85);
+  background: rgba(139, 0, 0, 0.06);
+  padding: 2px 8px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.panel-header-bottom {
+  display: flex;
+  align-items: center;
+}
+
+.highlight-hint {
+  font-size: 11px;
+  color: rgba(101, 70, 40, 0.6);
+  font-weight: 400;
+}
+
+.header-stat {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(101, 70, 40, 0.6);
+}
+
+.preview-panel-header:first-child {
+  border-right: 1px solid rgba(166, 124, 82, 0.2);
+}
+
+.preview-panel-header.right {
+  text-align: right;
+  align-items: flex-end;
+  border-right: none;
+  border-left: 1px solid rgba(166, 124, 82, 0.2);
+}
+
+.preview-panel-header.right .header-stat {
+  text-align: right;
+}
+
+.preview-panel-header.right .panel-header-top {
+  flex-direction: row-reverse;
+}
+
+.preview-panel-header.right .panel-page-info {
+  margin-right: 0;
+  margin-left: 12px;
+}
+
+.preview-panel-header-sep {
+  display: none;
+}
+
+.preview-divider {
+  width: 6px;
+  background: linear-gradient(to bottom, 
+    rgba(139, 0, 0, 0.4) 0%, 
+    rgba(166, 124, 82, 0.3) 50%, 
+    rgba(139, 0, 0, 0.4) 100%
+  );
+  flex-shrink: 0;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  color: rgba(166, 124, 82, 0.5);
+  gap: 12px;
+}
+
+.preview-empty .empty-icon {
+  font-size: 48px;
+  opacity: 0.5;
+}
+
+.preview-empty .empty-text {
+  font-size: 14px;
+  font-family: 'Microsoft YaHei', 'Source Han Sans', sans-serif;
+}
+
+.preview-segment {
+  margin-bottom: 24px;
+  transition: background-color 0.3s;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.7);
+  border-left: 3px solid rgba(139, 0, 0, 0.6);
+  border-radius: 0 4px 4px 0;
+  page-break-inside: avoid;
+}
+
+.preview-seg-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(166, 124, 82, 0.2);
+  font-family: 'Microsoft YaHei', 'Source Han Sans', sans-serif;
+}
+
+.preview-segment.right .preview-seg-info {
+  flex-direction: row-reverse;
+}
+
+.preview-seg-id {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(139, 0, 0, 0.9);
+  background: rgba(139, 0, 0, 0.08);
+  padding: 2px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.preview-seg-page {
+  font-size: 11px;
+  color: rgba(101, 70, 40, 0.7);
+}
+
+.preview-seg-content {
+  font-family: 'Microsoft YaHei', 'Source Han Sans', 'SimSun', serif;
+  font-size: 14px;
+  line-height: 1.9;
+  text-align: justify;
+  word-break: break-word;
+  white-space: pre-wrap;
+  color: #2c1810;
+}
+
+.preview-segment.right {
+  border-left: none;
+  border-right: 3px solid rgba(139, 0, 0, 0.6);
+  border-radius: 4px 0 0 4px;
+}
+
+.preview-seg-content :deep(.highlighted-text) {
+  background-color: rgba(255, 215, 0, 0.5) !important;
+  color: #8b0000 !important;
+  padding: 1px 3px;
+  border-radius: 2px;
+  font-weight: 500;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.preview-sep {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(166, 124, 82, 0.2), transparent);
+  margin: 8px 0;
 }
 
 .context-modal {
@@ -2515,5 +3162,116 @@ const visibleConnections = computed(() => {
   .page-ellipsis {
     font-size: 13px;
   }
+}
+
+/* 移动端预览面板优化 */
+@media (max-width: 768px) {
+  .preview-modal {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+  }
+
+  .preview-modal-body {
+    flex-direction: column;
+    height: calc(100vh - 120px);
+  }
+
+  .preview-panel-headers {
+    flex-shrink: 0;
+  }
+
+  .preview-panel {
+    flex: 1;
+    min-height: 0;
+    max-height: 50%;
+  }
+
+  .preview-panel-header {
+    font-size: 12px;
+    padding: 10px 16px;
+  }
+
+  .preview-divider {
+    width: 100%;
+    height: 4px;
+    flex-shrink: 0;
+    background: linear-gradient(to right,
+      rgba(139, 0, 0, 0.4) 0%,
+      rgba(166, 124, 82, 0.3) 50%,
+      rgba(139, 0, 0, 0.4) 100%
+    );
+  }
+
+  .preview-panel-inner {
+    padding: 24px 20px !important;
+    max-width: 100% !important;
+  }
+
+  .preview-segment {
+    padding: 12px 16px;
+    margin-bottom: 16px;
+  }
+
+  .preview-seg-content {
+    font-size: 13px !important;
+    line-height: 1.8 !important;
+  }
+
+  .help-modal-header {
+    padding: 12px 16px;
+  }
+
+  .help-modal-header h3 {
+    font-size: 14px;
+  }
+
+  .help-close-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+  }
+
+  .context-modal {
+    margin: 16px;
+    max-height: calc(100vh - 32px);
+  }
+}
+
+@media (max-width: 480px) {
+  .preview-panel-inner {
+    padding: 16px 14px !important;
+  }
+
+  .preview-segment {
+    padding: 10px 14px;
+  }
+
+  .preview-seg-id {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+
+  .preview-seg-page {
+    font-size: 10px;
+  }
+}
+</style>
+
+<style>
+/* 全局样式：用于 v-html 渲染的预览片段高亮 */
+.preview-segment-target {
+  background-color: rgba(255, 215, 0, 0.12) !important;
+  outline: 2px solid rgba(255, 215, 0, 0.5) !important;
+  outline-offset: 2px !important;
+  animation: previewTargetPulse 2s ease-in-out 3 !important;
+  border-radius: 4px;
+}
+
+@keyframes previewTargetPulse {
+  0%, 100% { outline-color: rgba(255, 215, 0, 0.5); }
+  50% { outline-color: rgba(255, 215, 0, 0.9); }
 }
 </style>

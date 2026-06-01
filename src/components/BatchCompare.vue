@@ -118,6 +118,9 @@ const handleBatchCompare = async () => {
       ignoreCase: settings.ignoreCase,
       ignorePunctuation: settings.ignorePunctuation,
       ignoreWhitespace: settings.ignoreWhitespace,
+      ignoreInvisibleChars: settings.ignoreInvisibleChars,
+      ngramSize: settings.ngramSize,
+      paragraphCount: settings.paragraphCount,
     }
 
     const results: BatchResult[] = []

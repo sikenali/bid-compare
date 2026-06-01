@@ -106,7 +106,7 @@ const fileTypeInfo = computed(() => {
             <component :is="fileTypeInfo.icon" class="file-icon-svg" :style="{ color: fileTypeInfo.color }" />
           </div>
           <div class="file-details">
-            <div class="file-name">{{ fileInfo.name }}</div>
+            <div class="file-name" :title="fileInfo.name">{{ fileInfo.name }}</div>
             <div class="file-meta-line">
               <span>{{ fileTypeInfo.label }}</span>
               <span class="meta-dot">·</span>

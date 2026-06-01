@@ -2,6 +2,7 @@ import { reactive, onMounted } from 'vue'
 
 // 定义设置类型
 export interface FileCompareSettings {
+  settingsVersion?: number
   // 对比参数
   ngramSize: number
   minDuplicateWords: number
@@ -36,8 +37,11 @@ export interface FileCompareSettings {
   includeCharts: boolean
 }
 
+const SETTINGS_VERSION = 2
+
 // 定义默认设置
 export const defaultSettings: FileCompareSettings = {
+  settingsVersion: SETTINGS_VERSION,
   ngramSize: 3,
   minDuplicateWords: 8,
   textSimilarityThreshold: 75,
@@ -77,16 +81,24 @@ export function useSettings() {
       const savedSettings = localStorage.getItem('fileCompareSettings')
       if (savedSettings) {
         const parsed = JSON.parse(savedSettings) as Partial<FileCompareSettings>
+
+        // 设置版本迁移
+        if (!parsed.settingsVersion || parsed.settingsVersion < SETTINGS_VERSION) {
+          parsed.settingsVersion = SETTINGS_VERSION
+          const migrated = { ...defaultSettings, ...parsed }
+          localStorage.setItem('fileCompareSettings', JSON.stringify(migrated))
+          Object.assign(settings, migrated)
+          return
+        }
+
         Object.assign(settings, {
           ...defaultSettings,
           ...parsed
         })
       } else {
-        // 没有保存过设置，使用默认值
         Object.assign(settings, defaultSettings)
       }
     } catch (error) {
-      console.error('加载设置失败:', error)
       Object.assign(settings, defaultSettings)
     }
   }
@@ -95,10 +107,8 @@ export function useSettings() {
   const saveSettings = () => {
     try {
       localStorage.setItem('fileCompareSettings', JSON.stringify(settings))
-      console.log('✅ 设置已保存：', settings)
       return true
     } catch (error) {
-      console.error('保存设置失败:', error)
       return false
     }
   }
@@ -107,23 +117,19 @@ export function useSettings() {
   const resetToDefault = () => {
     Object.assign(settings, defaultSettings)
     saveSettings()
-    console.log('✅ 设置已重置为默认值')
   }
 
   // 取消设置（恢复到之前保存的值）
   const cancelSettings = () => {
     loadSettings()
-    console.log('✅ 设置已恢复到上次保存的状态')
   }
 
   // 初始化时加载设置（仅执行一次）
   if (!isInitialized) {
     onMounted(() => {
-      console.log('📂 加载设置...')
       loadSettings()
     })
     isInitialized = true
-    // 立即加载一次（非组件场景下也能用）
     loadSettings()
   }
 

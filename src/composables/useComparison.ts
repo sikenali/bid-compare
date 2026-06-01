@@ -51,7 +51,6 @@ export function useComparison() {
 
     // 使用强制策略或智能策略选择
     const strategy = forceStrategy || selectSmartStrategy(text1, text2)
-    console.log(`[compare] strategy=${strategy} len1=${text1.length} len2=${text2.length} minDup=${settings.minDuplicateWords}`)
 
     try {
       // 小文件和中等文件在主线程处理
@@ -154,7 +153,6 @@ export function useComparison() {
           reject(new Error('Worker 不可用且文件过大，无法降级处理'))
           return
         }
-        console.warn('Worker 不可用，降级到主线程 LCS')
         isProcessing.value = false
         canCancel.value = false
         const segments = findSimilarSegments(text1, text2, settings, 10, pageMap1, pageMap2)

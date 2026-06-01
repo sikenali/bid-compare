@@ -78,7 +78,6 @@ export async function recognizeImage(
       }))
     }
   } catch (error) {
-    console.error('OCR 识别失败:', error)
     throw new Error(`OCR 识别失败: ${(error as Error).message}`)
   }
 }
@@ -105,8 +104,7 @@ export async function recognizeImages(
       const result = await recognizeImage(image.url, config)
       results.push({ name: image.name, result })
     } catch (error) {
-      console.warn(`图片 "${image.name}" OCR 失败:`, error)
-      // 失败时返回空结果
+      // OCR 失败，跳过此图片
       results.push({
         name: image.name,
         result: {
