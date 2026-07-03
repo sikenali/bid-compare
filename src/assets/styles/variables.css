@@ -1,5 +1,5 @@
 /* ============================================
- * 墨墨梧文 — Design Token System
+ * 文比猩 — Design Token System
  * Chinese imperial study theme
  * ============================================ */
 
@@ -44,7 +44,7 @@
   --color-info: #3B82F6;
 
   /* ========== Colors — RGB variants (for rgba()) ========== */
-  --rgb-parchment: 253, 246, 227;
+  --rgb-parchment: 245, 239, 227;
   --rgb-cream: 251, 247, 239;
   --rgb-cream-dark: 245, 239, 224;
   --rgb-cream-darker: 240, 232, 213;
@@ -63,10 +63,10 @@
   --rgb-white: 255, 255, 255;
 
   /* ========== Typography — Font Families ========== */
-  --font-calligraphy: 'Ma Shan Zheng', 'ZCOOL XiaoWei', cursive;
+  --font-calligraphy: 'Ma Shan Zheng', 'ZCOOL XiaoWei', 'Liu Jian Mao Cao', cursive;
   --font-xiaowei: 'ZCOOL XiaoWei', 'Ma Shan Zheng', cursive;
   --font-songti: 'Noto Serif SC', 'Source Han Serif SC', 'STSongti', 'SimSun', serif;
-  --font-sans: 'Source Han Sans SC', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'Noto Sans SC', 'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: var(--font-songti);
   --font-ui: var(--font-sans);
 
@@ -123,7 +123,7 @@
 
   /* ========== Layout ========== */
   --navbar-height: 64px;
-  --sidebar-width: 280px;
+  --sidebar-width: 240px;
   --section-gap: var(--spacing-8);
   --card-padding: var(--spacing-6);
   --element-gap: var(--spacing-4);
@@ -174,7 +174,7 @@
 /* ========== Paper Theme ========== */
 [data-theme="paper"] {
   --color-parchment: #FFFFFF;
-  --color-cream: #FAFAFA;
+  --color-cream: #F5EFE3;
   --color-cream-dark: #F5F5F5;
   --color-cream-darker: #EEEEEE;
   --color-warm-gray: #F0F0F0;
