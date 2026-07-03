@@ -198,13 +198,14 @@ const fileTypeInfo = computed(() => {
   height: 100%;
   padding: var(--spacing-6);
   gap: var(--spacing-2);
+  background: #F5EFE3;
 }
 
 .upload-icon-wrapper {
   width: 80px;
   height: 80px;
   border-radius: var(--radius-full);
-  background: var(--color-cream-dark);
+  background: #F5EFE3;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -213,7 +214,7 @@ const fileTypeInfo = computed(() => {
 }
 
 .upload-area:hover .upload-icon-wrapper {
-  background: var(--color-cream-darker);
+  background: #F5EFE3;
   transform: scale(1.05);
 }
 
@@ -245,7 +246,7 @@ const fileTypeInfo = computed(() => {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-md);
-  background: var(--color-cream-dark);
+  background: #F5EFE3;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -253,7 +254,7 @@ const fileTypeInfo = computed(() => {
 }
 
 .format-icon-wrapper:hover {
-  background: var(--color-cream-darker);
+  background: #F5EFE3;
   transform: translateY(-2px);
 }
 

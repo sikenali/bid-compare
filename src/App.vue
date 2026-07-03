@@ -117,6 +117,8 @@ const handleMenuClick = (menu: string) => {
           <p class="logo-subtitle">专业文件智能对比工具</p>
         </div>
 
+        <div class="sidebar-divider"></div>
+
         <nav class="nav-menu">
           <button
             class="nav-item"
@@ -160,6 +162,8 @@ const handleMenuClick = (menu: string) => {
             <span class="nav-text">系统设置</span>
           </button>
         </nav>
+
+        <div class="sidebar-divider"></div>
 
         <div class="version-info">
           <p class="version-title">© 2026 sikenali</p>
@@ -265,8 +269,13 @@ const handleMenuClick = (menu: string) => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border-top: 1px solid var(--color-tan-light);
-  border-bottom: 1px solid var(--color-tan-light);
+}
+
+/* ========== Sidebar Divider ========== */
+.sidebar-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-tan-dark), transparent);
+  flex-shrink: 0;
 }
 
 .nav-item {

@@ -672,7 +672,7 @@ const generateWordReport = () => {
 /* 页面标题区 */
 .page-header {
   padding: 16px 24px;
-  background-color: var(--color-cream);
+  background-color: #F5EFE3;
   border-radius: var(--radius-md);
   border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
   box-shadow: 0 2px 8px rgba(var(--rgb-brown-dark), 0.08);
@@ -685,7 +685,7 @@ const generateWordReport = () => {
 }
 
 .page-title {
-  font-size: 20px;
+  font-size: var(--text-heading-lg);
   font-weight: 700;
   color: var(--color-brown-dark);
   margin: 0 0 4px 0;
