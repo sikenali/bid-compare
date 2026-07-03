@@ -41,7 +41,7 @@ function createWindow() {
       sandbox: false
     },
     icon: iconPath,
-    title: '文件对对碰',
+    title: '文比猩',
     autoHideMenuBar: true,
     frame: true,
     backgroundColor: '#F8F4E9',

@@ -2,7 +2,7 @@
 
 > **面向 AI 代理的工作者：** 必需子技能：使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 逐任务实现此计划。步骤使用复选框（`- [ ]`）语法来跟踪进度。
 
-**目标：** 为"文件对对碰"应用添加移动端响应式支持，实现汉堡菜单导航和竖版布局优化
+**目标：** 为"文比猩"应用添加移动端响应式支持，实现汉堡菜单导航和竖版布局优化
 
 **架构：** 通过 CSS media queries 实现三档响应式断点（移动端 ≤768px、平板 769-1024px、桌面 >1024px），在 App.vue 添加汉堡菜单和顶部导航栏，各页面组件调整布局为响应式
 
@@ -119,7 +119,7 @@ onUnmounted(() => {
         <div class="mobile-logo-seal">
           <RiExchangeLine class="mobile-logo-icon" />
         </div>
-        <span class="mobile-title">文件对对碰</span>
+        <span class="mobile-title">文比猩</span>
       </div>
       <div class="mobile-header-spacer"></div>
     </header>
@@ -144,7 +144,7 @@ onUnmounted(() => {
               <RiExchangeLine class="logo-icon-svg" />
             </div>
           </div>
-          <h1 class="logo-title">文件对对碰</h1>
+          <h1 class="logo-title">文比猩</h1>
           <p class="logo-subtitle">智能文档比对工具</p>
         </div>
 

@@ -1,11 +1,11 @@
-# 📄 文件对对碰 — 专业文档对比工具
+# 📄 文比猩 — 专业文档对比工具
 
 <p align="center">
   <strong>🎯 精准识别文档差异 · 🤖 AI 智能分析 · 📦 跨平台桌面应用</strong>
 </p>
 
 <p align="center">
-  <img src="public/logo-icon.svg" width="120" height="120" alt="文件对对碰 Logo">
+  <img src="public/logo-icon.svg" width="120" height="120" alt="文比猩 Logo">
 </p>
 
 <p align="center">
@@ -21,7 +21,7 @@
 
 ## 📖 工具介绍
 
-**文件对对碰**（File Comparison Assistant）是一款专业的文档对比桌面工具，专为招投标文件、合同审阅、版本文档差异检测等场景设计。基于 Vue 3 + TypeScript + Electron 构建，支持多种文档格式的精准对比分析，并集成 AI 大模型辅助差异解读。
+**文比猩**（File Comparison Assistant）是一款专业的文档对比桌面工具，专为招投标文件、合同审阅、版本文档差异检测等场景设计。基于 Vue 3 + TypeScript + Electron 构建，支持多种文档格式的精准对比分析，并集成 AI 大模型辅助差异解读。
 
 ### 🌟 核心优势
 
@@ -412,9 +412,9 @@ bid-assistant/
 │
 └── 📁 release/                     # 打包输出 (构建后生成)
     ├── win-unpacked/
-    ├── 文件对对碰 Setup *.exe
-    ├── 文件对对碰-*.dmg
-    └── 文件对对碰-*.AppImage
+    ├── 文比猩 Setup *.exe
+    ├── 文比猩-*.dmg
+    └── 文比猩-*.AppImage
 ```
 
 ---
@@ -457,15 +457,15 @@ npm run preview
 ```bash
 # Windows (NSIS 安装包)
 npm run electron:build:win
-# 输出: release/文件对对碰 Setup *.exe
+# 输出: release/文比猩 Setup *.exe
 
 # macOS (DMG)
 npm run electron:build:mac
-# 输出: release/文件对对碰-*.dmg
+# 输出: release/文比猩-*.dmg
 
 # Linux (AppImage + deb)
 npm run electron:build:linux
-# 输出: release/文件对对碰-*.AppImage
+# 输出: release/文比猩-*.AppImage
 ```
 
 ### 图标生成
@@ -484,7 +484,7 @@ npm run generate-icon
 | 配置项 | 值 | 说明 |
 |--------|-----|------|
 | `appId` | `com.filecompare.app` | 应用唯一标识 |
-| `productName` | 文件对对碰 | 产品名称 |
+| `productName` | 文比猩 | 产品名称 |
 | `directories.output` | `release` | 打包输出目录 |
 | `win.target` | `nsis` | Windows 安装包格式 |
 | `nsis.oneClick` | `false` | 非一键安装 |
@@ -548,6 +548,6 @@ MIT License
 ---
 
 <p align="center">
-  <strong>文件对对碰</strong> · 让文档对比更简单、更精准<br>
+  <strong>文比猩</strong> · 让文档对比更简单、更精准<br>
   <sub>Built with Vue 3 + TypeScript + Electron</sub>
 </p>

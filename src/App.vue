@@ -92,7 +92,7 @@ const handleMenuClick = (menu: string) => {
         <div class="mobile-logo-seal">
           <RiExchangeLine class="mobile-logo-icon" />
         </div>
-        <span class="mobile-title">墨墨梧文</span>
+        <span class="mobile-title">文比猩</span>
       </div>
       <div class="mobile-header-spacer"></div>
     </header>
@@ -113,8 +113,8 @@ const handleMenuClick = (menu: string) => {
           <div class="logo-seal">
             <RiExchangeLine class="logo-icon-svg" />
           </div>
-          <h1 class="logo-title">墨墨梧文</h1>
-          <p class="logo-subtitle">投标文件智能比对</p>
+          <h1 class="logo-title">文比猩</h1>
+          <p class="logo-subtitle">专业文件智能对比工具</p>
         </div>
 
         <nav class="nav-menu">
@@ -215,7 +215,7 @@ const handleMenuClick = (menu: string) => {
 .logo-seal {
   width: 52px;
   height: 52px;
-  border-radius: var(--radius-lg);
+  border-radius: 50%;
   background: var(--color-cinnabar);
   display: flex;
   align-items: center;
@@ -233,7 +233,7 @@ const handleMenuClick = (menu: string) => {
   right: 3px;
   bottom: 3px;
   border: 1.5px solid rgba(255, 255, 255, 0.3);
-  border-radius: calc(var(--radius-lg) - 3px);
+  border-radius: 50%;
 }
 
 .logo-icon-svg {
@@ -254,7 +254,7 @@ const handleMenuClick = (menu: string) => {
   font-size: var(--text-caption);
   color: var(--color-brown-muted);
   margin: 0;
-  font-family: var(--font-ui);
+  font-family: var(--font-xiaowei);
   letter-spacing: 1px;
 }
 
@@ -264,7 +264,9 @@ const handleMenuClick = (menu: string) => {
   padding: var(--spacing-3);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 12px;
+  border-top: 1px solid var(--color-tan-light);
+  border-bottom: 1px solid var(--color-tan-light);
 }
 
 .nav-item {
@@ -272,7 +274,7 @@ const handleMenuClick = (menu: string) => {
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 10px 14px;
+  padding: 14px 18px;
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
@@ -403,7 +405,7 @@ const handleMenuClick = (menu: string) => {
 .mobile-logo-seal {
   width: 36px;
   height: 36px;
-  border-radius: var(--radius-md);
+  border-radius: 50%;
   background: var(--color-cinnabar);
   display: flex;
   align-items: center;

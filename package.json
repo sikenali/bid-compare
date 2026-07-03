@@ -49,7 +49,7 @@
   },
   "build": {
     "appId": "com.filecompare.app",
-    "productName": "文件对对碰",
+    "productName": "文比猩",
     "directories": {
       "output": "release"
     },
@@ -91,7 +91,7 @@
       "deleteAppDataOnUninstall": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "文件对对碰"
+      "shortcutName": "文比猩"
     }
   }
 }
