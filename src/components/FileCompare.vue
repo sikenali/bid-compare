@@ -348,9 +348,9 @@ const handleFileUpload = (event: Event, side: 'left' | 'right') => {
   const input = event.target as HTMLInputElement
   if (input.files && input.files[0]) {
     const file = input.files[0]
-    // 文件大小限制 50MB
-    if (file.size > 50 * 1024 * 1024) {
-      alert('文件大小超过 50MB 限制')
+    // 文件大小限制 100MB
+    if (file.size > 100 * 1024 * 1024) {
+      alert('文件大小超过 100MB 限制')
       return
     }
     const fileInfo = {
@@ -1303,18 +1303,18 @@ const generateWordReport = () => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: rgba(248, 244, 233, 1);
+  background-color: rgba(var(--rgb-parchment), 1);
   gap: 12px;
-  font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-ui);
 }
 
 /* 页面标题区 */
 .page-header {
   padding: 16px 24px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  background-color: rgba(var(--rgb-cream), 0.9);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .title-row {
@@ -1326,16 +1326,16 @@ const generateWordReport = () => {
 .page-title {
   font-size: 20px;
   font-weight: 700;
-  color: rgba(44, 24, 16, 1);
+  color: rgba(var(--rgb-brown-dark), 1);
   margin: 0 0 4px 0;
-  font-family: SourceHanSans-Bold;
+  font-family: var(--font-ui);
 }
 
 .page-subtitle {
   font-size: 12px;
-  color: rgba(101, 70, 40, 1);
+  color: rgba(var(--rgb-brown), 1);
   margin: 0;
-  font-family: SourceHanSans-Regular;
+  font-family: var(--font-ui);
 }
 
 .header-actions {
@@ -1347,39 +1347,39 @@ const generateWordReport = () => {
 .header-back-btn {
   height: 40px;
   padding: 0 20px;
-  background-color: rgba(255, 255, 255, 1);
-  color: rgba(139, 0, 0, 1);
-  border: 1px solid rgba(139, 0, 0, 0.3);
-  border-radius: 10px;
+  background-color: rgba(var(--rgb-cream), 1);
+  color: rgba(var(--rgb-cinnabar), 1);
+  border: 1px solid rgba(var(--rgb-cinnabar), 0.3);
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
   transition: all 0.3s ease;
 }
 
 .header-back-btn:hover {
-  background-color: rgba(139, 0, 0, 0.05);
-  border-color: rgba(139, 0, 0, 1);
+  background-color: rgba(var(--rgb-cinnabar), 0.05);
+  border-color: rgba(var(--rgb-cinnabar), 1);
 }
 
 .header-export-btn {
   height: 40px;
   padding: 0 20px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  background: var(--color-cinnabar);
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  font-family: var(--font-ui);
+  box-shadow: var(--shadow-cinnabar);
   transition: all 0.3s ease;
 }
 
 .header-export-btn:hover {
-  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
+  box-shadow: var(--shadow-cinnabar);
   transform: translateY(-2px);
 }
 
@@ -1389,33 +1389,33 @@ const generateWordReport = () => {
   width: 40px;
   height: 40px;
   border: none;
-  border-radius: 12px;
-  background: rgba(139, 0, 0, 1);
-  color: rgba(255, 255, 255, 1);
+  border-radius: var(--radius-lg);
+  background: rgba(var(--rgb-cinnabar), 1);
+  color: rgba(var(--rgb-cream), 1);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  box-shadow: var(--shadow-cinnabar);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .icon-btn-wrapper:hover {
-  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
+  box-shadow: var(--shadow-cinnabar);
   transform: translateY(-2px);
-  background: rgba(165, 0, 0, 1);
+  background: var(--color-cinnabar-dark);
 }
 
 .icon-btn-wrapper:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.3);
+  box-shadow: var(--shadow-cinnabar);
 }
 
 .icon-btn-svg {
   font-size: 20px;
   width: 20px;
   height: 20px;
-  color: rgba(255, 255, 255, 1);
+  color: rgba(var(--rgb-cream), 1);
   flex-shrink: 0;
   transition: all 0.3s ease;
 }
@@ -1427,11 +1427,11 @@ const generateWordReport = () => {
   left: 50%;
   transform: translateX(-50%);
   padding: 4px 8px;
-  background-color: rgba(44, 24, 16, 0.9);
+  background-color: rgba(var(--rgb-brown-dark), 0.9);
   color: white;
   font-size: 11px;
-  font-family: SourceHanSans-Regular;
-  border-radius: 4px;
+  font-family: var(--font-ui);
+  border-radius: var(--radius-xs);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
@@ -1444,12 +1444,12 @@ const generateWordReport = () => {
 }
 
 .history-modal {
-  background-color: rgba(255, 255, 255, 1);
-  border-radius: 12px;
+  background-color: rgba(var(--rgb-cream), 1);
+  border-radius: var(--radius-lg);
   width: min(600px, 90vw);
   max-height: 80vh;
   overflow: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-xl);
 }
 
 .history-modal-body {
@@ -1461,17 +1461,17 @@ const generateWordReport = () => {
 .empty-history {
   text-align: center;
   padding: 40px 20px;
-  color: rgba(166, 124, 82, 1);
+  color: rgba(var(--rgb-brown-muted), 1);
   font-size: 14px;
-  font-family: SourceHanSans-Regular;
+  font-family: var(--font-ui);
 }
 
 .decorative-line {
   width: 100%;
   height: 3px;
   margin-top: 24px;
-  background: linear-gradient(90deg, rgba(216,191,156,1) 0%, rgba(230,215,191,1) 50%, rgba(216,191,156,1) 100%);
-  border-radius: 2px;
+  background: var(--color-tan-dark);
+  border-radius: var(--radius-xs);
 }
 
 /* 文件上传区域 */
@@ -1493,7 +1493,7 @@ const generateWordReport = () => {
   height: 100px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  background: var(--color-cinnabar);
   color: white;
   cursor: pointer;
   display: flex;
@@ -1501,13 +1501,13 @@ const generateWordReport = () => {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.35);
+  box-shadow: var(--shadow-cinnabar);
   transition: all 0.3s ease;
 }
 
 .compare-circle-btn:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 8px 24px rgba(139, 0, 0, 0.45);
+  box-shadow: var(--shadow-cinnabar);
 }
 
 .compare-circle-btn:disabled {
@@ -1527,7 +1527,7 @@ const generateWordReport = () => {
 .compare-circle-text {
   font-size: 12px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
 }
 
 /* 对比按钮区域 */
@@ -1550,16 +1550,16 @@ const generateWordReport = () => {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  background: var(--color-cinnabar);
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   font-size: 16px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
   transition: all 0.3s ease;
-  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.35);
+  box-shadow: var(--shadow-cinnabar);
   overflow: hidden;
 }
 
@@ -1571,9 +1571,9 @@ const generateWordReport = () => {
   right: 0;
   bottom: 0;
   background: linear-gradient(90deg, 
-    rgba(255, 255, 255, 0) 0%, 
-    rgba(255, 255, 255, 0.3) 50%, 
-    rgba(255, 255, 255, 0) 100%);
+    rgba(var(--rgb-cream), 0) 0%, 
+    rgba(var(--rgb-cream), 0.3) 50%, 
+    rgba(var(--rgb-cream), 0) 100%);
   transform: translateX(-100%);
   transition: transform 0.6s ease;
 }
@@ -1583,7 +1583,7 @@ const generateWordReport = () => {
 }
 
 .compare-main-btn:hover:not(:disabled) {
-  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
+  box-shadow: var(--shadow-cinnabar);
   transform: translateY(-2px);
 }
 
@@ -1594,10 +1594,7 @@ const generateWordReport = () => {
 }
 
 .compare-main-btn.processing {
-  background: linear-gradient(90deg, 
-    rgba(139, 0, 0, 1) 0%, 
-    rgba(196, 30, 58, 0.8) 50%, 
-    rgba(139, 0, 0, 1) 100%);
+  background: var(--color-cinnabar);
   background-size: 200% 100%;
   animation: gradient-shift 2s ease infinite;
 }
@@ -1636,22 +1633,22 @@ const generateWordReport = () => {
 .progress-bar-bg {
   width: 100%;
   height: 8px;
-  background-color: rgba(216, 191, 156, 0.3);
-  border-radius: 4px;
+  background-color: rgba(var(--rgb-tan-dark), 0.3);
+  border-radius: var(--radius-xs);
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
-  border-radius: 4px;
+  background: var(--color-cinnabar);
+  border-radius: var(--radius-xs);
   transition: width 0.3s ease;
 }
 
 .progress-text {
   font-size: 13px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
+  color: rgba(var(--rgb-brown-muted), 1);
+  font-family: var(--font-ui);
   text-align: center;
 }
 
@@ -1673,10 +1670,10 @@ const generateWordReport = () => {
   width: 360px;
   height: 196px;
   padding: 24px;
-  background-color: rgba(255, 255, 255, 1);
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  background-color: rgba(var(--rgb-cream), 1);
+  border: 0.7px solid rgba(var(--rgb-tan-dark), 1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -1684,14 +1681,14 @@ const generateWordReport = () => {
 }
 
 .feature-card:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-lg);
   transform: translateY(-2px);
 }
 
 .card-icon {
   width: 48px;
   height: 48px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1704,41 +1701,41 @@ const generateWordReport = () => {
 
 /* 各卡片图标颜色 */
 .card-icon.accuracy {
-  background-color: rgba(254, 243, 199, 1);
+  background-color: rgba(var(--rgb-gold), 0.15);
 }
 
 .card-icon.accuracy .icon {
-  color: rgba(217, 119, 6, 1);
+  color: var(--color-gold-dark);
 }
 
 .card-icon.highlight {
-  background-color: rgba(219, 234, 254, 1);
+  background-color: rgba(var(--rgb-cloud-blue), 0.15);
 }
 
 .card-icon.highlight .icon {
-  color: rgba(37, 99, 235, 1);
+  color: var(--color-cloud-blue);
 }
 
 .card-icon.export {
-  background-color: rgba(252, 231, 243, 1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
 }
 
 .card-icon.export .icon {
-  color: rgba(219, 39, 119, 1);
+  color: var(--color-cinnabar);
 }
 
 .card-title {
   font-size: 18px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: rgba(var(--rgb-brown-dark), 1);
+  font-family: var(--font-ui);
   margin: 0 0 12px 0;
 }
 
 .card-desc {
   font-size: 14px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
+  color: rgba(var(--rgb-brown-muted), 1);
+  font-family: var(--font-ui);
   margin: 0;
   line-height: 1.2;
 }
@@ -1753,9 +1750,9 @@ const generateWordReport = () => {
   width: 1078px;
   max-width: 100%;
   padding: 24px;
-  background-color: rgba(255, 255, 255, 0.6);
-  border-radius: 12px;
-  border: 0.7px solid rgba(216, 191, 156, 0.5);
+  background-color: rgba(var(--rgb-cream), 0.6);
+  border-radius: var(--radius-lg);
+  border: 0.7px solid rgba(var(--rgb-tan-dark), 0.5);
   display: flex;
   align-items: flex-start;
   gap: 16px;
@@ -1763,7 +1760,7 @@ const generateWordReport = () => {
 
 .instructions-icon {
   font-size: 36px;
-  color: rgba(139, 0, 0, 1);
+  color: rgba(var(--rgb-cinnabar), 1);
   flex-shrink: 0;
 }
 
@@ -1774,25 +1771,25 @@ const generateWordReport = () => {
 .instructions-title {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: rgba(var(--rgb-brown-dark), 1);
+  font-family: var(--font-ui);
   margin: 0 0 12px 0;
 }
 
 .instruction-item {
   font-size: 14px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
+  color: rgba(var(--rgb-brown-muted), 1);
+  font-family: var(--font-ui);
   margin: 0 0 8px 0;
   line-height: 1.6;
 }
 
 /* 最近对比记录 */
 .recent-records {
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  background-color: rgba(var(--rgb-cream), 0.9);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
   padding: 20px;
 }
 
@@ -1802,47 +1799,47 @@ const generateWordReport = () => {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
 }
 
 .records-title {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: rgba(var(--rgb-brown-dark), 1);
+  font-family: var(--font-ui);
 }
 
 .view-all .clear-all-btn {
   padding: 6px 16px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  background: var(--color-cinnabar);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.2);
+  box-shadow: var(--shadow-cinnabar);
 }
 
 .view-all .clear-all-btn:hover {
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  box-shadow: var(--shadow-cinnabar);
   transform: translateY(-1px);
 }
 
 .select-btn {
   padding: 10px 20px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  background: var(--color-cinnabar);
   color: white;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  box-shadow: var(--shadow-cinnabar);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1850,7 +1847,7 @@ const generateWordReport = () => {
 }
 
 .select-btn:hover {
-  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
+  box-shadow: var(--shadow-cinnabar);
   transform: translateY(-2px);
 }
 
@@ -1864,16 +1861,16 @@ const generateWordReport = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: rgba(248, 244, 233, 0.5);
-  border-radius: 8px;
+  background-color: rgba(var(--rgb-parchment), 0.5);
+  border-radius: var(--radius-md);
   padding: 12px 16px;
-  border: 1px solid rgba(166, 124, 82, 0.15);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.15);
   transition: all 0.3s ease;
 }
 
 .record-item:hover {
-  background-color: rgba(248, 244, 233, 0.8);
-  border-color: rgba(166, 124, 82, 0.3);
+  background-color: rgba(var(--rgb-parchment), 0.8);
+  border-color: rgba(var(--rgb-brown-muted), 0.3);
 }
 
 .record-info {
@@ -1884,7 +1881,7 @@ const generateWordReport = () => {
 
 .record-icon {
   font-size: 16px;
-  color: rgba(166, 124, 82, 1);
+  color: rgba(var(--rgb-brown-muted), 1);
 }
 
 .record-details {
@@ -1895,14 +1892,14 @@ const generateWordReport = () => {
 
 .record-filename {
   font-size: 14px;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Regular;
+  color: rgba(var(--rgb-brown-dark), 1);
+  font-family: var(--font-ui);
 }
 
 .record-timestamp {
   font-size: 12px;
-  color: rgba(166, 124, 82, 1);
-  font-family: SourceHanSans-Regular;
+  color: rgba(var(--rgb-brown-muted), 1);
+  font-family: var(--font-ui);
 }
 
 .record-actions {
@@ -1913,42 +1910,42 @@ const generateWordReport = () => {
 .record-action-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid rgba(166, 124, 82, 0.3);
-  border-radius: 6px;
-  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.3);
+  border-radius: var(--radius-sm);
+  background-color: rgba(var(--rgb-cream), 0.9);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  color: rgba(166, 124, 82, 1);
+  color: rgba(var(--rgb-brown-muted), 1);
   font-size: 14px;
 }
 
 .record-action-btn:hover {
-  background-color: rgba(139, 0, 0, 1);
+  background-color: rgba(var(--rgb-cinnabar), 1);
   color: white;
-  border-color: rgba(139, 0, 0, 1);
+  border-color: rgba(var(--rgb-cinnabar), 1);
 }
 
 .error-message {
-  color: rgba(139, 0, 0, 1);
+  color: rgba(var(--rgb-cinnabar), 1);
   font-size: 14px;
   text-align: center;
   margin: 16px 0;
   padding: 12px;
-  background-color: rgba(139, 0, 0, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(139, 0, 0, 0.2);
-  font-family: SourceHanSans-Regular;
+  background-color: rgba(var(--rgb-cinnabar), 0.05);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-cinnabar), 0.2);
+  font-family: var(--font-ui);
 }
 
 /* 对比结果 */
 .results-section {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  background-color: rgba(var(--rgb-cream), 0.9);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+  box-shadow: var(--shadow-sm);
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
@@ -1958,17 +1955,17 @@ const generateWordReport = () => {
 
 /* 文件信息栏 */
 .file-info-bar {
-  background: rgba(248, 244, 233, 0.5);
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  border-radius: 8px;
+  background: rgba(var(--rgb-parchment), 0.5);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+  border-radius: var(--radius-md);
   padding: 16px 20px;
 }
 
 .file-info-title {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: rgba(var(--rgb-brown-dark), 1);
+  font-family: var(--font-ui);
   margin-bottom: 12px;
 }
 
@@ -1983,17 +1980,17 @@ const generateWordReport = () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 6px;
+  background: rgba(var(--rgb-cream), 0.9);
+  border-radius: var(--radius-sm);
   padding: 10px 14px;
-  font-family: SourceHanSans-Regular;
+  font-family: var(--font-ui);
   font-size: 13px;
-  color: rgba(44, 24, 16, 1);
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  color: rgba(var(--rgb-brown-dark), 1);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
 }
 
 .file-icon {
-  color: rgba(139, 0, 0, 1);
+  color: rgba(var(--rgb-cinnabar), 1);
   font-size: 16px;
 }
 
@@ -2004,7 +2001,7 @@ const generateWordReport = () => {
 }
 
 .divider-icon {
-  color: rgba(166, 124, 82, 1);
+  color: rgba(var(--rgb-brown-muted), 1);
   font-size: 16px;
 }
 
@@ -2023,9 +2020,9 @@ const generateWordReport = () => {
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background-color: rgba(248, 244, 233, 0.5);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  background-color: rgba(var(--rgb-parchment), 0.5);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
   flex: 1;
   min-width: 200px;
 }
@@ -2033,22 +2030,22 @@ const generateWordReport = () => {
 .stat-icon-container {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .stat-icon-container.text-similarity {
-  background-color: rgba(139, 0, 0, 0.1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
 }
 
 .stat-icon-container.image-similarity {
-  background-color: rgba(166, 124, 82, 0.2);
+  background-color: rgba(var(--rgb-brown-muted), 0.2);
 }
 
 .stat-icon-container.similar-segments {
-  background-color: rgba(34, 139, 34, 0.1);
+  background-color: rgba(var(--rgb-jade), 0.1);
 }
 
 .stat-icon {
@@ -2056,15 +2053,15 @@ const generateWordReport = () => {
 }
 
 .stat-icon-container.text-similarity .stat-icon {
-  color: rgba(139, 0, 0, 1);
+  color: rgba(var(--rgb-cinnabar), 1);
 }
 
 .stat-icon-container.image-similarity .stat-icon {
-  color: rgba(166, 124, 82, 1);
+  color: rgba(var(--rgb-brown-muted), 1);
 }
 
 .stat-icon-container.similar-segments .stat-icon {
-  color: rgba(34, 139, 34, 1);
+  color: rgba(var(--rgb-jade), 1);
 }
 
 .stat-content {
@@ -2075,26 +2072,26 @@ const generateWordReport = () => {
 
 .stat-label {
   font-size: 12px;
-  color: rgba(166, 124, 82, 1);
-  font-family: SourceHanSans-Regular;
+  color: rgba(var(--rgb-brown-muted), 1);
+  font-family: var(--font-ui);
 }
 
 .stat-value {
   font-size: 18px;
   font-weight: 700;
-  font-family: SourceHanSans-Bold;
+  font-family: var(--font-ui);
 }
 
 .text-similarity-value {
-  color: rgba(139, 0, 0, 1);
+  color: rgba(var(--rgb-cinnabar), 1);
 }
 
 .image-similarity-value {
-  color: rgba(166, 124, 82, 1);
+  color: rgba(var(--rgb-brown-muted), 1);
 }
 
 .similar-segments-value {
-  color: rgba(34, 139, 34, 1);
+  color: rgba(var(--rgb-jade), 1);
 }
 
 /* 操作按钮 */
@@ -2109,7 +2106,7 @@ const generateWordReport = () => {
 }
 
 .export-btn {
-  background-color: rgba(139, 0, 0, 1);
+  background-color: rgba(var(--rgb-cinnabar), 1);
   color: white;
 }
 
@@ -2119,12 +2116,12 @@ const generateWordReport = () => {
 }
 
 .export-btn:hover {
-  background-color: rgba(120, 0, 0, 1);
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  background-color: var(--color-cinnabar-dark);
+  box-shadow: var(--shadow-cinnabar);
 }
 
 .issue-tracking-btn {
-  background-color: rgba(166, 124, 82, 1);
+  background-color: rgba(var(--rgb-brown-muted), 1);
   color: white;
 }
 
@@ -2134,16 +2131,16 @@ const generateWordReport = () => {
 }
 
 .issue-tracking-btn:hover {
-  background-color: rgba(145, 108, 70, 1);
-  box-shadow: 0 4px 12px rgba(166, 124, 82, 0.3);
+  background-color: rgba(var(--rgb-brown-muted), 0.65);
+  box-shadow: var(--shadow-md);
 }
 
 /* 雷同片段列表 */
 .segment-details-section {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  background-color: rgba(var(--rgb-cream), 0.9);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
@@ -2152,15 +2149,15 @@ const generateWordReport = () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background-color: rgba(248, 244, 233, 0.5);
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+  background-color: rgba(var(--rgb-parchment), 0.5);
+  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
 }
 
 .segment-title {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: rgba(var(--rgb-brown-dark), 1);
+  font-family: var(--font-ui);
   margin: 0;
 }
 
@@ -2173,7 +2170,7 @@ const generateWordReport = () => {
 /* 表格容器 */
 .table-container {
   padding: 0;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(var(--rgb-cream), 0.9);
   overflow-y: auto;
   max-height: 500px;
 }
@@ -2190,10 +2187,10 @@ const generateWordReport = () => {
   padding: 12px 16px;
   font-size: 13px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
-  border-bottom: 2px solid rgba(166, 124, 82, 0.3);
-  background-color: rgba(248, 244, 233, 0.8);
+  color: rgba(var(--rgb-brown-dark), 1);
+  font-family: var(--font-ui);
+  border-bottom: 2px solid rgba(var(--rgb-brown-muted), 0.3);
+  background-color: rgba(var(--rgb-parchment), 0.8);
 }
 
 .table-header.sortable {
@@ -2203,51 +2200,51 @@ const generateWordReport = () => {
 }
 
 .table-header.sortable:hover {
-  background-color: rgba(248, 244, 233, 1);
+  background-color: rgba(var(--rgb-parchment), 1);
 }
 
 .sort-icon {
   display: inline-block;
   margin-left: 4px;
   font-size: 12px;
-  color: rgba(166, 124, 82, 1);
+  color: rgba(var(--rgb-brown-muted), 1);
 }
 
 .table-header.sortable:hover .sort-icon {
-  color: rgba(139, 0, 0, 1);
+  color: rgba(var(--rgb-cinnabar), 1);
 }
 
 .table-row {
-  border-bottom: 1px solid rgba(166, 124, 82, 0.15);
+  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.15);
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .table-row:hover {
-  background-color: rgba(248, 244, 233, 0.3);
+  background-color: rgba(var(--rgb-parchment), 0.3);
 }
 
 .table-cell {
   padding: 14px 16px;
   font-size: 13px;
-  font-family: SourceHanSans-Regular;
-  color: rgba(44, 24, 16, 1);
+  font-family: var(--font-ui);
+  color: rgba(var(--rgb-brown-dark), 1);
   vertical-align: top;
   line-height: 1.6;
 }
 
 .table-cell.index {
   font-weight: 500;
-  color: rgba(166, 124, 82, 1);
+  color: rgba(var(--rgb-brown-muted), 1);
   text-align: center;
-  background-color: rgba(248, 244, 233, 0.5);
+  background-color: rgba(var(--rgb-parchment), 0.5);
   white-space: nowrap;
   width: 60px;
 }
 
 .table-cell.file-content {
   overflow: hidden;
-  background-color: rgba(248, 244, 233, 0.3);
+  background-color: rgba(var(--rgb-parchment), 0.3);
 }
 
 .file-content-inner {
@@ -2259,28 +2256,28 @@ const generateWordReport = () => {
   word-wrap: break-word;
   position: relative;
   z-index: 1;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(var(--rgb-cream), 0.9);
   padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(166, 124, 82, 0.15);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.15);
 }
 
 .table-cell.page {
   text-align: center;
-  background-color: rgba(248, 244, 233, 0.5);
-  font-family: SourceHanSans-Medium;
+  background-color: rgba(var(--rgb-parchment), 0.5);
+  font-family: var(--font-ui);
   white-space: nowrap;
-  color: rgba(166, 124, 82, 1);
+  color: rgba(var(--rgb-brown-muted), 1);
 }
 
 .page-number {
   font-size: 12px;
-  font-family: SourceHanSans-Regular;
+  font-family: var(--font-ui);
 }
 
 .table-cell.similarity {
   text-align: center;
-  background-color: rgba(248, 244, 233, 0.5);
+  background-color: rgba(var(--rgb-parchment), 0.5);
   white-space: nowrap;
 }
 
@@ -2288,28 +2285,28 @@ const generateWordReport = () => {
 .similarity-label {
   display: inline-block;
   padding: 4px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   font-size: 12px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
   white-space: nowrap;
   min-width: 60px;
   text-align: center;
 }
 
 .similarity-label.high {
-  background-color: rgba(139, 0, 0, 0.1);
-  color: rgba(139, 0, 0, 1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
+  color: rgba(var(--rgb-cinnabar), 1);
 }
 
 .similarity-label.medium {
-  background-color: rgba(166, 124, 82, 0.2);
-  color: rgba(166, 124, 82, 1);
+  background-color: rgba(var(--rgb-brown-muted), 0.2);
+  color: rgba(var(--rgb-brown-muted), 1);
 }
 
 .similarity-label.low {
-  background-color: rgba(34, 139, 34, 0.1);
-  color: rgba(34, 139, 34, 1);
+  background-color: rgba(var(--rgb-jade), 0.1);
+  color: rgba(var(--rgb-jade), 1);
 }
 
 /* 分页控件 */
@@ -2318,14 +2315,14 @@ const generateWordReport = () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background-color: rgba(248, 244, 233, 0.5);
-  border-top: 1px solid rgba(166, 124, 82, 0.2);
+  background-color: rgba(var(--rgb-parchment), 0.5);
+  border-top: 1px solid rgba(var(--rgb-brown-muted), 0.2);
 }
 
 .pagination-info {
   font-size: 13px;
-  color: rgba(166, 124, 82, 1);
-  font-family: SourceHanSans-Regular;
+  color: rgba(var(--rgb-brown-muted), 1);
+  font-family: var(--font-ui);
 }
 
 .pagination-controls {
@@ -2339,20 +2336,20 @@ const generateWordReport = () => {
   align-items: center;
   gap: 4px;
   padding: 8px 14px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(166, 124, 82, 0.3);
-  border-radius: 6px;
+  background-color: rgba(var(--rgb-cream), 0.9);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.3);
+  border-radius: var(--radius-sm);
   font-size: 13px;
-  color: rgba(44, 24, 16, 1);
+  color: rgba(var(--rgb-brown-dark), 1);
   cursor: pointer;
   transition: all 0.3s ease;
-  font-family: SourceHanSans-Regular;
+  font-family: var(--font-ui);
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background-color: rgba(139, 0, 0, 0.1);
-  border-color: rgba(139, 0, 0, 1);
-  color: rgba(139, 0, 0, 1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
+  border-color: rgba(var(--rgb-cinnabar), 1);
+  color: rgba(var(--rgb-cinnabar), 1);
 }
 
 .pagination-btn:disabled {
@@ -2370,12 +2367,12 @@ const generateWordReport = () => {
   min-width: 40px;
   min-height: 40px;
   padding: 0 8px;
-  border: 1px solid rgba(166, 124, 82, 0.3);
-  border-radius: 6px;
-  background-color: rgba(255, 255, 255, 0.9);
-  color: rgba(44, 24, 16, 1);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.3);
+  border-radius: var(--radius-sm);
+  background-color: rgba(var(--rgb-cream), 0.9);
+  color: rgba(var(--rgb-brown-dark), 1);
   font-size: 14px;
-  font-family: SourceHanSans-Regular;
+  font-family: var(--font-ui);
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -2384,15 +2381,15 @@ const generateWordReport = () => {
 }
 
 .page-btn:hover:not(:disabled) {
-  background-color: rgba(139, 0, 0, 0.1);
-  border-color: rgba(139, 0, 0, 1);
-  color: rgba(139, 0, 0, 1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
+  border-color: rgba(var(--rgb-cinnabar), 1);
+  color: rgba(var(--rgb-cinnabar), 1);
 }
 
 .page-btn.active {
-  background-color: rgba(139, 0, 0, 1);
-  border-color: rgba(139, 0, 0, 1);
-  color: #FFFFFF;
+  background-color: rgba(var(--rgb-cinnabar), 1);
+  border-color: rgba(var(--rgb-cinnabar), 1);
+  color: rgba(var(--rgb-cream), 1);
   font-weight: 600;
 }
 
@@ -2402,7 +2399,7 @@ const generateWordReport = () => {
 }
 
 .page-ellipsis {
-  color: rgba(166, 124, 82, 1);
+  color: rgba(var(--rgb-brown-muted), 1);
   font-size: 13px;
   margin: 0 4px;
 }
@@ -2410,9 +2407,9 @@ const generateWordReport = () => {
 /* 全局高亮样式 - 国潮古风 */
 .highlighted-text {
   background-color: rgba(255, 215, 0, 0.85) !important;
-  color: rgba(139, 0, 0, 1) !important;
+  color: rgba(var(--rgb-cinnabar), 1) !important;
   padding: 2px 4px !important;
-  border-radius: 3px !important;
+  border-radius: var(--radius-xs) !important;
   font-weight: 700 !important;
   display: inline !important;
   line-height: inherit !important;
@@ -2424,9 +2421,9 @@ const generateWordReport = () => {
 /* file-content-inner中的高亮文本 */
 .file-content-inner .highlighted-text {
   background-color: rgba(255, 215, 0, 0.9) !important;
-  color: rgba(139, 0, 0, 1) !important;
+  color: rgba(var(--rgb-cinnabar), 1) !important;
   padding: 2px 4px !important;
-  border-radius: 3px !important;
+  border-radius: var(--radius-xs) !important;
   font-weight: 700 !important;
   display: inline !important;
   line-height: inherit !important;
@@ -2436,13 +2433,13 @@ const generateWordReport = () => {
 }
 
 .file-content-inner {
-  color: rgba(44, 24, 16, 1);
+  color: rgba(var(--rgb-brown-dark), 1);
 }
 
 /* 匹配分隔符样式 */
 .match-separator {
   text-align: center;
-  color: rgba(166, 124, 82, 1);
+  color: rgba(var(--rgb-brown-muted), 1);
   font-style: italic;
   margin: 8px 0;
   font-size: 14px;
@@ -2451,16 +2448,16 @@ const generateWordReport = () => {
 .content-title {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: rgba(var(--rgb-brown-dark), 1);
+  font-family: var(--font-ui);
   margin: 0;
 }
 
 /* 辅助文本 */
 .auxiliary-text {
   font-size: 12px;
-  color: rgba(166, 124, 82, 1);
-  font-family: SourceHanSans-Regular;
+  color: rgba(var(--rgb-brown-muted), 1);
+  font-family: var(--font-ui);
 }
 
 /* 滚动条样式 */
@@ -2474,8 +2471,8 @@ const generateWordReport = () => {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(166, 124, 82, 0.5);
-  border-radius: 3px;
+  background-color: rgba(var(--rgb-brown-muted), 0.5);
+  border-radius: var(--radius-xs);
 }
 
 /* 历史记录弹窗 - 使用统一样式 */
@@ -2496,22 +2493,22 @@ const generateWordReport = () => {
 .help-modal,
 .history-modal {
   background: white;
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   width: 90%;
   max-width: 560px;
   max-height: 70vh;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(44, 24, 16, 0.3);
+  box-shadow: var(--shadow-xl);
   animation: modalSlideIn 0.3s ease;
 }
 
 /* 图片上传区域 */
 .image-upload-section {
   padding: 16px 20px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  background-color: rgba(var(--rgb-cream), 0.9);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .image-section-header {
@@ -2521,19 +2518,19 @@ const generateWordReport = () => {
   margin-bottom: 12px;
   font-size: 14px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: rgba(var(--rgb-brown-dark), 1);
+  font-family: var(--font-ui);
 }
 
 .image-section-icon {
   font-size: 18px;
-  color: rgba(46, 89, 132, 1);
+  color: rgba(var(--rgb-cloud-blue), 1);
 }
 
 .image-section-hint {
   font-size: 12px;
   font-weight: 400;
-  color: rgba(101, 70, 40, 0.6);
+  color: rgba(var(--rgb-brown), 0.6);
 }
 
 .image-upload-columns {
@@ -2548,7 +2545,7 @@ const generateWordReport = () => {
 
 .image-column-label {
   font-size: 12px;
-  color: rgba(101, 70, 40, 0.8);
+  color: rgba(var(--rgb-brown), 0.8);
   margin-bottom: 8px;
 }
 
@@ -2557,18 +2554,18 @@ const generateWordReport = () => {
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  border: 1px dashed rgba(166, 124, 82, 0.4);
-  border-radius: 6px;
-  background: rgba(248, 244, 233, 0.3);
+  border: 1px dashed rgba(var(--rgb-brown-muted), 0.4);
+  border-radius: var(--radius-sm);
+  background: rgba(var(--rgb-parchment), 0.3);
   cursor: pointer;
   font-size: 13px;
-  color: rgba(101, 70, 40, 0.8);
+  color: rgba(var(--rgb-brown), 0.8);
   transition: all 0.2s;
 }
 
 .image-upload-btn:hover {
-  border-color: rgba(166, 124, 82, 0.7);
-  background: rgba(248, 244, 233, 0.6);
+  border-color: rgba(var(--rgb-brown-muted), 0.7);
+  background: rgba(var(--rgb-parchment), 0.6);
 }
 
 .image-upload-btn input[type="file"] {
@@ -2586,9 +2583,9 @@ const generateWordReport = () => {
   position: relative;
   width: 64px;
   height: 64px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
 }
 
 .image-preview-thumb {
@@ -2605,7 +2602,7 @@ const generateWordReport = () => {
   height: 18px;
   border: none;
   border-radius: 50%;
-  background: rgba(196, 30, 58, 0.85);
+  background: rgba(var(--rgb-cinnabar), 0.85);
   color: white;
   font-size: 12px;
   line-height: 1;
@@ -2624,10 +2621,10 @@ const generateWordReport = () => {
 /* ========== OCR 图片文字识别样式 ========== */
 .ocr-section {
   padding: 16px 20px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  background-color: rgba(var(--rgb-cream), 0.9);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .ocr-section-header {
@@ -2637,19 +2634,19 @@ const generateWordReport = () => {
   margin-bottom: 12px;
   font-size: 14px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: rgba(var(--rgb-brown-dark), 1);
+  font-family: var(--font-ui);
 }
 
 .ocr-section-icon {
   font-size: 18px;
-  color: rgba(46, 89, 132, 1);
+  color: rgba(var(--rgb-cloud-blue), 1);
 }
 
 .ocr-section-hint {
   font-size: 12px;
   font-weight: 400;
-  color: rgba(101, 70, 40, 0.6);
+  color: rgba(var(--rgb-brown), 0.6);
 }
 
 .ocr-config {
@@ -2661,22 +2658,22 @@ const generateWordReport = () => {
 
 .ocr-lang-label {
   font-size: 13px;
-  color: rgba(101, 70, 40, 0.8);
+  color: rgba(var(--rgb-brown), 0.8);
 }
 
 .ocr-lang-select {
   padding: 6px 12px;
-  border: 1px solid rgba(166, 124, 82, 0.3);
-  border-radius: 6px;
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.3);
+  border-radius: var(--radius-sm);
   background: white;
   font-size: 13px;
-  color: rgba(44, 24, 16, 1);
+  color: rgba(var(--rgb-brown-dark), 1);
   cursor: pointer;
 }
 
 .ocr-lang-select:focus {
   outline: none;
-  border-color: rgba(46, 89, 132, 0.5);
+  border-color: rgba(var(--rgb-cloud-blue), 0.5);
 }
 
 .ocr-actions {
@@ -2690,19 +2687,19 @@ const generateWordReport = () => {
   gap: 8px;
   padding: 10px 20px;
   border: none;
-  border-radius: 8px;
-  background: linear-gradient(135deg, rgba(46, 89, 132, 0.9), rgba(46, 89, 132, 1));
+  border-radius: var(--radius-md);
+  background: var(--color-cloud-blue);
   color: white;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(46, 89, 132, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 .ocr-compare-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(46, 89, 132, 0.4);
+  box-shadow: var(--shadow-md);
 }
 
 .ocr-compare-btn:disabled {
@@ -2725,12 +2722,12 @@ const generateWordReport = () => {
 /* OCR 结果弹窗 */
 .ocr-result-modal {
   background: white;
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   width: 90%;
   max-width: 900px;
   max-height: 85vh;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(44, 24, 16, 0.3);
+  box-shadow: var(--shadow-xl);
   animation: modalSlideIn 0.3s ease;
 }
 
@@ -2751,26 +2748,26 @@ const generateWordReport = () => {
   flex-direction: column;
   align-items: center;
   padding: 16px 32px;
-  background: linear-gradient(135deg, rgba(248, 244, 233, 0.8), rgba(245, 238, 226, 0.6));
-  border-radius: 12px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  background: rgba(var(--rgb-parchment), 0.8);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
 }
 
 .ocr-similarity-label {
   font-size: 13px;
-  color: rgba(101, 70, 40, 0.8);
+  color: rgba(var(--rgb-brown), 0.8);
   margin-bottom: 4px;
 }
 
 .ocr-similarity-value {
   font-size: 28px;
   font-weight: 700;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Bold;
+  color: rgba(var(--rgb-brown-dark), 1);
+  font-family: var(--font-ui);
 }
 
 .ocr-similarity-value.high {
-  color: rgba(196, 30, 58, 1);
+  color: rgba(var(--rgb-cinnabar), 1);
 }
 
 .ocr-text-compare {
@@ -2787,36 +2784,36 @@ const generateWordReport = () => {
 .ocr-column-header {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: rgba(var(--rgb-brown-dark), 1);
   margin-bottom: 8px;
   padding-bottom: 6px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
 }
 
 .ocr-text-content {
   padding: 12px;
-  background: rgba(248, 244, 233, 0.3);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.1);
+  background: rgba(var(--rgb-parchment), 0.3);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.1);
   font-size: 13px;
   line-height: 1.6;
-  color: rgba(44, 24, 16, 0.9);
+  color: rgba(var(--rgb-brown-dark), 0.9);
   white-space: pre-wrap;
   word-break: break-all;
   max-height: 300px;
   overflow-y: auto;
-  font-family: 'Microsoft YaHei', sans-serif;
+  font-family: var(--font-ui);
 }
 
 .ocr-detail-section {
-  border-top: 1px solid rgba(166, 124, 82, 0.2);
+  border-top: 1px solid rgba(var(--rgb-brown-muted), 0.2);
   padding-top: 16px;
 }
 
 .ocr-detail-header {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: rgba(var(--rgb-brown-dark), 1);
   margin-bottom: 12px;
 }
 
@@ -2828,31 +2825,31 @@ const generateWordReport = () => {
 
 .ocr-detail-item {
   padding: 10px 12px;
-  background: rgba(248, 244, 233, 0.3);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.1);
+  background: rgba(var(--rgb-parchment), 0.3);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.1);
 }
 
 .ocr-detail-name {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: rgba(var(--rgb-brown-dark), 1);
   margin-bottom: 4px;
 }
 
 .ocr-detail-confidence {
   font-size: 11px;
-  color: rgba(101, 70, 40, 0.7);
+  color: rgba(var(--rgb-brown), 0.7);
   margin-bottom: 4px;
 }
 
 .ocr-detail-confidence .high {
-  color: rgba(46, 125, 50, 1);
+  color: rgba(var(--rgb-jade), 1);
 }
 
 .ocr-detail-text {
   font-size: 12px;
-  color: rgba(44, 24, 16, 0.8);
+  color: rgba(var(--rgb-brown-dark), 0.8);
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-all;
@@ -2864,17 +2861,17 @@ const generateWordReport = () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
-  background-color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+  background-color: rgba(var(--rgb-cream), 0.9);
 }
 
 .help-modal-header h3,
 .history-modal-header h3 {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: rgba(var(--rgb-brown-dark), 1);
   margin: 0;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
 }
 
 .help-close-btn,
@@ -2882,11 +2879,11 @@ const generateWordReport = () => {
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background-color: transparent;
   cursor: pointer;
   font-size: 20px;
-  color: rgba(107, 79, 52, 1);
+  color: rgba(var(--rgb-brown-muted), 1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2895,8 +2892,8 @@ const generateWordReport = () => {
 
 .help-close-btn:hover,
 .history-close-btn:hover {
-  background-color: rgba(139, 0, 0, 0.1);
-  color: rgba(139, 0, 0, 1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
+  color: rgba(var(--rgb-cinnabar), 1);
 }
 
 .help-modal-body,
@@ -2918,21 +2915,21 @@ const generateWordReport = () => {
   align-items: center;
   text-align: center;
   padding: 32px 20px;
-  background-color: rgba(248, 244, 233, 0.5);
-  border-radius: 12px;
-  border: 0.7px solid rgba(216, 191, 156, 0.3);
+  background-color: rgba(var(--rgb-parchment), 0.5);
+  border-radius: var(--radius-lg);
+  border: 0.7px solid rgba(var(--rgb-tan-dark), 0.3);
   transition: all 0.3s ease;
 }
 
 .help-feature-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
   transform: translateY(-2px);
 }
 
 .help-feature-card .card-icon {
   width: 48px;
   height: 48px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2970,21 +2967,21 @@ const generateWordReport = () => {
 .help-feature-card .card-title {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: rgba(var(--rgb-brown-dark), 1);
+  font-family: var(--font-ui);
   margin: 0 0 8px 0;
 }
 
 .help-feature-card .card-desc {
   font-size: 13px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
+  color: rgba(var(--rgb-brown-muted), 1);
+  font-family: var(--font-ui);
   margin: 0;
   line-height: 1.4;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(166, 124, 82, 0.8);
+  background-color: rgba(var(--rgb-brown-muted), 0.8);
 }
 
 /* 处理中遮罩 */
@@ -2998,13 +2995,13 @@ const generateWordReport = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(248, 244, 233, 0.9);
+  background-color: rgba(var(--rgb-parchment), 0.9);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 }
 
 .processing-content {
@@ -3018,8 +3015,8 @@ const generateWordReport = () => {
 .processing-spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid rgba(216, 191, 156, 0.3);
-  border-top-color: rgba(139, 0, 0, 1);
+  border: 4px solid rgba(var(--rgb-tan-dark), 0.3);
+  border-top-color: rgba(var(--rgb-cinnabar), 1);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -3032,33 +3029,33 @@ const generateWordReport = () => {
 .processing-text {
   font-size: 16px;
   font-weight: 500;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Medium;
+  color: rgba(var(--rgb-brown-dark), 1);
+  font-family: var(--font-ui);
   margin: 0;
 }
 
 .processing-percent {
   font-size: 14px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
+  color: rgba(var(--rgb-brown-muted), 1);
+  font-family: var(--font-ui);
   margin: 0;
 }
 
 .cancel-btn-overlay {
   padding: 8px 24px;
   background-color: transparent;
-  border: 1px solid rgba(139, 0, 0, 1);
-  color: rgba(139, 0, 0, 1);
-  border-radius: 8px;
+  border: 1px solid rgba(var(--rgb-cinnabar), 1);
+  color: rgba(var(--rgb-cinnabar), 1);
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  font-family: SourceHanSans-Medium;
+  font-family: var(--font-ui);
   transition: all 0.2s;
 }
 
 .cancel-btn-overlay:hover {
-  background-color: rgba(139, 0, 0, 0.1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
 }
 
 /* 进度条 */
@@ -3073,22 +3070,22 @@ const generateWordReport = () => {
 .progress-bar {
   flex: 1;
   height: 8px;
-  background-color: rgba(245, 238, 226, 1);
-  border-radius: 4px;
+  background-color: rgba(var(--rgb-cream-dark), 1);
+  border-radius: var(--radius-xs);
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
-  border-radius: 4px;
+  background: var(--color-cinnabar);
+  border-radius: var(--radius-xs);
   transition: width 0.3s ease;
 }
 
 .progress-text {
   font-size: 14px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Medium;
+  color: rgba(var(--rgb-brown-muted), 1);
+  font-family: var(--font-ui);
   white-space: nowrap;
   min-width: 120px;
 }
@@ -3096,18 +3093,18 @@ const generateWordReport = () => {
 .cancel-btn {
   padding: 8px 20px;
   background-color: transparent;
-  border: 1px solid rgba(139, 0, 0, 1);
-  color: rgba(139, 0, 0, 1);
-  border-radius: 8px;
+  border: 1px solid rgba(var(--rgb-cinnabar), 1);
+  color: rgba(var(--rgb-cinnabar), 1);
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  font-family: SourceHanSans-Medium;
+  font-family: var(--font-ui);
   transition: all 0.2s;
 }
 
 .cancel-btn:hover {
-  background-color: rgba(139, 0, 0, 0.1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
 }
 
 /* 移动端响应式优化 */
@@ -3136,7 +3133,7 @@ const generateWordReport = () => {
     width: 100%;
     max-width: none;
     height: 52px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     font-size: 15px;
     box-sizing: border-box;
   }
@@ -3216,10 +3213,6 @@ const generateWordReport = () => {
   .feature-card {
     width: 100%;
     height: auto;
-  }
-
-  .page-header {
-    display: none;
   }
 
   .action-buttons {

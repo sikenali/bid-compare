@@ -56,9 +56,15 @@ export function useComparison() {
       // 小文件和中等文件在主线程处理
       if (strategy === 'lcs' || strategy === 'myers') {
         progressMessage.value = strategy === 'lcs' ? '正在对比...' : '精确比对中...'
-        const segments = strategy === 'lcs' 
+        const onCancel = () => abortController?.signal.aborted ?? false
+        const segments = strategy === 'lcs'
           ? findSimilarSegments(text1, text2, settings, 10, pageMap1, pageMap2)
-          : findSimilarSegmentsMyers(text1, text2, settings.minDupChars, 10, pageMap1, pageMap2)
+          : findSimilarSegmentsMyers(
+              text1, text2, settings,
+              settings.minDupChars, 10,
+              pageMap1, pageMap2,
+              undefined, onCancel
+            )
         const similarity = calculateTextSimilarity(text1, text2, settings)
         isProcessing.value = false
         return { segments, similarity }

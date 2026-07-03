@@ -456,56 +456,53 @@ const aiModels = [
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: rgba(248, 244, 233, 1);
-  gap: 12px;
-  font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--color-parchment);
+  gap: var(--spacing-3);
+  font-family: var(--font-ui);
 }
 
-/* 页面标题区 */
 .page-header {
-  padding: 16px 24px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  padding: var(--spacing-4) var(--spacing-6);
+  background: var(--color-cream);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .page-title {
-  font-size: 20px;
+  font-size: var(--text-heading-lg);
   font-weight: 700;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   margin: 0 0 4px 0;
-  font-family: SourceHanSans-Bold;
+  font-family: var(--font-ui);
 }
 
 .page-subtitle {
-  font-size: 12px;
-  color: rgba(101, 70, 40, 1);
+  font-size: var(--text-caption);
+  color: var(--color-brown);
   margin: 0;
-  font-family: SourceHanSans-Regular;
+  font-family: var(--font-ui);
 }
 
-/* 布局 - 左侧导航 + 右侧内容 */
 .settings-layout {
   display: flex;
-  gap: 24px;
+  gap: var(--spacing-6);
   min-height: calc(100vh - 180px);
   padding: 0 24px 24px 24px;
   overflow-y: auto;
 }
 
-/* 左侧导航 */
 .settings-nav {
   width: 180px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 2px solid rgba(139, 0, 0, 0.3);
-  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.1);
+  padding: var(--spacing-2);
+  background: var(--color-cream);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
   align-self: stretch;
 }
 
@@ -520,25 +517,24 @@ const aiModels = [
   gap: 10px;
   padding: 12px 16px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: transparent;
-  color: rgba(101, 70, 40, 0.8);
-  font-size: 14px;
+  color: var(--color-brown);
+  font-size: var(--text-body);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
   text-align: left;
 }
 
 .nav-tab:hover {
-  background: rgba(255, 255, 255, 0.6);
-  color: rgba(44, 24, 16, 1);
+  background: var(--color-cream-dark);
+  color: var(--color-brown-dark);
 }
 
 .nav-tab.active {
-  background: rgba(139, 0, 0, 0.08);
-  color: rgba(139, 0, 0, 1);
+  background: rgba(var(--rgb-cinnabar), 0.08);
+  color: var(--color-cinnabar);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.1);
 }
 
 .nav-tab-icon {
@@ -548,14 +544,13 @@ const aiModels = [
 }
 
 .nav-tab.active .nav-tab-icon {
-  color: rgba(139, 0, 0, 1);
+  color: var(--color-cinnabar);
 }
 
 .nav-tab-label {
   flex: 1;
 }
 
-/* 右侧内容 */
 .settings-content {
   flex: 1;
   min-width: 0;
@@ -565,30 +560,29 @@ const aiModels = [
 
 .settings-section {
   flex: 1;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  padding: 24px;
-  border: 1px solid rgba(166, 124, 82, 0.15);
-  box-shadow: 0 2px 12px rgba(44, 24, 16, 0.06);
+  background: var(--color-cream);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .section-title {
-  font-size: 16px;
+  font-size: var(--text-heading);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   margin: 0 0 20px 0;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.15);
-  font-family: SourceHanSans-SemiBold;
+  padding-bottom: var(--spacing-3);
+  border-bottom: 1px solid var(--color-tan-light);
+  font-family: var(--font-ui);
 }
 
-/* 设置行 */
 .setting-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 14px 0;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.08);
+  border-bottom: 1px solid var(--color-tan-light);
 }
 
 .setting-row:last-child {
@@ -608,24 +602,23 @@ const aiModels = [
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 500;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
 }
 
 .setting-desc {
-  font-size: 12px;
-  color: rgba(101, 70, 40, 0.6);
+  font-size: var(--text-caption);
+  color: var(--color-brown-muted);
   margin: 0;
 }
 
-/* 数字步进器 */
 .number-stepper {
   display: flex;
   align-items: center;
   gap: 2px;
-  background: rgba(248, 244, 233, 0.5);
-  border-radius: 8px;
+  background: var(--color-parchment);
+  border-radius: var(--radius-md);
   padding: 4px;
 }
 
@@ -633,19 +626,19 @@ const aiModels = [
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 6px;
-  background: white;
-  color: rgba(101, 70, 40, 0.8);
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
+  color: var(--color-brown);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .stepper-btn:hover {
-  background: rgba(46, 89, 132, 0.1);
-  color: rgba(46, 89, 132, 1);
+  background: rgba(var(--rgb-cinnabar), 0.1);
+  color: var(--color-cinnabar);
 }
 
 .stepper-input {
@@ -654,20 +647,19 @@ const aiModels = [
   border: none;
   background: transparent;
   text-align: center;
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 500;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
 }
 
 .stepper-input:focus {
   outline: none;
 }
 
-/* 开关 */
 .switch {
   position: relative;
-  width: 44px;
-  height: 24px;
+  width: 52px;
+  height: 28px;
   flex-shrink: 0;
 }
 
@@ -684,64 +676,65 @@ const aiModels = [
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(166, 124, 82, 0.3);
-  border-radius: 24px;
+  background: var(--color-tan-dark);
+  border-radius: var(--radius-full);
   transition: 0.3s;
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
+  height: 24px;
+  width: 24px;
+  left: 2px;
+  bottom: 2px;
   background: white;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   transition: 0.3s;
+  box-shadow: var(--shadow-sm);
 }
 
 .switch input:checked + .slider {
-  background: rgba(139, 0, 0, 0.8);
+  background: var(--color-jade-light);
 }
 
 .switch input:checked + .slider:before {
-  transform: translateX(20px);
+  transform: translateX(24px);
 }
 
-/* 数字输入框 */
 .number-input {
   width: 80px;
   height: 32px;
   padding: 0 12px;
-  border: 1px solid rgba(166, 124, 82, 0.3);
-  border-radius: 6px;
-  font-size: 14px;
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-body);
   text-align: center;
-  background: white;
-  color: rgba(44, 24, 16, 1);
+  background: var(--color-white);
+  color: var(--color-brown-dark);
 }
 
 .number-input:focus {
   outline: none;
-  border-color: rgba(46, 89, 132, 0.5);
+  border-color: var(--color-cinnabar);
+  box-shadow: 0 0 0 1px rgba(var(--rgb-cinnabar), 0.25);
 }
 
-/* 文本输入框 */
 .setting-input {
   width: 240px;
   height: 36px;
   padding: 0 12px;
-  border: 1px solid rgba(166, 124, 82, 0.3);
-  border-radius: 6px;
-  font-size: 14px;
-  background: white;
-  color: rgba(44, 24, 16, 1);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-body);
+  background: var(--color-white);
+  color: var(--color-brown-dark);
 }
 
 .setting-input:focus {
   outline: none;
-  border-color: rgba(46, 89, 132, 0.5);
+  border-color: var(--color-cinnabar);
+  box-shadow: 0 0 0 1px rgba(var(--rgb-cinnabar), 0.25);
 }
 
 .api-input {
@@ -753,20 +746,20 @@ const aiModels = [
   width: 200px;
   height: 36px;
   padding: 0 12px;
-  border: 1px solid rgba(166, 124, 82, 0.3);
-  border-radius: 6px;
-  font-size: 14px;
-  background: white;
-  color: rgba(44, 24, 16, 1);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-body);
+  background: var(--color-white);
+  color: var(--color-brown-dark);
   cursor: pointer;
 }
 
 .select-input:focus {
   outline: none;
-  border-color: rgba(46, 89, 132, 0.5);
+  border-color: var(--color-cinnabar);
+  box-shadow: 0 0 0 1px rgba(var(--rgb-cinnabar), 0.25);
 }
 
-/* 单选按钮组 */
 .radio-group {
   display: flex;
   gap: 12px;
@@ -779,20 +772,20 @@ const aiModels = [
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  border: 1px solid rgba(166, 124, 82, 0.25);
-  border-radius: 8px;
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.2s;
-  background: white;
+  transition: all var(--transition-fast);
+  background: var(--color-white);
 }
 
 .radio-box-item:hover {
-  border-color: rgba(139, 0, 0, 0.4);
+  border-color: rgba(var(--rgb-cinnabar), 0.4);
 }
 
 .radio-box-item.active {
-  border-color: rgba(139, 0, 0, 0.8);
-  background: rgba(139, 0, 0, 0.05);
+  border-color: var(--color-cinnabar);
+  background: rgba(var(--rgb-cinnabar), 0.05);
 }
 
 .radio-box-item input {
@@ -802,96 +795,94 @@ const aiModels = [
 .radio-box {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(166, 124, 82, 0.4);
-  border-radius: 50%;
+  border: 2px solid var(--color-tan-dark);
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .radio-box-item.active .radio-box {
-  border-color: rgba(139, 0, 0, 1);
+  border-color: var(--color-cinnabar);
 }
 
 .radio-box-inner {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: transparent;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .radio-box-item.active .radio-box-inner {
-  background: rgba(139, 0, 0, 1);
+  background: var(--color-cinnabar);
 }
 
 .radio-box-icon,
 .radio-box-icon-svg {
   width: 18px;
   height: 18px;
-  color: rgba(101, 70, 40, 0.7);
+  color: var(--color-brown);
 }
 
 .radio-box-item.active .radio-box-icon,
 .radio-box-item.active .radio-box-icon-svg {
-  color: rgba(139, 0, 0, 1);
+  color: var(--color-cinnabar);
 }
 
 .radio-box-label {
-  font-size: 13px;
-  color: rgba(44, 24, 16, 0.9);
+  font-size: var(--text-body-sm);
+  color: var(--color-brown-dark);
 }
 
-/* 操作按钮卡片区 */
 .action-buttons-card {
-  margin-top: 24px;
+  margin-top: var(--spacing-6);
   padding: 16px 24px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  border: 1px solid rgba(166, 124, 82, 0.15);
-  box-shadow: 0 2px 12px rgba(44, 24, 16, 0.06);
+  background: var(--color-cream);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .action-buttons {
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: var(--spacing-4);
 }
 
 .btn {
   width: 140px;
   height: 40px;
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-body);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .btn-reset {
-  background: white;
-  color: rgba(101, 70, 40, 0.8);
-  border: 1px solid rgba(166, 124, 82, 0.3);
+  background: var(--color-cream-dark);
+  color: var(--color-brown);
+  border: 1px solid var(--color-tan-border);
 }
 
 .btn-reset:hover {
-  background: rgba(248, 244, 233, 0.5);
-  border-color: rgba(166, 124, 82, 0.5);
+  background: var(--color-cream-darker);
+  border-color: var(--color-tan-dark);
 }
 
 .btn-save {
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  background: var(--color-cinnabar);
   color: white;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  box-shadow: var(--shadow-cinnabar);
 }
 
 .btn-save:hover {
-  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
+  background: var(--color-cinnabar-dark);
   transform: translateY(-1px);
 }
 
-/* 移动端响应式 */
 @media (max-width: 768px) {
   .settings-layout {
     flex-direction: column;
@@ -903,13 +894,12 @@ const aiModels = [
     flex-direction: row;
     overflow-x: auto;
     padding-bottom: 8px;
-    -webkit-overflow-scrolling: touch;
   }
 
   .nav-tab {
     white-space: nowrap;
     padding: 10px 16px;
-    font-size: 13px;
+    font-size: var(--text-body-sm);
   }
 
   .setting-row {
@@ -920,43 +910,18 @@ const aiModels = [
   }
 
   .setting-label {
-    font-size: 13px;
-  }
-
-  .setting-description {
-    font-size: 11px;
+    font-size: var(--text-body-sm);
   }
 
   .setting-input,
   .api-input {
     width: 100%;
     padding: 10px 12px;
-    font-size: 13px;
+    font-size: var(--text-body-sm);
   }
 
-  .setting-toggle {
-    width: 48px;
-    height: 28px;
-  }
-
-  .toggle-slider {
-    width: 24px;
-    height: 24px;
-  }
-
-  .toggle-slider::before {
-    width: 44px;
-    height: 24px;
-  }
-
-  .action-btn {
-    padding: 10px 20px;
-    font-size: 13px;
-    min-height: 44px;
-  }
-
-  .setting-section {
-    padding: 16px;
+  .settings-section {
+    padding: var(--spacing-4);
   }
 
   .section-title {
@@ -972,7 +937,7 @@ const aiModels = [
 
   .nav-tab {
     padding: 8px 12px;
-    font-size: 12px;
+    font-size: var(--text-caption);
   }
 
   .setting-row {
@@ -980,16 +945,7 @@ const aiModels = [
   }
 
   .setting-label {
-    font-size: 12px;
-  }
-
-  .setting-description {
-    font-size: 10px;
-  }
-
-  .action-btn {
-    width: 100%;
-    padding: 12px 16px;
+    font-size: var(--text-caption);
   }
 }
 </style>

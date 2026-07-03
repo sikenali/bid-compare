@@ -48,9 +48,21 @@ const rightFileContent = ref('')
 const leftTotalPages = ref(1)
 const rightTotalPages = ref(1)
 
-// 页码显示
-const leftPageDisplay = computed(() => `第 1 / ${leftTotalPages.value} 页`)
-const rightPageDisplay = computed(() => `第 1 / ${rightTotalPages.value} 页`)
+// 页码显示 - 随预览面板滚动位置实时变化
+const leftCurrentPage = ref(1)
+const rightCurrentPage = ref(1)
+const leftPageDisplay = computed(() => `第 ${leftCurrentPage.value} / ${leftTotalPages.value} 页`)
+const rightPageDisplay = computed(() => `第 ${rightCurrentPage.value} / ${rightTotalPages.value} 页`)
+
+const updateCurrentPage = (panel: HTMLElement | null, totalPages: number) => {
+  if (!panel) return 1
+  const panelHeight = panel.clientHeight
+  if (panelHeight <= 0) return 1
+  const scrolled = panel.scrollTop
+  // 将面板可视高度视为一页,计算当前"虚拟页"
+  const current = Math.floor(scrolled / panelHeight) + 1
+  return Math.max(1, Math.min(totalPages, current))
+}
 
 // 是否有内容预览
 const hasPreviewContent = computed(() => {
@@ -118,6 +130,14 @@ watch(showPreviewModal, (val) => {
   if (!val) {
     previewTargetId.value = null
     previewTargetSide.value = 'left'
+    leftCurrentPage.value = 1
+    rightCurrentPage.value = 1
+  } else {
+    // 弹窗打开时根据当前滚动位置初始化页码
+    nextTick(() => {
+      leftCurrentPage.value = updateCurrentPage(previewLeftRef.value, leftTotalPages.value)
+      rightCurrentPage.value = updateCurrentPage(previewRightRef.value, rightTotalPages.value)
+    })
   }
 })
 
@@ -866,22 +886,31 @@ const getHighlightedParagraphHtml = (
   
   let html = ''
   let currentPos = paragraph.startIndex
-  
+
   for (const seg of overlappingSegments) {
     const segStart = type === 'left' ? seg.leftStartIndex : seg.rightStartIndex
     const segEnd = type === 'left' ? seg.leftEndIndex : seg.rightEndIndex
-    
-    const localStart = Math.max(segStart, paragraph.startIndex) - paragraph.startIndex
+
+    let localStart = Math.max(segStart, paragraph.startIndex) - paragraph.startIndex
     const localEnd = Math.min(segEnd, paragraph.endIndex) - paragraph.startIndex
-    
-    if (localStart > currentPos - paragraph.startIndex) {
-      html += escapeHtml(paragraph.text.substring(currentPos - paragraph.startIndex, localStart))
+
+    const currentOffset = currentPos - paragraph.startIndex
+    if (localStart < currentOffset) {
+      localStart = currentOffset
     }
-    
-    const highlightedText = paragraph.text.substring(localStart, localEnd)
-    html += `<span class="text-highlight" data-segment-id="${seg.id}" data-similarity="${seg.similarityValue}">${escapeHtml(highlightedText)}</span>`
-    
-    currentPos = segEnd
+
+    if (localStart < localEnd) {
+      if (localStart > currentOffset) {
+        html += escapeHtml(paragraph.text.substring(currentOffset, localStart))
+      }
+
+      const highlightedText = paragraph.text.substring(localStart, localEnd)
+      html += `<span class="text-highlight" data-segment-id="${seg.id}" data-similarity="${seg.similarityValue}">${escapeHtml(highlightedText)}</span>`
+    }
+
+    if (segEnd > currentPos) {
+      currentPos = segEnd
+    }
   }
   
   if (currentPos - paragraph.startIndex < paragraph.text.length) {
@@ -939,6 +968,8 @@ const handlePreviewLeftScroll = () => {
   if (!previewLeftRef.value || !previewRightRef.value) return
   previewIsScrolling = true
   previewRightRef.value.scrollTop = previewLeftRef.value.scrollTop
+  leftCurrentPage.value = updateCurrentPage(previewLeftRef.value, leftTotalPages.value)
+  rightCurrentPage.value = updateCurrentPage(previewRightRef.value, rightTotalPages.value)
   requestAnimationFrame(() => { previewIsScrolling = false })
 }
 
@@ -947,6 +978,8 @@ const handlePreviewRightScroll = () => {
   if (!previewLeftRef.value || !previewRightRef.value) return
   previewIsScrolling = true
   previewLeftRef.value.scrollTop = previewRightRef.value.scrollTop
+  leftCurrentPage.value = updateCurrentPage(previewLeftRef.value, leftTotalPages.value)
+  rightCurrentPage.value = updateCurrentPage(previewRightRef.value, rightTotalPages.value)
   requestAnimationFrame(() => { previewIsScrolling = false })
 }
 </script>
@@ -954,26 +987,24 @@ const handlePreviewRightScroll = () => {
 <template>
   <div class="result-page-container">
     <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="title-row">
-        <div>
-          <h1 class="page-title">文件对比结果</h1>
-          <p class="page-subtitle">显示文档之间的内容差异、相似片段和统计分析</p>
-        </div>
-        <div class="header-actions">
-          <BorderBeam size="sm" color-variant="ocean" theme="dark" :duration="2">
-            <button class="back-btn" @click="handleBack">
-              <RiRestartLine class="back-icon" />
-              <span class="back-text">返回</span>
-            </button>
-          </BorderBeam>
-          <BorderBeam size="sm" color-variant="sunset" theme="dark" :duration="2">
-            <button class="export-btn" @click="handleExport">
-              <RiSaveLine class="export-icon" />
-              <span>导出</span>
-            </button>
-          </BorderBeam>
-        </div>
+    <div class="ba-page-header">
+      <div>
+        <h1 class="ba-page-title">文件对比结果</h1>
+        <p class="ba-page-subtitle">显示文档之间的内容差异、相似片段和统计分析</p>
+      </div>
+      <div class="ba-page-actions">
+        <BorderBeam size="sm" color-variant="ocean" theme="dark" :duration="2">
+          <button class="ba-btn-primary ba-btn-sm" @click="handleBack" title="返回">
+            <RiRestartLine class="ba-btn-icon" />
+            <span class="ba-btn-text-mobile-hide">返回</span>
+          </button>
+        </BorderBeam>
+        <BorderBeam size="sm" color-variant="sunset" theme="dark" :duration="2">
+          <button class="ba-btn-secondary ba-btn-sm" @click="handleExport" title="导出报告">
+            <RiSaveLine class="ba-btn-icon" />
+            <span>导出</span>
+          </button>
+        </BorderBeam>
       </div>
     </div>
 
@@ -1010,24 +1041,24 @@ const handlePreviewRightScroll = () => {
         </div>
         <div class="list-header-actions">
           <BorderBeam size="sm" color-variant="ocean" theme="dark" :duration="2">
-            <button class="preview-btn" @click="showPreviewModal = true">
-              <RiEyeLine class="preview-icon" />
-              <span>预览</span>
+            <button class="ba-btn-secondary ba-btn-sm" @click="showPreviewModal = true" title="全文预览">
+              <RiEyeLine class="ba-btn-icon" />
+              <span class="ba-btn-text-mobile-hide">预览</span>
             </button>
           </BorderBeam>
           <BorderBeam size="sm" color-variant="sunset" theme="dark" :duration="2">
-            <button class="ai-btn" @click="handleAIAnalysis" :disabled="isLoading">
-              <RiSparkling2Fill class="ai-icon" />
+            <button class="ba-btn-primary ba-btn-sm" @click="handleAIAnalysis" :disabled="isLoading" title="AI智能分析">
+              <RiSparkling2Fill class="ba-btn-icon" />
               <span>{{ isLoading ? 'AI分析中...' : 'AI分析' }}</span>
             </button>
           </BorderBeam>
           <div class="list-header-stats">
-            <div class="stat-badge stat-badge-total">
-              <span class="stat-badge-icon">📊</span>
+            <div class="ba-stat-badge ba-stat-brand">
+              <span class="ba-stat-badge-icon">📊</span>
               <span>共 {{ segments.length }} 处（≥{{ settings.textSimilarityThreshold }}%：{{ countThresholdSimilarity }}处）</span>
             </div>
-            <div class="stat-badge stat-badge-100">
-              <span class="stat-badge-icon">💯</span>
+            <div class="ba-stat-badge ba-stat-success">
+              <span class="ba-stat-badge-icon">💯</span>
               <span>100%相同：{{ count100Similarity }}个</span>
             </div>
           </div>
@@ -1193,113 +1224,12 @@ const handlePreviewRightScroll = () => {
   width: 100%;
   height: 100%;
   overflow: auto;
-  background-color: rgba(248, 244, 233, 1);
+  background-color: var(--color-parchment);
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* 页面头部 */
-.page-header {
-  padding: 16px 24px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
-}
-
-.title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.page-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: rgba(44, 24, 16, 1);
-  margin: 0 0 4px 0;
-  font-family: SourceHanSans-Bold;
-}
-
-.page-subtitle {
-  font-size: 12px;
-  color: rgba(101, 70, 40, 1);
-  margin: 0;
-  font-family: SourceHanSans-Regular;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.back-btn {
-  height: 40px;
-  padding: 0 20px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
-}
-
-.back-btn:hover {
-  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
-  transform: translateY(-2px);
-}
-
-.back-icon {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 1);
-}
-
-.back-text {
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 1);
-  font-family: SourceHanSans-SemiBold;
-}
-
-/* 导出按钮 */
-.export-btn {
-  height: 40px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 20px;
-  background-color: rgba(46, 89, 132, 1);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(46, 89, 132, 0.3);
-}
-
-.export-btn:hover {
-  background-color: rgba(40, 78, 115, 1);
-  box-shadow: 0 6px 16px rgba(46, 89, 132, 0.4);
-  transform: translateY(-2px);
-}
-
-.export-icon {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 1);
+  gap: 16px;
+  padding: 16px 20px;
+  font-family: var(--font-ui);
 }
 
 /* AI分析弹窗 */
@@ -1314,16 +1244,18 @@ const handlePreviewRightScroll = () => {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 20px;
 }
 
 .ai-modal {
-  background-color: rgba(248, 244, 233, 1);
-  border-radius: 12px;
+  background-color: var(--color-parchment);
+  border-radius: var(--radius-xl);
   width: 700px;
+  max-width: 100%;
   max-height: 80vh;
   overflow: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  border: 1px solid var(--color-tan-border);
 }
 
 .ai-modal-header {
@@ -1331,8 +1263,8 @@ const handlePreviewRightScroll = () => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
-  background-color: rgba(255, 255, 255, 0.5);
+  border-bottom: 1px solid var(--color-tan-border);
+  background-color: rgba(var(--rgb-cream), 0.5);
 }
 
 .ai-modal-title {
@@ -1344,23 +1276,23 @@ const handlePreviewRightScroll = () => {
 .ai-modal-title h3 {
   font-size: 18px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   margin: 0;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
 }
 
 .ai-modal-icon {
   font-size: 24px;
-  color: rgba(139, 0, 0, 1);
+  color: var(--color-cinnabar);
 }
 
 .ai-modal-close {
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: 6px;
-  background-color: rgba(255, 255, 255, 0.8);
-  color: rgba(107, 79, 52, 1);
+  border-radius: var(--radius-sm);
+  background-color: rgba(var(--rgb-cream), 0.8);
+  color: var(--color-brown);
   cursor: pointer;
   font-size: 20px;
   display: flex;
@@ -1370,8 +1302,8 @@ const handlePreviewRightScroll = () => {
 }
 
 .ai-modal-close:hover {
-  background-color: rgba(139, 0, 0, 0.1);
-  color: rgba(139, 0, 0, 1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
+  color: var(--color-cinnabar);
 }
 
 .ai-modal-body {
@@ -1391,7 +1323,7 @@ const handlePreviewRightScroll = () => {
 
 .loading-spinner {
   font-size: 32px;
-  color: rgba(139, 0, 0, 1);
+  color: var(--color-cinnabar);
   animation: spin 1s linear infinite;
 }
 
@@ -1406,31 +1338,31 @@ const handlePreviewRightScroll = () => {
 
 .ai-loading p {
   font-size: 14px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
+  color: var(--color-brown);
+  font-family: var(--font-ui);
 }
 
 .ai-result {
   font-size: 14px;
   line-height: 1.6;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Regular;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .ai-result h2 {
   font-size: 18px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   margin: 20px 0 12px 0;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
 }
 
 .ai-result h3 {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   margin: 16px 0 10px 0;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
 }
 
 .ai-result li {
@@ -1441,12 +1373,12 @@ const handlePreviewRightScroll = () => {
 
 .ai-result strong {
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
 }
 
 .ai-result em {
   font-style: italic;
-  color: rgba(107, 79, 52, 1);
+  color: var(--color-brown);
 }
 
 /* 工具栏样式 */
@@ -1455,10 +1387,10 @@ const handlePreviewRightScroll = () => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 24px;
-  background-color: rgba(255, 255, 255, 1);
-  border: 1px solid rgba(226, 232, 240, 1);
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .toolbar-left,
@@ -1490,7 +1422,7 @@ const handlePreviewRightScroll = () => {
 }
 
 .switch input:checked + .slider {
-  background-color: rgba(37, 99, 235, 1);
+  background-color: var(--color-cloud-blue);
 }
 
 .switch input:checked + .slider:before {
@@ -1504,9 +1436,9 @@ const handlePreviewRightScroll = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(148, 163, 184, 1);
+  background-color: var(--color-tan-dark);
   transition: 0.3s;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
 }
 
 .slider:before {
@@ -1516,16 +1448,16 @@ const handlePreviewRightScroll = () => {
   width: 18px;
   left: 3px;
   bottom: 3px;
-  background-color: white;
+  background-color: var(--color-white);
   transition: 0.3s;
   border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-sm);
 }
 
 .switch-label {
   font-size: 13px;
-  color: rgba(51, 65, 85, 1);
-  font-family: SourceHanSans-Medium, sans-serif;
+  color: var(--color-brown);
+  font-family: var(--font-ui);
   user-select: none;
   cursor: pointer;
 }
@@ -1534,9 +1466,9 @@ const handlePreviewRightScroll = () => {
 .icon-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid rgba(226, 232, 240, 1);
-  border-radius: 6px;
-  background-color: rgba(255, 255, 255, 1);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-white);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1546,8 +1478,8 @@ const handlePreviewRightScroll = () => {
 }
 
 .icon-btn:hover:not(:disabled) {
-  background-color: rgba(248, 250, 252, 1);
-  border-color: rgba(203, 213, 225, 1);
+  background-color: var(--color-cream-dark);
+  border-color: var(--color-tan-dark);
 }
 
 .icon-btn:active:not(:disabled) {
@@ -1561,26 +1493,26 @@ const handlePreviewRightScroll = () => {
 
 .btn-icon {
   font-size: 16px;
-  color: rgba(71, 85, 105, 1);
+  color: var(--color-brown-muted);
 }
 
 .font-size-display {
   font-size: 14px;
-  color: rgba(51, 65, 85, 1);
-  font-family: SourceHanSans-Regular, sans-serif;
+  color: var(--color-brown);
+  font-family: var(--font-ui);
   min-width: 48px;
   text-align: center;
   padding: 6px 8px;
-  border: 1px solid rgba(226, 232, 240, 1);
-  border-radius: 6px;
-  background-color: rgba(255, 255, 255, 1);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-white);
 }
 
 /* 右侧页码信息 */
 .page-info {
   font-size: 14px;
-  color: rgba(51, 65, 85, 1);
-  font-family: SourceHanSans-Medium, sans-serif;
+  color: var(--color-brown);
+  font-family: var(--font-ui);
   white-space: nowrap;
 }
 
@@ -1592,10 +1524,10 @@ const handlePreviewRightScroll = () => {
 
 /* 对比信息栏 */
 .word-info-bar {
-  background-color: rgba(255, 255, 255, 1);
-  border: 1px solid rgba(226, 232, 240, 1);
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
   padding: 12px 20px;
   display: flex;
   align-items: center;
@@ -1623,22 +1555,22 @@ const handlePreviewRightScroll = () => {
 .title-icon-wrapper {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 1) 0%, rgba(29, 78, 216, 1) 100%);
+  border-radius: var(--radius-md);
+  background: var(--color-cloud-blue);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 2px 6px rgba(var(--rgb-cloud-blue), 0.3);
 }
 
 .title-icon-wrapper.right-icon {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 1) 0%, rgba(234, 88, 12, 1) 100%);
-  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.3);
+  background: var(--color-cinnabar);
+  box-shadow: 0 2px 6px rgba(var(--rgb-cinnabar), 0.3);
 }
 
 .title-icon {
   font-size: 18px;
-  color: rgba(255, 255, 255, 1);
+  color: var(--color-white);
 }
 
 .title-text {
@@ -1650,8 +1582,8 @@ const handlePreviewRightScroll = () => {
 .title-main {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(15, 23, 42, 1);
-  font-family: SourceHanSans-SemiBold, sans-serif;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1660,8 +1592,8 @@ const handlePreviewRightScroll = () => {
 
 .title-sub {
   font-size: 11px;
-  color: rgba(100, 116, 139, 1);
-  font-family: SourceHanSans-Regular, sans-serif;
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
 }
 
 .word-comparison-stats {
@@ -1674,8 +1606,8 @@ const handlePreviewRightScroll = () => {
 .word-file-icon {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
-  background-color: rgba(219, 234, 254, 1);
+  border-radius: var(--radius-md);
+  background-color: rgba(var(--rgb-cloud-blue), 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1684,7 +1616,7 @@ const handlePreviewRightScroll = () => {
 
 .file-icon {
   font-size: 20px;
-  color: rgba(37, 99, 235, 1);
+  color: var(--color-cloud-blue);
 }
 
 .word-file-details {
@@ -1696,14 +1628,14 @@ const handlePreviewRightScroll = () => {
 .file-name {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(15, 23, 42, 1);
-  font-family: SourceHanSans-SemiBold, sans-serif;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .file-sub-info {
   font-size: 12px;
-  color: rgba(100, 116, 139, 1);
-  font-family: SourceHanSans-Regular, sans-serif;
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
 }
 
 /* 对比统计徽章 */
@@ -1713,37 +1645,20 @@ const handlePreviewRightScroll = () => {
   gap: 12px;
 }
 
-.stat-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 9999px;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: SourceHanSans-Medium, sans-serif;
-  white-space: nowrap;
-}
-
-.stat-badge-icon {
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .stat-same {
-  background-color: rgba(34, 197, 94, 0.1);
-  color: rgba(22, 101, 52, 1);
+  background-color: rgba(var(--rgb-jade), 0.1);
+  color: var(--color-jade-dark);
 }
 
-.stat-same .stat-badge-icon {
-  color: rgba(34, 197, 94, 1);
+.stat-same .ba-stat-badge-icon {
+  color: var(--color-jade);
 }
 
 /* Word 文档预览区 */
 .word-document-preview {
-  background-color: rgba(255, 255, 255, 1);
-  border: 1px solid rgba(226, 232, 240, 1);
-  border-radius: 8px;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1763,8 +1678,8 @@ const handlePreviewRightScroll = () => {
   display: flex;
   align-items: center;
   padding: 8px 16px;
-  background-color: rgba(248, 250, 252, 1);
-  border-bottom: 1px solid rgba(226, 232, 240, 1);
+  background-color: var(--color-cream-dark);
+  border-bottom: 1px solid var(--color-tan-border);
 }
 
 .diff-toolbar-spacer {
@@ -1782,20 +1697,20 @@ const handlePreviewRightScroll = () => {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border: 1px solid rgba(226, 232, 240, 1);
-  border-radius: 6px;
-  background-color: rgba(255, 255, 255, 1);
-  color: rgba(71, 85, 105, 1);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-white);
+  color: var(--color-brown-muted);
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
-  font-family: SourceHanSans-Medium, sans-serif;
+  font-family: var(--font-ui);
   transition: all 0.15s;
 }
 
 .diff-nav-btn:hover:not(:disabled) {
-  background-color: rgba(248, 250, 252, 1);
-  border-color: rgba(203, 213, 225, 1);
+  background-color: var(--color-cream-dark);
+  border-color: var(--color-tan-dark);
 }
 
 .diff-nav-btn:disabled {
@@ -1804,14 +1719,14 @@ const handlePreviewRightScroll = () => {
 }
 
 .diff-nav-btn.primary {
-  background-color: rgba(59, 130, 246, 1);
-  border-color: rgba(59, 130, 246, 1);
-  color: rgba(255, 255, 255, 1);
+  background-color: var(--color-cinnabar);
+  border-color: var(--color-cinnabar);
+  color: var(--color-white);
 }
 
 .diff-nav-btn.primary:hover:not(:disabled) {
-  background-color: rgba(29, 78, 216, 1);
-  border-color: rgba(29, 78, 216, 1);
+  background-color: var(--color-cinnabar-dark);
+  border-color: var(--color-cinnabar-dark);
 }
 
 .diff-nav-icon {
@@ -1819,7 +1734,7 @@ const handlePreviewRightScroll = () => {
 }
 
 .diff-separator {
-  color: rgba(148, 163, 184, 1);
+  color: var(--color-tan-dark);
   font-size: 14px;
   padding: 0 4px;
 }
@@ -1829,7 +1744,7 @@ const handlePreviewRightScroll = () => {
   display: flex;
   flex-direction: column;
   position: relative;
-  background-color: rgba(255, 255, 255, 1);
+  background-color: var(--color-white);
 }
 
 /* 面板头部 */
@@ -1838,17 +1753,17 @@ const handlePreviewRightScroll = () => {
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background-color: rgba(248, 250, 252, 1);
-  border-bottom: 1px solid rgba(226, 232, 240, 1);
+  background-color: var(--color-cream-dark);
+  border-bottom: 1px solid var(--color-tan-border);
   font-weight: 500;
-  color: rgba(55, 65, 81, 1);
+  color: var(--color-brown);
   font-size: 14px;
-  font-family: SourceHanSans-Medium, sans-serif;
+  font-family: var(--font-ui);
 }
 
 .panel-icon {
   font-size: 16px;
-  color: rgba(100, 116, 139, 1);
+  color: var(--color-brown-muted);
 }
 
 /* 悬浮页码指示器 */
@@ -1856,14 +1771,14 @@ const handlePreviewRightScroll = () => {
   position: absolute;
   left: 8px;
   top: 60px;
-  background-color: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(226, 232, 240, 1);
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background-color: rgba(var(--rgb-white), 0.95);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
   padding: 6px 10px;
   font-size: 12px;
-  color: rgba(100, 116, 139, 1);
-  font-family: SourceHanSans-Medium, sans-serif;
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
   text-align: center;
   z-index: 30;
   pointer-events: none;
@@ -1887,7 +1802,7 @@ const handlePreviewRightScroll = () => {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 13px;
   line-height: 1.6;
-  color: rgba(31, 41, 55, 1);
+  color: var(--color-ink-black);
 }
 
 /* 文件行 */
@@ -1900,7 +1815,7 @@ const handlePreviewRightScroll = () => {
 }
 
 .file-line:hover {
-  background-color: rgba(248, 250, 252, 1);
+  background-color: var(--color-cream-dark);
 }
 
 /* 行号 */
@@ -1912,12 +1827,12 @@ const handlePreviewRightScroll = () => {
   width: max-content;
   padding: 0 4px;
   font-size: 12px;
-  color: rgba(148, 163, 184, 1);
+  color: var(--color-tan-dark);
   font-family: ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
   user-select: none;
   flex-shrink: 0;
-  border-right: 1px solid rgba(226, 232, 240, 1);
+  border-right: 1px solid var(--color-tan-border);
   margin-right: 6px;
   text-align: right;
 }
@@ -1941,7 +1856,7 @@ const handlePreviewRightScroll = () => {
 
 .right-line-number {
   border-right: none;
-  border-left: 1px solid rgba(226, 232, 240, 1);
+  border-left: 1px solid var(--color-tan-border);
   margin-right: 0;
   margin-left: 8px;
   text-align: left;
@@ -1949,57 +1864,57 @@ const handlePreviewRightScroll = () => {
 
 /* 相同内容行 */
 .file-line.line-same {
-  background-color: rgba(34, 197, 94, 0.05);
+  background-color: var(--color-diff-green-bg);
 }
 
 .file-line.line-same .line-number,
 .right-line.line-same .right-line-number {
-  color: rgba(34, 197, 94, 1);
-  border-right-color: rgba(34, 197, 94, 0.3);
-  border-left-color: rgba(34, 197, 94, 0.3);
+  color: var(--color-jade);
+  border-right-color: rgba(var(--rgb-jade), 0.3);
+  border-left-color: rgba(var(--rgb-jade), 0.3);
 }
 
 /* 新增内容行 */
 .file-line.line-added {
-  background-color: rgba(59, 130, 246, 0.08);
+  background-color: rgba(var(--rgb-cloud-blue), 0.08);
 }
 
 .file-line.line-added .line-number,
 .right-line.line-added .right-line-number {
-  color: rgba(59, 130, 246, 1);
-  border-right-color: rgba(59, 130, 246, 0.3);
-  border-left-color: rgba(59, 130, 246, 0.3);
+  color: var(--color-cloud-blue);
+  border-right-color: rgba(var(--rgb-cloud-blue), 0.3);
+  border-left-color: rgba(var(--rgb-cloud-blue), 0.3);
 }
 
 /* 删除内容行 */
 .file-line.line-deleted {
-  background-color: rgba(239, 68, 68, 0.08);
+  background-color: var(--color-diff-red-bg);
 }
 
 .file-line.line-deleted .line-number,
 .right-line.line-deleted .right-line-number {
-  color: rgba(239, 68, 68, 1);
-  border-right-color: rgba(239, 68, 68, 0.3);
-  border-left-color: rgba(239, 68, 68, 0.3);
+  color: var(--color-cinnabar);
+  border-right-color: rgba(var(--rgb-cinnabar), 0.3);
+  border-left-color: rgba(var(--rgb-cinnabar), 0.3);
 }
 
 .file-line.line-deleted .line-content {
   text-decoration: line-through;
-  color: rgba(148, 163, 184, 1);
+  color: var(--color-tan-dark);
 }
 
 /* 片段块样式 (Word View) */
 .segment-block {
   margin-bottom: 20px;
-  border: 1px solid rgba(226, 232, 240, 1);
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 1);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-white);
   transition: all 0.2s;
 }
 
 .segment-block:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(var(--rgb-cloud-blue), 0.3);
 }
 
 .segment-header {
@@ -2007,32 +1922,32 @@ const handlePreviewRightScroll = () => {
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  background-color: rgba(248, 250, 252, 1);
-  border-bottom: 1px solid rgba(226, 232, 240, 1);
-  border-radius: 8px 8px 0 0;
+  background-color: var(--color-cream-dark);
+  border-bottom: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
 .segment-id {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(71, 85, 105, 1);
-  font-family: SourceHanSans-SemiBold, sans-serif;
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
 }
 
 .segment-score {
   font-size: 12px;
-  color: rgba(34, 197, 94, 1);
+  color: var(--color-jade);
   font-weight: bold;
-  background-color: rgba(34, 197, 94, 0.1);
+  background-color: rgba(var(--rgb-jade), 0.1);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 .segment-text {
   padding: 12px 16px;
   font-size: 13px;
   line-height: 1.6;
-  color: rgba(31, 41, 55, 1);
+  color: var(--color-ink-black);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -2042,16 +1957,16 @@ const handlePreviewRightScroll = () => {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: rgba(148, 163, 184, 1);
+  color: var(--color-tan-dark);
   font-size: 14px;
 }
 
 /* 中间连接区域 */
 .center-divider {
   position: relative;
-  background-color: rgba(248, 250, 252, 1);
-  border-left: 1px solid rgba(226, 232, 240, 1);
-  border-right: 1px solid rgba(226, 232, 240, 1);
+  background-color: var(--color-cream-dark);
+  border-left: 1px solid var(--color-tan-border);
+  border-right: 1px solid var(--color-tan-border);
 }
 
 .vertical-line {
@@ -2060,7 +1975,7 @@ const handlePreviewRightScroll = () => {
   top: 0;
   bottom: 0;
   width: 2px;
-  background-color: rgba(203, 213, 225, 1);
+  background-color: var(--color-tan-dark);
   transform: translateX(-50%);
 }
 
@@ -2071,8 +1986,8 @@ const handlePreviewRightScroll = () => {
   height: 1px;
   background: linear-gradient(90deg, 
     transparent 0%, 
-    rgba(148, 163, 184, 0.3) 20%, 
-    rgba(148, 163, 184, 0.3) 80%, 
+    rgba(var(--rgb-tan-dark), 0.3) 20%, 
+    rgba(var(--rgb-tan-dark), 0.3) 80%, 
     transparent 100%
   );
   pointer-events: none;
@@ -2080,10 +1995,10 @@ const handlePreviewRightScroll = () => {
 
 /* 对比列表区 */
 .comparison-list {
-  background-color: rgba(255, 255, 255, 1);
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  background-color: var(--color-white);
+  border: 0.7px solid var(--color-tan-dark);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -2096,17 +2011,17 @@ const handlePreviewRightScroll = () => {
 }
 
 .table-body::-webkit-scrollbar-track {
-  background: rgba(245, 238, 226, 0.5);
-  border-radius: 3px;
+  background: rgba(var(--rgb-cream-dark), 0.5);
+  border-radius: var(--radius-xs);
 }
 
 .table-body::-webkit-scrollbar-thumb {
-  background: rgba(166, 124, 82, 0.3);
-  border-radius: 3px;
+  background: var(--color-tan-border);
+  border-radius: var(--radius-xs);
 }
 
 .table-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(166, 124, 82, 0.5);
+  background: var(--color-tan-dark);
 }
 
 /* 列表头部 */
@@ -2126,8 +2041,8 @@ const handlePreviewRightScroll = () => {
 .icon-container {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
-  background-color: rgba(252, 231, 243, 1);
+  border-radius: var(--radius-md);
+  background-color: rgba(var(--rgb-cinnabar), 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2136,7 +2051,7 @@ const handlePreviewRightScroll = () => {
 
 .title-icon {
   font-size: 20px;
-  color: rgba(219, 39, 119, 1);
+  color: var(--color-cinnabar);
 }
 
 .spacer {
@@ -2147,9 +2062,9 @@ const handlePreviewRightScroll = () => {
 .list-title {
   font-size: 20px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   margin: 0;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
   white-space: nowrap;
 }
 
@@ -2157,77 +2072,17 @@ const handlePreviewRightScroll = () => {
 .list-header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-/* AI分析按钮 */
-.list-header-actions .ai-btn {
-  height: 32px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 16px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  transition: all 0.3s;
-  font-family: SourceHanSans-SemiBold;
-  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.3);
-  white-space: nowrap;
+/* AI 按钮的图标闪烁效果 - 增强共享按钮 */
+.list-header-actions .ba-btn-icon {
+  transition: transform 0.3s;
 }
 
-.list-header-actions .ai-btn:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.4);
-  transform: translateY(-1px);
-}
-
-.list-header-actions .ai-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.list-header-actions .ai-icon {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 1);
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
-}
-
-.list-header-actions .ai-btn:hover:not(:disabled) .ai-icon {
+button:enabled:hover .list-header-actions .ba-btn-primary .ba-btn-icon {
   animation: sparkle-pulse 1.5s ease-in-out infinite;
-}
-
-.list-header-actions .preview-btn {
-  height: 32px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 16px;
-  background: linear-gradient(135deg, rgba(46, 89, 132, 1) 0%, rgba(70, 130, 180, 1) 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  transition: all 0.3s;
-  font-family: SourceHanSans-SemiBold;
-  box-shadow: 0 2px 8px rgba(46, 89, 132, 0.3);
-  white-space: nowrap;
-}
-
-.list-header-actions .preview-btn:hover {
-  box-shadow: 0 4px 12px rgba(46, 89, 132, 0.4);
-  transform: translateY(-1px);
-}
-
-.list-header-actions .preview-icon {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 1);
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 @keyframes sparkle-pulse {
@@ -2240,64 +2095,15 @@ const handlePreviewRightScroll = () => {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.stat-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 9999px;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: SourceHanSans-Medium, sans-serif;
-  white-space: nowrap;
-}
-
-.stat-badge-icon {
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.stat-badge-100 {
-  background-color: rgba(34, 197, 94, 0.1);
-  color: rgba(22, 101, 52, 1);
-}
-
-.stat-badge-100 .stat-badge-icon {
-  color: rgba(34, 197, 94, 1);
-}
-
-.stat-badge-threshold {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: rgba(30, 64, 175, 1);
-}
-
-.stat-badge-threshold .stat-badge-icon {
-  color: rgba(59, 130, 246, 1);
-}
-
-.stat-badge-total {
-  background: linear-gradient(135deg, rgba(139, 0, 0, 0.08), rgba(196, 30, 58, 0.08));
-  color: rgba(139, 0, 0, 1);
-  font-weight: 600;
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 16px;
-  border: 1px solid rgba(139, 0, 0, 0.15);
-  white-space: nowrap;
-}
-
-.stat-badge-total .stat-badge-icon {
-  color: rgba(139, 0, 0, 1);
+  flex-wrap: wrap;
 }
 
 /* Word 预览列表样式 */
 .word-list-view {
   width: 100%;
-  background-color: rgba(255, 255, 255, 1);
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 12px;
+  background-color: var(--color-white);
+  border: 0.7px solid var(--color-tan-dark);
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
@@ -2312,14 +2118,14 @@ const handlePreviewRightScroll = () => {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  border-right: 1px solid rgba(230, 215, 191, 0.5);
+  border-right: 1px solid var(--color-tan-border);
 }
 
 .similarity-score {
-  background-color: rgba(34, 197, 94, 0.1);
-  color: rgba(22, 101, 52, 1);
+  background-color: rgba(var(--rgb-jade), 0.1);
+  color: var(--color-jade-dark);
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
@@ -2327,21 +2133,21 @@ const handlePreviewRightScroll = () => {
 
 /* 确保高亮在 Word 预览列表中生效 */
 .word-list-view .col-content :deep(.highlighted-text) {
-  background-color: rgba(255, 215, 0, 0.85) !important;
-  color: rgba(139, 0, 0, 1) !important;
+  background-color: rgba(var(--rgb-gold), 0.85) !important;
+  color: var(--color-cinnabar) !important;
   padding: 2px 4px !important;
-  border-radius: 3px !important;
+  border-radius: var(--radius-xs) !important;
   font-weight: 700 !important;
   display: inline !important;
   box-decoration-break: clone !important;
   -webkit-box-decoration-break: clone !important;
-  box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.5) !important;
+  box-shadow: 0 0 0 1px rgba(var(--rgb-gold), 0.5) !important;
 }
 
 /* 对比数据表 */
 .data-table {
-  border: 0.7px solid rgba(230, 215, 191, 1);
-  border-radius: 8px;
+  border: 0.7px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -2349,19 +2155,19 @@ const handlePreviewRightScroll = () => {
 .table-header {
   display: grid;
   grid-template-columns: 60px 1fr 100px 100px 1fr;
-  background-color: rgba(245, 238, 226, 1);
+  background-color: var(--color-cream-dark);
 }
 
 .table-header .col {
   padding: 10px 12px;
   font-size: 13px;
   font-weight: 600;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: var(--color-brown);
+  font-family: var(--font-ui);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-bottom: 1px solid rgba(230, 215, 191, 1);
+  border-bottom: 1px solid var(--color-tan-border);
   white-space: nowrap;
 }
 
@@ -2374,7 +2180,7 @@ const handlePreviewRightScroll = () => {
 }
 
 .table-header .col-position {
-  border-right: 1px solid rgba(230, 215, 191, 1);
+  border-right: 1px solid var(--color-tan-border);
 }
 
 /* 表体 */
@@ -2385,7 +2191,7 @@ const handlePreviewRightScroll = () => {
 .table-row {
   display: grid;
   grid-template-columns: 60px 1fr 100px 100px 1fr;
-  border-bottom: 1px solid rgba(230, 215, 191, 0.5);
+  border-bottom: 1px solid var(--color-tan-border);
   transition: background-color 0.2s;
   min-height: 44px;
 }
@@ -2395,15 +2201,15 @@ const handlePreviewRightScroll = () => {
 }
 
 .table-row:hover {
-  background-color: rgba(245, 238, 226, 0.5);
+  background-color: rgba(var(--rgb-cream-dark), 0.5);
 }
 
 .table-row .col {
   min-width: 0;
   padding: 8px 12px;
   font-size: 13px;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Regular;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
   line-height: 1.5;
   display: flex;
   align-items: stretch;
@@ -2413,7 +2219,7 @@ const handlePreviewRightScroll = () => {
   justify-content: center;
   align-items: center;
   font-weight: 500;
-  color: rgba(166, 124, 82, 1);
+  color: var(--color-brown-muted);
 }
 
 /* 确保高亮在表格内容中正确显示 */
@@ -2424,9 +2230,9 @@ const handlePreviewRightScroll = () => {
   text-overflow: ellipsis;
   line-height: 1.5;
   padding: 6px 12px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 6px;
-  border: 1px solid rgba(166, 124, 82, 0.15);
+  background-color: rgba(var(--rgb-white), 0.9);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-tan-light);
   height: 32px;
   flex: 1;
   display: block;
@@ -2436,10 +2242,10 @@ const handlePreviewRightScroll = () => {
 }
 
 .table-row .col-content :deep(.highlighted-text) {
-  background-color: rgba(255, 215, 0, 0.9) !important;
-  color: rgba(139, 0, 0, 1) !important;
+  background-color: rgba(var(--rgb-gold), 0.9) !important;
+  color: var(--color-cinnabar) !important;
   padding: 0 4px !important;
-  border-radius: 3px !important;
+  border-radius: var(--radius-xs) !important;
   font-weight: 700 !important;
   display: inline !important;
   line-height: 1.5 !important;
@@ -2449,24 +2255,23 @@ const handlePreviewRightScroll = () => {
   white-space: nowrap !important;
   box-decoration-break: clone !important;
   -webkit-box-decoration-break: clone !important;
-  box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.6) !important;
-  /* 截断过长的高亮文本 */
+  box-shadow: 0 0 0 1px rgba(var(--rgb-gold), 0.6) !important;
   max-width: 100%;
   position: relative;
   cursor: default;
 }
 
 .table-row .col-content :deep(.highlighted-text):hover {
-  background-color: rgba(255, 215, 0, 1) !important;
-  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.8) !important;
+  background-color: rgba(var(--rgb-gold), 1) !important;
+  box-shadow: 0 0 0 2px rgba(var(--rgb-gold), 0.8) !important;
 }
 
 /* 全局高亮样式 - 用于v-html生成的内容 */
 .data-table .col-content .highlighted-text {
-  background-color: rgba(255, 215, 0, 0.9) !important;
-  color: rgba(139, 0, 0, 1) !important;
+  background-color: rgba(var(--rgb-gold), 0.9) !important;
+  color: var(--color-cinnabar) !important;
   padding: 0 4px !important;
-  border-radius: 3px !important;
+  border-radius: var(--radius-xs) !important;
   font-weight: 700 !important;
   display: inline !important;
   line-height: 1.5 !important;
@@ -2476,7 +2281,7 @@ const handlePreviewRightScroll = () => {
   white-space: nowrap !important;
   box-decoration-break: clone !important;
   -webkit-box-decoration-break: clone !important;
-  box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.6) !important;
+  box-shadow: 0 0 0 1px rgba(var(--rgb-gold), 0.6) !important;
   max-width: 100%;
   position: relative;
   cursor: default;
@@ -2484,15 +2289,15 @@ const handlePreviewRightScroll = () => {
 }
 
 .data-table .col-content .highlighted-text:hover {
-  background-color: rgba(255, 215, 0, 1) !important;
-  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.8) !important;
+  background-color: rgba(var(--rgb-gold), 1) !important;
+  box-shadow: 0 0 0 2px rgba(var(--rgb-gold), 0.8) !important;
 }
 
 .table-row .col-position {
   justify-content: center;
   font-size: 12px;
-  color: rgba(166, 124, 82, 1);
-  border-right: 1px solid rgba(230, 215, 191, 0.3);
+  color: var(--color-brown-muted);
+  border-right: 1px solid var(--color-tan-light);
 }
 
 .col-content.clickable {
@@ -2501,15 +2306,15 @@ const handlePreviewRightScroll = () => {
 }
 
 .col-content.clickable:hover {
-  background-color: rgba(255, 215, 0, 0.15);
+  background-color: rgba(var(--rgb-gold), 0.15);
 }
 
 /* 图片雷同检测 */
 .image-duplicate-section {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  background-color: rgba(var(--rgb-white), 0.9);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
@@ -2524,12 +2329,12 @@ const handlePreviewRightScroll = () => {
   align-items: center;
   gap: 4px;
   padding: 4px 12px;
-  background: rgba(46, 89, 132, 0.1);
-  color: rgba(46, 89, 132, 1);
-  border-radius: 6px;
+  background: rgba(var(--rgb-cloud-blue), 0.1);
+  color: var(--color-cloud-blue);
+  border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
 }
 
 .image-duplicate-grid {
@@ -2540,10 +2345,10 @@ const handlePreviewRightScroll = () => {
 }
 
 .image-duplicate-card {
-  border: 1px solid rgba(166, 124, 82, 0.15);
-  border-radius: 8px;
+  border: 1px solid var(--color-tan-light);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: rgba(248, 244, 233, 0.3);
+  background: rgba(var(--rgb-parchment), 0.3);
 }
 
 .image-duplicate-pair {
@@ -2563,7 +2368,7 @@ const handlePreviewRightScroll = () => {
 
 .image-side-label {
   font-size: 11px;
-  color: rgba(101, 70, 40, 0.6);
+  color: rgba(var(--rgb-brown), 0.6);
   font-weight: 500;
 }
 
@@ -2571,13 +2376,13 @@ const handlePreviewRightScroll = () => {
   width: 100%;
   max-height: 120px;
   object-fit: contain;
-  border-radius: 4px;
-  border: 1px solid rgba(166, 124, 82, 0.1);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-tan-light);
 }
 
 .image-name {
   font-size: 11px;
-  color: rgba(101, 70, 40, 0.7);
+  color: rgba(var(--rgb-brown), 0.7);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2597,12 +2402,12 @@ const handlePreviewRightScroll = () => {
   justify-content: center;
   min-width: 48px;
   padding: 4px 8px;
-  background: rgba(196, 30, 58, 0.1);
-  color: rgba(196, 30, 58, 1);
-  border-radius: 6px;
+  background: rgba(var(--rgb-cinnabar), 0.1);
+  color: var(--color-cinnabar);
+  border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 700;
-  font-family: SourceHanSans-Bold;
+  font-family: var(--font-ui);
 }
 
 .help-modal-header {
@@ -2610,25 +2415,25 @@ const handlePreviewRightScroll = () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
-  background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(245,238,226,0.5) 100%);
+  border-bottom: 1px solid var(--color-tan-border);
+  background: var(--color-cream);
 }
 
 .help-modal-header h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: 'Microsoft YaHei', 'Source Han Sans', sans-serif;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .help-close-btn {
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: 6px;
-  background-color: rgba(248, 244, 233, 0.8);
-  color: rgba(107, 79, 52, 1);
+  border-radius: var(--radius-sm);
+  background-color: rgba(var(--rgb-parchment), 0.8);
+  color: var(--color-brown);
   cursor: pointer;
   font-size: 20px;
   display: flex;
@@ -2639,8 +2444,8 @@ const handlePreviewRightScroll = () => {
 }
 
 .help-close-btn:hover {
-  background-color: rgba(139, 0, 0, 0.1);
-  color: rgba(139, 0, 0, 1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
+  color: var(--color-cinnabar);
 }
 
 /* 通用弹窗遮罩 */
@@ -2658,14 +2463,14 @@ const handlePreviewRightScroll = () => {
 }
 
 .preview-modal {
-  background: white;
-  border-radius: 8px;
-  width: calc(100vw - 48px);
+  background: var(--color-cream);
+  border-radius: var(--radius-md);
+  width: calc(100% - 32px);
   max-width: 1200px;
   max-height: 90vh;
   overflow: hidden;
-  box-shadow: 0 8px 40px rgba(44, 24, 16, 0.2), 0 2px 10px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  box-shadow: var(--shadow-xl), 0 2px 10px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-tan-border);
   animation: modalSlideIn 0.3s ease;
 }
 
@@ -2678,38 +2483,38 @@ const handlePreviewRightScroll = () => {
 .preview-panel {
   flex: 1;
   overflow-y: auto;
-  background-color: #f8f4e9;
+  background-color: var(--color-warm-gray);
   background-image: 
-    linear-gradient(90deg, rgba(166, 124, 82, 0.03) 0%, transparent 8%, transparent 92%, rgba(166, 124, 82, 0.03) 100%);
+    linear-gradient(90deg, rgba(var(--rgb-brown-muted), 0.03) 0%, transparent 8%, transparent 92%, rgba(var(--rgb-brown-muted), 0.03) 100%);
 }
 
 .preview-panel-inner {
   max-width: 680px;
   margin: 0 auto;
   padding: 48px 56px;
-  background: white;
-  box-shadow: 0 2px 20px rgba(44, 24, 16, 0.1);
+  background: var(--color-white);
+  box-shadow: var(--shadow-md);
   min-height: 100%;
   font-size: 14px;
   line-height: 1.8;
-  color: #2c1810;
-  font-family: 'Microsoft YaHei', 'Source Han Sans', 'SimSun', serif;
+  color: var(--color-brown-dark);
+  font-family: var(--font-body);
   letter-spacing: 0.02em;
 }
 
 .full-text-content {
-  font-family: 'Microsoft YaHei', 'Source Han Sans', 'SimSun', serif;
+  font-family: var(--font-body);
   font-size: 14px;
   line-height: 2;
   text-align: justify;
   word-break: break-word;
   white-space: pre-wrap;
-  color: #2c1810;
+  color: var(--color-brown-dark);
 }
 
 .doc-paragraph {
   padding: 8px 0;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.08);
+  border-bottom: 1px solid var(--color-tan-light);
   transition: background-color 0.2s ease;
   position: relative;
 }
@@ -2719,11 +2524,11 @@ const handlePreviewRightScroll = () => {
 }
 
 .doc-paragraph.has-highlight {
-  background-color: rgba(255, 248, 230, 0.8);
-  border-left: 3px solid rgba(255, 215, 0, 0.6);
+  background-color: rgba(var(--rgb-gold), 0.08);
+  border-left: 3px solid rgba(var(--rgb-gold), 0.6);
   padding-left: 12px;
   margin-left: -15px;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
 }
 
 .doc-paragraph.has-highlight::before {
@@ -2733,44 +2538,44 @@ const handlePreviewRightScroll = () => {
   top: 0;
   bottom: 0;
   width: 3px;
-  background: linear-gradient(to bottom, rgba(255, 215, 0, 0.8), rgba(255, 180, 0, 0.6));
+  background: linear-gradient(to bottom, rgba(var(--rgb-gold), 0.8), rgba(var(--rgb-gold), 0.6));
   border-radius: 2px;
 }
 
 .text-highlight {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.5) 0%, rgba(255, 180, 0, 0.4) 100%) !important;
-  color: #8b0000 !important;
+  background: linear-gradient(135deg, rgba(var(--rgb-gold), 0.5) 0%, rgba(var(--rgb-gold), 0.4) 100%) !important;
+  color: var(--color-cinnabar) !important;
   padding: 2px 4px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   text-decoration: none;
-  box-shadow: 0 1px 3px rgba(139, 0, 0, 0.15);
-  border-bottom: 2px solid rgba(139, 0, 0, 0.3);
+  box-shadow: 0 1px 3px rgba(var(--rgb-cinnabar), 0.15);
+  border-bottom: 2px solid rgba(var(--rgb-cinnabar), 0.3);
 }
 
 .text-highlight:hover {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.8) 0%, rgba(255, 180, 0, 0.7) 100%) !important;
+  background: linear-gradient(135deg, rgba(var(--rgb-gold), 0.8) 0%, rgba(var(--rgb-gold), 0.7) 100%) !important;
   transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(139, 0, 0, 0.25);
+  box-shadow: 0 2px 6px rgba(var(--rgb-cinnabar), 0.25);
 }
 
 .text-highlight::after {
   content: attr(data-similarity);
   font-size: 9px;
-  background: rgba(139, 0, 0, 0.8);
-  color: white;
+  background: rgba(var(--rgb-cinnabar), 0.8);
+  color: var(--color-white);
   padding: 1px 4px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   margin-left: 4px;
   vertical-align: super;
 }
 
 .preview-panel-headers {
   display: flex;
-  border-bottom: 2px solid rgba(139, 0, 0, 0.3);
-  background: rgba(245, 238, 226, 0.5);
+  border-bottom: 2px solid rgba(var(--rgb-cinnabar), 0.3);
+  background: rgba(var(--rgb-cream-dark), 0.5);
 }
 
 .preview-panel-header {
@@ -2778,10 +2583,10 @@ const handlePreviewRightScroll = () => {
   padding: 12px 20px;
   font-size: 13px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 0.9);
-  font-family: 'Microsoft YaHei', 'Source Han Sans', sans-serif;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(245,238,226,0.3) 100%);
+  background: linear-gradient(180deg, rgba(var(--rgb-white), 0.8) 0%, rgba(var(--rgb-cream-dark), 0.3) 100%);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -2796,7 +2601,7 @@ const handlePreviewRightScroll = () => {
 .panel-file-name {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 0.95);
+  color: var(--color-brown-dark);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2807,10 +2612,10 @@ const handlePreviewRightScroll = () => {
 .panel-page-info {
   font-size: 12px;
   font-weight: 500;
-  color: rgba(139, 0, 0, 0.85);
-  background: rgba(139, 0, 0, 0.06);
+  color: rgba(var(--rgb-cinnabar), 0.85);
+  background: rgba(var(--rgb-cinnabar), 0.06);
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
 
@@ -2821,25 +2626,25 @@ const handlePreviewRightScroll = () => {
 
 .highlight-hint {
   font-size: 11px;
-  color: rgba(101, 70, 40, 0.6);
+  color: rgba(var(--rgb-brown), 0.6);
   font-weight: 400;
 }
 
 .header-stat {
   font-size: 11px;
   font-weight: 400;
-  color: rgba(101, 70, 40, 0.6);
+  color: rgba(var(--rgb-brown), 0.6);
 }
 
 .preview-panel-header:first-child {
-  border-right: 1px solid rgba(166, 124, 82, 0.2);
+  border-right: 1px solid var(--color-tan-border);
 }
 
 .preview-panel-header.right {
   text-align: right;
   align-items: flex-end;
   border-right: none;
-  border-left: 1px solid rgba(166, 124, 82, 0.2);
+  border-left: 1px solid var(--color-tan-border);
 }
 
 .preview-panel-header.right .header-stat {
@@ -2862,9 +2667,9 @@ const handlePreviewRightScroll = () => {
 .preview-divider {
   width: 6px;
   background: linear-gradient(to bottom, 
-    rgba(139, 0, 0, 0.4) 0%, 
-    rgba(166, 124, 82, 0.3) 50%, 
-    rgba(139, 0, 0, 0.4) 100%
+    rgba(var(--rgb-cinnabar), 0.4) 0%, 
+    rgba(var(--rgb-brown-muted), 0.3) 50%, 
+    rgba(var(--rgb-cinnabar), 0.4) 100%
   );
   flex-shrink: 0;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
@@ -2877,7 +2682,7 @@ const handlePreviewRightScroll = () => {
   justify-content: center;
   height: 100%;
   min-height: 200px;
-  color: rgba(166, 124, 82, 0.5);
+  color: rgba(var(--rgb-brown-muted), 0.5);
   gap: 12px;
 }
 
@@ -2888,16 +2693,16 @@ const handlePreviewRightScroll = () => {
 
 .preview-empty .empty-text {
   font-size: 14px;
-  font-family: 'Microsoft YaHei', 'Source Han Sans', sans-serif;
+  font-family: var(--font-ui);
 }
 
 .preview-segment {
   margin-bottom: 24px;
   transition: background-color 0.3s;
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.7);
-  border-left: 3px solid rgba(139, 0, 0, 0.6);
-  border-radius: 0 4px 4px 0;
+  background: rgba(var(--rgb-white), 0.7);
+  border-left: 3px solid rgba(var(--rgb-cinnabar), 0.6);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   page-break-inside: avoid;
 }
 
@@ -2908,8 +2713,8 @@ const handlePreviewRightScroll = () => {
   gap: 12px;
   margin-bottom: 10px;
   padding-bottom: 8px;
-  border-bottom: 1px dashed rgba(166, 124, 82, 0.2);
-  font-family: 'Microsoft YaHei', 'Source Han Sans', sans-serif;
+  border-bottom: 1px dashed var(--color-tan-border);
+  font-family: var(--font-ui);
 }
 
 .preview-segment.right .preview-seg-info {
@@ -2919,39 +2724,39 @@ const handlePreviewRightScroll = () => {
 .preview-seg-id {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(139, 0, 0, 0.9);
-  background: rgba(139, 0, 0, 0.08);
+  color: rgba(var(--rgb-cinnabar), 0.9);
+  background: rgba(var(--rgb-cinnabar), 0.08);
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
 
 .preview-seg-page {
   font-size: 11px;
-  color: rgba(101, 70, 40, 0.7);
+  color: rgba(var(--rgb-brown), 0.7);
 }
 
 .preview-seg-content {
-  font-family: 'Microsoft YaHei', 'Source Han Sans', 'SimSun', serif;
+  font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.9;
   text-align: justify;
   word-break: break-word;
   white-space: pre-wrap;
-  color: #2c1810;
+  color: var(--color-brown-dark);
 }
 
 .preview-segment.right {
   border-left: none;
-  border-right: 3px solid rgba(139, 0, 0, 0.6);
-  border-radius: 4px 0 0 4px;
+  border-right: 3px solid rgba(var(--rgb-cinnabar), 0.6);
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
 }
 
 .preview-seg-content :deep(.highlighted-text) {
-  background-color: rgba(255, 215, 0, 0.5) !important;
-  color: #8b0000 !important;
+  background-color: rgba(var(--rgb-gold), 0.5) !important;
+  color: var(--color-cinnabar) !important;
   padding: 1px 3px;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   font-weight: 500;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
@@ -2959,18 +2764,18 @@ const handlePreviewRightScroll = () => {
 
 .preview-sep {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(166, 124, 82, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(var(--rgb-brown-muted), 0.2), transparent);
   margin: 8px 0;
 }
 
 .context-modal {
-  background: white;
-  border-radius: 16px;
+  background: var(--color-cream);
+  border-radius: var(--radius-xl);
   width: 90%;
   max-width: 800px;
   max-height: 80vh;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(44, 24, 16, 0.3);
+  box-shadow: var(--shadow-xl);
   animation: modalSlideIn 0.3s ease;
 }
 
@@ -2985,28 +2790,28 @@ const handlePreviewRightScroll = () => {
   gap: 12px;
   margin-bottom: 12px;
   padding: 8px 12px;
-  background: rgba(245, 238, 226, 0.6);
-  border-radius: 8px;
+  background: rgba(var(--rgb-cream-dark), 0.6);
+  border-radius: var(--radius-md);
   font-size: 13px;
-  color: rgba(101, 70, 40, 1);
+  color: var(--color-brown);
 }
 
 .context-segment-id {
   font-weight: 600;
-  color: rgba(196, 30, 58, 1);
+  color: var(--color-cinnabar);
 }
 
 .context-pre {
-  font-family: 'Microsoft YaHei', 'SourceHanSans', monospace;
+  font-family: var(--font-ui);
   font-size: 14px;
   line-height: 1.8;
   white-space: pre-wrap;
   word-break: break-all;
-  color: rgba(44, 24, 16, 1);
-  background: rgba(248, 244, 233, 0.3);
+  color: var(--color-brown-dark);
+  background: rgba(var(--rgb-parchment), 0.3);
   padding: 16px;
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.1);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-tan-light);
   max-height: 50vh;
   overflow-y: auto;
 }
@@ -3021,8 +2826,8 @@ const handlePreviewRightScroll = () => {
 
 .pagination-info {
   font-size: 14px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
+  color: var(--color-brown);
+  font-family: var(--font-ui);
 }
 
 .pagination-controls {
@@ -3036,9 +2841,9 @@ const handlePreviewRightScroll = () => {
 .page-number {
   width: 40px;
   height: 40px;
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 1);
+  border: 0.7px solid var(--color-tan-dark);
+  border-radius: var(--radius-md);
+  background-color: var(--color-white);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -3046,17 +2851,17 @@ const handlePreviewRightScroll = () => {
   transition: all 0.2s;
   font-size: 14px;
   font-weight: 500;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Medium;
+  color: var(--color-brown);
+  font-family: var(--font-ui);
 }
 
 .page-btn {
-  color: rgba(107, 79, 52, 1);
+  color: var(--color-brown);
 }
 
 .page-btn:hover:not(:disabled),
 .page-number:hover {
-  background-color: rgba(245, 238, 226, 1);
+  background-color: var(--color-cream-dark);
 }
 
 .page-btn:disabled {
@@ -3065,19 +2870,15 @@ const handlePreviewRightScroll = () => {
 }
 
 .page-number.active {
-  background-color: rgba(139, 0, 0, 1);
-  border-color: rgba(139, 0, 0, 1);
-  color: rgba(255, 255, 255, 1);
+  background-color: var(--color-cinnabar);
+  border-color: var(--color-cinnabar);
+  color: var(--color-white);
 }
 
 /* 移动端响应式 */
 @media (max-width: 768px) {
-  .page-header {
-    display: none;
-  }
-
   .result-page-container {
-    padding: 16px;
+    padding: 12px;
     gap: 12px;
   }
 
@@ -3096,15 +2897,36 @@ const handlePreviewRightScroll = () => {
     font-size: 18px;
   }
 
+  .list-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .list-header-stats {
+    width: 100%;
+  }
+
+  /* 表格内容容器:横向滚动,内容最小宽减小 */
   .data-table {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  .table-header,
-  .table-row {
-    grid-template-columns: 60px minmax(200px, 1fr) 80px minmax(200px, 1fr) 80px;
-    min-width: 700px;
+  .data-table .table-header,
+  .data-table .table-row {
+    grid-template-columns: 50px minmax(200px, 1fr) 70px 70px minmax(200px, 1fr);
+    min-width: 720px;
+  }
+
+  /* Word 列表也允许滚动 */
+  .word-list-view {
+    overflow-x: auto;
+  }
+
+  .word-list-view .table-header,
+  .word-list-view .table-row {
+    min-width: 720px;
   }
 
   .pagination {
@@ -3114,7 +2936,8 @@ const handlePreviewRightScroll = () => {
   }
 
   /* 分页按钮最小触摸目标 */
-  .page-btn {
+  .page-btn,
+  .page-number {
     width: 44px;
     height: 44px;
     min-width: 44px;
@@ -3131,26 +2954,52 @@ const handlePreviewRightScroll = () => {
   .page-ellipsis {
     font-size: 14px;
   }
+
+  /* 上下文弹窗移动端全屏 */
+  .context-modal {
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .context-modal-body {
+    padding: 12px;
+  }
+
+  /* 预览模态框容器边距回收 */
+  .help-modal-overlay {
+    padding: 0;
+  }
 }
 
 /* 超小屏幕手机优化 (320px-480px) */
 @media (max-width: 480px) {
   .result-page-container {
-    padding: 12px;
+    padding: 10px;
   }
 
   .comparison-list {
     padding: 12px;
   }
 
-  .table-header,
-  .table-row {
-    font-size: 11px;
+  .list-title {
+    font-size: 16px;
   }
 
-  .page-btn {
-    width: 44px;
-    height: 44px;
+  .data-table .table-header,
+  .data-table .table-row,
+  .word-list-view .table-header,
+  .word-list-view .table-row {
+    min-width: 560px;
+  }
+
+  .page-btn,
+  .page-number {
+    width: 40px;
+    height: 40px;
     font-size: 13px;
   }
 
@@ -3167,11 +3016,11 @@ const handlePreviewRightScroll = () => {
 /* 移动端预览面板优化 */
 @media (max-width: 768px) {
   .preview-modal {
-    width: 100vw !important;
-    max-width: 100vw !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
-    border-radius: 0 !important;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
   }
 
   .preview-modal-body {
@@ -3199,9 +3048,9 @@ const handlePreviewRightScroll = () => {
     height: 4px;
     flex-shrink: 0;
     background: linear-gradient(to right,
-      rgba(139, 0, 0, 0.4) 0%,
-      rgba(166, 124, 82, 0.3) 50%,
-      rgba(139, 0, 0, 0.4) 100%
+      rgba(var(--rgb-cinnabar), 0.4) 0%,
+      rgba(var(--rgb-brown-muted), 0.3) 50%,
+      rgba(var(--rgb-cinnabar), 0.4) 100%
     );
   }
 
@@ -3263,15 +3112,15 @@ const handlePreviewRightScroll = () => {
 <style>
 /* 全局样式：用于 v-html 渲染的预览片段高亮 */
 .preview-segment-target {
-  background-color: rgba(255, 215, 0, 0.12) !important;
-  outline: 2px solid rgba(255, 215, 0, 0.5) !important;
+  background-color: rgba(var(--rgb-gold), 0.12) !important;
+  outline: 2px solid rgba(var(--rgb-gold), 0.5) !important;
   outline-offset: 2px !important;
   animation: previewTargetPulse 2s ease-in-out 3 !important;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 @keyframes previewTargetPulse {
-  0%, 100% { outline-color: rgba(255, 215, 0, 0.5); }
-  50% { outline-color: rgba(255, 215, 0, 0.9); }
+  0%, 100% { outline-color: rgba(var(--rgb-gold), 0.5); }
+  50% { outline-color: rgba(var(--rgb-gold), 0.9); }
 }
 </style>

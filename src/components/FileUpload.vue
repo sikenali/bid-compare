@@ -18,8 +18,8 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const titleText = props.side === 'left' ? 'DOCUMENT SOURCE' : 'DOCUMENT MODIFY';
-const titleColor = props.side === 'left' ? 'rgba(139,0,0,1)' : 'rgba(46,89,132,1)';
+const titleText = props.side === 'left' ? '原始文件' : '修改文件';
+const titleColor = props.side === 'left' ? 'var(--color-cinnabar)' : 'var(--color-cloud-blue)';
 
 // 声明文件输入框引用
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -33,16 +33,16 @@ const triggerFileInput = () => {
 const fileTypeInfo = computed(() => {
   const ext = props.fileInfo.name.split('.').pop()?.toLowerCase() || '';
   const typeMap: Record<string, { icon: any; color: string; bg: string; label: string }> = {
-    doc: { icon: RiFileWord2Line, color: 'rgba(37,99,235,1)', bg: 'rgba(219,234,254,1)', label: 'Word 文档' },
-    docx: { icon: RiFileWord2Line, color: 'rgba(37,99,235,1)', bg: 'rgba(219,234,254,1)', label: 'Word 文档' },
-    xls: { icon: RiFileExcel2Line, color: 'rgba(34,139,34,1)', bg: 'rgba(220,252,231,1)', label: 'Excel 表格' },
-    xlsx: { icon: RiFileExcel2Line, color: 'rgba(34,139,34,1)', bg: 'rgba(220,252,231,1)', label: 'Excel 表格' },
-    ppt: { icon: RiSlideshow2Line, color: 'rgba(217,119,6,1)', bg: 'rgba(254,243,199,1)', label: 'PPT 演示' },
-    pptx: { icon: RiSlideshow2Line, color: 'rgba(217,119,6,1)', bg: 'rgba(254,243,199,1)', label: 'PPT 演示' },
-    pdf: { icon: RiFilePdf2Line, color: 'rgba(220,38,38,1)', bg: 'rgba(254,242,242,1)', label: 'PDF 文档' },
-    txt: { icon: RiFileTextLine, color: 'rgba(107,114,128,1)', bg: 'rgba(243,244,246,1)', label: '文本文件' }
+    doc: { icon: RiFileWord2Line, color: 'var(--color-cloud-blue)', bg: 'rgba(var(--rgb-cloud-blue), 0.1)', label: 'Word 文档' },
+    docx: { icon: RiFileWord2Line, color: 'var(--color-cloud-blue)', bg: 'rgba(var(--rgb-cloud-blue), 0.1)', label: 'Word 文档' },
+    xls: { icon: RiFileExcel2Line, color: 'var(--color-jade)', bg: 'rgba(var(--rgb-jade), 0.1)', label: 'Excel 表格' },
+    xlsx: { icon: RiFileExcel2Line, color: 'var(--color-jade)', bg: 'rgba(var(--rgb-jade), 0.1)', label: 'Excel 表格' },
+    ppt: { icon: RiSlideshow2Line, color: 'var(--color-gold-dark)', bg: 'rgba(var(--rgb-gold-dark), 0.1)', label: 'PPT 演示' },
+    pptx: { icon: RiSlideshow2Line, color: 'var(--color-gold-dark)', bg: 'rgba(var(--rgb-gold-dark), 0.1)', label: 'PPT 演示' },
+    pdf: { icon: RiFilePdf2Line, color: 'var(--color-cinnabar)', bg: 'rgba(var(--rgb-cinnabar), 0.1)', label: 'PDF 文档' },
+    txt: { icon: RiFileTextLine, color: 'var(--color-brown-muted)', bg: 'rgba(var(--rgb-brown-muted), 0.1)', label: '文本文件' }
   };
-  return typeMap[ext] || { icon: RiFileTextLine, color: 'rgba(107,114,128,1)', bg: 'rgba(243,244,246,1)', label: '未知类型' };
+  return typeMap[ext] || { icon: RiFileTextLine, color: 'var(--color-brown-muted)', bg: 'rgba(var(--rgb-brown-muted), 0.1)', label: '未知类型' };
 });
 </script>
 
@@ -149,120 +149,117 @@ const fileTypeInfo = computed(() => {
   }
 }
 
-/* 上传标题 */
 .upload-title {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
 }
 
 .title-decoration {
   width: 5px;
   height: 24px;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
 }
 
 .title-text {
   font-size: 20px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
-/* 上传区域 */
 .upload-area {
   flex: 1;
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 12px;
-  background-color: rgba(255, 255, 255, 1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  box-shadow: var(--shadow-md);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
   position: relative;
   overflow: hidden;
 }
 
 .upload-area:hover {
-  border-color: rgba(139, 0, 0, 1);
-  box-shadow: 0 6px 24px rgba(139, 0, 0, 0.12);
+  border-color: var(--color-cinnabar);
+  box-shadow: var(--shadow-cinnabar);
 }
 
 .file-input {
   display: none;
 }
 
-/* 未上传状态 */
 .upload-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
-  padding: 24px;
-  gap: 8px;
+  padding: var(--spacing-6);
+  gap: var(--spacing-2);
 }
 
 .upload-icon-wrapper {
   width: 80px;
   height: 80px;
-  border-radius: 9999px;
-  background-color: rgba(245, 238, 226, 1);
+  border-radius: var(--radius-full);
+  background: var(--color-cream-dark);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
-  transition: all 0.3s ease;
+  margin-bottom: var(--spacing-6);
+  transition: all var(--transition-normal);
 }
 
 .upload-area:hover .upload-icon-wrapper {
-  background-color: rgba(245, 238, 226, 0.8);
+  background: var(--color-cream-darker);
   transform: scale(1.05);
 }
 
 .upload-icon {
   font-size: 40px;
-  color: rgba(166, 124, 82, 1);
+  color: var(--color-brown-muted);
 }
 
 .upload-icon.uploaded {
-  color: rgba(34, 139, 34, 1);
+  color: var(--color-jade);
 }
 
 .upload-main-text {
   font-size: 18px;
   font-weight: 500;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Medium;
-  margin-bottom: 16px;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
+  margin-bottom: var(--spacing-4);
 }
 
 .upload-format-icons {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
 }
 
 .format-icon-wrapper {
   position: relative;
   width: 40px;
   height: 40px;
-  border-radius: 8px;
-  background-color: rgba(245, 238, 226, 0.8);
+  border-radius: var(--radius-md);
+  background: var(--color-cream-dark);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
 }
 
 .format-icon-wrapper:hover {
-  background-color: rgba(245, 238, 226, 1);
+  background: var(--color-cream-darker);
   transform: translateY(-2px);
 }
 
 .format-icon-svg {
   font-size: 20px;
-  color: rgba(166, 124, 82, 1);
+  color: var(--color-brown-muted);
 }
 
 .format-tooltip {
@@ -271,15 +268,15 @@ const fileTypeInfo = computed(() => {
   left: 50%;
   transform: translateX(-50%);
   padding: 4px 8px;
-  background-color: rgba(44, 24, 16, 0.9);
+  background: var(--color-brown-dark);
   color: white;
-  font-size: 11px;
-  font-family: SourceHanSans-Regular;
-  border-radius: 4px;
+  font-size: var(--text-micro);
+  font-family: var(--font-ui);
+  border-radius: var(--radius-sm);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--transition-fast);
   z-index: 10;
 }
 
@@ -288,19 +285,18 @@ const fileTypeInfo = computed(() => {
 }
 
 .upload-size-text {
-  font-size: 12px;
-  color: rgba(166, 124, 82, 1);
-  font-family: SourceHanSans-Regular;
+  font-size: var(--text-caption);
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
 }
 
-/* 已上传状态 */
 .file-info {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
-  padding: 16px;
+  padding: var(--spacing-4);
   overflow: hidden;
 }
 
@@ -309,14 +305,14 @@ const fileTypeInfo = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: var(--spacing-3);
   width: 100%;
 }
 
 .file-icon {
   width: 48px;
   height: 48px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -333,10 +329,10 @@ const fileTypeInfo = computed(() => {
 }
 
 .file-name {
-  font-size: 16px;
+  font-size: var(--text-heading);
   font-weight: 500;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Medium;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -344,22 +340,22 @@ const fileTypeInfo = computed(() => {
 }
 
 .file-meta-line {
-  font-size: 14px;
-  color: rgba(107, 114, 128, 1);
-  font-family: SourceHanSans-Regular;
+  font-size: var(--text-body);
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--spacing-2);
 }
 
 .meta-dot {
-  font-size: 14px;
+  font-size: var(--text-body);
 }
 
 .file-actions-inline {
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-2);
   align-items: center;
   justify-content: center;
 }
@@ -367,60 +363,58 @@ const fileTypeInfo = computed(() => {
 .icon-btn {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
   border: none;
-  background-color: transparent;
+  background: transparent;
   flex-shrink: 0;
 }
 
 .icon-btn:hover {
-  background-color: rgba(139, 0, 0, 0.1);
+  background: rgba(var(--rgb-cinnabar), 0.1);
 }
 
 .icon-btn-svg {
   font-size: 18px;
   width: 18px;
   height: 18px;
-  color: rgba(107, 114, 128, 1);
-  transition: all 0.3s ease;
+  color: var(--color-brown-muted);
+  transition: all var(--transition-normal);
   flex-shrink: 0;
 }
 
 .icon-btn:hover .icon-btn-svg {
-  color: rgba(139, 0, 0, 1);
+  color: var(--color-cinnabar);
 }
 
 .icon-btn-svg.delete {
-  color: rgba(220, 38, 38, 1);
+  color: var(--color-cinnabar);
 }
 
 .delete-btn:hover .icon-btn-svg.delete {
-  color: rgba(180, 30, 30, 1);
+  color: var(--color-cinnabar-dark);
   transform: scale(1.1);
 }
 
-/* 中心操作按钮 */
 .upload-action {
   display: flex;
   justify-content: center;
-  margin-top: 8px;
+  margin-top: var(--spacing-2);
 }
 
-/* 移动端响应式优化 */
 @media (max-width: 768px) {
   .upload-placeholder {
-    padding: 16px;
+    padding: var(--spacing-4);
   }
 
   .upload-icon-wrapper {
     width: 64px;
     height: 64px;
-    margin-bottom: 16px;
+    margin-bottom: var(--spacing-4);
   }
 
   .upload-icon {
@@ -428,8 +422,8 @@ const fileTypeInfo = computed(() => {
   }
 
   .upload-main-text {
-    font-size: 16px;
-    margin-bottom: 12px;
+    font-size: var(--text-heading);
+    margin-bottom: var(--spacing-3);
   }
 
   .format-icon-wrapper {

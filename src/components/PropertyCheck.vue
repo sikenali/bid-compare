@@ -16,6 +16,7 @@ import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
 import { calculateTextSimilarity } from '../utils/textAlgorithms'
 import { storePropertyCheckResult } from '../utils/compareResultStore'
+import { buildPropertyDetails, propsMapSource, recordSource } from '../utils/propertyFields'
 import FileUpload from './FileUpload.vue'
 import RecentRecords from './RecentRecords.vue'
 import { BorderBeam } from 'vue3-border-beam'
@@ -57,87 +58,20 @@ const viewHistoricalRecord = (record: any) => {
   if (record.propertyDetails && record.propertyDetails.length > 0) {
     propertyDetails = record.propertyDetails
   } else {
-    // 如果没有保存属性详情，生成默认数据（与 handleCheck 保持相同的 13 个字段）
-    propertyDetails = [
-      {
-        name: '文件名称',
-        leftValue: record.leftFileName,
-        rightValue: record.rightFileName,
-        status: record.leftFileName === record.rightFileName ? 'match' : 'mismatch'
-      },
-      {
-        name: '文件大小',
-        leftValue: '未知',
-        rightValue: '未知',
-        status: 'warning'
-      },
-      {
-        name: '文件类型',
-        leftValue: getFileType(record.leftFileName),
-        rightValue: getFileType(record.rightFileName),
-        status: getFileType(record.leftFileName) === getFileType(record.rightFileName) ? 'match' : 'warning'
-      },
-      {
-        name: '作者',
-        leftValue: 'N/A',
-        rightValue: 'N/A',
-        status: 'match'
-      },
-      {
-        name: '最后一次保存者',
-        leftValue: 'N/A',
-        rightValue: 'N/A',
-        status: 'match'
-      },
-      {
-        name: '修订号',
-        leftValue: 'N/A',
-        rightValue: 'N/A',
-        status: 'match'
-      },
-      {
-        name: '页码范围',
-        leftValue: 'N/A',
-        rightValue: 'N/A',
-        status: 'match'
-      },
-      {
-        name: '程序名称',
-        leftValue: 'N/A',
-        rightValue: 'N/A',
-        status: 'match'
-      },
-      {
-        name: '公司',
-        leftValue: 'N/A',
-        rightValue: 'N/A',
-        status: 'match'
-      },
-      {
-        name: '创建时间',
-        leftValue: 'N/A',
-        rightValue: 'N/A',
-        status: 'match'
-      },
-      {
-        name: '修改时间',
-        leftValue: 'N/A',
-        rightValue: 'N/A',
-        status: 'match'
-      },
-      {
-        name: '页数',
-        leftValue: 'N/A',
-        rightValue: 'N/A',
-        status: 'match'
-      },
-      {
-        name: '文件字数',
-        leftValue: '0',
-        rightValue: '0',
-        status: 'match'
-      }
-    ]
+    // 如果没有保存属性详情，生成默认数据(与 handleCheck 保持相同的 13 个字段)
+    const leftSrc = recordSource({
+      leftFileName: record.leftFileName,
+      rightFileName: record.leftFileName,
+      leftFileType: getFileType(record.leftFileName),
+      rightFileType: getFileType(record.leftFileName)
+    });
+    const rightSrc = recordSource({
+      leftFileName: record.rightFileName,
+      rightFileName: record.rightFileName,
+      leftFileType: getFileType(record.rightFileName),
+      rightFileType: getFileType(record.rightFileName)
+    });
+    propertyDetails = buildPropertyDetails(leftSrc, rightSrc, 'N/A');
   }
 
   // 统计属性状态
@@ -222,9 +156,9 @@ const handleFileUpload = (event: Event, side: 'left' | 'right') => {
   const input = event.target as HTMLInputElement
   if (input.files && input.files[0]) {
     const file = input.files[0]
-    // 文件大小限制 50MB
-    if (file.size > 50 * 1024 * 1024) {
-      alert('文件大小超过 50MB 限制')
+    // 文件大小限制 100MB
+    if (file.size > 100 * 1024 * 1024) {
+      alert('文件大小超过 100MB 限制')
       return
     }
     const fileInfo = {
@@ -328,83 +262,31 @@ const handleCheck = async () => {
     const similarityStatus = similarity >= settings.textSimilarityThreshold ? 'match' : similarity >= 50 ? 'warning' : 'mismatch';
     
     // 更新属性详情
-    propertyDetails.value = [
-      {
-        name: '文件名称',
-        leftValue: leftFileProperties.value.文件名 || leftFileInfo.value.name,
-        rightValue: rightFileProperties.value.文件名 || rightFileInfo.value.name,
-        status: (leftFileProperties.value.文件名 || leftFileInfo.value.name) === (rightFileProperties.value.文件名 || rightFileInfo.value.name) ? 'match' : 'mismatch'
-      },
-      {
-        name: '文件大小',
-        leftValue: leftFileProperties.value.文件大小 || leftFileInfo.value.size,
-        rightValue: rightFileProperties.value.文件大小 || rightFileInfo.value.size,
-        // 使用原始字节数比较，避免格式化字符串的精度问题
-        status: leftFileInfo.value.file && rightFileInfo.value.file
-          ? (leftFileInfo.value.file.size === rightFileInfo.value.file.size ? 'match' : 'mismatch')
-          : 'warning'
-      },
-      {
-        name: '文件类型',
-        leftValue: leftFileProperties.value.文件类型 || leftFileInfo.value.type,
-        rightValue: rightFileProperties.value.文件类型 || rightFileInfo.value.type,
-        status: (leftFileProperties.value.文件类型 || leftFileInfo.value.type) === (rightFileProperties.value.文件类型 || rightFileInfo.value.type) ? 'match' : 'warning'
-      },
-      {
-        name: '作者',
-        leftValue: leftFileProperties.value.作者 || '未知',
-        rightValue: rightFileProperties.value.作者 || '未知',
-        status: (leftFileProperties.value.作者 || '未知') === (rightFileProperties.value.作者 || '未知') ? 'match' : 'mismatch'
-      },
-      {
-        name: '最后一次保存者',
-        leftValue: leftFileProperties.value.最后一次保存者 || '未知',
-        rightValue: rightFileProperties.value.最后一次保存者 || '未知',
-        status: (leftFileProperties.value.最后一次保存者 || '未知') === (rightFileProperties.value.最后一次保存者 || '未知') ? 'match' : 'mismatch'
-      },
-      {
-        name: '修订号',
-        leftValue: leftFileProperties.value.修订号 || '未知',
-        rightValue: rightFileProperties.value.修订号 || '未知',
-        status: (leftFileProperties.value.修订号 || '未知') === (rightFileProperties.value.修订号 || '未知') ? 'match' : 'mismatch'
-      },
-      {
-        name: '程序名称',
-        leftValue: leftFileProperties.value.程序名称 || '未知',
-        rightValue: rightFileProperties.value.程序名称 || '未知',
-        status: (leftFileProperties.value.程序名称 || '未知') === (rightFileProperties.value.程序名称 || '未知') ? 'match' : 'warning'
-      },
-      {
-        name: '公司',
-        leftValue: leftFileProperties.value.公司 || '未知',
-        rightValue: rightFileProperties.value.公司 || '未知',
-        status: (leftFileProperties.value.公司 || '未知') === (rightFileProperties.value.公司 || '未知') ? 'match' : 'mismatch'
-      },
-      {
-        name: '创建时间',
-        leftValue: leftFileProperties.value.创建时间 || '未知',
-        rightValue: rightFileProperties.value.创建时间 || '未知',
-        status: (leftFileProperties.value.创建时间 || '未知') === (rightFileProperties.value.创建时间 || '未知') ? 'match' : 'mismatch'
-      },
-      {
-        name: '修改时间',
-        leftValue: leftFileProperties.value.修改时间 || '未知',
-        rightValue: rightFileProperties.value.修改时间 || '未知',
-        status: (leftFileProperties.value.修改时间 || '未知') === (rightFileProperties.value.修改时间 || '未知') ? 'match' : 'mismatch'
-      },
-      {
-        name: '页数',
-        leftValue: leftFileProperties.value.页码范围 || '未知',
-        rightValue: rightFileProperties.value.页码范围 || '未知',
-        status: (leftFileProperties.value.页码范围 || '未知') === (rightFileProperties.value.页码范围 || '未知') ? 'match' : 'mismatch'
-      },
-      {
-        name: '文件字数',
-        leftValue: leftFileProperties.value.文本内容长度 || leftFileContent.value.length.toString(),
-        rightValue: rightFileProperties.value.文本内容长度 || rightFileContent.value.length.toString(),
-        status: (leftFileProperties.value.文本内容长度 || leftFileContent.value.length.toString()) === (rightFileProperties.value.文本内容长度 || rightFileContent.value.length.toString()) ? 'match' : 'mismatch'
+    const leftSrc = propsMapSource(
+      leftFileProperties.value,
+      leftFileInfo.value.name,
+      leftFileInfo.value.size,
+      leftFileInfo.value.type
+    );
+    const rightSrc = propsMapSource(
+      rightFileProperties.value,
+      rightFileInfo.value.name,
+      rightFileInfo.value.size,
+      rightFileInfo.value.type
+    );
+    propertyDetails.value = buildPropertyDetails(leftSrc, rightSrc);
+
+    // 文件大小特殊处理:使用原始字节数比较,避免格式化字符串精度问题
+    if (leftFileInfo.value.file && rightFileInfo.value.file) {
+      const sizeIdx = propertyDetails.value.findIndex(p => p.name === '文件大小');
+      if (sizeIdx >= 0) {
+        const sameBytes = leftFileInfo.value.file.size === rightFileInfo.value.file.size;
+        propertyDetails.value[sizeIdx] = {
+          ...propertyDetails.value[sizeIdx],
+          status: sameBytes ? 'match' : 'mismatch'
+        };
       }
-    ];
+    }
     
     // 统计属性状态
     matchingProperties.value = propertyDetails.value.filter(p => p.status === 'match').length;
@@ -782,18 +664,18 @@ const generateWordReport = () => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: rgba(248, 244, 233, 1);
+  background-color: rgba(var(--rgb-parchment), 1);
   gap: 12px;
-  font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-ui);
 }
 
 /* 页面标题区 */
 .page-header {
   padding: 16px 24px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  background-color: var(--color-cream);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+  box-shadow: 0 2px 8px rgba(var(--rgb-brown-dark), 0.08);
 }
 
 .title-row {
@@ -805,16 +687,16 @@ const generateWordReport = () => {
 .page-title {
   font-size: 20px;
   font-weight: 700;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   margin: 0 0 4px 0;
-  font-family: SourceHanSans-Bold;
+  font-family: var(--font-ui);
 }
 
 .page-subtitle {
   font-size: 12px;
-  color: rgba(101, 70, 40, 1);
+  color: var(--color-brown);
   margin: 0;
-  font-family: SourceHanSans-Regular;
+  font-family: var(--font-ui);
 }
 
 .header-actions {
@@ -826,39 +708,39 @@ const generateWordReport = () => {
 .header-back-btn {
   height: 40px;
   padding: 0 20px;
-  background-color: rgba(255, 255, 255, 1);
-  color: rgba(139, 0, 0, 1);
-  border: 1px solid rgba(139, 0, 0, 0.3);
-  border-radius: 10px;
+  background-color: var(--color-white);
+  color: var(--color-cinnabar);
+  border: 1px solid rgba(var(--rgb-cinnabar), 0.3);
+  border-radius: var(--radius-lg);
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
   transition: all 0.3s ease;
 }
 
 .header-back-btn:hover {
-  background-color: rgba(139, 0, 0, 0.05);
-  border-color: rgba(139, 0, 0, 1);
+  background-color: rgba(var(--rgb-cinnabar), 0.05);
+  border-color: var(--color-cinnabar);
 }
 
 .header-export-btn {
   height: 40px;
   padding: 0 20px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  background: var(--color-cinnabar);
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  font-family: var(--font-ui);
+  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.3);
   transition: all 0.3s ease;
 }
 
 .header-export-btn:hover {
-  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
+  box-shadow: 0 6px 16px rgba(var(--rgb-cinnabar), 0.4);
   transform: translateY(-2px);
 }
 
@@ -868,33 +750,33 @@ const generateWordReport = () => {
   width: 40px;
   height: 40px;
   border: none;
-  border-radius: 12px;
-  background: rgba(139, 0, 0, 1);
-  color: rgba(255, 255, 255, 1);
+  border-radius: var(--radius-lg);
+  background: var(--color-cinnabar);
+  color: var(--color-white);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.3);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .icon-btn-wrapper:hover {
-  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
+  box-shadow: 0 6px 20px rgba(var(--rgb-cinnabar), 0.4);
   transform: translateY(-2px);
-  background: rgba(165, 0, 0, 1);
+  background: var(--color-cinnabar-dark);
 }
 
 .icon-btn-wrapper:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(var(--rgb-cinnabar), 0.3);
 }
 
 .icon-btn-svg {
   font-size: 20px;
   width: 20px;
   height: 20px;
-  color: rgba(255, 255, 255, 1);
+  color: var(--color-white);
   flex-shrink: 0;
   transition: all 0.3s ease;
 }
@@ -906,11 +788,11 @@ const generateWordReport = () => {
   left: 50%;
   transform: translateX(-50%);
   padding: 4px 8px;
-  background-color: rgba(44, 24, 16, 0.9);
+  background-color: rgba(var(--rgb-brown-dark), 0.9);
   color: white;
   font-size: 11px;
-  font-family: SourceHanSans-Regular;
-  border-radius: 4px;
+  font-family: var(--font-ui);
+  border-radius: var(--radius-xs);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
@@ -923,8 +805,8 @@ const generateWordReport = () => {
 }
 
 .history-modal {
-  background-color: rgba(255, 255, 255, 1);
-  border-radius: 12px;
+  background-color: var(--color-white);
+  border-radius: var(--radius-lg);
   width: min(600px, 90vw);
   max-height: 80vh;
   overflow: auto;
@@ -940,9 +822,9 @@ const generateWordReport = () => {
 .empty-history {
   text-align: center;
   padding: 40px 20px;
-  color: rgba(166, 124, 82, 1);
+  color: var(--color-brown-muted);
   font-size: 14px;
-  font-family: SourceHanSans-Regular;
+  font-family: var(--font-ui);
 }
 
 .help-btn:hover {
@@ -951,15 +833,15 @@ const generateWordReport = () => {
 
 .help-icon {
   font-size: 20px;
-  color: rgba(107, 79, 52, 1);
+  color: var(--color-brown);
 }
 
 .decorative-line {
   width: 100%;
   height: 3px;
   margin-top: 24px;
-  background: linear-gradient(90deg, rgba(216,191,156,1) 0%, rgba(230,215,191,1) 50%, rgba(216,191,156,1) 100%);
-  border-radius: 2px;
+  background: var(--color-tan-dark);
+  border-radius: var(--radius-xs);
 }
 
 /* 文件上传区域 */
@@ -986,7 +868,7 @@ const generateWordReport = () => {
   height: 100px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  background: var(--color-cinnabar);
   color: white;
   cursor: pointer;
   display: flex;
@@ -994,13 +876,13 @@ const generateWordReport = () => {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.35);
+  box-shadow: 0 6px 20px rgba(var(--rgb-cinnabar), 0.35);
   transition: all 0.3s ease;
 }
 
 .check-circle-btn:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 8px 24px rgba(139, 0, 0, 0.45);
+  box-shadow: 0 8px 24px rgba(var(--rgb-cinnabar), 0.45);
 }
 
 .check-circle-btn:disabled {
@@ -1020,7 +902,7 @@ const generateWordReport = () => {
 .check-circle-text {
   font-size: 12px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
 }
 
 /* 检查按钮区域 */
@@ -1040,19 +922,19 @@ const generateWordReport = () => {
   width: 980px;
   height: 40px;
   border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  border-radius: var(--radius-lg);
+  background: var(--color-cinnabar);
   color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.3);
   transition: all 0.3s ease;
   font-size: 16px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
   overflow: hidden;
 }
 
@@ -1076,7 +958,7 @@ const generateWordReport = () => {
 }
 
 .start-check-btn:hover:not(:disabled) {
-  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
+  box-shadow: 0 6px 20px rgba(var(--rgb-cinnabar), 0.4);
   transform: translateY(-2px);
 }
 
@@ -1088,9 +970,9 @@ const generateWordReport = () => {
 
 .start-check-btn.processing {
   background: linear-gradient(90deg, 
-    rgba(139, 0, 0, 1) 0%, 
-    rgba(196, 30, 58, 0.8) 50%, 
-    rgba(139, 0, 0, 1) 100%);
+    var(--color-cinnabar) 0%, 
+    rgba(var(--rgb-cinnabar), 0.8) 50%, 
+    var(--color-cinnabar) 100%);
   background-size: 200% 100%;
   animation: gradient-shift 2s ease infinite;
 }
@@ -1134,16 +1016,16 @@ const generateWordReport = () => {
 .progress-bar-bg {
   width: 100%;
   height: 8px;
-  background-color: rgba(216, 191, 156, 0.3);
-  border-radius: 4px;
+  background-color: rgba(var(--rgb-tan-dark), 0.3);
+  border-radius: var(--radius-xs);
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
   width: 30%;
-  background: linear-gradient(90deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
-  border-radius: 4px;
+  background: var(--color-cinnabar);
+  border-radius: var(--radius-xs);
   animation: indeterminate-progress 1.5s ease-in-out infinite;
 }
 
@@ -1155,8 +1037,8 @@ const generateWordReport = () => {
 
 .progress-text {
   font-size: 13px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
+  color: var(--color-brown);
+  font-family: var(--font-ui);
   text-align: center;
 }
 
@@ -1167,13 +1049,13 @@ const generateWordReport = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(248, 244, 233, 0.9);
+  background-color: rgba(var(--rgb-parchment), 0.9);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 }
 
 .processing-content {
@@ -1187,8 +1069,8 @@ const generateWordReport = () => {
 .processing-spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid rgba(216, 191, 156, 0.3);
-  border-top-color: rgba(139, 0, 0, 1);
+  border: 4px solid rgba(var(--rgb-tan-dark), 0.3);
+  border-top-color: var(--color-cinnabar);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -1201,31 +1083,31 @@ const generateWordReport = () => {
 .processing-text {
   font-size: 16px;
   font-weight: 500;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Medium;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
   margin: 0;
 }
 
 /* 错误信息样式 */
 .error-message {
-  color: rgba(139, 0, 0, 1);
+  color: var(--color-cinnabar);
   font-size: 14px;
   text-align: center;
   margin: 16px 0;
   padding: 12px;
-  background-color: rgba(139, 0, 0, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(139, 0, 0, 0.2);
-  font-family: SourceHanSans-Regular;
+  background-color: rgba(var(--rgb-cinnabar), 0.05);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-cinnabar), 0.2);
+  font-family: var(--font-ui);
 }
 
 .upload-box {
   flex: 1;
   min-width: 300px;
   height: 180px;
-  border: 2px dashed rgba(166, 124, 82, 0.4);
-  border-radius: 8px;
-  background-color: rgba(248, 244, 233, 0.5);
+  border: 2px dashed rgba(var(--rgb-brown-muted), 0.4);
+  border-radius: var(--radius-md);
+  background-color: rgba(var(--rgb-parchment), 0.5);
   cursor: pointer;
   transition: all 0.3s;
   position: relative;
@@ -1237,9 +1119,9 @@ const generateWordReport = () => {
 }
 
 .upload-box:hover {
-  border-color: rgba(139, 0, 0, 1);
-  background-color: rgba(139, 0, 0, 0.05);
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.15);
+  border-color: var(--color-cinnabar);
+  background-color: rgba(var(--rgb-cinnabar), 0.05);
+  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.15);
 }
 
 .upload-content {
@@ -1251,18 +1133,18 @@ const generateWordReport = () => {
 
 .upload-icon {
   font-size: 36px;
-  color: rgba(166, 124, 82, 1);
+  color: var(--color-brown-muted);
   transition: all 0.3s;
 }
 
 .upload-box:hover .upload-icon {
-  color: rgba(139, 0, 0, 1);
+  color: var(--color-cinnabar);
 }
 
 .upload-text {
   font-size: 14px;
-  color: rgba(166, 124, 82, 1);
-  font-family: SourceHanSans-Regular;
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
 }
 
 .file-input {
@@ -1271,16 +1153,16 @@ const generateWordReport = () => {
 
 .select-btn {
   padding: 10px 20px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  background: var(--color-cinnabar);
   color: white;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   font-size: 14px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1288,7 +1170,7 @@ const generateWordReport = () => {
 }
 
 .select-btn:hover {
-  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
+  box-shadow: 0 6px 16px rgba(var(--rgb-cinnabar), 0.4);
   transform: translateY(-2px);
 }
 
@@ -1306,33 +1188,33 @@ const generateWordReport = () => {
 
 .file-name {
   font-size: 14px;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   font-weight: 500;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--color-cream);
   padding: 8px 16px;
-  border-radius: 6px;
-  box-shadow: 0 2px 6px rgba(44, 24, 16, 0.08);
-  font-family: SourceHanSans-Medium;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 6px rgba(var(--rgb-brown-dark), 0.08);
+  font-family: var(--font-ui);
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
 }
 
 .file-meta {
   display: flex;
   gap: 12px;
   font-size: 12px;
-  color: rgba(166, 124, 82, 1);
-  font-family: SourceHanSans-Regular;
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
 }
 
 .file-type, .file-size {
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--color-cream);
   padding: 4px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
 }
 
 /* 更换文件按钮 */
@@ -1342,14 +1224,14 @@ const generateWordReport = () => {
   opacity: 0;
   visibility: hidden;
   padding: 8px 16px;
-  background-color: rgba(139, 0, 0, 0.9);
+  background-color: rgba(var(--rgb-cinnabar), 0.9);
   color: white;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.3s;
   border: none;
-  font-family: SourceHanSans-Medium;
+  font-family: var(--font-ui);
   z-index: 10;
 }
 
@@ -1359,28 +1241,28 @@ const generateWordReport = () => {
 }
 
 .replace-btn:hover {
-  background-color: rgba(120, 0, 0, 1);
+  background-color: var(--color-cinnabar-dark);
 }
 
 /* 错误信息样式 */
 .error-message {
-  color: rgba(139, 0, 0, 1);
+  color: var(--color-cinnabar);
   font-size: 14px;
   text-align: center;
   margin: 16px 0;
   padding: 12px;
-  background-color: rgba(139, 0, 0, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(139, 0, 0, 0.2);
-  font-family: SourceHanSans-Regular;
+  background-color: rgba(var(--rgb-cinnabar), 0.05);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-cinnabar), 0.2);
+  font-family: var(--font-ui);
 }
 
 /* 最近对比记录 */
 .recent-records {
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  background-color: var(--color-cream);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(var(--rgb-brown-dark), 0.08);
   padding: 20px;
 }
 
@@ -1390,20 +1272,20 @@ const generateWordReport = () => {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
 }
 
 .records-title {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .view-all {
   font-size: 13px;
-  color: rgba(139, 0, 0, 1);
-  font-family: SourceHanSans-Regular;
+  color: var(--color-cinnabar);
+  font-family: var(--font-ui);
   cursor: pointer;
 }
 
@@ -1417,16 +1299,16 @@ const generateWordReport = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: rgba(248, 244, 233, 0.5);
-  border-radius: 8px;
+  background-color: rgba(var(--rgb-parchment), 0.5);
+  border-radius: var(--radius-md);
   padding: 12px 16px;
-  border: 1px solid rgba(166, 124, 82, 0.15);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.15);
   transition: all 0.3s ease;
 }
 
 .record-item:hover {
-  background-color: rgba(248, 244, 233, 0.8);
-  border-color: rgba(166, 124, 82, 0.3);
+  background-color: rgba(var(--rgb-parchment), 0.8);
+  border-color: rgba(var(--rgb-brown-muted), 0.3);
 }
 
 .record-info {
@@ -1437,7 +1319,7 @@ const generateWordReport = () => {
 
 .record-icon {
   font-size: 16px;
-  color: rgba(166, 124, 82, 1);
+  color: var(--color-brown-muted);
 }
 
 .record-details {
@@ -1448,14 +1330,14 @@ const generateWordReport = () => {
 
 .record-filename {
   font-size: 14px;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Regular;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .record-timestamp {
   font-size: 12px;
-  color: rgba(166, 124, 82, 1);
-  font-family: SourceHanSans-Regular;
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
 }
 
 .record-actions {
@@ -1466,30 +1348,30 @@ const generateWordReport = () => {
 .record-action-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid rgba(166, 124, 82, 0.3);
-  border-radius: 6px;
-  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.3);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-cream);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  color: rgba(166, 124, 82, 1);
+  color: var(--color-brown-muted);
   font-size: 14px;
 }
 
 .record-action-btn:hover {
-  background-color: rgba(139, 0, 0, 1);
+  background-color: var(--color-cinnabar);
   color: white;
-  border-color: rgba(139, 0, 0, 1);
+  border-color: var(--color-cinnabar);
 }
 
 /* 属性检查结果 */
 .results-section {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  background-color: var(--color-cream);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+  box-shadow: 0 2px 8px rgba(var(--rgb-brown-dark), 0.08);
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
@@ -1502,9 +1384,9 @@ const generateWordReport = () => {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  background-color: rgba(248, 244, 233, 0.5);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  background-color: rgba(var(--rgb-parchment), 0.5);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
   flex-wrap: wrap;
   gap: 16px;
 }
@@ -1519,18 +1401,18 @@ const generateWordReport = () => {
 .stat-icon-container {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .stat-icon-container.match {
-  background-color: rgba(34, 139, 34, 0.1);
+  background-color: rgba(var(--rgb-jade), 0.1);
 }
 
 .stat-icon-container.mismatch {
-  background-color: rgba(139, 0, 0, 0.1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
 }
 
 .stat-icon-container.warning {
@@ -1542,11 +1424,11 @@ const generateWordReport = () => {
 }
 
 .stat-icon-container.match .stat-icon {
-  color: rgba(34, 139, 34, 1);
+  color: var(--color-jade-light);
 }
 
 .stat-icon-container.mismatch .stat-icon {
-  color: rgba(139, 0, 0, 1);
+  color: var(--color-cinnabar);
 }
 
 .stat-icon-container.warning .stat-icon {
@@ -1561,22 +1443,22 @@ const generateWordReport = () => {
 
 .stat-label {
   font-size: 12px;
-  color: rgba(166, 124, 82, 1);
-  font-family: SourceHanSans-Regular;
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
 }
 
 .stat-value {
   font-size: 18px;
   font-weight: 700;
-  font-family: SourceHanSans-Bold;
+  font-family: var(--font-ui);
 }
 
 .stat-value.match {
-  color: rgba(34, 139, 34, 1);
+  color: var(--color-jade-light);
 }
 
 .stat-value.mismatch {
-  color: rgba(139, 0, 0, 1);
+  color: var(--color-cinnabar);
 }
 
 .stat-value.warning {
@@ -1589,31 +1471,31 @@ const generateWordReport = () => {
 }
 
 .export-btn {
-  background-color: rgba(139, 0, 0, 1);
+  background-color: var(--color-cinnabar);
   color: white;
 }
 
 .export-btn:hover {
-  background-color: rgba(120, 0, 0, 1);
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  background-color: var(--color-cinnabar-dark);
+  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.3);
 }
 
 .issue-tracking-btn {
-  background-color: rgba(166, 124, 82, 1);
+  background-color: var(--color-brown-muted);
   color: white;
 }
 
 .issue-tracking-btn:hover {
-  background-color: rgba(145, 108, 70, 1);
-  box-shadow: 0 4px 12px rgba(166, 124, 82, 0.3);
+  background-color: var(--color-brown-muted);
+  box-shadow: 0 4px 12px rgba(var(--rgb-brown-muted), 0.3);
 }
 
 /* 属性差异详情 */
 .property-details-section {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  background-color: var(--color-cream);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+  box-shadow: 0 2px 8px rgba(var(--rgb-brown-dark), 0.08);
   overflow: hidden;
 }
 
@@ -1623,31 +1505,31 @@ const generateWordReport = () => {
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background-color: rgba(248, 244, 233, 0.5);
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+  background-color: rgba(var(--rgb-parchment), 0.5);
+  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
 }
 
 .section-icon-container {
   width: 32px;
   height: 32px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(139, 0, 0, 0.1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
   flex-shrink: 0;
 }
 
 .section-icon {
   font-size: 18px;
-  color: rgba(139, 0, 0, 1);
+  color: var(--color-cinnabar);
 }
 
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
   margin: 0;
 }
 
@@ -1658,26 +1540,26 @@ const generateWordReport = () => {
 
 .view-btn {
   padding: 6px 14px;
-  border-radius: 6px;
-  border: 1px solid rgba(166, 124, 82, 0.3);
-  background-color: rgba(255, 255, 255, 0.9);
-  color: rgba(166, 124, 82, 1);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.3);
+  background-color: var(--color-cream);
+  color: var(--color-brown-muted);
   font-size: 13px;
-  font-family: SourceHanSans-Regular;
+  font-family: var(--font-ui);
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .view-btn.active {
-  background-color: rgba(139, 0, 0, 1);
+  background-color: var(--color-cinnabar);
   color: white;
-  border-color: rgba(139, 0, 0, 1);
+  border-color: var(--color-cinnabar);
 }
 
 /* 属性表格 */
 .property-table {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
+  background-color: var(--color-cream);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -1685,11 +1567,11 @@ const generateWordReport = () => {
   display: grid;
   grid-template-columns: 150px 1fr 1fr 120px;
   padding: 12px 16px;
-  background-color: rgba(248, 244, 233, 0.8);
-  border-bottom: 2px solid rgba(166, 124, 82, 0.3);
-  font-family: SourceHanSans-SemiBold;
+  background-color: rgba(var(--rgb-parchment), 0.8);
+  border-bottom: 2px solid rgba(var(--rgb-brown-muted), 0.3);
+  font-family: var(--font-ui);
   font-size: 13px;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
 }
 
 .table-body {
@@ -1701,58 +1583,58 @@ const generateWordReport = () => {
   display: grid;
   grid-template-columns: 150px 1fr 1fr 120px;
   padding: 14px 16px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.15);
+  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.15);
   transition: background-color 0.2s;
   align-items: center;
 }
 
 .table-row:hover {
-  background-color: rgba(248, 244, 233, 0.3);
+  background-color: rgba(var(--rgb-parchment), 0.3);
 }
 
 .table-row.status-mismatch {
-  background-color: rgba(139, 0, 0, 0.05);
+  background-color: rgba(var(--rgb-cinnabar), 0.05);
 }
 
 .table-row.status-mismatch:hover {
-  background-color: rgba(139, 0, 0, 0.1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
 }
 
 .table-col {
   font-size: 13px;
-  font-family: SourceHanSans-Regular;
-  color: rgba(44, 24, 16, 1);
+  font-family: var(--font-ui);
+  color: var(--color-brown-dark);
 }
 
 .prop-name {
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   font-weight: 500;
 }
 
 .prop-value-left,
 .prop-value-right {
-  color: rgba(166, 124, 82, 1);
+  color: var(--color-brown-muted);
 }
 
 /* 状态标签 */
 .status-tag {
   display: inline-block;
   padding: 4px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   font-size: 12px;
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
   white-space: nowrap;
 }
 
 .status-match {
-  background-color: rgba(34, 139, 34, 0.1);
-  color: rgba(34, 139, 34, 1);
+  background-color: rgba(var(--rgb-jade), 0.1);
+  color: var(--color-jade-light);
 }
 
 .status-mismatch {
-  background-color: rgba(139, 0, 0, 0.1);
-  color: rgba(139, 0, 0, 1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
+  color: var(--color-cinnabar);
 }
 
 .status-warning {
@@ -1771,12 +1653,12 @@ const generateWordReport = () => {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(166, 124, 82, 0.5);
-  border-radius: 3px;
+  background-color: rgba(var(--rgb-brown-muted), 0.5);
+  border-radius: var(--radius-xs);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(166, 124, 82, 0.8);
+  background-color: rgba(var(--rgb-brown-muted), 0.8);
 }
 
 /* 历史记录/帮助弹窗 - 统一样式 */
@@ -1796,13 +1678,13 @@ const generateWordReport = () => {
 
 .help-modal,
 .history-modal {
-  background-color: rgba(248, 244, 233, 1);
-  border-radius: 12px;
+  background-color: rgba(var(--rgb-parchment), 1);
+  border-radius: var(--radius-lg);
   width: 600px;
   max-height: 80vh;
   overflow: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
 }
 
 .help-modal-header,
@@ -1811,17 +1693,17 @@ const generateWordReport = () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
-  background-color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+  background-color: var(--color-cream);
 }
 
 .help-modal-header h3,
 .history-modal-header h3 {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   margin: 0;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
 }
 
 .help-close-btn,
@@ -1829,11 +1711,11 @@ const generateWordReport = () => {
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background-color: transparent;
   cursor: pointer;
   font-size: 20px;
-  color: rgba(107, 79, 52, 1);
+  color: var(--color-brown);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1842,8 +1724,8 @@ const generateWordReport = () => {
 
 .help-close-btn:hover,
 .history-close-btn:hover {
-  background-color: rgba(139, 0, 0, 0.1);
-  color: rgba(139, 0, 0, 1);
+  background-color: rgba(var(--rgb-cinnabar), 0.1);
+  color: var(--color-cinnabar);
 }
 
 .help-modal-body,
@@ -1865,9 +1747,9 @@ const generateWordReport = () => {
   align-items: center;
   text-align: center;
   padding: 32px 20px;
-  background-color: rgba(248, 244, 233, 0.5);
-  border-radius: 12px;
-  border: 0.7px solid rgba(216, 191, 156, 0.3);
+  background-color: rgba(var(--rgb-parchment), 0.5);
+  border-radius: var(--radius-lg);
+  border: 0.7px solid rgba(var(--rgb-tan-dark), 0.3);
   transition: all 0.3s ease;
 }
 
@@ -1879,7 +1761,7 @@ const generateWordReport = () => {
 .help-feature-card .card-icon {
   width: 48px;
   height: 48px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1917,15 +1799,15 @@ const generateWordReport = () => {
 .help-feature-card .card-title {
   font-size: 16px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
   margin: 0 0 8px 0;
 }
 
 .help-feature-card .card-desc {
   font-size: 13px;
-  color: rgba(107, 79, 52, 1);
-  font-family: SourceHanSans-Regular;
+  color: var(--color-brown);
+  font-family: var(--font-ui);
   margin: 0;
   line-height: 1.4;
 }
@@ -1962,7 +1844,7 @@ const generateWordReport = () => {
     width: 100%;
     max-width: none;
     height: 44px;
-    border-radius: 10px;
+    border-radius: var(--radius-lg);
     font-size: 14px;
     box-sizing: border-box;
   }
@@ -1989,10 +1871,6 @@ const generateWordReport = () => {
 
   .property-details-list {
     gap: 12px;
-  }
-
-  .page-header {
-    display: none;
   }
 
   .action-buttons {

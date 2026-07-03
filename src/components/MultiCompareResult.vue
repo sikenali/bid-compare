@@ -1,7 +1,7 @@
 <template>
   <div class="multi-compare-result">
     <div class="result-header">
-      <h2>多文件对比结果</h2>
+      <h2 class="multi-result-title">多文件对比结果</h2>
       <div class="header-right">
         <div class="result-summary-inline">
           <span class="summary-item">
@@ -19,19 +19,19 @@
             <span class="summary-value">{{ averageSimilarity }}%</span>
           </span>
         </div>
-        <button class="matrix-toggle-btn" @click="showMatrix = !showMatrix">
-          <RiTableLine class="toggle-icon" />
-          <span>{{ showMatrix ? '隐藏矩阵' : '相似度矩阵' }}</span>
+        <button class="ba-btn-secondary ba-btn-sm" @click="showMatrix = !showMatrix">
+          <RiTableLine class="ba-btn-icon" />
+          <span class="ba-btn-text-mobile-hide">{{ showMatrix ? '隐藏矩阵' : '相似度矩阵' }}</span>
         </button>
         <BorderBeam size="sm" color-variant="sunset" theme="dark" :duration="2">
-          <button class="export-btn" @click="handleExport">
-            <RiDownloadLine class="export-icon" />
+          <button class="ba-btn-primary ba-btn-sm" @click="handleExport">
+            <RiDownloadLine class="ba-btn-icon" />
             <span>导出</span>
           </button>
         </BorderBeam>
-        <button class="back-btn" @click="$emit('close')">
-          <RiArrowLeftLine class="back-icon" />
-          <span>返回</span>
+        <button class="ba-btn-ghost ba-btn-sm" @click="$emit('close')">
+          <RiArrowLeftLine class="ba-btn-icon" />
+          <span class="ba-btn-text-mobile-hide">返回</span>
         </button>
       </div>
     </div>
@@ -86,12 +86,12 @@
           <h3>重复片段详情</h3>
         </div>
         <div class="duplicate-stats">
-          <div class="stat-badge stat-badge-100">
-            <span class="stat-badge-icon">💯</span>
+          <div class="ba-stat-badge ba-stat-danger">
+            <span class="ba-stat-badge-icon">💯</span>
             <span>100%相同：{{ count100Similarity }}个</span>
           </div>
-          <div class="stat-badge stat-badge-threshold">
-            <span class="stat-badge-icon">🎯</span>
+          <div class="ba-stat-badge ba-stat-warn">
+            <span class="ba-stat-badge-icon">🎯</span>
             <span>≥75%：{{ countHighSimilarity }}个</span>
           </div>
         </div>
@@ -132,7 +132,7 @@
             <div class="col col-similarity">相似度</div>
           </div>
           <div class="table-body">
-            <div v-for="(dup, dIdx) in group.items" :key="dIdx" class="table-row">
+            <div v-for="(dup, dIdx) in group.items" :key="dIdx" class="table-row" :data-similarity="`${dup.similarity}%`">
               <div class="col col-index">{{ dIdx + 1 }}</div>
               <div class="col col-content" v-html="dup.leftContent"
                    @click.stop="openContentModal(dup)"></div>
@@ -147,14 +147,14 @@
       </div>
 
       <!-- 内容弹窗 -->
-      <div class="content-modal-overlay" v-if="contentModal" @click.self="closeContentModal">
-        <div class="content-modal">
-          <div class="content-modal-header">
-            <div class="content-modal-title">
+      <div class="ba-modal-overlay content-modal-overlay" v-if="contentModal" @click.self="closeContentModal">
+        <div class="ba-modal content-modal">
+          <div class="ba-modal-header">
+            <div class="ba-modal-title">
               <RiExchange2Line class="modal-title-icon" />
-              <h3>内容对比详情</h3>
+              <span>内容对比详情</span>
             </div>
-            <button class="modal-close-btn" @click="closeContentModal">
+            <button class="ba-close-btn" @click="closeContentModal" aria-label="关闭">
               <RiCloseLine />
             </button>
           </div>
@@ -524,10 +524,11 @@ const generateWordReport = async () => {
 <style scoped>
 .multi-compare-result {
   padding: 20px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 4px 16px rgba(44, 24, 16, 0.1);
+  background: var(--color-cream);
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(var(--rgb-tan-light), 0.2);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-ui);
 }
 
 .result-header {
@@ -535,20 +536,23 @@ const generateWordReport = async () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.result-header h2 {
+.multi-result-title {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .result-summary-inline {
@@ -556,9 +560,9 @@ const generateWordReport = async () => {
   align-items: center;
   gap: 12px;
   padding: 8px 16px;
-  background: rgba(248, 244, 233, 0.5);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.15);
+  background: rgba(var(--rgb-parchment), 0.5);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-tan-light), 0.15);
 }
 
 .summary-item {
@@ -569,54 +573,19 @@ const generateWordReport = async () => {
 
 .summary-item .summary-label {
   font-size: 11px;
-  color: rgba(101, 70, 40, 0.7);
+  color: rgba(var(--rgb-brown), 0.7);
 }
 
 .summary-item .summary-value {
   font-size: 14px;
   font-weight: 700;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Bold;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .summary-divider {
-  color: rgba(166, 124, 82, 0.3);
+  color: var(--color-tan-light);
   font-size: 12px;
-}
-
-.matrix-toggle-btn,
-.export-btn,
-.back-btn {
-  height: 40px;
-  padding: 0 20px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
-}
-
-.matrix-toggle-btn:hover,
-.export-btn:hover,
-.back-btn:hover {
-  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
-  transform: translateY(-2px);
-}
-
-.toggle-icon,
-.export-icon,
-.back-icon {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 1);
 }
 
 /* 相似度矩阵 */
@@ -626,6 +595,7 @@ const generateWordReport = async () => {
 
 .matrix-container {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   padding-bottom: 8px;
 }
 
@@ -638,19 +608,19 @@ const generateWordReport = async () => {
 .matrix-table th,
 .matrix-table td {
   padding: 10px 12px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  border: 1px solid rgba(var(--rgb-tan-light), 0.2);
   text-align: center;
   font-size: 12px;
 }
 
 .corner-cell {
-  background: rgba(248, 244, 233, 0.3);
+  background: rgba(var(--rgb-parchment), 0.3);
 }
 
 .matrix-header {
-  background: rgba(248, 244, 233, 0.5);
+  background: rgba(var(--rgb-parchment), 0.5);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
 }
 
 .row-header {
@@ -665,7 +635,7 @@ const generateWordReport = async () => {
 
 .file-icon {
   font-size: 14px;
-  color: rgba(46, 89, 132, 0.8);
+  color: rgba(var(--rgb-cloud-blue), 0.8);
   flex-shrink: 0;
 }
 
@@ -677,7 +647,7 @@ const generateWordReport = async () => {
 }
 
 .matrix-cell:hover {
-  background: rgba(248, 244, 233, 0.5);
+  background: rgba(var(--rgb-parchment), 0.5);
   transform: scale(1.02);
 }
 
@@ -689,36 +659,36 @@ const generateWordReport = async () => {
 .matrix-cell .dup-count {
   display: block;
   font-size: 10px;
-  color: rgba(101, 70, 40, 0.6);
+  color: rgba(var(--rgb-brown), 0.6);
   margin-top: 2px;
 }
 
 .matrix-cell.high {
-  background: rgba(196, 30, 58, 0.15);
-  color: rgba(196, 30, 58, 1);
+  background: rgba(var(--rgb-cinnabar), 0.15);
+  color: var(--color-cinnabar);
 }
 
 .matrix-cell.medium {
-  background: rgba(255, 152, 0, 0.15);
-  color: rgba(255, 152, 0, 1);
+  background: var(--color-gold-dark);
+  color: var(--color-gold-dark);
 }
 
 .matrix-cell.low {
-  background: rgba(76, 175, 80, 0.15);
-  color: rgba(76, 175, 80, 1);
+  background: var(--color-jade);
+  color: var(--color-jade);
 }
 
 .matrix-cell.minimal {
-  color: rgba(101, 70, 40, 0.5);
+  color: var(--color-brown-muted);
 }
 
 .diagonal {
-  color: rgba(101, 70, 40, 0.4);
+  color: var(--color-brown-muted);
   font-style: italic;
 }
 
 .no-data {
-  color: rgba(101, 70, 40, 0.3);
+  color: var(--color-brown-muted);
 }
 
 /* 重复片段详情 */
@@ -732,9 +702,11 @@ const generateWordReport = async () => {
   align-items: center;
   margin-bottom: 16px;
   padding: 12px 16px;
-  background: rgba(248, 244, 233, 0.3);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.15);
+  background: rgba(var(--rgb-parchment), 0.3);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-tan-light), 0.15);
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .duplicate-title-section {
@@ -745,52 +717,29 @@ const generateWordReport = async () => {
 
 .duplicate-title-icon {
   font-size: 20px;
-  color: rgba(46, 89, 132, 1);
+  color: var(--color-cloud-blue);
 }
 
 .duplicate-title-section h3 {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
 }
 
 .duplicate-stats {
   display: flex;
-  gap: 12px;
-}
-
-.stat-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.stat-badge-100 {
-  background: rgba(196, 30, 58, 0.1);
-  color: rgba(196, 30, 58, 1);
-}
-
-.stat-badge-threshold {
-  background: rgba(255, 152, 0, 0.1);
-  color: rgba(255, 152, 0, 1);
-}
-
-.stat-badge-icon {
-  font-size: 14px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* 文件对独立表格容器 */
 .pair-tables {
   margin-bottom: 24px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  border: 1px solid rgba(var(--rgb-tan-light), 0.2);
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(var(--rgb-cream), 0.5);
 }
 
 .pair-tables:last-child {
@@ -803,7 +752,7 @@ const generateWordReport = async () => {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  background: rgba(245, 238, 226, 0.7);
+  background: rgba(var(--rgb-cream-dark), 0.7);
   cursor: pointer;
   user-select: none;
   transition: background 0.2s;
@@ -811,7 +760,7 @@ const generateWordReport = async () => {
 }
 
 .table-group-header:hover {
-  background: rgba(245, 238, 226, 1);
+  background: rgba(var(--rgb-cream-dark), 1);
 }
 
 .table-group-header .group-chevron {
@@ -821,7 +770,7 @@ const generateWordReport = async () => {
   width: 18px;
   height: 18px;
   font-size: 16px;
-  color: rgba(101, 70, 40, 0.5);
+  color: var(--color-brown-muted);
   transition: transform 0.25s ease;
   flex-shrink: 0;
 }
@@ -832,7 +781,7 @@ const generateWordReport = async () => {
 
 .table-group-header .pair-group-icon {
   font-size: 14px;
-  color: rgba(46, 89, 132, 0.7);
+  color: rgba(var(--rgb-cloud-blue), 0.7);
   flex-shrink: 0;
 }
 
@@ -841,8 +790,9 @@ const generateWordReport = async () => {
   align-items: center;
   gap: 4px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
+  min-width: 0;
 }
 
 .table-group-header .pair-group-file {
@@ -854,7 +804,7 @@ const generateWordReport = async () => {
 
 .table-group-header .pair-group-arrow {
   font-size: 12px;
-  color: rgba(166, 124, 82, 0.5);
+  color: var(--color-tan-light);
   flex-shrink: 0;
 }
 
@@ -867,29 +817,30 @@ const generateWordReport = async () => {
 }
 
 .table-group-header .pair-group-sim.high {
-  background: rgba(196, 30, 58, 0.1);
-  color: rgba(196, 30, 58, 1);
+  background: rgba(var(--rgb-cinnabar), 0.1);
+  color: var(--color-cinnabar);
 }
 
 .table-group-header .pair-group-sim.medium {
-  background: rgba(255, 152, 0, 0.1);
-  color: rgba(255, 152, 0, 1);
+  background: var(--color-gold-dark);
+  color: var(--color-gold-dark);
 }
 
 .table-group-header .pair-group-sim.low {
-  background: rgba(76, 175, 80, 0.1);
-  color: rgba(76, 175, 80, 1);
+  background: var(--color-jade);
+  color: var(--color-jade);
 }
 
 .table-group-header .pair-group-count {
   font-size: 11px;
-  color: rgba(101, 70, 40, 0.6);
+  color: rgba(var(--rgb-brown), 0.6);
   margin-left: auto;
+  flex-shrink: 0;
 }
 
-/* 数据表格 */
+/* 数据表格 - 单一定义 */
 .data-table {
-  border-top: 1px solid rgba(166, 124, 82, 0.12);
+  border-top: 1px solid rgba(var(--rgb-tan-light), 0.12);
 }
 
 .table-body {
@@ -899,30 +850,25 @@ const generateWordReport = async () => {
 
 .table-row {
   display: flex;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.1);
+  border-bottom: 1px solid rgba(var(--rgb-tan-light), 0.1);
   transition: background 0.2s;
 }
 
 .table-row:hover {
-  background: rgba(248, 244, 233, 0.3);
+  background: rgba(var(--rgb-parchment), 0.3);
 }
 
 .table-row:last-child {
   border-bottom: none;
 }
 
-/* 数据表格 */
-.data-table {
-  border-top: 1px solid rgba(166, 124, 82, 0.12);
-}
-
 .table-header {
   display: flex;
-  background: rgba(248, 244, 233, 0.5);
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+  background: rgba(var(--rgb-parchment), 0.5);
+  border-bottom: 1px solid rgba(var(--rgb-tan-light), 0.2);
   font-size: 12px;
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
 }
 
 .table-header .col {
@@ -942,56 +888,30 @@ const generateWordReport = async () => {
 }
 
 .col-content-left {
-  border-right: 1px solid rgba(166, 124, 82, 0.1);
+  border-right: 1px solid rgba(var(--rgb-tan-light), 0.1);
 }
 
 .col-content-right {
-  border-left: 1px solid rgba(166, 124, 82, 0.1);
+  border-left: 1px solid rgba(var(--rgb-tan-light), 0.1);
 }
 
 .header-file-icon {
   font-size: 14px;
-  color: rgba(46, 89, 132, 0.8);
+  color: rgba(var(--rgb-cloud-blue), 0.8);
   flex-shrink: 0;
-}
-
-/* 分组列头（基于文件名的动态列标签） */
-.pair-group-column-headers {
-  display: flex;
-  background: rgba(245, 238, 226, 0.4);
-  border-bottom: 1px solid rgba(166, 124, 82, 0.12);
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(44, 24, 16, 0.8);
-  position: sticky;
-  top: 36px;
-  z-index: 1;
-}
-
-.pair-group-column-headers .col {
-  padding: 6px 12px;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  justify-content: center;
-}
-
-.table-row:last-child {
-  border-bottom: none;
 }
 
 .table-row .col {
   padding: 6px 4px;
   font-size: 12px;
-  color: rgba(44, 24, 16, 0.9);
+  color: rgba(var(--rgb-brown-dark), 0.9);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .table-row .col-content {
-  background: rgba(248, 244, 233, 0.3);
+  background: rgba(var(--rgb-parchment), 0.3);
   border-radius: 6px;
   padding: 6px 10px;
   margin: 4px 6px;
@@ -1002,28 +922,28 @@ const generateWordReport = async () => {
 }
 
 .table-row .col-content:hover {
-  background: rgba(245, 238, 226, 0.6);
-  color: rgba(46, 89, 132, 1);
+  background: rgba(var(--rgb-cream-dark), 0.6);
+  color: var(--color-cloud-blue);
 }
 
 .table-row .col-content :deep(.highlighted-text) {
-  background: rgba(255, 215, 0, 0.9);
+  background: rgba(var(--rgb-gold), 0.9);
   padding: 0 2px;
   border-radius: 2px;
   font-weight: 500;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
 }
 
 .table-row .col-similarity.high {
-  color: rgba(196, 30, 58, 1);
+  color: var(--color-cinnabar);
 }
 
 .table-row .col-similarity.medium {
-  color: rgba(255, 152, 0, 1);
+  color: var(--color-gold-dark);
 }
 
 .table-row .col-similarity.low {
-  color: rgba(76, 175, 80, 1);
+  color: var(--color-jade);
 }
 
 .col-similarity {
@@ -1034,73 +954,10 @@ const generateWordReport = async () => {
 }
 
 /* 内容弹窗 */
-.content-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 40px;
-}
-
 .content-modal {
-  background: white;
-  border-radius: 12px;
   width: 90%;
   max-width: 1000px;
   max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-}
-
-.content-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.15);
-}
-
-.content-modal-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.modal-title-icon {
-  font-size: 18px;
-  color: rgba(46, 89, 132, 1);
-}
-
-.content-modal-title h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-}
-
-.modal-close-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: rgba(101, 70, 40, 0.1);
-  border-radius: 6px;
-  cursor: pointer;
-  color: rgba(44, 24, 16, 0.7);
-  font-size: 18px;
-  transition: all 0.2s;
-}
-
-.modal-close-btn:hover {
-  background: rgba(196, 30, 58, 0.1);
-  color: rgba(196, 30, 58, 1);
 }
 
 .content-modal-subtitle {
@@ -1108,24 +965,25 @@ const generateWordReport = async () => {
   align-items: center;
   gap: 6px;
   padding: 10px 20px;
-  background: rgba(248, 244, 233, 0.3);
-  border-bottom: 1px solid rgba(166, 124, 82, 0.1);
+  background: rgba(var(--rgb-parchment), 0.3);
+  border-bottom: 1px solid rgba(var(--rgb-tan-light), 0.1);
   font-size: 12px;
+  flex-wrap: wrap;
 }
 
 .subtitle-icon {
   font-size: 14px;
-  color: rgba(46, 89, 132, 0.7);
+  color: rgba(var(--rgb-cloud-blue), 0.7);
 }
 
 .subtitle-file {
-  color: rgba(44, 24, 16, 0.9);
+  color: rgba(var(--rgb-brown-dark), 0.9);
   font-weight: 500;
 }
 
 .subtitle-arrow {
   font-size: 12px;
-  color: rgba(166, 124, 82, 0.5);
+  color: var(--color-tan-light);
 }
 
 .subtitle-sim {
@@ -1137,18 +995,18 @@ const generateWordReport = async () => {
 }
 
 .subtitle-sim.high {
-  background: rgba(196, 30, 58, 0.1);
-  color: rgba(196, 30, 58, 1);
+  background: rgba(var(--rgb-cinnabar), 0.1);
+  color: var(--color-cinnabar);
 }
 
 .subtitle-sim.medium {
-  background: rgba(255, 152, 0, 0.1);
-  color: rgba(255, 152, 0, 1);
+  background: var(--color-gold-dark);
+  color: var(--color-gold-dark);
 }
 
 .subtitle-sim.low {
-  background: rgba(76, 175, 80, 0.1);
-  color: rgba(76, 175, 80, 1);
+  background: var(--color-jade);
+  color: var(--color-jade);
 }
 
 .content-modal-body {
@@ -1169,29 +1027,29 @@ const generateWordReport = async () => {
 .content-side-label {
   font-size: 11px;
   font-weight: 600;
-  color: rgba(101, 70, 40, 0.7);
+  color: rgba(var(--rgb-brown), 0.7);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 8px;
   padding-bottom: 6px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.15);
+  border-bottom: 1px solid rgba(var(--rgb-tan-light), 0.15);
 }
 
 .content-side-text {
   font-size: 13px;
   line-height: 1.7;
-  color: rgba(44, 24, 16, 0.9);
+  color: rgba(var(--rgb-brown-dark), 0.9);
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: 'Courier New', Courier, monospace;
-  background: rgba(248, 244, 233, 0.2);
+  font-family: var(--font-ui);
+  background: rgba(var(--rgb-parchment), 0.2);
   padding: 12px;
   border-radius: 6px;
-  border: 1px solid rgba(166, 124, 82, 0.1);
+  border: 1px solid rgba(var(--rgb-tan-light), 0.1);
 }
 
 .content-side-text :deep(.highlighted-text) {
-  background: rgba(255, 235, 59, 0.5);
+  background: rgba(var(--rgb-gold), 0.5);
   padding: 0 2px;
   border-radius: 2px;
 }
@@ -1201,7 +1059,7 @@ const generateWordReport = async () => {
   align-items: center;
   justify-content: center;
   padding: 0 16px;
-  color: rgba(166, 124, 82, 0.3);
+  color: var(--color-tan-light);
   font-size: 20px;
   flex-shrink: 0;
 }
@@ -1210,12 +1068,12 @@ const generateWordReport = async () => {
 .no-duplicates {
   text-align: center;
   padding: 40px 20px;
-  color: rgba(101, 70, 40, 0.6);
+  color: rgba(var(--rgb-brown), 0.6);
 }
 
 .no-dup-icon {
   font-size: 48px;
-  color: rgba(76, 175, 80, 0.6);
+  color: var(--color-jade);
   margin-bottom: 12px;
 }
 
@@ -1227,11 +1085,176 @@ const generateWordReport = async () => {
 /* 矩阵单元格点击高亮闪烁 */
 @keyframes highlight-flash {
   0%, 100% { box-shadow: none; }
-  50% { box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.5), 0 0 20px rgba(196, 30, 58, 0.3); }
+  50% { box-shadow: 0 0 0 3px rgba(var(--rgb-cinnabar), 0.5), 0 0 20px rgba(var(--rgb-cinnabar), 0.3); }
 }
 
 .highlight-flash {
   animation: highlight-flash 0.5s ease-in-out 2;
   border-radius: 10px;
+}
+
+/* ================= 移动端响应式 ================= */
+@media (max-width: 1024px) {
+  .header-right {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .multi-compare-result {
+    padding: 14px;
+    border-radius: var(--radius-lg);
+  }
+
+  .result-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .multi-result-title {
+    font-size: 16px;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .result-summary-inline {
+    width: 100%;
+    justify-content: space-between;
+    padding: 6px 10px;
+  }
+
+  .summary-item .summary-value {
+    font-size: 13px;
+  }
+
+  .duplicate-header-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .duplicate-stats {
+    width: 100%;
+  }
+
+  .table-group-header {
+    flex-wrap: wrap;
+    padding: 10px;
+  }
+
+  .table-group-header .pair-group-files {
+    min-width: 0;
+  }
+
+  .table-group-header .pair-group-file {
+    max-width: 100px;
+  }
+
+  .table-group-header .pair-group-count {
+    width: 100%;
+    margin-left: 26px;
+    margin-top: 4px;
+  }
+
+  /* 文件对数据表格:移动端表头隐藏,行变卡片 */
+  .data-table .table-header {
+    display: none;
+  }
+
+  .data-table .table-body {
+    max-height: none;
+  }
+
+  .data-table .table-row {
+    flex-direction: column;
+    padding: 10px;
+    gap: 8px;
+    background: rgba(var(--rgb-cream), 0.6);
+    border: 1px solid rgba(var(--rgb-tan-light), 0.1);
+    border-radius: 8px;
+    margin: 6px;
+  }
+
+  .data-table .table-row .col {
+    width: 100%;
+    padding: 0;
+    white-space: normal;
+  }
+
+  .data-table .table-row .col-index {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    color: var(--color-brown-muted);
+    font-size: 12px;
+  }
+
+  .data-table .table-row .col-index::after {
+    content: '相似度 ' attr(data-similarity);
+  }
+
+  .data-table .table-row .col-content {
+    margin: 0;
+    padding: 8px 10px;
+  }
+
+  .data-table .table-row .col-similarity {
+    text-align: right;
+    font-size: 14px;
+  }
+
+  /* 内容弹窗移动端适配 */
+  .content-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .content-modal-subtitle {
+    padding: 8px 12px;
+  }
+
+  .content-modal-body {
+    flex-direction: column;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .content-divider {
+    padding: 8px 0;
+    transform: rotate(90deg);
+  }
+}
+
+@media (max-width: 480px) {
+  .multi-compare-result {
+    padding: 10px;
+  }
+
+  .matrix-table {
+    min-width: 320px;
+  }
+
+  .matrix-table th,
+  .matrix-table td {
+    padding: 6px 4px;
+    font-size: 10px;
+  }
+
+  .matrix-cell .sim-value {
+    font-size: 11px;
+  }
+
+  .matrix-cell .dup-count {
+    font-size: 9px;
+  }
 }
 </style>

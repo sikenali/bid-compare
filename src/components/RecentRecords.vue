@@ -132,34 +132,34 @@ const getFileIconComponent = (name: string): any => {
 }
 
 .records-title {
-  font-size: 16px;
+  font-size: var(--text-heading);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
   margin: 0;
 }
 
 .select-btn {
   height: 40px;
   padding: 0 20px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  background: var(--color-cinnabar);
   color: white;
   border: none;
-  border-radius: 10px;
-  font-size: 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-body);
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-cinnabar);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .select-btn:hover {
-  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
-  transform: translateY(-2px);
+  background: var(--color-cinnabar-dark);
+  transform: translateY(-1px);
 }
 
 .records-list {
@@ -172,13 +172,13 @@ const getFileIconComponent = (name: string): any => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-radius: 8px;
-  padding: 12px;
-  transition: all 0.3s ease;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3);
+  transition: all var(--transition-normal);
 }
 
 .record-item:hover {
-  background-color: rgba(239, 246, 255, 0.5);
+  background: var(--color-cream-dark);
 }
 
 .record-info {
@@ -188,8 +188,8 @@ const getFileIconComponent = (name: string): any => {
 }
 
 .record-icon {
-  font-size: 16px;
-  color: #9CA3AF;
+  font-size: var(--text-heading);
+  color: var(--color-brown-muted);
 }
 
 .record-details {
@@ -199,15 +199,15 @@ const getFileIconComponent = (name: string): any => {
 }
 
 .record-filename {
-  font-size: 14px;
-  color: #333333;
-  font-family: SourceHanSans-Regular;
+  font-size: var(--text-body);
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .record-timestamp {
-  font-size: 12px;
-  color: #888888;
-  font-family: SourceHanSans-Regular;
+  font-size: var(--text-caption);
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
 }
 
 .record-actions {
@@ -218,30 +218,30 @@ const getFileIconComponent = (name: string): any => {
 .record-action-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid #E5E7EB;
-  border-radius: 9999px;
-  background-color: white;
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-full);
+  background: var(--color-white);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
-  color: #666666;
-  font-size: 14px;
+  transition: all var(--transition-normal);
+  color: var(--color-brown-muted);
+  font-size: var(--text-body);
 }
 
 .record-action-btn:hover {
-  background-color: rgba(139, 0, 0, 0.05);
-  color: rgba(139, 0, 0, 1);
-  border-color: rgba(139, 0, 0, 0.3);
+  background: rgba(var(--rgb-cinnabar), 0.05);
+  color: var(--color-cinnabar);
+  border-color: rgba(var(--rgb-cinnabar), 0.3);
 }
 
 .no-records {
   text-align: center;
-  color: #9CA3AF;
-  padding: 20px;
-  font-family: SourceHanSans-Regular;
-  font-size: 14px;
+  color: var(--color-brown-muted);
+  padding: var(--spacing-5);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
 }
 
 /* 移动端响应式适配 */

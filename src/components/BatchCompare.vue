@@ -272,17 +272,17 @@ const handleBatchCompare = async () => {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  background-color: rgba(248, 244, 233, 1);
-  font-family: SourceHanSans, -apple-system, sans-serif;
+  gap: var(--spacing-4);
+  background: var(--color-parchment);
+  font-family: var(--font-ui);
 }
 
 .page-header {
-  padding: 16px 24px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  padding: var(--spacing-4) var(--spacing-6);
+  background: var(--color-cream);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .title-row {
@@ -292,48 +292,48 @@ const handleBatchCompare = async () => {
 }
 
 .page-title {
-  font-size: 20px;
+  font-size: var(--text-heading-lg);
   font-weight: 700;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   margin: 0 0 4px 0;
-  font-family: SourceHanSans-Bold;
+  font-family: var(--font-ui);
 }
 
 .page-subtitle {
-  font-size: 12px;
-  color: rgba(101, 70, 40, 1);
+  font-size: var(--text-caption);
+  color: var(--color-brown);
   margin: 0;
 }
 
 .batch-upload-area {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-  padding: 16px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  background: var(--color-cream);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-tan-border);
 }
 
 .batch-file-card {
-  background: rgba(248, 244, 233, 0.5);
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  border-radius: 8px;
-  padding: 12px;
+  background: var(--color-parchment);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3);
 }
 
 .batch-file-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: var(--spacing-2);
 }
 
 .batch-file-label {
-  font-size: 13px;
+  font-size: var(--text-body-sm);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .batch-remove-btn {
@@ -343,16 +343,16 @@ const handleBatchCompare = async () => {
   width: 24px;
   height: 24px;
   border: none;
-  background: rgba(196, 30, 58, 0.1);
-  border-radius: 50%;
+  background: rgba(var(--rgb-cinnabar), 0.1);
+  border-radius: var(--radius-full);
   cursor: pointer;
-  color: rgba(196, 30, 58, 1);
-  font-size: 14px;
-  transition: all 0.2s;
+  color: var(--color-cinnabar);
+  font-size: var(--text-body);
+  transition: all var(--transition-fast);
 }
 
 .batch-remove-btn:hover {
-  background: rgba(196, 30, 58, 0.2);
+  background: rgba(var(--rgb-cinnabar), 0.2);
 }
 
 .batch-file-select input[type="file"] {
@@ -366,23 +366,23 @@ const handleBatchCompare = async () => {
 .batch-file-placeholder {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px;
-  border: 2px dashed rgba(166, 124, 82, 0.3);
-  border-radius: 6px;
-  font-size: 13px;
-  color: rgba(101, 70, 40, 0.7);
-  transition: all 0.2s;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  border: 2px dashed var(--color-tan-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-body-sm);
+  color: var(--color-brown);
+  transition: all var(--transition-fast);
 }
 
 .batch-file-placeholder:hover {
-  border-color: rgba(166, 124, 82, 0.6);
-  background: rgba(248, 244, 233, 0.3);
+  border-color: var(--color-brown-muted);
+  background: var(--color-parchment);
 }
 
 .batch-file-icon {
   font-size: 20px;
-  color: rgba(46, 89, 132, 0.6);
+  color: var(--color-cloud-blue);
 }
 
 .batch-add-btn {
@@ -392,20 +392,20 @@ const handleBatchCompare = async () => {
   justify-content: center;
   gap: 6px;
   min-height: 120px;
-  border: 2px dashed rgba(166, 124, 82, 0.3);
-  border-radius: 8px;
-  background: rgba(248, 244, 233, 0.3);
+  border: 2px dashed var(--color-tan-border);
+  border-radius: var(--radius-md);
+  background: var(--color-parchment);
   cursor: pointer;
-  color: rgba(101, 70, 40, 0.6);
-  font-size: 13px;
-  font-family: SourceHanSans-Medium;
-  transition: all 0.2s;
+  color: var(--color-brown-muted);
+  font-size: var(--text-body-sm);
+  font-family: var(--font-ui);
+  transition: all var(--transition-fast);
 }
 
 .batch-add-btn:hover {
-  border-color: rgba(166, 124, 82, 0.6);
-  background: rgba(248, 244, 233, 0.5);
-  color: rgba(101, 70, 40, 0.9);
+  border-color: var(--color-brown-muted);
+  background: var(--color-cream-dark);
+  color: var(--color-brown);
 }
 
 .batch-add-icon {
@@ -415,25 +415,25 @@ const handleBatchCompare = async () => {
 .batch-action-area {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--spacing-4);
   padding: 0 4px;
 }
 
 .batch-compare-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-2);
   padding: 14px 32px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  background: var(--color-cinnabar);
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 16px;
+  font-size: var(--text-heading);
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
-  transition: all 0.3s ease;
-  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.35);
+  font-family: var(--font-ui);
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-cinnabar);
 }
 
 .batch-compare-btn:disabled {
@@ -442,8 +442,8 @@ const handleBatchCompare = async () => {
 }
 
 .batch-compare-btn:hover:not(:disabled) {
-  box-shadow: 0 8px 24px rgba(139, 0, 0, 0.45);
-  transform: translateY(-2px);
+  background: var(--color-cinnabar-dark);
+  transform: translateY(-1px);
 }
 
 .batch-compare-icon {
@@ -454,43 +454,43 @@ const handleBatchCompare = async () => {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-2);
 }
 
 .progress-bar-bg {
   flex: 1;
   height: 8px;
-  background: rgba(166, 124, 82, 0.2);
-  border-radius: 4px;
+  background: var(--color-cream-darker);
+  border-radius: var(--radius-full);
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, rgba(139, 0, 0, 1), rgba(196, 30, 58, 1));
-  border-radius: 4px;
-  transition: width 0.3s;
+  background: var(--color-jade-light);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-slow);
 }
 
 .progress-text {
-  font-size: 12px;
-  color: rgba(101, 70, 40, 1);
+  font-size: var(--text-caption);
+  color: var(--color-brown);
   white-space: nowrap;
 }
 
 .error-message {
-  padding: 12px 16px;
-  background: rgba(196, 30, 58, 0.08);
-  border: 1px solid rgba(196, 30, 58, 0.2);
-  border-radius: 8px;
-  color: rgba(196, 30, 58, 1);
-  font-size: 13px;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: rgba(var(--rgb-cinnabar), 0.08);
+  border: 1px solid rgba(var(--rgb-cinnabar), 0.2);
+  border-radius: var(--radius-md);
+  color: var(--color-cinnabar);
+  font-size: var(--text-body-sm);
 }
 
 .batch-results-section {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  background: var(--color-cream);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-tan-border);
   overflow: hidden;
 }
 
@@ -498,24 +498,24 @@ const handleBatchCompare = async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  background: rgba(248, 244, 233, 0.5);
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+  padding: var(--spacing-4) var(--spacing-5);
+  background: var(--color-parchment);
+  border-bottom: 1px solid var(--color-tan-border);
 }
 
 .results-header h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--text-heading);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .results-summary {
   display: flex;
-  gap: 16px;
-  font-size: 13px;
-  color: rgba(101, 70, 40, 1);
+  gap: var(--spacing-4);
+  font-size: var(--text-body-sm);
+  color: var(--color-brown);
 }
 
 .results-table {
@@ -526,20 +526,20 @@ const handleBatchCompare = async () => {
 .results-table-header {
   display: flex;
   padding: 10px 20px;
-  background: rgba(245, 238, 226, 0.6);
-  font-size: 13px;
+  background: var(--color-cream-darker);
+  font-size: var(--text-body-sm);
   font-weight: 600;
-  color: rgba(101, 70, 40, 1);
-  font-family: SourceHanSans-SemiBold;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.1);
+  color: var(--color-brown);
+  font-family: var(--font-ui);
+  border-bottom: 1px solid var(--color-tan-light);
 }
 
 .results-table-row {
   display: flex;
   padding: 12px 20px;
-  font-size: 13px;
-  color: rgba(44, 24, 16, 1);
-  border-bottom: 1px solid rgba(166, 124, 82, 0.06);
+  font-size: var(--text-body-sm);
+  color: var(--color-brown-dark);
+  border-bottom: 1px solid var(--color-tan-light);
 }
 
 .results-table-row:last-child {
@@ -555,24 +555,24 @@ const handleBatchCompare = async () => {
 .sim-badge {
   display: inline-block;
   padding: 2px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
-  font-size: 13px;
-  font-family: SourceHanSans-SemiBold;
+  font-size: var(--text-body-sm);
+  font-family: var(--font-ui);
 }
 
 .sim-badge.high {
-  background: rgba(196, 30, 58, 0.12);
-  color: rgba(196, 30, 58, 1);
+  background: rgba(var(--rgb-cinnabar), 0.12);
+  color: var(--color-cinnabar);
 }
 
 .sim-badge.mid {
-  background: rgba(212, 160, 60, 0.15);
-  color: rgba(180, 130, 40, 1);
+  background: rgba(var(--rgb-gold-dark), 0.15);
+  color: var(--color-gold-dark);
 }
 
 .sim-badge.low {
-  background: rgba(46, 89, 132, 0.1);
-  color: rgba(46, 89, 132, 1);
+  background: rgba(var(--rgb-cloud-blue), 0.1);
+  color: var(--color-cloud-blue);
 }
 </style>

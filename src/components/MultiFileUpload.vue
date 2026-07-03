@@ -3,7 +3,7 @@
     <!-- 标题区域 -->
     <div class="upload-title-section">
       <div class="upload-title">
-        <span class="title-decoration" style="background-color: rgba(139,0,0,1)"></span>
+        <span class="title-decoration" style="background-color: var(--color-cinnabar)"></span>
         <span class="title-text">MULTI-DOCUMENT SOURCE</span>
       </div>
       <span class="file-count-badge">
@@ -177,16 +177,16 @@ const formatSize = (bytes: number): string => {
 const getFileTypeInfo = (file: File) => {
   const ext = file.name.split('.').pop()?.toLowerCase() || ''
   const typeMap: Record<string, { icon: any; label: string; bg: string; color: string }> = {
-    'docx': { icon: RiFileWord2Line, label: 'Word 文档', bg: 'rgba(219,234,254,1)', color: 'rgba(37,99,235,1)' },
-    'doc': { icon: RiFileWord2Line, label: 'Word 文档', bg: 'rgba(219,234,254,1)', color: 'rgba(37,99,235,1)' },
-    'xlsx': { icon: RiFileExcel2Line, label: 'Excel 表格', bg: 'rgba(220,252,231,1)', color: 'rgba(34,139,34,1)' },
-    'xls': { icon: RiFileExcel2Line, label: 'Excel 表格', bg: 'rgba(220,252,231,1)', color: 'rgba(34,139,34,1)' },
-    'pptx': { icon: RiSlideshow2Line, label: 'PPT 演示', bg: 'rgba(254,243,199,1)', color: 'rgba(217,119,6,1)' },
-    'ppt': { icon: RiSlideshow2Line, label: 'PPT 演示', bg: 'rgba(254,243,199,1)', color: 'rgba(217,119,6,1)' },
-    'pdf': { icon: RiFilePdf2Line, label: 'PDF 文档', bg: 'rgba(254,242,242,1)', color: 'rgba(220,38,38,1)' },
-    'txt': { icon: RiFileTextLine, label: '文本文件', bg: 'rgba(243,244,246,1)', color: 'rgba(107,114,128,1)' }
+    'docx': { icon: RiFileWord2Line, label: 'Word 文档', bg: 'rgba(var(--rgb-cloud-blue), 0.1)', color: 'var(--color-cloud-blue)' },
+    'doc': { icon: RiFileWord2Line, label: 'Word 文档', bg: 'rgba(var(--rgb-cloud-blue), 0.1)', color: 'var(--color-cloud-blue)' },
+    'xlsx': { icon: RiFileExcel2Line, label: 'Excel 表格', bg: 'rgba(var(--rgb-jade), 0.1)', color: 'var(--color-jade)' },
+    'xls': { icon: RiFileExcel2Line, label: 'Excel 表格', bg: 'rgba(var(--rgb-jade), 0.1)', color: 'var(--color-jade)' },
+    'pptx': { icon: RiSlideshow2Line, label: 'PPT 演示', bg: 'rgba(var(--rgb-gold-dark), 0.1)', color: 'var(--color-gold-dark)' },
+    'ppt': { icon: RiSlideshow2Line, label: 'PPT 演示', bg: 'rgba(var(--rgb-gold-dark), 0.1)', color: 'var(--color-gold-dark)' },
+    'pdf': { icon: RiFilePdf2Line, label: 'PDF 文档', bg: 'rgba(var(--rgb-cinnabar), 0.1)', color: 'var(--color-cinnabar)' },
+    'txt': { icon: RiFileTextLine, label: '文本文件', bg: 'rgba(var(--rgb-brown-muted), 0.1)', color: 'var(--color-brown-muted)' }
   }
-  return typeMap[ext] || { icon: RiFileLine, label: '未知类型', bg: 'rgba(243,244,246,1)', color: 'rgba(107,114,128,1)' }
+  return typeMap[ext] || { icon: RiFileLine, label: '未知类型', bg: 'rgba(var(--rgb-brown-muted), 0.1)', color: 'var(--color-brown-muted)' }
 }
 
 defineExpose({ clearFiles, files })
@@ -194,40 +194,39 @@ defineExpose({ clearFiles, files })
 
 <style scoped>
 .multi-file-upload {
-  padding: 20px 24px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 4px 16px rgba(44, 24, 16, 0.08);
+  padding: var(--spacing-5) var(--spacing-6);
+  background: var(--color-cream);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
 }
 
-/* 标题区域 */
 .upload-title-section {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: var(--spacing-4);
 }
 
 .upload-title {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-3);
 }
 
 .title-decoration {
   width: 5px;
   height: 24px;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
 }
 
 .title-text {
-  font-size: 18px;
+  font-size: var(--text-heading);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
   letter-spacing: 1px;
 }
 
@@ -236,46 +235,45 @@ defineExpose({ clearFiles, files })
   align-items: baseline;
   gap: 2px;
   padding: 4px 12px;
-  background: rgba(245, 238, 226, 0.6);
-  border-radius: 16px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  background: var(--color-cream-darker);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-tan-border);
 }
 
 .count-current {
-  font-size: 16px;
+  font-size: var(--text-heading);
   font-weight: 700;
-  color: rgba(139, 0, 0, 1);
-  font-family: SourceHanSans-Bold;
+  color: var(--color-cinnabar);
+  font-family: var(--font-ui);
 }
 
 .count-separator {
-  font-size: 12px;
-  color: rgba(166, 124, 82, 0.5);
+  font-size: var(--text-caption);
+  color: var(--color-brown-muted);
 }
 
 .count-max {
-  font-size: 12px;
-  color: rgba(101, 70, 40, 0.7);
+  font-size: var(--text-caption);
+  color: var(--color-brown);
 }
 
-/* 上传区域 */
 .upload-area {
-  border: 2px dashed rgba(216, 191, 156, 0.7);
-  border-radius: 12px;
-  background-color: rgba(255, 255, 255, 1);
+  border: 2px dashed var(--color-tan-dark);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
   min-height: 200px;
 }
 
 .upload-area:hover {
-  border-color: rgba(139, 0, 0, 1);
-  box-shadow: 0 6px 24px rgba(139, 0, 0, 0.12);
+  border-color: var(--color-cinnabar);
+  box-shadow: var(--shadow-cinnabar-hover);
 }
 
 .upload-area.drag-over {
-  border-color: rgba(46, 89, 132, 1);
-  background: rgba(248, 244, 233, 0.5);
+  border-color: var(--color-cloud-blue);
+  background: var(--color-parchment);
   transform: scale(1.01);
 }
 
@@ -283,7 +281,6 @@ defineExpose({ clearFiles, files })
   display: none;
 }
 
-/* 无文件状态 */
 .upload-content {
   display: flex;
   flex-direction: column;
@@ -296,59 +293,59 @@ defineExpose({ clearFiles, files })
 .upload-icon-wrapper {
   width: 80px;
   height: 80px;
-  border-radius: 9999px;
-  background-color: rgba(245, 238, 226, 1);
+  border-radius: var(--radius-full);
+  background: var(--color-cream-darker);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 24px;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
 }
 
 .upload-area:hover .upload-icon-wrapper {
-  background-color: rgba(245, 238, 226, 0.8);
+  background: var(--color-cream-darker);
   transform: scale(1.05);
 }
 
 .upload-icon {
   font-size: 40px;
-  color: rgba(166, 124, 82, 1);
+  color: var(--color-brown-muted);
 }
 
 .upload-main-text {
-  font-size: 18px;
+  font-size: var(--text-heading);
   font-weight: 500;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Medium;
-  margin-bottom: 16px;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
+  margin-bottom: var(--spacing-4);
 }
 
 .upload-format-icons {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
 }
 
 .format-icon-wrapper {
   position: relative;
   width: 40px;
   height: 40px;
-  border-radius: 8px;
-  background-color: rgba(245, 238, 226, 0.8);
+  border-radius: var(--radius-md);
+  background: var(--color-cream-darker);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
 }
 
 .format-icon-wrapper:hover {
-  background-color: rgba(245, 238, 226, 1);
+  background: var(--color-cream-darker);
   transform: translateY(-2px);
 }
 
 .format-icon-svg {
   font-size: 20px;
-  color: rgba(166, 124, 82, 1);
+  color: var(--color-brown-muted);
 }
 
 .format-tooltip {
@@ -357,14 +354,14 @@ defineExpose({ clearFiles, files })
   left: 50%;
   transform: translateX(-50%);
   padding: 4px 8px;
-  background-color: rgba(44, 24, 16, 0.9);
+  background: rgba(var(--rgb-brown-dark), 0.9);
   color: white;
   font-size: 11px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--transition-fast);
   z-index: 10;
 }
 
@@ -373,27 +370,26 @@ defineExpose({ clearFiles, files })
 }
 
 .upload-size-text {
-  font-size: 12px;
-  color: rgba(166, 124, 82, 1);
+  font-size: var(--text-caption);
+  color: var(--color-brown-muted);
 }
 
-/* 文件列表状态 */
 .file-list-container {
-  padding: 16px;
+  padding: var(--spacing-4);
 }
 
 .file-list-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: var(--spacing-3);
 }
 
 .file-list-title {
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .add-more-btn {
@@ -401,23 +397,23 @@ defineExpose({ clearFiles, files })
   align-items: center;
   gap: 4px;
   padding: 6px 12px;
-  border: 1px dashed rgba(166, 124, 82, 0.4);
-  border-radius: 6px;
+  border: 1px dashed var(--color-tan-border);
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: rgba(101, 70, 40, 0.8);
-  font-size: 12px;
+  color: var(--color-brown);
+  font-size: var(--text-caption);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .add-more-btn:hover {
-  border-color: rgba(139, 0, 0, 1);
-  background: rgba(139, 0, 0, 0.05);
-  color: rgba(139, 0, 0, 1);
+  border-color: var(--color-cinnabar);
+  background: rgba(var(--rgb-cinnabar), 0.05);
+  color: var(--color-cinnabar);
 }
 
 .add-icon {
-  font-size: 14px;
+  font-size: var(--text-body);
 }
 
 .file-list-scroll {
@@ -433,21 +429,21 @@ defineExpose({ clearFiles, files })
   justify-content: space-between;
   align-items: center;
   padding: 12px 14px;
-  background: rgba(248, 244, 233, 0.4);
-  border-radius: 8px;
-  transition: all 0.2s;
+  background: var(--color-parchment);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
   border: 1px solid transparent;
 }
 
 .file-item-card:hover {
-  background: rgba(248, 244, 233, 0.6);
-  border-color: rgba(166, 124, 82, 0.2);
+  background: var(--color-cream-dark);
+  border-color: var(--color-tan-border);
 }
 
 .file-info-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-3);
   min-width: 0;
   flex: 1;
 }
@@ -455,7 +451,7 @@ defineExpose({ clearFiles, files })
 .file-icon-badge {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -472,9 +468,9 @@ defineExpose({ clearFiles, files })
 }
 
 .file-details-col .file-name {
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 500;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -485,56 +481,55 @@ defineExpose({ clearFiles, files })
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  color: rgba(101, 70, 40, 0.7);
+  font-size: var(--text-caption);
+  color: var(--color-brown);
 }
 
 .meta-dot {
-  color: rgba(166, 124, 82, 0.4);
+  color: var(--color-tan-border);
 }
 
 .remove-btn-card {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
   border: none;
   background: transparent;
   flex-shrink: 0;
 }
 
 .remove-btn-card:hover {
-  background: rgba(196, 30, 58, 0.1);
+  background: rgba(var(--rgb-cinnabar), 0.1);
 }
 
 .remove-icon {
   font-size: 20px;
-  color: rgba(220, 38, 38, 0.7);
-  transition: all 0.2s;
+  color: rgba(var(--rgb-cinnabar), 0.7);
+  transition: all var(--transition-fast);
 }
 
 .remove-btn-card:hover .remove-icon {
-  color: rgba(220, 38, 38, 1);
+  color: var(--color-cinnabar);
   transform: scale(1.1);
 }
 
-/* 多文件对比圆形按钮 */
 .compare-circle-wrapper {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: var(--spacing-5);
 }
 
 .compare-circle-btn {
   width: 100px;
   height: 100px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   border: none;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  background: var(--color-cinnabar);
   color: white;
   cursor: pointer;
   display: flex;
@@ -542,38 +537,37 @@ defineExpose({ clearFiles, files })
   align-items: center;
   justify-content: center;
   gap: 6px;
-  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.35);
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow-cinnabar);
+  transition: all var(--transition-normal);
 }
 
 .compare-circle-btn:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 8px 24px rgba(139, 0, 0, 0.45);
+  background: var(--color-cinnabar-dark);
 }
 
 .compare-circle-btn:disabled,
 .compare-circle-btn.disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: linear-gradient(135deg, rgba(150, 150, 150, 1) 0%, rgba(180, 180, 180, 1) 100%);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--color-brown-muted);
+  box-shadow: var(--shadow-sm);
 }
 
 .compare-circle-icon {
   font-size: 28px;
-  transition: transform 0.3s ease;
+  transition: transform var(--transition-normal);
 }
 
 .compare-circle-text {
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
 }
 
-/* 移动端响应式优化 */
 @media (max-width: 768px) {
   .multi-file-upload {
-    padding: 16px;
+    padding: var(--spacing-4);
   }
 
   .upload-title-section {
@@ -583,7 +577,7 @@ defineExpose({ clearFiles, files })
   }
 
   .title-text {
-    font-size: 16px;
+    font-size: var(--text-heading);
   }
 
   .upload-area {
@@ -638,7 +632,7 @@ defineExpose({ clearFiles, files })
   }
 
   .file-details-col .file-name {
-    font-size: 13px;
+    font-size: var(--text-body-sm);
   }
 
   .file-meta-line {
@@ -646,7 +640,7 @@ defineExpose({ clearFiles, files })
   }
 
   .compare-circle-wrapper {
-    margin-top: 16px;
+    margin-top: var(--spacing-4);
   }
 
   .compare-circle-btn {
@@ -665,7 +659,7 @@ defineExpose({ clearFiles, files })
 
 @media (max-width: 480px) {
   .multi-file-upload {
-    padding: 12px;
+    padding: var(--spacing-3);
   }
 
   .upload-area {

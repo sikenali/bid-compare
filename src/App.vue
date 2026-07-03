@@ -3,17 +3,14 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { RiExchangeLine, RiFileLine, RiFileInfoLine, RiSettings3Line, RiCpuLine, RiFileExcelLine, RiImageLine } from '@remixicon/vue'
 import { useSettings } from './composables/useSettings'
-import { BorderBeam } from 'vue3-border-beam'
 
 const route = useRoute()
 const router = useRouter()
 const { settings } = useSettings()
 
-// 移动端菜单状态
 const isMobileMenuOpen = ref(false)
 const isMobile = ref(false)
 
-// 检测屏幕尺寸
 const checkMobile = () => {
   isMobile.value = window.innerWidth <= 768
   if (!isMobile.value) {
@@ -21,24 +18,20 @@ const checkMobile = () => {
   }
 }
 
-// 切换移动端菜单
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
 }
 
-// 关闭菜单
 const closeMobileMenu = () => {
   isMobileMenuOpen.value = false
 }
 
-// ESC 键关闭菜单
 const handleKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape' && isMobileMenuOpen.value) {
     closeMobileMenu()
   }
 }
 
-// 生命周期钩子
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
@@ -50,7 +43,6 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
 })
 
-// 计算当前激活的菜单
 const activeMenu = computed(() => {
   if (route.path === '/file-compare' || route.path === '/file-compare-result') return 'file-compare'
   if (route.path === '/property-check' || route.path === '/property-check-result') return 'property-check'
@@ -61,7 +53,6 @@ const activeMenu = computed(() => {
   return 'file-compare'
 })
 
-// 处理菜单点击事件，跳转到对应路由
 const handleMenuClick = (menu: string) => {
   switch (menu) {
     case 'file-compare':
@@ -83,14 +74,12 @@ const handleMenuClick = (menu: string) => {
         router.push('/batch-compare')
         break
     }
-  // 移动端点击菜单后自动关闭
   closeMobileMenu()
 }
 </script>
 
 <template>
   <div class="app-container">
-    <!-- 移动端顶部导航栏 -->
     <header v-if="isMobile" class="mobile-header">
       <button class="hamburger-btn" @click="toggleMobileMenu" aria-label="切换菜单">
         <span class="hamburger-icon">
@@ -103,38 +92,31 @@ const handleMenuClick = (menu: string) => {
         <div class="mobile-logo-seal">
           <RiExchangeLine class="mobile-logo-icon" />
         </div>
-        <span class="mobile-title">文件对对碰</span>
+        <span class="mobile-title">墨墨梧文</span>
       </div>
       <div class="mobile-header-spacer"></div>
     </header>
 
-    <!-- 遮罩层 -->
     <Transition name="overlay">
       <div v-if="isMobile && isMobileMenuOpen" class="mobile-overlay" @click="closeMobileMenu"></div>
     </Transition>
 
-    <!-- 侧边导航栏 -->
     <Transition name="sidebar">
       <aside v-show="isMobile ? isMobileMenuOpen : true" class="sidebar" :class="{ 'mobile-open': isMobileMenuOpen }">
-        <!-- 移动端关闭按钮 -->
         <button v-if="isMobile" class="mobile-close-btn" @click="closeMobileMenu" aria-label="关闭菜单">
           <span class="close-icon">×</span>
         </button>
 
-        <!-- Logo区域 -->
+        <div class="sidebar-top-accent"></div>
+
         <div class="logo-section">
-          <div class="logo-icon">
-            <BorderBeam size="sm" color-variant="colorful" theme="dark" :duration="3">
-              <div class="logo-seal">
-                <RiExchangeLine class="logo-icon-svg" />
-              </div>
-            </BorderBeam>
+          <div class="logo-seal">
+            <RiExchangeLine class="logo-icon-svg" />
           </div>
-          <h1 class="logo-title">文件对对碰</h1>
-          <p class="logo-subtitle">智能文档比对工具</p>
+          <h1 class="logo-title">墨墨梧文</h1>
+          <p class="logo-subtitle">投标文件智能比对</p>
         </div>
 
-        <!-- 导航菜单 -->
         <nav class="nav-menu">
           <button
             class="nav-item"
@@ -179,136 +161,110 @@ const handleMenuClick = (menu: string) => {
           </button>
         </nav>
 
-        <!-- 底部版本信息 -->
         <div class="version-info">
-          <p class="version-title">@2026 sikenali</p>
+          <p class="version-title">© 2026 sikenali</p>
           <p class="version-subtitle">LightOS Walk Coding</p>
         </div>
       </aside>
     </Transition>
 
-    <!-- 主内容区域 -->
     <main class="main-content">
       <router-view />
     </main>
   </div>
 </template>
 
-<style>
-/* 全局移动端优化 */
-@media (max-width: 768px) {
-  * {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  input, textarea, select {
-    font-size: 16px !important;
-  }
-
-  button {
-    touch-action: manipulation;
-  }
-}
-
-@media (max-width: 480px) {
-  html {
-    font-size: 14px;
-  }
-}
-</style>
-
 <style scoped>
 .app-container {
   display: flex;
   width: 100%;
   height: 100vh;
-  font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: rgba(248, 244, 233, 1);
+  font-family: var(--font-ui);
+  background: var(--color-parchment);
   overflow: hidden;
 }
 
-/* 侧边导航栏 */
+/* ========== Sidebar ========== */
 .sidebar {
-  width: 220px;
+  width: var(--sidebar-width);
   height: 100%;
-  background-color: rgba(44, 24, 16, 1);
+  background: var(--color-cream);
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 1px 0 0 var(--color-tan-light);
   overflow-y: auto;
   overflow-x: hidden;
+  position: relative;
 }
 
-/* Logo区域 */
+.sidebar-top-accent {
+  height: 4px;
+  background: var(--color-cinnabar);
+  flex-shrink: 0;
+}
+
+/* ========== Logo Section ========== */
 .logo-section {
-  padding: 24px 16px;
+  padding: var(--spacing-6) var(--spacing-4);
   display: flex;
   flex-direction: column;
   align-items: center;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
-}
-
-.logo-icon {
-  margin-bottom: 8px;
+  border-bottom: 1px solid var(--color-tan-light);
 }
 
 .logo-seal {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(139, 0, 0, 1);
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-lg);
+  background: var(--color-cinnabar);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
+  box-shadow: var(--shadow-cinnabar);
+  margin-bottom: var(--spacing-3);
   position: relative;
 }
 
 .logo-seal::before {
   content: '';
   position: absolute;
-  top: 2px;
-  left: 2px;
-  right: 2px;
-  bottom: 2px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border-radius: calc(var(--radius-lg) - 3px);
 }
 
 .logo-icon-svg {
   font-size: 28px;
-  color: rgba(255, 255, 255, 1);
-}
-
-.logo-seal:hover {
-  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.4);
-  transform: scale(1.1);
+  color: #fff;
 }
 
 .logo-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 1);
-  margin: 0 0 4px 0;
-  font-family: SourceHanSans-Bold;
-  letter-spacing: 1px;
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--color-brown-dark);
+  margin: 0 0 2px 0;
+  font-family: var(--font-calligraphy);
+  letter-spacing: 2px;
 }
 
 .logo-subtitle {
-  font-size: 13px;
-  color: rgba(139, 100, 60, 1);
+  font-size: var(--text-caption);
+  color: var(--color-brown-muted);
   margin: 0;
-  font-family: SourceHanSans-Regular;
-  letter-spacing: 0.5px;
+  font-family: var(--font-ui);
+  letter-spacing: 1px;
 }
 
-/* 导航菜单 */
+/* ========== Navigation ========== */
 .nav-menu {
   flex: 1;
-  padding: 12px;
+  padding: var(--spacing-3);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
 }
 
 .nav-item {
@@ -318,25 +274,27 @@ const handleMenuClick = (menu: string) => {
   width: 100%;
   padding: 10px 14px;
   border: none;
-  border-radius: 8px;
-  background-color: transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
   cursor: pointer;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-  transition: all 0.3s ease;
+  font-weight: 500;
+  color: var(--color-brown);
+  transition: all var(--transition-normal);
   text-align: left;
-  font-family: SourceHanSans-Medium;
+  font-family: var(--font-ui);
 }
 
 .nav-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 1);
+  background: var(--color-cream-dark);
+  color: var(--color-brown-dark);
 }
 
 .nav-item.active {
-  background-color: rgba(139, 0, 0, 1);
-  color: rgba(255, 255, 255, 1);
-  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.3);
+  background: var(--color-cinnabar);
+  color: #fff;
+  box-shadow: var(--shadow-cinnabar);
+  font-weight: 600;
 }
 
 .nav-icon {
@@ -348,62 +306,61 @@ const handleMenuClick = (menu: string) => {
 
 .nav-text {
   flex: 1;
-  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* 底部版本信息 */
+/* ========== Version Info ========== */
 .version-info {
-  padding: 16px 12px;
-  border-top: 1px solid rgba(166, 124, 82, 0.2);
+  padding: var(--spacing-4) var(--spacing-3);
+  border-top: 1px solid var(--color-tan-light);
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .version-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(166, 124, 82, 1);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-brown-muted);
   margin: 0;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
 }
 
 .version-subtitle {
-  font-size: 12px;
-  color: rgba(166, 124, 82, 0.8);
+  font-size: var(--text-micro);
+  color: var(--color-brown-muted);
   margin: 0;
-  font-family: SourceHanSans-Regular;
+  opacity: 0.7;
+  font-family: var(--font-ui);
 }
 
-/* 主内容区域 */
+/* ========== Main Content ========== */
 .main-content {
   flex: 1;
   height: 100%;
   overflow: auto;
-  background-color: rgba(248, 244, 233, 1);
-  padding: 24px;
-  padding-left: 24px;
-  display: block;
+  background: var(--color-parchment);
+  padding: var(--spacing-6);
 }
 
-/* 移动端顶部导航栏 */
+/* ========== Mobile Header ========== */
 .mobile-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 60px;
-  background-color: rgba(44, 24, 16, 1);
+  height: var(--navbar-height);
+  background: var(--color-cream);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 var(--spacing-4);
   z-index: 999;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 0 var(--color-tan-light);
+  border-bottom: 3px solid var(--color-cinnabar);
 }
 
 .hamburger-btn {
@@ -430,15 +387,15 @@ const handleMenuClick = (menu: string) => {
 .hamburger-line {
   width: 100%;
   height: 2px;
-  background-color: rgba(255, 255, 255, 1);
+  background: var(--color-brown);
   border-radius: 1px;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
 }
 
 .mobile-logo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex: 1;
   justify-content: center;
 }
@@ -446,8 +403,8 @@ const handleMenuClick = (menu: string) => {
 .mobile-logo-seal {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  background: rgba(139, 0, 0, 1);
+  border-radius: var(--radius-md);
+  background: var(--color-cinnabar);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -456,15 +413,15 @@ const handleMenuClick = (menu: string) => {
 
 .mobile-logo-icon {
   font-size: 20px;
-  color: rgba(255, 255, 255, 1);
+  color: #fff;
 }
 
 .mobile-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 1);
-  font-family: SourceHanSans-Bold;
-  letter-spacing: 1px;
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--color-brown-dark);
+  font-family: var(--font-calligraphy);
+  letter-spacing: 2px;
 }
 
 .mobile-header-spacer {
@@ -472,18 +429,19 @@ const handleMenuClick = (menu: string) => {
   flex-shrink: 0;
 }
 
-/* 遮罩层 */
+/* ========== Overlay ========== */
 .mobile-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
   z-index: 1000;
 }
 
-/* 侧边栏移动端样式 */
+/* ========== Mobile Sidebar ========== */
 @media (max-width: 768px) {
   .sidebar {
     position: fixed;
@@ -493,8 +451,9 @@ const handleMenuClick = (menu: string) => {
     width: 280px;
     transform: translateX(-100%);
     z-index: 1001;
-    transition: transform 0.3s ease;
+    transition: transform var(--transition-slow);
     will-change: transform;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
   }
 
   .sidebar.mobile-open {
@@ -509,39 +468,39 @@ const handleMenuClick = (menu: string) => {
     height: 36px;
     border: none;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--color-cream-dark);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all var(--transition-fast);
   }
 
   .mobile-close-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--color-cream-darker);
   }
 
   .close-icon {
     font-size: 24px;
-    color: rgba(255, 255, 255, 1);
+    color: var(--color-brown);
     line-height: 1;
   }
 
   .main-content {
-    padding-top: 60px;
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-top: var(--navbar-height);
+    padding-left: var(--spacing-4);
+    padding-right: var(--spacing-4);
   }
 }
 
-/* 平板端优化 */
+/* ========== Tablet ========== */
 @media (min-width: 769px) and (max-width: 1024px) {
   .main-content {
-    padding: 24px;
+    padding: var(--spacing-6);
   }
 }
 
-/* 导航菜单项移动端优化 */
+/* ========== Mobile Nav Items ========== */
 @media (max-width: 768px) {
   .nav-item {
     min-height: 48px;
@@ -559,10 +518,10 @@ const handleMenuClick = (menu: string) => {
   }
 }
 
-/* Transition 动画 */
+/* ========== Transitions ========== */
 .sidebar-enter-active,
 .sidebar-leave-active {
-  transition: transform 0.3s ease;
+  transition: transform var(--transition-slow);
 }
 
 .sidebar-enter-from,
@@ -572,7 +531,7 @@ const handleMenuClick = (menu: string) => {
 
 .overlay-enter-active,
 .overlay-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-slow);
 }
 
 .overlay-enter-from,

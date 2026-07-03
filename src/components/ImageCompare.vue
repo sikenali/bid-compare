@@ -15,7 +15,7 @@
       <!-- 左侧图片上传 -->
       <div class="image-upload-card">
         <div class="upload-title">
-          <span class="title-decoration" style="background-color: rgba(139,0,0,1)"></span>
+          <span class="title-decoration" style="background-color: var(--color-cinnabar)"></span>
           <span class="title-text">左侧图片</span>
         </div>
         <div class="upload-area" @click="triggerLeftInput">
@@ -63,7 +63,7 @@
       <!-- 右侧图片上传 -->
       <div class="image-upload-card">
         <div class="upload-title">
-          <span class="title-decoration" style="background-color: rgba(46,89,132,1)"></span>
+          <span class="title-decoration" style="background-color: var(--color-cloud-blue)"></span>
           <span class="title-text">右侧图片</span>
         </div>
         <div class="upload-area" @click="triggerRightInput">
@@ -408,18 +408,17 @@ const runOCRComparison = async () => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: rgba(248, 244, 233, 1);
-  gap: 12px;
-  font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--color-parchment);
+  gap: var(--spacing-3);
+  font-family: var(--font-ui);
 }
 
-/* 页面标题区 */
 .page-header {
-  padding: 16px 24px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  padding: var(--spacing-4) var(--spacing-6);
+  background: var(--color-cream);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .title-row {
@@ -429,31 +428,29 @@ const runOCRComparison = async () => {
 }
 
 .page-title {
-  font-size: 20px;
+  font-size: var(--text-heading-lg);
   font-weight: 700;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   margin: 0 0 4px 0;
-  font-family: SourceHanSans-Bold;
+  font-family: var(--font-ui);
 }
 
 .page-subtitle {
-  font-size: 12px;
-  color: rgba(101, 70, 40, 1);
+  font-size: var(--text-caption);
+  color: var(--color-brown);
   margin: 0;
-  font-family: SourceHanSans-Regular;
+  font-family: var(--font-ui);
 }
 
-/* 图片上传区域 - upload-section 布局 */
 .upload-section {
   display: flex;
-  gap: 20px;
+  gap: var(--spacing-5);
   align-items: center;
   justify-content: center;
-  padding: 0 24px;
+  padding: 0 var(--spacing-6);
   position: relative;
 }
 
-/* 图片上传卡片 */
 .image-upload-card {
   display: flex;
   flex-direction: column;
@@ -465,39 +462,39 @@ const runOCRComparison = async () => {
 .image-upload-card .upload-title {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
 }
 
 .image-upload-card .title-decoration {
   width: 5px;
   height: 24px;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
 }
 
 .image-upload-card .title-text {
-  font-size: 20px;
+  font-size: var(--text-heading-lg);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-SemiBold;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .image-upload-card .upload-area {
   flex: 1;
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 12px;
-  background-color: rgba(255, 255, 255, 1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 0.7px solid var(--color-tan-dark);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
   position: relative;
   overflow: hidden;
   min-height: 300px;
 }
 
 .image-upload-card .upload-area:hover {
-  border-color: rgba(139, 0, 0, 1);
-  box-shadow: 0 6px 24px rgba(139, 0, 0, 0.12);
+  border-color: var(--color-cinnabar);
+  box-shadow: var(--shadow-cinnabar-hover);
 }
 
 .image-upload-card .file-input {
@@ -511,41 +508,40 @@ const runOCRComparison = async () => {
   justify-content: center;
   height: 100%;
   min-height: 300px;
-  padding: 24px;
+  padding: var(--spacing-6);
   gap: 8px;
 }
 
 .image-upload-card .upload-icon-wrapper {
   width: 80px;
   height: 80px;
-  border-radius: 9999px;
-  background-color: rgba(245, 238, 226, 1);
+  border-radius: var(--radius-full);
+  background: var(--color-cream-dark);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
-  transition: all 0.3s ease;
+  margin-bottom: var(--spacing-6);
+  transition: all var(--transition-normal);
 }
 
 .image-upload-card .upload-area:hover .upload-icon-wrapper {
-  background-color: rgba(245, 238, 226, 0.8);
+  background: var(--color-cream-dark);
   transform: scale(1.05);
 }
 
 .image-upload-card .upload-icon {
   font-size: 40px;
-  color: rgba(166, 124, 82, 1);
+  color: var(--color-brown-muted);
 }
 
 .image-upload-card .upload-main-text {
-  font-size: 18px;
+  font-size: var(--text-heading);
   font-weight: 500;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Medium;
-  margin-bottom: 16px;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
+  margin-bottom: var(--spacing-4);
 }
 
-/* 图片格式图标 */
 .image-format-icons {
   display: flex;
   gap: 8px;
@@ -555,39 +551,16 @@ const runOCRComparison = async () => {
 
 .image-format-badge {
   padding: 4px 10px;
-  border-radius: 6px;
-  background-color: rgba(245, 238, 226, 0.8);
+  border-radius: var(--radius-sm);
+  background: var(--color-cream-dark);
   font-size: 11px;
   font-weight: 500;
-  color: rgba(101, 70, 40, 0.8);
-  transition: all 0.2s;
+  color: var(--color-brown);
+  transition: all var(--transition-fast);
 }
 
 .image-format-badge:hover {
-  background-color: rgba(245, 238, 226, 1);
-  transform: translateY(-1px);
-}
-
-/* 图片格式图标 */
-.image-format-icons {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.image-format-badge {
-  padding: 4px 10px;
-  border-radius: 6px;
-  background-color: rgba(245, 238, 226, 0.8);
-  font-size: 11px;
-  font-weight: 500;
-  color: rgba(101, 70, 40, 0.8);
-  transition: all 0.2s;
-}
-
-.image-format-badge:hover {
-  background-color: rgba(245, 238, 226, 1);
+  background: var(--color-cream-darker);
   transform: translateY(-1px);
 }
 
@@ -596,7 +569,7 @@ const runOCRComparison = async () => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 16px;
+  padding: var(--spacing-4);
   min-height: 300px;
   align-content: flex-start;
   box-sizing: border-box;
@@ -606,9 +579,9 @@ const runOCRComparison = async () => {
   position: relative;
   width: 100px;
   height: 100px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  border: 1px solid var(--color-tan-border);
   flex-shrink: 0;
 }
 
@@ -639,8 +612,8 @@ const runOCRComparison = async () => {
   width: 20px;
   height: 20px;
   border: none;
-  border-radius: 50%;
-  background: rgba(196, 30, 58, 0.85);
+  border-radius: var(--radius-full);
+  background: rgba(var(--rgb-cinnabar), 0.85);
   color: white;
   font-size: 12px;
   line-height: 1;
@@ -649,7 +622,7 @@ const runOCRComparison = async () => {
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity var(--transition-fast);
   z-index: 2;
 }
 
@@ -657,35 +630,33 @@ const runOCRComparison = async () => {
   opacity: 1;
 }
 
-/* 继续添加按钮 */
 .image-add-more {
   width: 100px;
   height: 100px;
-  border: 2px dashed rgba(166, 124, 82, 0.3);
-  border-radius: 6px;
+  border: 2px dashed var(--color-tan-border);
+  border-radius: var(--radius-sm);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
   cursor: pointer;
-  color: rgba(101, 70, 40, 0.6);
+  color: var(--color-brown-muted);
   font-size: 11px;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
   flex-shrink: 0;
 }
 
 .image-add-more:hover {
-  border-color: rgba(166, 124, 82, 0.6);
-  color: rgba(101, 70, 40, 0.9);
-  background: rgba(248, 244, 233, 0.5);
+  border-color: var(--color-brown-muted);
+  color: var(--color-brown);
+  background: var(--color-parchment);
 }
 
 .image-add-icon {
   font-size: 24px;
 }
 
-/* 对比圆形按钮 */
 .compare-circle-wrapper {
   flex-shrink: 0;
 }
@@ -693,9 +664,9 @@ const runOCRComparison = async () => {
 .compare-circle-btn {
   width: 100px;
   height: 100px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   border: none;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
+  background: var(--color-cinnabar);
   color: white;
   cursor: pointer;
   display: flex;
@@ -703,25 +674,25 @@ const runOCRComparison = async () => {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  box-shadow: 0 6px 20px rgba(139, 0, 0, 0.35);
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow-cinnabar);
+  transition: all var(--transition-normal);
 }
 
 .compare-circle-btn:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 8px 24px rgba(139, 0, 0, 0.45);
+  background: var(--color-cinnabar-dark);
 }
 
 .compare-circle-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: linear-gradient(135deg, rgba(150, 150, 150, 1) 0%, rgba(180, 180, 180, 1) 100%);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--color-brown-muted);
+  box-shadow: var(--shadow-sm);
 }
 
 .compare-circle-icon {
   font-size: 28px;
-  transition: transform 0.3s ease;
+  transition: transform var(--transition-normal);
 }
 
 .compare-circle-icon.rotating {
@@ -729,9 +700,9 @@ const runOCRComparison = async () => {
 }
 
 .compare-circle-text {
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
+  font-family: var(--font-ui);
 }
 
 @keyframes rotate {
@@ -739,7 +710,6 @@ const runOCRComparison = async () => {
   to { transform: rotate(360deg); }
 }
 
-/* 进度显示 */
 .progress-display {
   width: 100%;
   display: flex;
@@ -750,76 +720,75 @@ const runOCRComparison = async () => {
 .progress-bar-bg {
   width: 100%;
   height: 6px;
-  background: rgba(166, 124, 82, 0.2);
-  border-radius: 3px;
+  background: var(--color-cream-darker);
+  border-radius: var(--radius-xs);
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, rgba(139, 0, 0, 1), rgba(196, 30, 58, 1));
-  transition: width 0.3s ease;
-  border-radius: 3px;
+  background: var(--color-jade-light);
+  transition: width var(--transition-normal);
+  border-radius: var(--radius-xs);
 }
 
 .progress-text {
-  font-size: 12px;
-  color: rgba(101, 70, 40, 0.8);
+  font-size: var(--text-caption);
+  color: var(--color-brown);
   text-align: center;
 }
 
-/* OCR 区域 */
 .ocr-section {
-  padding: 16px 20px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  padding: var(--spacing-4) var(--spacing-5);
+  background: var(--color-cream);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .ocr-section-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: 14px;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+  font-size: var(--text-body);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
 }
 
 .ocr-section-icon {
   font-size: 18px;
-  color: rgba(46, 89, 132, 1);
+  color: var(--color-cloud-blue);
 }
 
 .ocr-section-hint {
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 400;
-  color: rgba(101, 70, 40, 0.6);
+  color: var(--color-brown);
 }
 
 .ocr-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--spacing-3);
 }
 
 .ocr-compare-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-2);
   padding: 10px 20px;
-  background: linear-gradient(135deg, rgba(46, 89, 132, 1), rgba(60, 110, 160, 1));
+  background: var(--color-cloud-blue);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 500;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .ocr-compare-btn:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(46, 89, 132, 0.4);
+  box-shadow: var(--shadow-sm);
   transform: translateY(-1px);
 }
 
@@ -833,58 +802,57 @@ const runOCRComparison = async () => {
 }
 
 .ocr-progress {
-  margin-top: 12px;
+  margin-top: var(--spacing-3);
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-/* 图片对比结果 */
 .image-result-section {
-  padding: 16px 20px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  padding: var(--spacing-4) var(--spacing-5);
+  background: var(--color-cream);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .result-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: var(--spacing-4);
 }
 
 .result-header h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
 }
 
 .result-count {
-  font-size: 12px;
-  color: rgba(139, 0, 0, 1);
+  font-size: var(--text-caption);
+  color: var(--color-cinnabar);
   font-weight: 500;
 }
 
 .image-result-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  gap: var(--spacing-4);
 }
 
 .image-result-card {
-  background: rgba(248, 244, 233, 0.3);
-  border-radius: 8px;
-  padding: 12px;
-  border: 1px solid rgba(166, 124, 82, 0.15);
+  background: var(--color-parchment);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-tan-border);
 }
 
 .image-result-pair {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-3);
 }
 
 .image-result-side {
@@ -896,46 +864,45 @@ const runOCRComparison = async () => {
   width: 100%;
   height: 120px;
   object-fit: contain;
-  border-radius: 4px;
-  background: white;
-  border: 1px solid rgba(166, 124, 82, 0.1);
+  border-radius: var(--radius-xs);
+  background: var(--color-white);
+  border: 1px solid var(--color-tan-light);
 }
 
 .image-label {
   display: block;
   font-size: 11px;
-  color: rgba(101, 70, 40, 0.7);
+  color: var(--color-brown);
   margin-top: 4px;
 }
 
 .similarity-badge {
   padding: 6px 12px;
-  background: rgba(101, 70, 40, 0.1);
-  border-radius: 20px;
-  font-size: 14px;
+  background: rgba(var(--rgb-brown), 0.1);
+  border-radius: var(--radius-full);
+  font-size: var(--text-body);
   font-weight: 600;
-  color: rgba(101, 70, 40, 0.8);
+  color: var(--color-brown);
   flex-shrink: 0;
 }
 
 .similarity-badge.high {
-  background: rgba(196, 30, 58, 0.1);
-  color: rgba(196, 30, 58, 1);
+  background: rgba(var(--rgb-cinnabar), 0.1);
+  color: var(--color-cinnabar);
 }
 
-/* OCR 结果弹窗 */
 .ocr-result-modal {
-  background: white;
-  border-radius: 16px;
+  background: var(--color-cream);
+  border-radius: var(--radius-xl);
   width: 90%;
   max-width: 900px;
   max-height: 85vh;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(44, 24, 16, 0.3);
+  box-shadow: var(--shadow-xl);
 }
 
 .ocr-result-body {
-  padding: 16px 24px;
+  padding: var(--spacing-4) var(--spacing-6);
   overflow-y: auto;
   max-height: calc(85vh - 80px);
 }
@@ -943,39 +910,39 @@ const runOCRComparison = async () => {
 .ocr-compare-summary {
   display: flex;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-5);
 }
 
 .ocr-similarity-badge {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px 32px;
-  background: rgba(248, 244, 233, 0.6);
-  border-radius: 12px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  padding: var(--spacing-4) 32px;
+  background: var(--color-parchment);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-tan-border);
 }
 
 .ocr-similarity-label {
-  font-size: 13px;
-  color: rgba(101, 70, 40, 0.8);
+  font-size: var(--text-body-sm);
+  color: var(--color-brown);
   margin-bottom: 4px;
 }
 
 .ocr-similarity-value {
   font-size: 28px;
   font-weight: 700;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
 }
 
 .ocr-similarity-value.high {
-  color: rgba(196, 30, 58, 1);
+  color: var(--color-cinnabar);
 }
 
 .ocr-text-compare {
   display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-5);
 }
 
 .ocr-text-column {
@@ -984,22 +951,22 @@ const runOCRComparison = async () => {
 }
 
 .ocr-column-header {
-  font-size: 13px;
+  font-size: var(--text-body-sm);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  margin-bottom: 8px;
+  color: var(--color-brown-dark);
+  margin-bottom: var(--spacing-2);
   padding-bottom: 6px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+  border-bottom: 1px solid var(--color-tan-border);
 }
 
 .ocr-text-content {
-  padding: 12px;
-  background: rgba(248, 244, 233, 0.3);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.1);
-  font-size: 13px;
+  padding: var(--spacing-3);
+  background: var(--color-parchment);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-tan-light);
+  font-size: var(--text-body-sm);
   line-height: 1.6;
-  color: rgba(44, 24, 16, 0.9);
+  color: rgba(var(--rgb-brown-dark), 0.9);
   white-space: pre-wrap;
   word-break: break-all;
   max-height: 300px;
@@ -1007,56 +974,55 @@ const runOCRComparison = async () => {
 }
 
 .ocr-detail-section {
-  border-top: 1px solid rgba(166, 124, 82, 0.2);
-  padding-top: 16px;
+  border-top: 1px solid var(--color-tan-border);
+  padding-top: var(--spacing-4);
 }
 
 .ocr-detail-header {
-  font-size: 13px;
+  font-size: var(--text-body-sm);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  margin-bottom: 12px;
+  color: var(--color-brown-dark);
+  margin-bottom: var(--spacing-3);
 }
 
 .ocr-detail-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-2);
 }
 
 .ocr-detail-item {
   padding: 10px 12px;
-  background: rgba(248, 244, 233, 0.3);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.15);
+  background: var(--color-parchment);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-tan-border);
 }
 
 .ocr-detail-name {
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   margin-bottom: 4px;
 }
 
 .ocr-detail-confidence {
   font-size: 11px;
-  color: rgba(101, 70, 40, 0.7);
+  color: var(--color-brown);
   margin-bottom: 4px;
 }
 
 .ocr-detail-confidence .high {
-  color: rgba(76, 175, 80, 1);
+  color: var(--color-jade);
 }
 
 .ocr-detail-text {
-  font-size: 12px;
-  color: rgba(44, 24, 16, 0.8);
+  font-size: var(--text-caption);
+  color: rgba(var(--rgb-brown-dark), 0.8);
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-all;
 }
 
-/* 弹窗通用样式 */
 .help-modal-overlay {
   position: fixed;
   top: 0;
@@ -1074,34 +1040,173 @@ const runOCRComparison = async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.2);
+  padding: var(--spacing-4) var(--spacing-6);
+  border-bottom: 1px solid var(--color-tan-border);
 }
 
 .help-modal-header h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--text-heading);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .help-close-btn {
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: 8px;
-  background: rgba(248, 244, 233, 0.5);
-  color: rgba(101, 70, 40, 0.8);
+  border-radius: var(--radius-md);
+  background: var(--color-parchment);
+  color: var(--color-brown);
   font-size: 18px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .help-close-btn:hover {
-  background: rgba(196, 30, 58, 0.1);
-  color: rgba(196, 30, 58, 1);
+  background: rgba(var(--rgb-cinnabar), 0.1);
+  color: var(--color-cinnabar);
+}
+
+@media (max-width: 768px) {
+  .image-compare-container {
+    gap: 10px;
+    overflow-y: auto;
+  }
+
+  .page-header {
+    padding: 12px 14px;
+  }
+
+  .page-title {
+    font-size: 17px;
+  }
+
+  .page-subtitle {
+    font-size: 11px;
+  }
+
+  .upload-section {
+    flex-direction: column;
+    gap: 14px;
+    padding: 0 12px;
+  }
+
+  .image-upload-card {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .image-upload-card .upload-area {
+    min-height: 220px;
+  }
+
+  .image-upload-card .upload-placeholder {
+    min-height: 220px;
+  }
+
+  .compare-circle-wrapper {
+    order: 99;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .compare-circle-btn {
+    width: 80px;
+    height: 80px;
+  }
+
+  .compare-circle-icon {
+    font-size: 24px;
+  }
+
+  .compare-circle-text {
+    font-size: 11px;
+  }
+
+  .image-upload-card .title-text {
+    font-size: 16px;
+  }
+
+  .ocr-section {
+    margin: 0 12px;
+    padding: 12px 14px;
+  }
+
+  .ocr-compare-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .image-result-section {
+    margin: 0 12px 12px;
+    padding: 12px 14px;
+  }
+
+  .result-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .image-result-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .image-result-pair {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .result-image {
+    height: 100px;
+  }
+
+  .ocr-result-modal {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .ocr-result-body {
+    padding: 12px 14px;
+  }
+
+  .ocr-text-compare {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .help-modal-overlay {
+    padding: 0;
+  }
+
+  .ocr-similarity-badge {
+    padding: 12px 20px;
+  }
+
+  .ocr-similarity-value {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .image-preview-item,
+  .image-add-more {
+    width: 80px;
+    height: 80px;
+  }
+
+  .image-preview-name {
+    font-size: 9px;
+  }
 }
 </style>

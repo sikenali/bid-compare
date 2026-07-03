@@ -389,19 +389,14 @@ export function removeCommonClauses(
     return [text1, text2]
   }
 
+  // 双向剔除:将同时出现在两侧的条款从两侧都去掉
   const set2 = new Set(clauses2.map(c => c.replace(/\s+/g, '')))
+  const set1 = new Set(clauses1.map(c => c.replace(/\s+/g, '')))
 
   const filtered1 = clauses1.filter(c => !set2.has(c.replace(/\s+/g, '')))
-  const filtered2 = clauses2.filter(c => {
-    const normalized = c.replace(/\s+/g, '')
-    return !new Set(filtered1.map(f => f.replace(/\s+/g, ''))).has(normalized)
-  })
+  const filtered2 = clauses2.filter(c => !set1.has(c.replace(/\s+/g, '')))
 
-  // 重新过滤text2（基于text1过滤后保留的）
-  const filtered1Set = new Set(filtered1.map(c => c.replace(/\s+/g, '')))
-  const finalFiltered2 = clauses2.filter(c => !filtered1Set.has(c.replace(/\s+/g, '')))
-
-  return [filtered1.join('\n'), finalFiltered2.join('\n')]
+  return [filtered1.join('\n'), filtered2.join('\n')]
 }
 
 export function findPageByIndex(pageMap: PageMap, charIndex: number): number {

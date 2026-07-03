@@ -180,72 +180,71 @@ const getStatusIcon = (status: string): any => {
 }
 
 const getStatusColor = (status: string): string => {
-  if (status === 'match') return 'rgba(34, 139, 34, 1)'
-  if (status === 'mismatch') return 'rgba(220, 38, 38, 1)'
-  return 'rgba(255, 165, 0, 1)'
+  if (status === 'match') return 'var(--color-jade)'
+  if (status === 'mismatch') return 'var(--color-cinnabar)'
+  return 'var(--color-gold-dark)'
 }
 </script>
 
 <template>
   <div class="property-result-container">
     <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="title-row">
-        <div>
-          <h1 class="page-title">属性检查结果</h1>
-          <p class="page-subtitle">显示两个文件的基础属性差异和匹配统计</p>
-        </div>
-        <div class="header-actions">
-          <button class="back-btn" @click="handleBack">
-            <RiRestartLine class="back-icon" />
-            <span class="back-text">返回</span>
-          </button>
-          <button class="export-btn" @click="handleExport">
-            <RiSaveLine class="export-icon" />
-            <span>导出</span>
-          </button>
-        </div>
+    <div class="ba-page-header">
+      <div>
+        <h1 class="ba-page-title">属性检查结果</h1>
+        <p class="ba-page-subtitle">显示两个文件的基础属性差异和匹配统计</p>
+      </div>
+      <div class="ba-page-actions">
+        <button class="ba-btn-primary ba-btn-text-mobile-hide" @click="handleBack" title="返回">
+          <RiRestartLine class="ba-btn-icon" />
+          <span>返回</span>
+        </button>
+        <button class="ba-btn-secondary" @click="handleExport" title="导出报告">
+          <RiSaveLine class="ba-btn-icon" />
+          <span>导出</span>
+        </button>
       </div>
     </div>
 
     <!-- 属性对比表格区 -->
-    <div class="property-table-card">
+    <div class="ba-card property-table-card">
       <!-- 表格头部 -->
-      <div class="table-card-header">
-        <div class="header-icon-wrapper">
+      <div class="ba-card-header">
+        <div class="ba-card-header-icon">
           <RiFilterLine class="header-icon" />
         </div>
-        <h2 class="header-title">属性对比详情</h2>
-        
+        <h2 class="ba-card-header-title">属性对比详情</h2>
+
         <!-- 统计徽章 -->
         <div class="header-stats">
-          <div class="stat-badge stat-match">
-            <span class="stat-badge-icon">✓</span>
+          <div class="ba-stat-badge ba-stat-success">
+            <span class="ba-stat-badge-icon">✓</span>
             <span>匹配：{{ matchCount }}项</span>
           </div>
-          <div class="stat-badge stat-mismatch">
-            <span class="stat-badge-icon">✕</span>
+          <div class="ba-stat-badge ba-stat-danger">
+            <span class="ba-stat-badge-icon">✕</span>
             <span>不匹配：{{ mismatchCount }}项</span>
           </div>
-          <div class="stat-badge stat-warning">
-            <span class="stat-badge-icon">!</span>
+          <div class="ba-stat-badge ba-stat-warn">
+            <span class="ba-stat-badge-icon">!</span>
             <span>警告：{{ warningCount }}项</span>
           </div>
         </div>
       </div>
 
       <!-- 表格内容 -->
-      <div class="property-table">
+      <div class="ba-table-scroll property-table">
+        <div class="property-table-inner">
         <!-- 表头 -->
         <div class="table-header">
           <div class="table-col col-name">
             <span class="col-text">属性字段</span>
           </div>
           <div class="table-col col-value-left">
-            <span class="col-text file-a">DOCUMENT SOURCE</span>
+            <span class="col-text ba-text-file-a">文件 A</span>
           </div>
           <div class="table-col col-value-right">
-            <span class="col-text file-b">DOCUMENT MODIFY</span>
+            <span class="col-text ba-text-file-b">文件 B</span>
           </div>
           <div class="table-col col-status">
             <span class="col-text">结果</span>
@@ -279,6 +278,7 @@ const getStatusColor = (status: string): string => {
             <p>暂无对比数据</p>
           </div>
         </div>
+        </div>
       </div>
     </div>
   </div>
@@ -289,223 +289,63 @@ const getStatusColor = (status: string): string => {
   width: 100%;
   height: 100%;
   overflow: auto;
-  background-color: rgba(248, 244, 233, 1);
+  background: var(--color-parchment);
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4) var(--spacing-5);
+  font-family: var(--font-ui);
 }
 
-/* 页面头部 */
-.page-header {
-  padding: 16px 24px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
-}
-
-.title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.page-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: rgba(44, 24, 16, 1);
-  margin: 0 0 4px 0;
-  font-family: SourceHanSans-Bold;
-}
-
-.page-subtitle {
-  font-size: 12px;
-  color: rgba(101, 70, 40, 1);
-  margin: 0;
-  font-family: SourceHanSans-Regular;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.back-btn {
-  height: 40px;
-  padding: 0 20px;
-  background: linear-gradient(135deg, rgba(139, 0, 0, 1) 0%, rgba(196, 30, 58, 1) 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3);
-}
-
-.back-btn:hover {
-  box-shadow: 0 6px 16px rgba(139, 0, 0, 0.4);
-  transform: translateY(-2px);
-}
-
-.back-icon {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 1);
-}
-
-.back-text {
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 1);
-  font-family: SourceHanSans-SemiBold;
-}
-
-.export-btn {
-  height: 40px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 20px;
-  background-color: rgba(46, 89, 132, 1);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(46, 89, 132, 0.3);
-}
-
-.export-btn:hover {
-  background-color: rgba(40, 78, 115, 1);
-  box-shadow: 0 6px 16px rgba(46, 89, 132, 0.4);
-  transform: translateY(-2px);
-}
-
-.export-icon {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 1);
-}
-
-/* 属性对比表格区 */
 .property-table-card {
-  background-color: rgba(255, 255, 255, 1);
-  border: 0.7px solid rgba(216, 191, 156, 1);
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  padding: 24px;
+  padding: var(--spacing-5);
 }
 
-.table-card-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.header-icon-wrapper {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background-color: rgba(254, 243, 199, 1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+.property-table-card .ba-card-header {
+  margin-bottom: var(--spacing-4);
+  gap: 10px;
 }
 
 .header-icon {
   font-size: 20px;
-  color: rgba(217, 119, 6, 1);
+  color: var(--color-gold-dark);
 }
 
-.header-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: rgba(44, 24, 16, 1);
-  margin: 0;
-  font-family: SourceHanSans-SemiBold;
+.ba-card-header-title {
+  font-size: var(--text-heading);
   white-space: nowrap;
+  font-family: var(--font-ui);
+  color: var(--color-brown-dark);
 }
 
-/* 头部统计徽章 */
 .header-stats {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.stat-badge {
-  display: flex;
-  align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  border-radius: 9999px;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: SourceHanSans-Medium, sans-serif;
-  white-space: nowrap;
-}
-
-.stat-badge-icon {
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.stat-match {
-  background-color: rgba(34, 197, 94, 0.1);
-  color: rgba(22, 101, 52, 1);
-}
-
-.stat-match .stat-badge-icon {
-  color: rgba(34, 197, 94, 1);
-}
-
-.stat-mismatch {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: rgba(153, 27, 27, 1);
-}
-
-.stat-mismatch .stat-badge-icon {
-  color: rgba(239, 68, 68, 1);
-}
-
-.stat-warning {
-  background-color: rgba(249, 115, 22, 0.1);
-  color: rgba(154, 52, 18, 1);
-}
-
-.stat-warning .stat-badge-icon {
-  color: rgba(249, 115, 22, 1);
+  margin-left: auto;
+  flex-wrap: wrap;
 }
 
 .property-table {
-  border: 0.7px solid rgba(230, 215, 191, 1);
-  border-radius: 8px;
-  overflow-x: auto;
-  overflow-y: visible;
+  border: 0.7px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+}
+
+.property-table-inner {
+  display: flex;
+  flex-direction: column;
+  min-width: 720px;
 }
 
 .table-header {
   display: grid;
-  grid-template-columns: 269px 323px 323px 162px;
-  min-width: 1077px;
-  background-color: rgba(245, 238, 226, 1);
+  grid-template-columns: 200px 1fr 1fr 90px;
+  background: var(--color-cream-darker);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
 .table-header .table-col {
-  padding: 10px 24px;
+  padding: 10px 16px;
 }
 
 .table-body {
@@ -514,19 +354,19 @@ const getStatusColor = (status: string): string => {
 
 .table-row {
   display: grid;
-  grid-template-columns: 269px 323px 323px 162px;
-  min-width: 1077px;
-  border-top: 0.7px solid rgba(230, 215, 191, 1);
+  grid-template-columns: 200px 1fr 1fr 90px;
+  border-top: 0.7px solid var(--color-tan-border);
 }
 
 .table-row.row-mismatch {
-  background-color: rgba(254, 242, 242, 1);
+  background: rgba(254, 242, 242, 0.6);
 }
 
 .table-col {
-  padding: 10px 24px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .col-name {
@@ -539,7 +379,7 @@ const getStatusColor = (status: string): string => {
 
 .col-status {
   justify-content: center;
-  border-right: 0.7px solid rgba(230, 215, 191, 1);
+  border-right: 0.7px solid var(--color-tan-border);
 }
 
 .col-value-right {
@@ -547,116 +387,114 @@ const getStatusColor = (status: string): string => {
 }
 
 .col-text {
-  font-size: 14px;
-  line-height: 1.2;
+  font-size: var(--text-body);
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .table-header .col-text {
   font-weight: 600;
-  font-family: SourceHanSans-SemiBold;
-  color: rgba(107, 79, 52, 1);
-}
-
-.table-header .col-text.file-a {
-  color: rgba(153, 27, 27, 1);
-}
-
-.table-header .col-text.file-b {
-  color: rgba(30, 64, 175, 1);
+  font-family: var(--font-ui);
+  color: var(--color-brown);
+  font-size: var(--text-body-sm);
 }
 
 .name-text {
   font-weight: 500;
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Medium;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .value-text {
-  color: rgba(44, 24, 16, 1);
-  font-family: SourceHanSans-Regular;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
 }
 
 .value-text.value-mismatch {
-  color: rgba(153, 27, 27, 1);
+  color: var(--color-cinnabar);
+  font-weight: 600;
 }
 
 .status-icon-svg {
   font-size: 20px;
 }
 
-/* 空状态 */
 .empty-state {
   padding: 60px 20px;
   text-align: center;
-  color: rgba(166, 124, 82, 1);
-  font-size: 14px;
-  font-family: SourceHanSans-Regular;
+  color: var(--color-brown-muted);
+  font-size: var(--text-body);
+  font-family: var(--font-ui);
 }
 
-/* 移动端响应式优化 */
+/* ================= 移动端响应式 ================= */
 @media (max-width: 768px) {
-  .page-header {
-    display: none;
-  }
-
-  /* 统计卡片移动端堆叠 */
-  .stats-overview {
-    flex-direction: column;
+  .property-result-container {
+    padding: 12px 12px;
     gap: 12px;
   }
 
-  .stat-card {
+  .property-table-card {
+    padding: 14px;
+  }
+
+  .property-table-card .ba-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .ba-card-header-title {
+    font-size: 16px;
+  }
+
+  .header-stats {
+    margin-left: 0;
     width: 100%;
   }
 
-  /* 表格容器添加横向滚动 */
+  .header-stats .ba-stat-badge {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+
+  /* 表格容器允许横向滚动,但内容最小宽减小 */
   .property-table {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* 表格列宽在小屏幕上优化 */
+  .property-table-inner {
+    min-width: 600px;
+  }
+
   .table-header,
   .table-row {
-    grid-template-columns: minmax(120px, 1fr) minmax(140px, 1.2fr) minmax(140px, 1.2fr) minmax(80px, 0.6fr);
+    grid-template-columns: 140px 1fr 1fr 60px;
   }
 
-  /* 单元格内边距减小 */
   .table-header .table-col,
   .table-col {
-    padding: 8px 12px;
+    padding: 8px 10px;
   }
 
-  /* 字体大小调整 */
   .col-text {
     font-size: 13px;
   }
 
-  .table-header .col-text {
-    font-size: 14px;
-  }
-
-  /* 内容区边距减小 */
-  .content-section {
-    padding: 16px;
-  }
-
-  /* 操作按钮堆叠 */
-  .action-buttons {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .action-buttons .btn {
-    width: 100%;
+  .status-icon-svg {
+    font-size: 18px;
   }
 }
 
-/* 超小屏幕手机优化 (320px-480px) */
 @media (max-width: 480px) {
+  .property-table-inner {
+    min-width: 480px;
+  }
+
   .table-header,
   .table-row {
-    grid-template-columns: minmax(100px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(70px, 0.5fr);
+    grid-template-columns: 110px 1fr 1fr 50px;
   }
 
   .table-header .table-col,
@@ -668,16 +506,9 @@ const getStatusColor = (status: string): string => {
     font-size: 12px;
   }
 
-  .table-header .col-text {
-    font-size: 13px;
-  }
-
-  .stat-title {
-    font-size: 12px;
-  }
-
-  .stat-value {
-    font-size: 20px;
+  .header-stats .ba-stat-badge {
+    font-size: 11px;
+    padding: 3px 8px;
   }
 }
 </style>

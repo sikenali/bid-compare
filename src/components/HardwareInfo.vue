@@ -145,33 +145,32 @@ const navTabs = [
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: rgba(248, 244, 233, 1);
-  gap: 12px;
-  font-family: SourceHanSans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--color-parchment);
+  gap: var(--spacing-3);
+  font-family: var(--font-ui);
 }
 
-/* 页面标题区 */
 .page-header {
-  padding: 16px 24px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(166, 124, 82, 0.2);
-  box-shadow: 0 2px 8px rgba(44, 24, 16, 0.08);
+  padding: var(--spacing-4) var(--spacing-6);
+  background: var(--color-cream);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .page-title {
-  font-size: 20px;
+  font-size: var(--text-heading-lg);
   font-weight: 700;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   margin: 0 0 4px 0;
-  font-family: SourceHanSans-Bold;
+  font-family: var(--font-ui);
 }
 
 .page-subtitle {
-  font-size: 12px;
-  color: rgba(101, 70, 40, 1);
+  font-size: var(--text-caption);
+  color: var(--color-brown);
   margin: 0;
-  font-family: SourceHanSans-Regular;
+  font-family: var(--font-ui);
 }
 
 .title-row {
@@ -183,26 +182,26 @@ const navTabs = [
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-3);
 }
 
 .refresh-btn {
   width: 36px;
   height: 36px;
   border: none;
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-md);
+  background: var(--color-cream-dark);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
-  border: 1px solid rgba(166, 124, 82, 0.2);
+  transition: all var(--transition-fast);
+  border: 1px solid var(--color-tan-border);
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background-color: rgba(139, 0, 0, 0.1);
-  border-color: rgba(139, 0, 0, 0.3);
+  background: rgba(var(--rgb-cinnabar), 0.1);
+  border-color: var(--color-cinnabar);
 }
 
 .refresh-btn:disabled {
@@ -212,8 +211,8 @@ const navTabs = [
 
 .refresh-icon {
   font-size: 18px;
-  color: rgba(101, 70, 40, 0.8);
-  transition: transform 0.3s ease;
+  color: var(--color-brown);
+  transition: transform var(--transition-normal);
 }
 
 .refresh-icon.spinning {
@@ -230,35 +229,33 @@ const navTabs = [
   display: inline-flex;
   align-items: center;
   padding: 6px 14px;
-  background: rgba(139, 0, 0, 0.08);
-  border: 1px solid rgba(139, 0, 0, 0.3);
-  border-radius: 20px;
-  font-size: 12px;
+  background: rgba(var(--rgb-cinnabar), 0.08);
+  border: 1px solid rgba(var(--rgb-cinnabar), 0.3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-caption);
   font-weight: 500;
-  color: rgba(139, 0, 0, 1);
+  color: var(--color-cinnabar);
 }
 
-/* 布局 - 左侧导航 + 右侧内容 */
 .info-layout {
   display: flex;
-  gap: 24px;
+  gap: var(--spacing-6);
   min-height: calc(100vh - 180px);
   padding: 0 24px 24px 24px;
   overflow-y: auto;
 }
 
-/* 左侧导航 */
 .info-nav {
   width: 180px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  border: 2px solid rgba(139, 0, 0, 0.3);
-  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.1);
+  padding: var(--spacing-2);
+  background: var(--color-cream);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
   align-self: stretch;
 }
 
@@ -273,25 +270,24 @@ const navTabs = [
   gap: 10px;
   padding: 12px 16px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: transparent;
-  color: rgba(101, 70, 40, 0.8);
-  font-size: 14px;
+  color: var(--color-brown);
+  font-size: var(--text-body);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
   text-align: left;
 }
 
 .nav-tab:hover {
-  background: rgba(255, 255, 255, 0.6);
-  color: rgba(44, 24, 16, 1);
+  background: var(--color-cream-dark);
+  color: var(--color-brown-dark);
 }
 
 .nav-tab.active {
-  background: rgba(139, 0, 0, 0.08);
-  color: rgba(139, 0, 0, 1);
+  background: rgba(var(--rgb-cinnabar), 0.08);
+  color: var(--color-cinnabar);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(139, 0, 0, 0.1);
 }
 
 .nav-tab-icon {
@@ -301,14 +297,13 @@ const navTabs = [
 }
 
 .nav-tab.active .nav-tab-icon {
-  color: rgba(139, 0, 0, 1);
+  color: var(--color-cinnabar);
 }
 
 .nav-tab-label {
   flex: 1;
 }
 
-/* 右侧内容 */
 .info-content {
   flex: 1;
   min-width: 0;
@@ -318,55 +313,52 @@ const navTabs = [
 
 .info-section {
   flex: 1;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  padding: 24px;
-  border: 1px solid rgba(166, 124, 82, 0.15);
-  box-shadow: 0 2px 12px rgba(44, 24, 16, 0.06);
+  background: var(--color-cream);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
 }
 
 .section-title {
-  font-size: 16px;
+  font-size: var(--text-heading);
   font-weight: 600;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   margin: 0 0 20px 0;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(166, 124, 82, 0.15);
-  font-family: SourceHanSans-SemiBold;
+  padding-bottom: var(--spacing-3);
+  border-bottom: 1px solid var(--color-tan-light);
+  font-family: var(--font-ui);
 }
 
-/* 信息网格 */
 .info-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: var(--spacing-5);
 }
 
-/* 信息列表 */
 .info-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--spacing-4);
 }
 
-/* 信息字段 */
 .info-field,
 .info-field-full {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-2);
 }
 
 .field-label {
-  font-size: 14px;
-  color: rgba(101, 70, 40, 0.8);
+  font-size: var(--text-body);
+  color: var(--color-brown);
   font-weight: 500;
 }
 
 .field-value-box {
-  background-color: rgba(248, 244, 233, 0.5);
-  border: 1px solid rgba(166, 124, 82, 0.15);
-  border-radius: 8px;
+  background: var(--color-parchment);
+  border: 1px solid var(--color-tan-light);
+  border-radius: var(--radius-md);
   padding: 12px 14px;
   min-height: 44px;
   display: flex;
@@ -378,19 +370,18 @@ const navTabs = [
 }
 
 .field-value {
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 500;
-  color: rgba(44, 24, 16, 1);
+  color: var(--color-brown-dark);
   line-height: 1.4;
 }
 
 .field-value.mono {
   font-family: 'Courier New', monospace;
-  font-size: 13px;
+  font-size: var(--text-body-sm);
   word-break: break-all;
 }
 
-/* 加载状态 */
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -402,9 +393,9 @@ const navTabs = [
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(216, 191, 156, 0.3);
-  border-top-color: rgba(139, 0, 0, 1);
-  border-radius: 50%;
+  border: 3px solid var(--color-tan-border);
+  border-top-color: var(--color-cinnabar);
+  border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
 }
 
@@ -414,12 +405,11 @@ const navTabs = [
 }
 
 .loading-text {
-  margin-top: 16px;
-  font-size: 14px;
-  color: rgba(101, 70, 40, 0.8);
+  margin-top: var(--spacing-4);
+  font-size: var(--text-body);
+  color: var(--color-brown);
 }
 
-/* 错误状态 */
 .error-container {
   display: flex;
   flex-direction: column;
@@ -429,28 +419,27 @@ const navTabs = [
 }
 
 .error-text {
-  font-size: 14px;
-  color: rgba(196, 30, 58, 1);
-  margin-bottom: 16px;
+  font-size: var(--text-body);
+  color: var(--color-cinnabar);
+  margin-bottom: var(--spacing-4);
 }
 
 .retry-btn {
   padding: 10px 24px;
-  border: 1px solid rgba(139, 0, 0, 0.3);
-  border-radius: 8px;
-  background-color: transparent;
-  color: rgba(139, 0, 0, 1);
+  border: 1px solid var(--color-cinnabar);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-cinnabar);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 500;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .retry-btn:hover {
-  background-color: rgba(139, 0, 0, 0.1);
+  background: rgba(var(--rgb-cinnabar), 0.1);
 }
 
-/* 移动端响应式 */
 @media (max-width: 768px) {
   .info-layout {
     flex-direction: column;

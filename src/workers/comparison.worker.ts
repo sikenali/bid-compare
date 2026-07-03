@@ -131,7 +131,8 @@ function handleComparison(data: ComparisonMessage) {
         // Myers Diff 精确比对 - 用于中等长度文本
         segments = findSimilarSegmentsMyers(
           text1, text2,
-          settings.minDupChars,
+          settings,
+          settings.minDuplicateWords,
           10,
           pageMap1,
           pageMap2
