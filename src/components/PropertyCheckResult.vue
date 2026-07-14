@@ -9,7 +9,9 @@ import {
   RiAlertLine,
   RiFilterLine,
   RiRestartLine,
-  RiSaveLine
+  RiSaveLine,
+  RiFileLine,
+  RiExchangeLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx'
 import { getPropertyCheckResult, deletePropertyCheckResult } from '../utils/compareResultStore'
@@ -206,6 +208,31 @@ const getStatusColor = (status: string): string => {
       </div>
     </div>
 
+    <!-- 文件信息条 -->
+    <div class="file-info-bar">
+      <div class="file-info-side">
+        <div class="file-icon file-a-icon">
+          <RiFileLine />
+        </div>
+        <div class="file-details">
+          <div class="file-name">{{ leftFileName }}</div>
+          <div class="file-meta">文档 A</div>
+        </div>
+      </div>
+      <div class="compare-icon-wrapper">
+        <RiExchangeLine />
+      </div>
+      <div class="file-info-side right">
+        <div class="file-details">
+          <div class="file-name">{{ rightFileName }}</div>
+          <div class="file-meta">文档 B</div>
+        </div>
+        <div class="file-icon file-b-icon">
+          <RiFileLine />
+        </div>
+      </div>
+    </div>
+
     <!-- 属性对比表格区 -->
     <div class="ba-card property-table-card">
       <!-- 表格头部 -->
@@ -299,6 +326,81 @@ const getStatusColor = (status: string): string => {
 
 .property-table-card {
   padding: var(--spacing-5);
+}
+
+/* 文件信息条 */
+.file-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: #F0E8D8;
+  border-radius: 12px;
+}
+
+.file-info-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-info-side.right {
+  flex-direction: row-reverse;
+}
+
+.file-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.file-a-icon {
+  background: #C43D3D;
+}
+
+.file-b-icon {
+  background: #2D6A9F;
+}
+
+.file-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3D2B1F;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-meta {
+  font-size: 11px;
+  color: #8B7355;
+}
+
+.compare-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #E8DCC8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #C43D3D;
+  flex-shrink: 0;
 }
 
 .property-table-card .ba-card-header {
