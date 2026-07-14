@@ -237,13 +237,11 @@ const isActive = (path: string) => route.path.startsWith(path)
   align-items: center;
   gap: 16px;
   padding: 6px 16px;
-  background: rgba(245, 239, 227, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: var(--color-cream-dark);
+  border: 0.7px solid var(--color-tan-border);
   border-radius: 24px;
   position: relative;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
 }
 
 .nav-tabs-indicator {
@@ -276,7 +274,7 @@ const isActive = (path: string) => route.path.startsWith(path)
 
 .nav-tab-item:hover {
   color: var(--color-brown-dark);
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--color-cream-darker);
 }
 
 .nav-tab-item.active {
