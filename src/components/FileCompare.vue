@@ -38,7 +38,7 @@ import FileUpload from './FileUpload.vue'
 import RecentRecords from './RecentRecords.vue'
 import MultiFileUpload from './MultiFileUpload.vue'
 import MultiCompareResult from './MultiCompareResult.vue'
-import { BorderBeam } from 'vue3-border-beam'
+
 
 const router = useRouter()
 
@@ -1174,30 +1174,36 @@ const generateWordReport = () => {
         side="left"
         :file-info="leftFileInfo"
         label="上传文件 A"
+        accepted-formats=".pdf,.docx,.doc,.txt"
         :on-file-change="handleFileUpload"
         :on-drag-over="handleDragOver"
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
+      <div class="upload-divider">
+        <RiArrowRightLine class="upload-divider-icon" />
+      </div>
       <FileUpload
         side="right"
         :file-info="rightFileInfo"
         label="上传文件 B"
+        accepted-formats=".pdf,.docx,.doc,.txt"
         :on-file-change="handleFileUpload"
         :on-drag-over="handleDragOver"
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
-      <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4" class="compare-beam">
-        <button
-          class="compare-btn"
-          :disabled="!leftFileInfo.file || !rightFileInfo.file || isProcessing"
-          @click="handleCompare"
-        >
-          <RiExchangeLine class="compare-btn-icon" :class="{ rotating: isProcessing }" />
-          <span>{{ isProcessing ? '对比中...' : '开始对比' }}</span>
-        </button>
-      </BorderBeam>
+    </div>
+
+    <div class="compare-action-section">
+      <button
+        class="compare-btn"
+        :disabled="!leftFileInfo.file || !rightFileInfo.file || isProcessing"
+        @click="handleCompare"
+      >
+        <RiExchangeLine class="compare-btn-icon" :class="{ rotating: isProcessing }" />
+        <span>{{ isProcessing ? '对比中...' : '开始对比' }}</span>
+      </button>
       <button
         v-if="recentRecords.length > 0"
         class="history-btn"
@@ -1206,15 +1212,15 @@ const generateWordReport = () => {
         <RiHistoryLine class="history-btn-icon" />
         <span>历史记录</span>
       </button>
+    </div>
 
-      <!-- 处理中遮罩 -->
-      <div v-if="isProcessing" class="processing-overlay">
-        <div class="processing-content">
-          <div class="processing-spinner"></div>
-          <p class="processing-text">{{ progressMessage || '正在处理中...' }}</p>
-          <p v-if="progress > 0" class="processing-percent">{{ Math.round(progress * 100) }}%</p>
-          <button class="cancel-btn-overlay" @click="handleCancel">取消</button>
-        </div>
+    <!-- 处理中遮罩 -->
+    <div v-if="isProcessing" class="processing-overlay">
+      <div class="processing-content">
+        <div class="processing-spinner"></div>
+        <p class="processing-text">{{ progressMessage || '正在处理中...' }}</p>
+        <p v-if="progress > 0" class="processing-percent">{{ Math.round(progress * 100) }}%</p>
+        <button class="cancel-btn-overlay" @click="handleCancel">取消</button>
       </div>
     </div>
 
@@ -1314,8 +1320,8 @@ const generateWordReport = () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
-  background: var(--color-cream);
+  padding: 16px 20px;
+  background: var(--color-upload-bg);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-tan-border);
   box-shadow: var(--shadow-sm);
@@ -1391,17 +1397,32 @@ const generateWordReport = () => {
   flex-wrap: wrap;
 }
 
-/* 按钮区域 */
-.compare-beam {
-  flex-shrink: 0;
+/* 上传分隔线 */
+.upload-divider {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+
+.upload-divider-icon {
+  font-size: 24px;
+  color: var(--color-cinnabar);
+  opacity: 0.6;
+}
+
+/* 操作按钮区域 */
+.compare-action-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
 }
 
 .compare-btn {
-  width: 120px;
-  height: 48px;
+  padding: 10px 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1409,9 +1430,9 @@ const generateWordReport = () => {
   background: var(--color-cinnabar);
   color: #fff;
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   font-family: var(--font-ui);
   box-shadow: var(--shadow-cinnabar);
@@ -1823,7 +1844,7 @@ const generateWordReport = () => {
     gap: 12px;
   }
 
-  .compare-beam {
+  .compare-action-section {
     align-self: center;
   }
 
