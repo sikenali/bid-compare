@@ -1002,7 +1002,7 @@ const handlePreviewRightScroll = () => {
       <div class="toolbar-left">
         <div class="mode-switch">
           <button class="mode-btn active">并排对比</button>
-          <button class="mode-btn">叠加对比</button>
+          <button class="mode-btn" @click="showPreviewModal = true">叠加对比</button>
         </div>
         <div class="diff-filter">
           <button class="filter-btn active">全部</button>
@@ -1021,6 +1021,10 @@ const handlePreviewRightScroll = () => {
             <RiArrowRightSLine />
           </button>
         </div>
+        <button class="back-btn" @click="handleBack">
+          <RiRestartLine />
+          <span>返回</span>
+        </button>
         <button class="export-btn" @click="handleExport">导出</button>
       </div>
     </div>
@@ -1407,6 +1411,26 @@ const handlePreviewRightScroll = () => {
 
 .export-btn:hover {
   background: #A83028;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 0.7px solid var(--color-tan-border);
+  border-radius: 8px;
+  background: var(--color-cream-dark);
+  color: var(--color-brown);
+  font-size: 13px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.back-btn:hover {
+  background: var(--color-cream-darker);
 }
 
 .stats-bar {
