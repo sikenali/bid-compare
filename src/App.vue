@@ -1,9 +1,36 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { RiExchangeLine, RiQuestionLine, RiSettings3Line } from '@remixicon/vue'
+import { RiExchangeLine, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
+import { useRecentRecords } from './composables/useRecentRecords'
+import RecentRecords from './components/RecentRecords.vue'
 
 const router = useRouter()
 const route = useRoute()
+
+const { recentRecords, addRecentRecord, clearAllRecords, deleteRecord } = useRecentRecords('fileCompare')
+
+const showHistory = ref(false)
+
+const toggleHistory = () => {
+  showHistory.value = !showHistory.value
+}
+
+const viewHistoricalRecord = async (record: any) => {
+  const { storeCompareResult } = await import('./utils/compareResultStore')
+  const compareResult = {
+    segments: record.similarSegments || [],
+    leftFileName: record.leftFileName,
+    rightFileName: record.rightFileName,
+    textSimilarity: record.similarity,
+    similarSegmentsCount: record.similarSegments ? record.similarSegments.length : 0,
+    leftTotalPages: 1,
+    rightTotalPages: 1
+  }
+  const resultId = storeCompareResult(compareResult)
+  router.push({ path: '/file-compare-result', query: { resultId, t: Date.now() } })
+  showHistory.value = false
+}
 
 const isActive = (path: string) => route.path.startsWith(path)
 </script>
@@ -21,10 +48,10 @@ const isActive = (path: string) => route.path.startsWith(path)
         </div>
       </div>
       <div class="nav-actions">
-        <button class="nav-btn" title="帮助">
+        <button class="nav-btn" title="历史记录" @click="toggleHistory">
           <span class="nav-btn-content">
-            <RiQuestionLine size="20" />
-            <span class="nav-btn-label">帮助</span>
+            <RiHistoryLine size="20" />
+            <span class="nav-btn-label">历史</span>
           </span>
         </button>
         <button class="nav-btn" title="设置" @click="router.push('/settings')">
@@ -39,6 +66,29 @@ const isActive = (path: string) => route.path.startsWith(path)
     <main class="main-content">
       <router-view />
     </main>
+
+    <!-- 历史记录弹窗 -->
+    <div v-if="showHistory" class="ba-modal-overlay" @click="toggleHistory">
+      <div class="history-modal" @click.stop>
+        <div class="history-modal-header">
+          <h3>历史记录</h3>
+          <button class="history-close-btn" @click="toggleHistory">×</button>
+        </div>
+        <div class="history-modal-body">
+          <RecentRecords
+            v-if="recentRecords.length > 0"
+            :recent-records="recentRecords"
+            :on-clear-all="clearAllRecords"
+            :on-view-record="viewHistoricalRecord"
+            :on-delete-record="deleteRecord"
+            :on-close="toggleHistory"
+          />
+          <div v-else class="history-empty">
+            <p>暂无历史记录</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -157,5 +207,67 @@ const isActive = (path: string) => route.path.startsWith(path)
   overflow: auto;
   padding: 24px;
   background: var(--color-nav-bg);
+}
+
+/* 历史记录弹窗 */
+.history-modal {
+  background: var(--color-cream);
+  border-radius: var(--radius-lg);
+  width: min(600px, 90vw);
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+}
+
+.history-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-tan-light);
+}
+
+.history-modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-brown-dark);
+  margin: 0;
+  font-family: var(--font-ui);
+}
+
+.history-close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-cream-dark);
+  color: var(--color-brown);
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.history-close-btn:hover {
+  background: rgba(var(--rgb-cinnabar), 0.1);
+  color: var(--color-cinnabar);
+}
+
+.history-modal-body {
+  padding: 20px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.history-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-brown-muted);
+  font-size: 14px;
+  font-family: var(--font-ui);
 }
 </style>

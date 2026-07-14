@@ -1204,14 +1204,6 @@ const generateWordReport = () => {
         <RiExchangeLine class="compare-btn-icon" :class="{ rotating: isProcessing }" />
         <span>{{ isProcessing ? '对比中...' : '开始对比' }}</span>
       </button>
-      <button
-        v-if="recentRecords.length > 0"
-        class="history-btn"
-        @click="toggleHistory"
-      >
-        <RiHistoryLine class="history-btn-icon" />
-        <span>历史记录</span>
-      </button>
     </div>
 
     <!-- 处理中遮罩 -->
