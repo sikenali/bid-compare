@@ -17,7 +17,6 @@ import { calculateTextSimilarity } from '../utils/textAlgorithms'
 import { storePropertyCheckResult } from '../utils/compareResultStore'
 import { buildPropertyDetails, propsMapSource, recordSource } from '../utils/propertyFields'
 import FileUpload from './FileUpload.vue'
-import { BorderBeam } from 'vue3-border-beam'
 
 const router = useRouter()
 
@@ -572,14 +571,12 @@ const generateWordReport = () => {
         :on-clear-file="handleClearFile"
       />
 
-      <!-- 属性检查圆形按钮 -->
-      <div class="check-circle-wrapper">
-        <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4">
-          <button class="check-circle-btn" @click="handleCheck" :disabled="isParsing" :class="{ 'processing': isParsing }">
-            <RiExchangeLine class="check-circle-icon" :class="{ 'rotating': isParsing }" />
-            <span class="check-circle-text">属性检查</span>
-          </button>
-        </BorderBeam>
+      <!-- 属性检查按钮 -->
+      <div class="compare-action-section">
+        <button class="compare-btn" @click="handleCheck" :disabled="isParsing" :class="{ 'processing': isParsing }">
+          <RiExchangeLine class="compare-btn-icon" :class="{ 'rotating': isParsing }" />
+          <span>{{ isParsing ? '检查中...' : '属性检查' }}</span>
+        </button>
       </div>
 
       <!-- 文件B上传 -->
@@ -720,51 +717,93 @@ const generateWordReport = () => {
   pointer-events: none;
 }
 
-/* 属性检查圆形按钮 */
-.check-circle-wrapper {
-  flex-shrink: 0;
-}
-
-.check-circle-btn {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  border: none;
-  background: var(--color-cinnabar);
-  color: white;
-  cursor: pointer;
+/* 属性检查按钮区域 */
+.compare-action-section {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  box-shadow: 0 6px 20px rgba(var(--rgb-cinnabar), 0.35);
+  padding: 0;
+  gap: 16px;
+}
+
+.compare-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 32px;
+  background: var(--color-cinnabar);
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-ui);
   transition: all 0.3s ease;
+  box-shadow: var(--shadow-cinnabar);
+  overflow: hidden;
 }
 
-.check-circle-btn:hover:not(:disabled) {
-  transform: scale(1.05);
-  box-shadow: 0 8px 24px rgba(var(--rgb-cinnabar), 0.45);
+.compare-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    rgba(var(--rgb-cream), 0) 0%, 
+    rgba(var(--rgb-cream), 0.3) 50%, 
+    rgba(var(--rgb-cream), 0) 100%);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
 }
 
-.check-circle-btn:disabled {
+.compare-btn:hover:not(:disabled)::before {
+  transform: translateX(100%);
+}
+
+.compare-btn:hover:not(:disabled) {
+  box-shadow: var(--shadow-cinnabar);
+  transform: translateY(-2px);
+}
+
+.compare-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
-.check-circle-icon {
-  font-size: 28px;
-  transition: transform 0.3s ease;
+.compare-btn.processing {
+  background: var(--color-cinnabar);
+  background-size: 200% 100%;
+  animation: gradient-shift 2s ease infinite;
 }
 
-.check-circle-icon.rotating {
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.compare-btn-icon {
+  font-size: 24px;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.compare-btn-icon.rotating {
   animation: rotate 1s linear infinite;
 }
 
-.check-circle-text {
-  font-size: 12px;
-  font-weight: 600;
-  font-family: var(--font-ui);
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* 检查按钮区域 */
