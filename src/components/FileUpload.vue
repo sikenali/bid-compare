@@ -33,28 +33,30 @@ const handleClear = () => props.onClearFile?.(props.side)
 
 <template>
   <div class="upload-wrapper" @dragover="handleDragOver" @drop="handleDrop">
-    <div v-if="!fileInfo.file" class="upload-area">
+    <div class="upload-area">
       <div class="upload-icon">
         <RiUploadCloud2Line class="upload-icon-svg" />
       </div>
-      <p class="upload-title">{{ titleText }}</p>
-      <p class="upload-hint">支持 PDF、DOCX、DOC 格式，单个文件不超过 50MB</p>
-      <label class="upload-btn">
-        <RiFileLine class="upload-btn-icon" />
-        <span>选择文件</span>
-        <input type="file" hidden @change="handleFileChange" :accept="acceptedFormats" />
-      </label>
-      <p class="upload-drag-hint">或拖拽文件到此处</p>
-    </div>
-    <div v-else class="file-info-bar">
-      <RiFileLine class="file-icon" />
-      <div class="file-details">
-        <span class="file-name">{{ fileInfo.name }}</span>
-        <span class="file-meta">{{ fileInfo.size }} · {{ fileInfo.type }}</span>
-      </div>
-      <button class="file-clear-btn" @click="handleClear" title="移除文件">
-        <RiCloseLine />
-      </button>
+      <template v-if="!fileInfo.file">
+        <p class="upload-title">{{ titleText }}</p>
+        <p class="upload-hint">支持 PDF、DOCX、DOC 格式，单个文件不超过 50MB</p>
+        <label class="upload-btn">
+          <RiFileLine class="upload-btn-icon" />
+          <span>选择文件</span>
+          <input type="file" hidden @change="handleFileChange" :accept="acceptedFormats" />
+        </label>
+        <p class="upload-drag-hint">或拖拽文件到此处</p>
+      </template>
+      <template v-else>
+        <p class="upload-title">{{ fileInfo.name }}</p>
+        <p class="upload-hint">{{ fileInfo.size }} · {{ fileInfo.type }}</p>
+        <label class="upload-btn upload-btn-replace">
+          <RiFileLine class="upload-btn-icon" />
+          <span>重新选择</span>
+          <input type="file" hidden @change="handleFileChange" :accept="acceptedFormats" />
+        </label>
+        <button class="upload-clear-btn" @click="handleClear">移除文件</button>
+      </template>
     </div>
   </div>
 </template>
@@ -134,6 +136,10 @@ const handleClear = () => props.onClearFile?.(props.side)
   background: #A83028;
 }
 
+.upload-btn-replace {
+  margin-top: 12px;
+}
+
 .upload-btn-icon {
   font-size: 18px;
 }
@@ -144,62 +150,18 @@ const handleClear = () => props.onClearFile?.(props.side)
   margin: 0;
 }
 
-.file-info-bar {
-  background: #F5EFE3;
-  border-radius: 12px;
-  border: 1px solid #D4C4A8;
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.file-icon {
-  font-size: 24px;
-  color: #C43D3D;
-  flex-shrink: 0;
-}
-
-.file-details {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.file-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #3D2B1F;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.file-meta {
-  font-size: 12px;
-  color: #8B7355;
-}
-
-.file-clear-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+.upload-clear-btn {
+  background: none;
   border: none;
-  background: transparent;
   color: #8B7355;
+  font-size: 12px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  transition: all 0.2s;
-  flex-shrink: 0;
+  padding: 4px 8px;
+  margin-top: 4px;
+  transition: color 0.2s;
 }
 
-.file-clear-btn:hover {
-  background: rgba(196, 61, 61, 0.1);
+.upload-clear-btn:hover {
   color: #C43D3D;
 }
 </style>
