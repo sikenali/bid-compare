@@ -7,6 +7,7 @@ import {
   RiAlertLine,
   RiQuestionLine,
   RiAddLine,
+  RiArrowRightLine,
   RiUserLine,
   RiCalendarLine
 } from '@remixicon/vue'
@@ -561,40 +562,43 @@ const generateWordReport = () => {
 
     <!-- 文件上传区域 -->
     <div class="upload-section" :class="{ 'processing': isParsing }">
-      <!-- 文件A上传 -->
       <FileUpload
         side="left"
         :file-info="leftFileInfo"
+        label="上传文件 A"
+        accepted-formats=".pdf,.docx,.doc"
         :on-file-change="handleFileUpload"
         :on-drag-over="handleDragOver"
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
-
-      <!-- 属性检查按钮 -->
-      <div class="compare-action-section">
-        <button class="compare-btn" @click="handleCheck" :disabled="isParsing" :class="{ 'processing': isParsing }">
-          <RiExchangeLine class="compare-btn-icon" :class="{ 'rotating': isParsing }" />
-          <span>{{ isParsing ? '检查中...' : '属性检查' }}</span>
-        </button>
+      <div class="upload-divider">
+        <RiArrowRightLine class="upload-divider-icon" />
       </div>
-
-      <!-- 文件B上传 -->
       <FileUpload
         side="right"
         :file-info="rightFileInfo"
+        label="上传文件 B"
+        accepted-formats=".pdf,.docx,.doc"
         :on-file-change="handleFileUpload"
         :on-drag-over="handleDragOver"
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
+    </div>
 
-      <!-- 处理中遮罩 -->
-      <div v-if="isParsing" class="processing-overlay">
-        <div class="processing-content">
-          <div class="processing-spinner"></div>
-          <p class="processing-text">正在检查文件...</p>
-        </div>
+    <div class="compare-action-section">
+      <button class="compare-btn" @click="handleCheck" :disabled="!leftFileInfo.file || !rightFileInfo.file || isParsing" :class="{ 'processing': isParsing }">
+        <RiExchangeLine class="compare-btn-icon" :class="{ 'rotating': isParsing }" />
+        <span>{{ isParsing ? '检查中...' : '属性检查' }}</span>
+      </button>
+    </div>
+
+    <!-- 处理中遮罩 -->
+    <div v-if="isParsing" class="processing-overlay">
+      <div class="processing-content">
+        <div class="processing-spinner"></div>
+        <p class="processing-text">正在检查文件...</p>
       </div>
     </div>
 
@@ -715,6 +719,20 @@ const generateWordReport = () => {
 
 .upload-section.processing {
   pointer-events: none;
+}
+
+.upload-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+
+.upload-divider-icon {
+  font-size: 24px;
+  color: var(--color-cinnabar);
+  opacity: 0.6;
 }
 
 /* 属性检查按钮区域 */
