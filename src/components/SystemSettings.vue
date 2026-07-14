@@ -487,7 +487,7 @@ const aiModels = [
 .settings-layout {
   display: flex;
   gap: var(--spacing-6);
-  min-height: calc(100vh - 180px);
+  min-height: 0;
   padding: 0 24px 24px 24px;
   overflow-y: auto;
 }
