@@ -22,7 +22,6 @@ import { getCompareResult, deleteCompareResult } from '../utils/compareResultSto
 import { sanitizeHTML, sanitizeWithHighlight, htmlToMarkdown } from '../utils/sanitize'
 import MarkdownIt from 'markdown-it'
 import type { SimilarSegment } from '../utils/textAlgorithms'
-import { BorderBeam } from 'vue3-border-beam'
 
 // 创建 Markdown 解析器实例
 const md = new MarkdownIt({
@@ -788,36 +787,21 @@ const goToNextDiff = () => {
   // TODO: 实现跳转到下一处差异的逻辑
 }
 
-// 跟踪哪个面板有焦点
-let focusedPanel: 'left' | 'right' | null = null
-
-// 左侧面板获得焦点
-const handleLeftFocus = () => {
-  focusedPanel = 'left'
-}
-
-// 右侧面板获得焦点
-const handleRightFocus = () => {
-  focusedPanel = 'right'
-}
-
 // 滚动同步处理
+let isSyncing = false
+
 const handleLeftScroll = () => {
-  if (!syncScroll.value || !leftContentRef.value || !rightContentRef.value) return
-  
-  // 只有当左侧有焦点或者同步滚动开启时才同步
-  if (focusedPanel === 'left' || focusedPanel === null) {
-    rightContentRef.value.scrollTop = leftContentRef.value.scrollTop
-  }
+  if (!syncScroll.value || isSyncing || !leftContentRef.value || !rightContentRef.value) return
+  isSyncing = true
+  rightContentRef.value.scrollTop = leftContentRef.value.scrollTop
+  requestAnimationFrame(() => { isSyncing = false })
 }
 
 const handleRightScroll = () => {
-  if (!syncScroll.value || !leftContentRef.value || !rightContentRef.value) return
-  
-  // 只有当右侧有焦点或者同步滚动开启时才同步
-  if (focusedPanel === 'right' || focusedPanel === null) {
-    leftContentRef.value.scrollTop = rightContentRef.value.scrollTop
-  }
+  if (!syncScroll.value || isSyncing || !leftContentRef.value || !rightContentRef.value) return
+  isSyncing = true
+  leftContentRef.value.scrollTop = rightContentRef.value.scrollTop
+  requestAnimationFrame(() => { isSyncing = false })
 }
 const formatMarkdown = (text: string) => {
   if (!text) return ''
