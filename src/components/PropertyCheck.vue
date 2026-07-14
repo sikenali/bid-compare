@@ -8,8 +8,7 @@ import {
   RiQuestionLine,
   RiFileLine,
   RiUserLine,
-  RiCalendarLine,
-  RiHistoryLine
+  RiCalendarLine
 } from '@remixicon/vue'
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
@@ -18,7 +17,6 @@ import { calculateTextSimilarity } from '../utils/textAlgorithms'
 import { storePropertyCheckResult } from '../utils/compareResultStore'
 import { buildPropertyDetails, propsMapSource, recordSource } from '../utils/propertyFields'
 import FileUpload from './FileUpload.vue'
-import RecentRecords from './RecentRecords.vue'
 import { BorderBeam } from 'vue3-border-beam'
 
 const router = useRouter()
@@ -43,7 +41,6 @@ const rightFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' }
 
 // 使用最近记录组合式函数 - 传入propertyCheck类型
 const {
-  showRecentRecords,
   recentRecords,
   addRecentRecord,
   clearAllRecords,
@@ -99,9 +96,6 @@ const viewHistoricalRecord = (record: any) => {
 
   // 跳转到结果页面，传递存储 ID 和时间戳
   router.push({ path: '/property-check-result', query: { resultId, t: Date.now() } })
-  
-  // 关闭历史记录弹窗
-  showHistory.value = false
 }
 
 // 解析结果
@@ -215,23 +209,6 @@ const handleClearFile = (side: 'left' | 'right') => {
     rightFileInfo.value = emptyFileInfo;
   }
 }
-
-// 历史记录弹窗
-const showHistory = ref(false)
-
-const toggleHistory = () => {
-  showHistory.value = !showHistory.value
-}
-
-// 当记录为空时自动关闭弹窗
-watch(
-  () => recentRecords.length,
-  (newLen) => {
-    if (newLen === 0 && showHistory.value) {
-      showHistory.value = false
-    }
-  }
-)
 
 // 执行属性检查
 const handleCheck = async () => {
@@ -562,45 +539,6 @@ const generateWordReport = () => {
 
 <template>
   <div class="property-check-container">
-    <!-- 页面标题区 -->
-    <div class="page-header">
-      <div class="title-row">
-        <div>
-          <h1 class="page-title">属性检查</h1>
-          <p class="page-subtitle">对比两个文件的基础属性信息，快速识别差异</p>
-        </div>
-        <div class="header-actions">
-          <button v-if="recentRecords.length > 0" class="icon-btn-wrapper" @click="toggleHistory">
-            <RiHistoryLine class="icon-btn-svg" />
-            <span class="icon-btn-tooltip">历史记录</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 历史记录弹窗 -->
-    <div v-if="showHistory" class="help-modal-overlay" @click="toggleHistory">
-      <div class="history-modal" @click.stop>
-        <div class="help-modal-header">
-          <h3>历史记录</h3>
-          <button class="help-close-btn" @click="toggleHistory">×</button>
-        </div>
-        <div class="history-modal-body">
-          <RecentRecords
-            v-if="recentRecords.length > 0"
-            :recent-records="recentRecords"
-            :on-clear-all="clearAllRecords"
-            :on-view-record="(record) => { viewHistoricalRecord(record); toggleHistory(); }"
-            :on-delete-record="deleteRecord"
-            :on-close="toggleHistory"
-          />
-          <div v-else class="empty-history">
-            <p>暂无历史记录</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- 文件上传区域 -->
     <div class="upload-section" :class="{ 'processing': isParsing }">
       <!-- 文件A上传 -->
@@ -667,181 +605,6 @@ const generateWordReport = () => {
   background-color: rgba(var(--rgb-parchment), 1);
   gap: 12px;
   font-family: var(--font-ui);
-}
-
-/* 页面标题区 */
-.page-header {
-  padding: 16px 24px;
-  background-color: #F5EFE3;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  box-shadow: 0 2px 8px rgba(var(--rgb-brown-dark), 0.08);
-}
-
-.title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.page-title {
-  font-size: var(--text-heading-lg);
-  font-weight: 700;
-  color: var(--color-brown-dark);
-  margin: 0 0 4px 0;
-  font-family: var(--font-ui);
-}
-
-.page-subtitle {
-  font-size: 12px;
-  color: var(--color-brown);
-  margin: 0;
-  font-family: var(--font-ui);
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.header-back-btn {
-  height: 40px;
-  padding: 0 20px;
-  background-color: var(--color-white);
-  color: var(--color-cinnabar);
-  border: 1px solid rgba(var(--rgb-cinnabar), 0.3);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  transition: all 0.3s ease;
-}
-
-.header-back-btn:hover {
-  background-color: rgba(var(--rgb-cinnabar), 0.05);
-  border-color: var(--color-cinnabar);
-}
-
-.header-export-btn {
-  height: 40px;
-  padding: 0 20px;
-  background: var(--color-cinnabar);
-  color: white;
-  border: none;
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.3);
-  transition: all 0.3s ease;
-}
-
-.header-export-btn:hover {
-  box-shadow: 0 6px 16px rgba(var(--rgb-cinnabar), 0.4);
-  transform: translateY(-2px);
-}
-
-/* 图标按钮容器 */
-.icon-btn-wrapper {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: var(--radius-lg);
-  background: var(--color-cinnabar);
-  color: var(--color-white);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.3);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.icon-btn-wrapper:hover {
-  box-shadow: 0 6px 20px rgba(var(--rgb-cinnabar), 0.4);
-  transform: translateY(-2px);
-  background: var(--color-cinnabar-dark);
-}
-
-.icon-btn-wrapper:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(var(--rgb-cinnabar), 0.3);
-}
-
-.icon-btn-svg {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-  color: var(--color-white);
-  flex-shrink: 0;
-  transition: all 0.3s ease;
-}
-
-/* Tooltip 样式 */
-.icon-btn-tooltip {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 8px;
-  background-color: rgba(var(--rgb-brown-dark), 0.9);
-  color: white;
-  font-size: 11px;
-  font-family: var(--font-ui);
-  border-radius: var(--radius-xs);
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-  z-index: 10;
-}
-
-.icon-btn-wrapper:hover .icon-btn-tooltip {
-  opacity: 1;
-}
-
-.history-modal {
-  background-color: var(--color-white);
-  border-radius: var(--radius-lg);
-  width: min(600px, 90vw);
-  max-height: 80vh;
-  overflow: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-}
-
-.history-modal-body {
-  padding: 24px;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.empty-history {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--color-brown-muted);
-  font-size: 14px;
-  font-family: var(--font-ui);
-}
-
-.help-btn:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
-}
-
-.help-icon {
-  font-size: 20px;
-  color: var(--color-brown);
-}
-
-.decorative-line {
-  width: 100%;
-  height: 3px;
-  margin-top: 24px;
-  background: var(--color-tan-dark);
-  border-radius: var(--radius-xs);
 }
 
 /* 文件上传区域 */
@@ -1659,157 +1422,6 @@ const generateWordReport = () => {
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(var(--rgb-brown-muted), 0.8);
-}
-
-/* 历史记录/帮助弹窗 - 统一样式 */
-.help-modal-overlay,
-.history-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.help-modal,
-.history-modal {
-  background-color: rgba(var(--rgb-parchment), 1);
-  border-radius: var(--radius-lg);
-  width: 600px;
-  max-height: 80vh;
-  overflow: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-}
-
-.help-modal-header,
-.history-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  background-color: var(--color-cream);
-}
-
-.help-modal-header h3,
-.history-modal-header h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-brown-dark);
-  margin: 0;
-  font-family: var(--font-ui);
-}
-
-.help-close-btn,
-.history-close-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: var(--radius-md);
-  background-color: transparent;
-  cursor: pointer;
-  font-size: 20px;
-  color: var(--color-brown);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.help-close-btn:hover,
-.history-close-btn:hover {
-  background-color: rgba(var(--rgb-cinnabar), 0.1);
-  color: var(--color-cinnabar);
-}
-
-.help-modal-body,
-.history-modal-body {
-  padding: 20px 24px;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.help-feature-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 24px;
-}
-
-.help-feature-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 32px 20px;
-  background-color: rgba(var(--rgb-parchment), 0.5);
-  border-radius: var(--radius-lg);
-  border: 0.7px solid rgba(var(--rgb-tan-dark), 0.3);
-  transition: all 0.3s ease;
-}
-
-.help-feature-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
-}
-
-.help-feature-card .card-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 12px;
-}
-
-.help-feature-card .card-icon .icon {
-  font-size: 24px;
-}
-
-.help-feature-card .card-icon.accuracy {
-  background-color: rgba(254, 243, 199, 1);
-}
-
-.help-feature-card .card-icon.accuracy .icon {
-  color: rgba(217, 119, 6, 1);
-}
-
-.help-feature-card .card-icon.highlight {
-  background-color: rgba(219, 234, 254, 1);
-}
-
-.help-feature-card .card-icon.highlight .icon {
-  color: rgba(37, 99, 235, 1);
-}
-
-.help-feature-card .card-icon.export {
-  background-color: rgba(252, 231, 243, 1);
-}
-
-.help-feature-card .card-icon.export .icon {
-  color: rgba(219, 39, 119, 1);
-}
-
-.help-feature-card .card-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-brown-dark);
-  font-family: var(--font-ui);
-  margin: 0 0 8px 0;
-}
-
-.help-feature-card .card-desc {
-  font-size: 13px;
-  color: var(--color-brown);
-  font-family: var(--font-ui);
-  margin: 0;
-  line-height: 1.4;
 }
 
 /* 移动端响应式优化 */

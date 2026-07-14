@@ -33,23 +33,33 @@ const {
 
 const activeTab = ref('theme')
 
+const navColors: Record<string, string> = {
+  theme: '#C23B22',
+  algorithm: '#C23B22',
+  preprocess: '#5B8C5A',
+  features: '#C8A45C',
+  export: '#2D6A9F',
+  ai: '#6366F1'
+}
+
 const navTabs = [
-  { key: 'theme', label: '主题设置', icon: RiPaletteLine },
-  { key: 'algorithm', label: '对比算法', icon: RiSettings3Line },
-  { key: 'preprocess', label: '文本设置', icon: RiText },
-  { key: 'features', label: '参数设置', icon: RiFilterLine },
-  { key: 'export', label: '导出设置', icon: RiFileDownloadLine },
-  { key: 'ai', label: '模型设置', icon: RiRobot2Line }
+  { key: 'theme', label: '主题设置', icon: RiPaletteLine, color: '#C23B22' },
+  { key: 'algorithm', label: '对比算法', icon: RiSettings3Line, color: '#C23B22' },
+  { key: 'preprocess', label: '文本设置', icon: RiText, color: '#5B8C5A' },
+  { key: 'features', label: '参数设置', icon: RiFilterLine, color: '#C8A45C' },
+  { key: 'export', label: '导出设置', icon: RiFileDownloadLine, color: '#2D6A9F' },
+  { key: 'ai', label: '模型设置', icon: RiRobot2Line, color: '#6366F1' }
 ]
 
 const indicatorStyle = computed(() => {
   const idx = navTabs.findIndex(t => t.key === activeTab.value)
-  const itemHeight = 44
+  const itemHeight = 48
   const gap = 4
   const navTitleOffset = 56
   return {
     top: `${navTitleOffset + idx * (itemHeight + gap)}px`,
-    height: `${itemHeight}px`
+    height: `${itemHeight}px`,
+    background: navColors[activeTab.value] || '#C23B22'
   }
 })
 
@@ -199,7 +209,7 @@ const resetApiForm = () => {
           :class="{ active: activeTab === tab.key }"
           @click="activeTab = tab.key"
         >
-          <component :is="tab.icon" class="nav-tab-icon" />
+          <component :is="tab.icon" class="nav-tab-icon" size="20" />
           <span class="nav-tab-label">{{ tab.label }}</span>
         </button>
       </nav>
@@ -687,7 +697,7 @@ const resetApiForm = () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 14px 16px;
   border: none;
   border-radius: 12px;
   background: transparent;
@@ -698,6 +708,7 @@ const resetApiForm = () => {
   text-align: left;
   position: relative;
   z-index: 1;
+  min-height: 48px;
 }
 
 .nav-tab:hover {
@@ -721,7 +732,7 @@ const resetApiForm = () => {
 }
 
 .nav-tab-label {
-  flex: 1;
+  line-height: 1.3;
 }
 
 .settings-content {
