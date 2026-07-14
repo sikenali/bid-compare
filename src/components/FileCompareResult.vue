@@ -974,6 +974,30 @@ const handlePreviewRightScroll = () => {
 
 <template>
   <div class="result-page">
+    <div class="file-info-bar">
+      <div class="file-info-side">
+        <div class="file-icon file-a-icon">
+          <RiFileWordLine />
+        </div>
+        <div class="file-details">
+          <div class="file-name">{{ leftFileName }}</div>
+          <div class="file-meta">文档 A</div>
+        </div>
+      </div>
+      <div class="compare-icon-wrapper">
+        <RiExchange2Line />
+      </div>
+      <div class="file-info-side right">
+        <div class="file-details">
+          <div class="file-name">{{ rightFileName }}</div>
+          <div class="file-meta">文档 B</div>
+        </div>
+        <div class="file-icon file-b-icon">
+          <RiFileWordLine />
+        </div>
+      </div>
+    </div>
+
     <div class="toolbar">
       <div class="toolbar-left">
         <div class="mode-switch">
@@ -982,119 +1006,54 @@ const handlePreviewRightScroll = () => {
         </div>
         <div class="diff-filter">
           <button class="filter-btn active">全部</button>
-          <button class="filter-btn">新增</button>
-          <button class="filter-btn">修改</button>
-          <button class="filter-btn">删除</button>
+          <button class="filter-btn"><span class="filter-dot dot-add"></span>新增</button>
+          <button class="filter-btn"><span class="filter-dot dot-mod"></span>修改</button>
+          <button class="filter-btn"><span class="filter-dot dot-del"></span>删除</button>
         </div>
       </div>
       <div class="toolbar-right">
         <div class="diff-nav">
-          <button class="nav-btn" :disabled="currentPage <= 1" @click="prevPage">‹</button>
-          <span class="nav-count">{{ currentPage }} / {{ totalPages }}</span>
-          <button class="nav-btn" :disabled="currentPage >= totalPages" @click="nextPage">›</button>
+          <button class="nav-btn" @click="goToPrevDiff">
+            <RiArrowLeftSLine />
+          </button>
+          <span class="nav-count">第 {{ currentPage }} / {{ totalPages }} 处差异</span>
+          <button class="nav-btn" @click="goToNextDiff">
+            <RiArrowRightSLine />
+          </button>
         </div>
-        <button class="export-btn" @click="handleExport">
-          <RiSaveLine class="export-btn-icon" />
-          <span>导出</span>
-        </button>
+        <button class="export-btn" @click="handleExport">导出</button>
       </div>
     </div>
 
     <div class="stats-bar">
       <div class="stats-left">
-        <span class="stat-item stat-added">🟢 新增 {{ countAdded }} 处</span>
-        <span class="stat-item stat-modified">🟡 修改 {{ countModified }} 处</span>
-        <span class="stat-item stat-deleted">🔴 删除 {{ countDeleted }} 处</span>
+        <RiExchange2Line class="stats-icon" />
+        <span class="stats-desc">共发现 {{ totalFoundCount }} 处差异：</span>
+        <span class="stat-item"><span class="filter-dot dot-add"></span>新增({{ countAdded }}处)</span>
+        <span class="stat-item"><span class="filter-dot dot-mod"></span>修改({{ countModified }}处)</span>
+        <span class="stat-item"><span class="filter-dot dot-del"></span>删除({{ countDeleted }}处)</span>
       </div>
       <div class="stats-right">
-        <span class="similarity-label">相似度</span>
+        <span class="similarity-label">文档相似度：</span>
         <span class="similarity-value">{{ textSimilarity }}</span>
       </div>
     </div>
 
-    <div class="compare-panels">
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-version">V1</span>
-          <span class="panel-page">{{ leftPageDisplay }}</span>
-        </div>
-        <div class="panel-content" ref="leftContentRef" @scroll="handleLeftScroll">
-          <div class="panel-text" v-if="leftFileContent" v-html="sanitizeWithHighlight(previewLeftHtml)"></div>
-          <div class="panel-empty" v-else>
-            <RiFileWordLine class="panel-empty-icon" />
-            <span>左侧文件无内容</span>
-          </div>
-        </div>
+    <div class="data-table">
+      <div class="table-header">
+        <div class="col col-index">序号</div>
+        <div class="col col-content" :title="leftFileName || '文件A'">{{ leftFileName || '文件A' }}</div>
+        <div class="col col-position">位置</div>
+        <div class="col col-position">位置</div>
+        <div class="col col-content" :title="rightFileName || '文件B'">{{ rightFileName || '文件B' }}</div>
       </div>
-      <div class="panel-divider"></div>
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-version">V2</span>
-          <span class="panel-page">{{ rightPageDisplay }}</span>
-        </div>
-        <div class="panel-content" ref="rightContentRef" @scroll="handleRightScroll">
-          <div class="panel-text" v-if="rightFileContent" v-html="sanitizeWithHighlight(previewRightHtml)"></div>
-          <div class="panel-empty" v-else>
-            <RiFileWordLine class="panel-empty-icon" />
-            <span>右侧文件无内容</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="comparison-list">
-      <div class="list-header">
-        <div class="list-header-left">
-          <RiExchange2Line class="list-header-icon" />
-          <h2 class="list-title">相似片段详情</h2>
-        </div>
-        <div class="list-header-actions">
-          <button class="action-btn" @click="showPreviewModal = true">
-            <RiEyeLine class="action-btn-icon" />
-            <span>预览</span>
-          </button>
-          <button class="action-btn primary" @click="handleAIAnalysis" :disabled="isLoading">
-            <RiSparkling2Fill class="action-btn-icon" />
-            <span>{{ isLoading ? 'AI分析中...' : 'AI分析' }}</span>
-          </button>
-          <div class="header-stats">
-            <span class="header-stat-badge">共 {{ segments.length }} 处</span>
-            <span class="header-stat-badge success">100%相同：{{ count100Similarity }}个</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="data-table">
-        <div class="table-header">
-          <div class="col col-index">序号</div>
-          <div class="col col-content" :title="leftFileName || '文件A'">{{ leftFileName || '文件A' }}</div>
-          <div class="col col-position">位置</div>
-          <div class="col col-position">位置</div>
-          <div class="col col-content" :title="rightFileName || '文件B'">{{ rightFileName || '文件B' }}</div>
-        </div>
-        <div class="table-body" v-highlight-tooltip>
-          <div v-for="segment in pageSegments" :key="segment.id" class="table-row">
-            <div class="col col-index">{{ segment.id }}</div>
-            <div class="col col-content clickable" @click="openPreviewForSegment(segment, 'left')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.leftContent)"></div>
-            <div class="col col-position">{{ segment.leftPage }}</div>
-            <div class="col col-position">{{ segment.rightPage }}</div>
-            <div class="col col-content clickable" @click="openPreviewForSegment(segment, 'right')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.rightContent)"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="pagination">
-        <div class="pagination-info">
-          共 {{ totalRecords }} 条记录，显示第 {{ startRecord }} - {{ endRecord }} 条
-        </div>
-        <div class="pagination-controls">
-          <button class="page-btn" :disabled="currentPage <= 1" @click="prevPage">
-            <RiArrowLeftSLine />
-          </button>
-          <button v-for="page in pageNumbers" :key="page" class="page-number" :class="{ active: page === currentPage }" @click="goToPage(page)">{{ page }}</button>
-          <button class="page-btn" :disabled="currentPage >= totalPages" @click="nextPage">
-            <RiArrowRightSLine />
-          </button>
+      <div class="table-body" v-highlight-tooltip>
+        <div v-for="segment in pageSegments" :key="segment.id" class="table-row">
+          <div class="col col-index">{{ segment.id }}</div>
+          <div class="col col-content clickable" @click="openPreviewForSegment(segment, 'left')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.leftContent)"></div>
+          <div class="col col-position">{{ segment.leftPage }}</div>
+          <div class="col col-position">{{ segment.rightPage }}</div>
+          <div class="col col-content clickable" @click="openPreviewForSegment(segment, 'right')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.rightContent)"></div>
         </div>
       </div>
     </div>
@@ -1103,7 +1062,7 @@ const handlePreviewRightScroll = () => {
       <div class="section-header">
         <div class="section-header-left">
           <RiImageLine class="section-header-icon" />
-          <h2 class="list-title">图片雷同检测</h2>
+          <h2>图片雷同检测</h2>
         </div>
         <span class="image-count-badge">发现 {{ imageDuplicates.length }} 组雷同图片</span>
       </div>
@@ -1130,16 +1089,20 @@ const handlePreviewRightScroll = () => {
 
     <div class="bottom-bar">
       <div class="bottom-pagination">
-        <button class="page-btn" :disabled="currentPage <= 1" @click="prevPage">‹</button>
+        <button class="page-btn" :disabled="currentPage <= 1" @click="prevPage">
+          <RiArrowLeftSLine />
+        </button>
         <button v-for="p in pageNumbers" :key="p" class="page-num" :class="{ active: p === currentPage }" @click="goToPage(p)">{{ p }}</button>
-        <button class="page-btn" :disabled="currentPage >= totalPages" @click="nextPage">›</button>
+        <button class="page-btn" :disabled="currentPage >= totalPages" @click="nextPage">
+          <RiArrowRightSLine />
+        </button>
       </div>
       <div class="sync-toggle">
-        <span class="sync-label">同步滚动</span>
         <label class="toggle">
           <input type="checkbox" v-model="syncScroll" />
           <span class="toggle-slider"></span>
         </label>
+        <span class="sync-label">同步滚动</span>
       </div>
     </div>
 
@@ -1227,37 +1190,108 @@ const handlePreviewRightScroll = () => {
   color: var(--color-brown-dark);
 }
 
+.file-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #F0E8D8;
+  border-radius: 12px;
+  padding: 12px 20px;
+}
+
+.file-info-side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-info-side.right {
+  flex-direction: row-reverse;
+}
+
+.file-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.file-a-icon {
+  background: #C43D3D;
+}
+
+.file-b-icon {
+  background: #2D6A9F;
+}
+
+.file-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3D2B1F;
+  line-height: 1.3;
+}
+
+.file-meta {
+  font-size: 11px;
+  color: #8B7355;
+}
+
+.compare-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #E8DCC8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #C43D3D;
+  flex-shrink: 0;
+}
+
 .toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
-  background: var(--color-white);
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
 }
 
-.toolbar-left,
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .toolbar-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .mode-switch {
-  display: flex;
-  background: var(--color-cream-dark);
-  border-radius: var(--radius-sm);
-  padding: 2px;
+  display: inline-flex;
+  background: #F0E8D8;
+  padding: 4px;
+  border-radius: 10px;
+  gap: 0;
 }
 
 .mode-btn {
-  padding: 5px 12px;
+  padding: 6px 12px;
   border: none;
-  border-radius: var(--radius-xs);
+  border-radius: 8px;
   background: transparent;
-  color: var(--color-brown-muted);
+  color: #8B7355;
   font-size: 13px;
   font-family: var(--font-ui);
   cursor: pointer;
@@ -1265,23 +1299,28 @@ const handlePreviewRightScroll = () => {
 }
 
 .mode-btn.active {
-  background: var(--color-white);
-  color: var(--color-brown-dark);
+  background: #C43D3D;
+  color: #fff;
   font-weight: 600;
-  box-shadow: var(--shadow-sm);
 }
 
 .diff-filter {
-  display: flex;
-  gap: 4px;
+  display: inline-flex;
+  background: #F0E8D8;
+  padding: 4px;
+  border-radius: 10px;
+  gap: 0;
 }
 
 .filter-btn {
-  padding: 5px 10px;
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-xs);
-  background: var(--color-white);
-  color: var(--color-brown);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #8B7355;
   font-size: 12px;
   font-family: var(--font-ui);
   cursor: pointer;
@@ -1289,24 +1328,44 @@ const handlePreviewRightScroll = () => {
 }
 
 .filter-btn.active {
-  background: var(--color-cinnabar);
-  border-color: var(--color-cinnabar);
-  color: var(--color-white);
+  background: #fff;
+  color: #3D2B1F;
+  font-weight: 500;
+}
+
+.filter-dot {
+  width: 9px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.dot-add {
+  background: #2D8A4E;
+}
+
+.dot-mod {
+  background: #D4842A;
+}
+
+.dot-del {
+  background: #C43D3D;
 }
 
 .diff-nav {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .nav-btn {
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-xs);
-  background: var(--color-white);
-  color: var(--color-brown);
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: #F0E8D8;
+  color: #8B7355;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1315,151 +1374,206 @@ const handlePreviewRightScroll = () => {
   transition: all 0.15s;
 }
 
-.nav-btn:hover:not(:disabled) {
-  background: var(--color-cream-dark);
-}
-
-.nav-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.nav-btn:hover {
+  background: #E8DCC8;
+  color: #3D2B1F;
 }
 
 .nav-count {
   font-size: 13px;
-  color: var(--color-brown);
+  color: #3D2B1F;
+  background: #F0E8D8;
+  padding: 4px 12px;
+  border-radius: 8px;
   font-variant-numeric: tabular-nums;
-  min-width: 48px;
-  text-align: center;
+  white-space: nowrap;
 }
 
 .export-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  width: 40px;
-  padding: 6px 10px;
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-white);
-  color: var(--color-brown);
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #C43D3D;
+  color: #fff;
   font-size: 13px;
   font-family: var(--font-ui);
   cursor: pointer;
-  transition: width 0.2s, background 0.15s, border-color 0.15s;
-  overflow: hidden;
+  transition: background 0.15s;
   white-space: nowrap;
 }
 
 .export-btn:hover {
-  width: 100px;
-  background: var(--color-cream-dark);
-  border-color: var(--color-tan-dark);
-}
-
-.export-btn-icon {
-  font-size: 16px;
-  color: var(--color-brown-muted);
+  background: #A83028;
 }
 
 .stats-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
-  background: var(--color-cream);
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-md);
+  background: #F5EFE3;
+  border-radius: 10px;
+  padding: 8px 16px;
 }
 
 .stats-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  font-size: 13px;
+  color: #8B7355;
+}
+
+.stats-icon {
+  font-size: 16px;
+  color: #8B7355;
+  flex-shrink: 0;
+}
+
+.stats-desc {
+  font-size: 13px;
+  color: #8B7355;
 }
 
 .stat-item {
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.stat-added {
-  color: var(--color-jade-dark);
-}
-
-.stat-modified {
-  color: var(--color-gold-dark);
-}
-
-.stat-deleted {
-  color: var(--color-cinnabar);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #5C4A3A;
 }
 
 .stats-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .similarity-label {
-  font-size: 13px;
-  color: var(--color-brown-muted);
+  font-size: 12px;
+  color: #8B7355;
 }
 
 .similarity-value {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--color-cinnabar);
+  color: #3D2B1F;
 }
 
 .compare-panels {
   display: grid;
-  grid-template-columns: 1fr 1px 1fr;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
   min-height: 400px;
-  max-height: 520px;
-  background: var(--color-white);
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  max-height: 600px;
 }
 
 .panel {
   display: flex;
   flex-direction: column;
+  background: #fff;
+  border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 14px;
-  background: var(--color-cream-dark);
-  border-bottom: 1px solid var(--color-tan-border);
-  font-size: 13px;
+  padding: 8px 16px;
+  background: #F5EFE3;
 }
 
-.panel-version {
+.panel-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.version-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--color-brown-dark);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.version-v1 {
+  background: #C43D3D;
+}
+
+.version-v2 {
+  background: #2D6A9F;
+}
+
+.version-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3D2B1F;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .panel-page {
   font-size: 12px;
-  color: var(--color-brown-muted);
+  color: #8B7355;
+  flex-shrink: 0;
 }
 
 .panel-content {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
-  font-size: 13px;
-  line-height: 1.7;
-  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: #5C4A3A;
 }
 
 .panel-text {
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.panel-text :deep(.text-highlight) {
+  padding: 1px 3px;
+  border-radius: 2px;
+  font-weight: 600;
+  cursor: pointer;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.panel-text :deep(.text-highlight[data-similarity="100"]),
+.panel-text :deep(.text-highlight[data-similarity="1"]) {
+  background: #E8F8F0;
+  color: #2D8A4E;
+}
+
+.panel-text :deep(.text-highlight[data-similarity="80"]),
+.panel-text :deep(.text-highlight[data-similarity="2"]) {
+  background: #FFF8E1;
+  color: #D4842A;
+}
+
+.panel-text :deep(.text-highlight[data-similarity="0"]),
+.panel-text :deep(.text-highlight[data-similarity="3"]) {
+  background: #FDEDEC;
+  color: #C43D3D;
+}
+
+.panel-text :deep(.doc-paragraph.has-highlight) {
+  border-radius: 0 8px 8px 0;
+  padding: 8px 12px;
+  margin: 0 -12px;
 }
 
 .panel-empty {
@@ -1469,168 +1583,60 @@ const handlePreviewRightScroll = () => {
   justify-content: center;
   gap: 8px;
   height: 100%;
-  color: var(--color-tan-dark);
+  min-height: 200px;
+  color: #D4C4A8;
   font-size: 14px;
 }
 
 .panel-empty-icon {
   font-size: 32px;
-  color: var(--color-tan-light);
+  color: #E8DCC8;
 }
 
-.panel-divider {
-  background: var(--color-tan-border);
-  width: 1px;
-}
-
-.comparison-list {
-  background: var(--color-white);
+/* 数据表格 */
+.data-table {
+  background: #fff;
   border: 1px solid var(--color-tan-border);
   border-radius: var(--radius-md);
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.list-header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.list-header-icon {
-  font-size: 20px;
-  color: var(--color-cinnabar);
-}
-
-.list-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-brown-dark);
-  margin: 0;
-  font-family: var(--font-ui);
-}
-
-.list-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-white);
-  color: var(--color-brown);
-  font-size: 13px;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.action-btn:hover:not(:disabled) {
-  background: var(--color-cream-dark);
-  border-color: var(--color-tan-dark);
-}
-
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.action-btn.primary {
-  background: var(--color-cinnabar);
-  border-color: var(--color-cinnabar);
-  color: var(--color-white);
-}
-
-.action-btn.primary:hover:not(:disabled) {
-  background: var(--color-cinnabar-dark);
-}
-
-.action-btn-icon {
-  font-size: 16px;
-}
-
-.header-stats {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.header-stat-badge {
-  font-size: 12px;
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
-  background: rgba(var(--rgb-cream-dark), 0.6);
-  color: var(--color-brown);
-  white-space: nowrap;
-}
-
-.header-stat-badge.success {
-  background: rgba(var(--rgb-jade), 0.1);
-  color: var(--color-jade-dark);
-}
-
-.data-table {
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
 .table-header {
-  display: grid;
-  grid-template-columns: 50px 1fr 90px 90px 1fr;
-  background: var(--color-cream-dark);
-}
-
-.table-header .col {
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-brown);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  background: var(--color-cream-dark);
   border-bottom: 1px solid var(--color-tan-border);
-}
-
-.table-header .col-content {
-  justify-content: flex-start;
-  padding-left: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.table-header .col-position {
-  border-right: 1px solid var(--color-tan-border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-brown-dark);
 }
 
 .table-body {
-  overflow: visible;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.table-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.table-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-body::-webkit-scrollbar-thumb {
+  background: var(--color-tan-dark);
+  border-radius: 3px;
+}
+
+.table-body::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brown-muted);
 }
 
 .table-row {
-  display: grid;
-  grid-template-columns: 50px 1fr 90px 90px 1fr;
-  border-bottom: 1px solid var(--color-tan-border);
-  transition: background-color 0.15s;
-  min-height: 40px;
+  display: flex;
+  border-bottom: 1px solid var(--color-tan-light);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .table-row:last-child {
@@ -1638,134 +1644,49 @@ const handlePreviewRightScroll = () => {
 }
 
 .table-row:hover {
-  background: rgba(var(--rgb-cream-dark), 0.3);
+  background: rgba(var(--rgb-cinnabar), 0.03);
 }
 
-.table-row .col {
-  min-width: 0;
-  padding: 6px 10px;
-  font-size: 13px;
-  color: var(--color-brown-dark);
-  line-height: 1.5;
+.col {
+  padding: 10px 12px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
 }
 
-.table-row .col-index {
+.col-index {
+  width: 60px;
+  flex-shrink: 0;
   justify-content: center;
+  color: var(--color-brown-muted);
   font-weight: 500;
-  color: var(--color-brown-muted);
 }
 
-.table-row .col-content {
+.col-content {
+  flex: 1;
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  padding: 6px 10px;
-  background: rgba(var(--rgb-white), 0.9);
-  border-radius: var(--radius-xs);
-  height: 30px;
-  display: block;
-  cursor: default;
-}
-
-.table-row .col-position {
-  justify-content: center;
-  font-size: 12px;
-  color: var(--color-brown-muted);
-  border-right: 1px solid var(--color-tan-light);
+  word-break: break-all;
+  color: var(--color-brown);
 }
 
 .col-content.clickable {
   cursor: pointer;
+  transition: color 0.2s;
 }
 
 .col-content.clickable:hover {
-  background: rgba(var(--rgb-gold), 0.1);
+  color: var(--color-cinnabar);
 }
 
-.table-row .col-content :deep(.highlighted-text) {
-  background: rgba(var(--rgb-gold), 0.85) !important;
-  color: var(--color-cinnabar) !important;
-  padding: 0 3px !important;
-  border-radius: 2px !important;
-  font-weight: 700 !important;
-  display: inline !important;
-  box-decoration-break: clone !important;
-  -webkit-box-decoration-break: clone !important;
-}
-
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 4px;
-}
-
-.pagination-info {
-  font-size: 13px;
-  color: var(--color-brown);
-}
-
-.pagination-controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.page-btn {
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-white);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
+.col-position {
+  width: 80px;
+  flex-shrink: 0;
   justify-content: center;
-  transition: all 0.15s;
-  font-size: 14px;
-  color: var(--color-brown);
-}
-
-.page-btn:hover:not(:disabled) {
-  background: var(--color-cream-dark);
-}
-
-.page-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.page-number {
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-white);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-brown);
-}
-
-.page-number:hover {
-  background: var(--color-cream-dark);
-}
-
-.page-number.active {
-  background: var(--color-cinnabar);
-  border-color: var(--color-cinnabar);
-  color: var(--color-white);
+  color: var(--color-brown-muted);
+  font-size: 12px;
 }
 
 .image-duplicate-section {
-  background: var(--color-white);
+  background: #fff;
   border: 1px solid var(--color-tan-border);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -1784,6 +1705,14 @@ const handlePreviewRightScroll = () => {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.section-header-left h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-brown-dark);
+  margin: 0;
+  font-family: var(--font-ui);
 }
 
 .section-header-icon {
@@ -1879,10 +1808,7 @@ const handlePreviewRightScroll = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
-  background: var(--color-white);
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-md);
+  padding: 8px 0;
 }
 
 .bottom-pagination {
@@ -1891,30 +1817,54 @@ const handlePreviewRightScroll = () => {
   gap: 4px;
 }
 
+.bottom-pagination .page-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: #F0E8D8;
+  color: #8B7355;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.15s;
+}
+
+.bottom-pagination .page-btn:hover:not(:disabled) {
+  background: #E8DCC8;
+  color: #3D2B1F;
+}
+
+.bottom-pagination .page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .page-num {
   width: 32px;
   height: 32px;
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-xs);
-  background: var(--color-white);
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-brown);
+  background: transparent;
+  color: #8B7355;
   transition: all 0.15s;
 }
 
 .page-num:hover {
-  background: var(--color-cream-dark);
+  background: #F0E8D8;
 }
 
 .page-num.active {
-  background: var(--color-cinnabar);
-  border-color: var(--color-cinnabar);
-  color: var(--color-white);
+  background: #C43D3D;
+  color: #fff;
 }
 
 .sync-toggle {
@@ -1925,7 +1875,7 @@ const handlePreviewRightScroll = () => {
 
 .sync-label {
   font-size: 13px;
-  color: var(--color-brown);
+  color: #3D2B1F;
 }
 
 .toggle {
@@ -1942,36 +1892,36 @@ const handlePreviewRightScroll = () => {
   height: 0;
 }
 
-.toggle input:checked + .toggle-slider {
-  background: var(--color-cloud-blue);
-}
-
-.toggle input:checked + .toggle-slider:before {
-  transform: translateX(18px);
-}
-
 .toggle-slider {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--color-tan-dark);
+  background: #D4C4A8;
   border-radius: 11px;
   transition: 0.2s;
+}
+
+.toggle input:checked + .toggle-slider {
+  background: #C43D3D;
 }
 
 .toggle-slider:before {
   position: absolute;
   content: "";
-  height: 16px;
-  width: 16px;
-  left: 3px;
-  bottom: 3px;
-  background: var(--color-white);
-  border-radius: 50%;
+  height: 18px;
+  width: 19px;
+  left: 2px;
+  bottom: 2px;
+  background: #fff;
+  border-radius: 9px;
   transition: 0.2s;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.toggle input:checked + .toggle-slider:before {
+  transform: translateX(18px);
 }
 
 .modal-overlay {
@@ -2275,46 +2225,18 @@ const handlePreviewRightScroll = () => {
     gap: 8px;
   }
 
+  .toolbar-left {
+    flex-wrap: wrap;
+  }
+
   .compare-panels {
     grid-template-columns: 1fr;
     max-height: none;
   }
 
-  .panel-divider {
-    display: none;
-  }
-
   .stats-left {
     flex-wrap: wrap;
     gap: 8px;
-  }
-
-  .list-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .list-header-actions {
-    width: 100%;
-  }
-
-  .header-stats {
-    width: 100%;
-  }
-
-  .data-table {
-    overflow-x: auto;
-  }
-
-  .data-table .table-header,
-  .data-table .table-row {
-    min-width: 680px;
-  }
-
-  .pagination {
-    flex-direction: column;
-    gap: 8px;
-    align-items: center;
   }
 
   .image-duplicate-grid {
@@ -2336,6 +2258,18 @@ const handlePreviewRightScroll = () => {
 
   .preview-panel-inner {
     padding: 24px 20px !important;
+  }
+
+  .file-info-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .bottom-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
   }
 }
 </style>

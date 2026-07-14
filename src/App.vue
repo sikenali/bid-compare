@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { RiExchangeLine, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
+import { RiExchangeLine, RiFileLine, RiFileInfoLine, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
 import { useRecentRecords } from './composables/useRecentRecords'
 import RecentRecords from './components/RecentRecords.vue'
 
@@ -11,6 +11,29 @@ const route = useRoute()
 const { recentRecords, addRecentRecord, clearAllRecords, deleteRecord } = useRecentRecords('fileCompare')
 
 const showHistory = ref(false)
+
+const navItems = [
+  { key: 'file-compare', label: '文件对比', icon: RiFileLine, route: '/file-compare' },
+  { key: 'property-check', label: '属性检查', icon: RiFileInfoLine, route: '/property-check' },
+]
+
+const activeNav = computed(() => {
+  if (route.path.startsWith('/file-compare')) return 'file-compare'
+  if (route.path.startsWith('/property-check')) return 'property-check'
+  return 'file-compare'
+})
+
+const indicatorStyle = computed(() => {
+  const idx = navItems.findIndex(i => i.key === activeNav.value)
+  return {
+    left: `${idx * 128 + 4}px`,
+    width: '120px'
+  }
+})
+
+const navigateTo = (item: typeof navItems[0]) => {
+  router.push(item.route)
+}
 
 const toggleHistory = () => {
   showHistory.value = !showHistory.value
@@ -47,6 +70,19 @@ const isActive = (path: string) => route.path.startsWith(path)
           <span class="brand-sub">Boomerang</span>
         </div>
       </div>
+      <nav class="nav-tabs">
+        <div class="nav-tabs-indicator" :style="indicatorStyle" />
+        <button
+          v-for="item in navItems"
+          :key="item.key"
+          class="nav-tab-item"
+          :class="{ active: activeNav === item.key }"
+          @click="navigateTo(item)"
+        >
+          <component :is="item.icon" size="18" />
+          <span>{{ item.label }}</span>
+        </button>
+      </nav>
       <div class="nav-actions">
         <button class="nav-btn" title="历史记录" @click="toggleHistory">
           <span class="nav-btn-content">
@@ -160,6 +196,53 @@ const isActive = (path: string) => route.path.startsWith(path)
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: var(--color-cream-dark);
+  border-radius: 10px;
+  position: relative;
+}
+
+.nav-tabs-indicator {
+  position: absolute;
+  top: 4px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--color-cinnabar);
+  transition: left 0.3s ease-out, width 0.3s ease-out;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.nav-tab-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-brown-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.2s;
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+.nav-tab-item:hover {
+  color: var(--color-brown-dark);
+}
+
+.nav-tab-item.active {
+  color: #fff;
+  font-weight: 600;
 }
 
 .nav-btn {
