@@ -1,20 +1,23 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { RiExchangeLine, RiFileLine, RiFileInfoLine, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
+import { RiExchangeLine, RiFileCopyLine, RiListCheck, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
 import { useRecentRecords } from './composables/useRecentRecords'
 import RecentRecords from './components/RecentRecords.vue'
 
 const router = useRouter()
 const route = useRoute()
 
-const { recentRecords, addRecentRecord, clearAllRecords, deleteRecord } = useRecentRecords('fileCompare')
+const { recentRecords: fcRecords, addRecentRecord: addFcRecord, clearAllRecords: clearFcRecords, deleteRecord: deleteFcRecord } = useRecentRecords('fileCompare')
+const { recentRecords: pcRecords, addRecentRecord: addPcRecord, clearAllRecords: clearPcRecords, deleteRecord: deletePcRecord } = useRecentRecords('propertyCheck')
+
+const historyTab = ref('fileCompare')
 
 const showHistory = ref(false)
 
 const navItems = [
-  { key: 'file-compare', label: '文件对比', icon: RiFileLine, route: '/file-compare' },
-  { key: 'property-check', label: '属性检查', icon: RiFileInfoLine, route: '/property-check' },
+  { key: 'file-compare', icon: RiFileCopyLine, route: '/file-compare' },
+  { key: 'property-check', icon: RiListCheck, route: '/property-check' },
 ]
 
 const activeNav = computed(() => {
@@ -26,8 +29,8 @@ const activeNav = computed(() => {
 const indicatorStyle = computed(() => {
   const idx = navItems.findIndex(i => i.key === activeNav.value)
   return {
-    left: `${idx * 128 + 4}px`,
-    width: '120px'
+    left: `${idx * 44 + 4}px`,
+    width: '36px'
   }
 })
 
@@ -40,18 +43,37 @@ const toggleHistory = () => {
 }
 
 const viewHistoricalRecord = async (record: any) => {
-  const { storeCompareResult } = await import('./utils/compareResultStore')
-  const compareResult = {
-    segments: record.similarSegments || [],
-    leftFileName: record.leftFileName,
-    rightFileName: record.rightFileName,
-    textSimilarity: record.similarity,
-    similarSegmentsCount: record.similarSegments ? record.similarSegments.length : 0,
-    leftTotalPages: 1,
-    rightTotalPages: 1
+  if (historyTab.value === 'fileCompare') {
+    const { storeCompareResult } = await import('./utils/compareResultStore')
+    const compareResult = {
+      segments: record.similarSegments || [],
+      leftFileName: record.leftFileName,
+      rightFileName: record.rightFileName,
+      textSimilarity: record.similarity,
+      similarSegmentsCount: record.similarSegments ? record.similarSegments.length : 0,
+      leftTotalPages: 1,
+      rightTotalPages: 1
+    }
+    const resultId = storeCompareResult(compareResult)
+    router.push({ path: '/file-compare-result', query: { resultId, t: Date.now() } })
+  } else {
+    const { storePropertyCheckResult } = await import('./utils/compareResultStore')
+    const checkResult = {
+      propertyDetails: record.propertyDetails || [],
+      leftFileName: record.leftFileName,
+      rightFileName: record.rightFileName,
+      totalProperties: record.propertyDetails?.length || 0,
+      matchingProperties: record.propertyDetails?.filter((p: any) => p.status === 'match').length || 0,
+      nonMatchingProperties: record.propertyDetails?.filter((p: any) => p.status === 'mismatch').length || 0,
+      warningProperties: record.propertyDetails?.filter((p: any) => p.status === 'warning').length || 0,
+      similarity: record.similarity,
+      leftFileProperties: {},
+      rightFileProperties: {},
+      similarityStatus: 'match'
+    }
+    const resultId = storePropertyCheckResult(checkResult)
+    router.push({ path: '/property-check-result', query: { resultId, t: Date.now() } })
   }
-  const resultId = storeCompareResult(compareResult)
-  router.push({ path: '/file-compare-result', query: { resultId, t: Date.now() } })
   showHistory.value = false
 }
 
@@ -78,9 +100,9 @@ const isActive = (path: string) => route.path.startsWith(path)
           class="nav-tab-item"
           :class="{ active: activeNav === item.key }"
           @click="navigateTo(item)"
+          :title="item.key === 'file-compare' ? '文件对比' : '属性检查'"
         >
-          <component :is="item.icon" size="18" />
-          <span>{{ item.label }}</span>
+          <component :is="item.icon" size="20" />
         </button>
       </nav>
       <div class="nav-actions">
@@ -203,9 +225,13 @@ const isActive = (path: string) => route.path.startsWith(path)
   align-items: center;
   gap: 4px;
   padding: 4px;
-  background: var(--color-cream-dark);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
   position: relative;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
 .nav-tabs-indicator {
@@ -213,36 +239,36 @@ const isActive = (path: string) => route.path.startsWith(path)
   top: 4px;
   height: 36px;
   border-radius: 8px;
-  background: var(--color-cinnabar);
+  background: linear-gradient(135deg, var(--color-cinnabar), #d45a4a);
   transition: left 0.3s ease-out, width 0.3s ease-out;
   pointer-events: none;
   z-index: 0;
+  box-shadow: 0 2px 8px rgba(var(--rgb-cinnabar), 0.3);
 }
 
 .nav-tab-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 20px;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   border: none;
   border-radius: 8px;
   background: transparent;
   color: var(--color-brown-muted);
-  font-size: 13px;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: all 0.2s;
   position: relative;
   z-index: 1;
-  white-space: nowrap;
 }
 
 .nav-tab-item:hover {
   color: var(--color-brown-dark);
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .nav-tab-item.active {
   color: #fff;
-  font-weight: 600;
 }
 
 .nav-btn {
