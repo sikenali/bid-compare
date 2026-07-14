@@ -35,6 +35,8 @@ export interface FileCompareSettings {
   exportFormat: string
   includeHighlight: boolean
   includeCharts: boolean
+  // 主题设置
+  theme: string
 }
 
 const SETTINGS_VERSION = 2
@@ -66,7 +68,8 @@ export const defaultSettings: FileCompareSettings = {
   apiEndpoint: '',
   exportFormat: 'word',
   includeHighlight: true,
-  includeCharts: true
+  includeCharts: true,
+  theme: 'light'
 }
 
 // 模块级单例 - 确保所有组件共享同一个 settings 对象
@@ -97,6 +100,10 @@ export function useSettings() {
         })
       } else {
         Object.assign(settings, defaultSettings)
+      }
+      // Apply saved theme
+      if (settings.theme) {
+        document.documentElement.dataset.theme = settings.theme === 'light' ? '' : settings.theme
       }
     } catch (error) {
       Object.assign(settings, defaultSettings)

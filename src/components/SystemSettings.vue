@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useSettings } from '../composables/useSettings'
 import {
   RiSettings3Line,
@@ -10,7 +10,17 @@ import {
   RiMarkdownLine,
   RiImageLine,
   RiFilterLine,
-  RiCloseLine
+  RiCloseLine,
+  RiPaletteLine,
+  RiCheckLine,
+  RiEyeOffLine,
+  RiEyeLine,
+  RiDeleteBinLine,
+  RiRobotLine,
+  RiOpenaiFill,
+  RiFileWord2Line,
+  RiKeyLine,
+  RiAddLine
 } from '@remixicon/vue'
 import { BorderBeam } from 'vue3-border-beam'
 
@@ -21,17 +31,26 @@ const {
   resetToDefault: handleResetToDefault
 } = useSettings()
 
-// 当前激活的标签页
-const activeTab = ref('algorithm')
+const activeTab = ref('theme')
 
-// 导航标签配置
 const navTabs = [
+  { key: 'theme', label: '主题设置', icon: RiPaletteLine },
   { key: 'algorithm', label: '对比算法', icon: RiSettings3Line },
   { key: 'preprocess', label: '文本设置', icon: RiText },
   { key: 'features', label: '参数设置', icon: RiFilterLine },
   { key: 'export', label: '导出设置', icon: RiFileDownloadLine },
   { key: 'ai', label: '模型设置', icon: RiRobot2Line }
 ]
+
+const indicatorStyle = computed(() => {
+  const idx = navTabs.findIndex(t => t.key === activeTab.value)
+  const itemHeight = 44
+  const gap = 4
+  return {
+    top: `${idx * (itemHeight + gap)}px`,
+    height: `${itemHeight}px`
+  }
+})
 
 const handleReset = () => {
   if (window.confirm('确定要恢复默认设置吗？所有修改将丢失。')) {
@@ -45,39 +64,129 @@ const handleSaveWithConfirm = () => {
   }
 }
 
-// 数字范围限制工具函数
+const handleCancel = () => {
+  handleCancelSettings()
+}
+
+const handleThemeChange = (theme: string) => {
+  settings.theme = theme
+  document.documentElement.dataset.theme = theme === 'light' ? '' : theme
+}
+
+const themes = [
+  {
+    id: 'light', name: '羊皮纸', desc: '温润雅致 · 默认主题',
+    previewBg: '#FBF7F0', navBg: '#F5EFE3', logoBg: '#C23B22',
+    brandColor: '#3D2B1F', sidebarBg: '#F5EFE3', card1Bg: '#F0E8D8', card2Bg: '#F5EFE3',
+    textColor: '#C23B22',
+  },
+  {
+    id: 'dark', name: '深色', desc: '深邃护眼 · 夜间模式',
+    previewBg: '#2C2416', navBg: '#3D3224', logoBg: '#C23B22',
+    brandColor: '#E8DCC8', sidebarBg: '#3D3224', card1Bg: '#4A3D2C', card2Bg: '#3D3224',
+    textColor: '#E8DCC8',
+  },
+  {
+    id: 'paper', name: '白纸', desc: '清爽干净 · 极简模式',
+    previewBg: '#FFFFFF', navBg: '#F5F5F5', logoBg: '#C23B22',
+    brandColor: '#3D2B1F', sidebarBg: '#F5F5F5', card1Bg: '#F0F0F0', card2Bg: '#F5F5F5',
+    textColor: '#3D2B1F',
+  },
+]
+
 const clampNumber = (value: string | number, min: number, max: number): number => {
   const num = parseInt(String(value).replace(/\D/g, ''), 10)
   if (isNaN(num)) return min
   return Math.max(min, Math.min(max, num))
 }
 
-// 导出格式选项
 const exportFormats = [
-  { value: 'word', label: 'Word', icon: RiFileWordLine },
-  { value: 'markdown', label: 'Markdown', icon: RiMarkdownLine }
+  { value: 'word', label: 'Word 格式', ext: '.docx', icon: RiFileWord2Line, iconBg: '#E8F0F8', iconColor: '#2D6A9F' },
+  { value: 'markdown', label: 'Markdown 格式', ext: '.md', icon: RiMarkdownLine, iconBg: '#F0E8D8', iconColor: '#8B7355' }
 ]
 
-// AI 模型选项
+const wordFeatures = ['保留完整格式与排版样式', '支持表格、图片、页眉页脚', '兼容 Microsoft Word / WPS', '支持目录自动生成']
+const mdFeatures = ['纯文本格式，轻量易读', '适合版本管理与协作', '可快速转换为 HTML/PDF', '兼容各类 Markdown 编辑器']
+
 const aiModels = [
-  {
-    value: 'deepseek',
-    label: 'DeepSeek'
-  },
-  {
-    value: 'qwen',
-    label: 'Qwen'
-  },
-  {
-    value: 'openai',
-    label: 'OpenAI'
-  }
+  { value: 'deepseek', label: 'DeepSeek' },
+  { value: 'qwen', label: 'Qwen' },
+  { value: 'openai', label: 'OpenAI' }
 ]
+
+interface ModelItem {
+  id: string
+  name: string
+  icon: any
+  provider: string
+  model: string
+}
+
+const domesticModels: ModelItem[] = [
+  { id: 'qwen', name: '通义千问', icon: RiRobotLine, provider: '阿里云', model: 'qwen-turbo' },
+  { id: 'wenxin', name: '文心一言', icon: RiRobotLine, provider: '百度', model: 'ernie-4.0' },
+  { id: 'glm', name: '智谱 GLM', icon: RiRobotLine, provider: '智谱', model: 'glm-4' },
+]
+
+const foreignModels: ModelItem[] = [
+  { id: 'gpt4o', name: 'GPT-4o', icon: RiOpenaiFill, provider: 'OpenAI', model: 'gpt-4o' },
+  { id: 'claude', name: 'Claude 3.5', icon: RiRobotLine, provider: 'Anthropic', model: 'claude-3-5-sonnet' },
+]
+
+const configTab = ref<'provider' | 'custom'>('provider')
+const customProvider = ref('')
+const customModel = ref('')
+const apiKeyValue = ref('')
+const keyVisible = ref(false)
+const savedKeys = ref<Array<{ id: string; provider: string; model: string; key: string }>>([])
+
+const addApiKeyEntry = () => {
+  const key = apiKeyValue.value.trim()
+  if (!key) {
+    window.alert('请输入 API Key')
+    return
+  }
+  if (configTab.value === 'custom') {
+    if (!customProvider.value.trim() || !customModel.value.trim()) {
+      window.alert('请填写服务商和模型名称')
+      return
+    }
+    savedKeys.value.push({
+      id: Date.now().toString(),
+      provider: customProvider.value.trim(),
+      model: customModel.value.trim(),
+      key: key,
+    })
+  } else {
+    const currentModel = domesticModels.find(m => m.id === settings.selectedModel) || foreignModels.find(m => m.id === settings.selectedModel)
+    if (currentModel) {
+      savedKeys.value.push({
+        id: Date.now().toString(),
+        provider: currentModel.provider,
+        model: currentModel.model,
+        key: key,
+      })
+    }
+  }
+  apiKeyValue.value = ''
+  customProvider.value = ''
+  customModel.value = ''
+}
+
+const removeApiKey = (id: string) => {
+  savedKeys.value = savedKeys.value.filter(k => k.id !== id)
+}
+
+const resetApiForm = () => {
+  apiKeyValue.value = ''
+  customProvider.value = ''
+  customModel.value = ''
+  keyVisible.value = false
+}
 </script>
 
 <template>
   <div class="system-settings-container">
-    <!-- 页面标题区 -->
     <div class="page-header">
       <div class="title-row">
         <div>
@@ -87,10 +196,9 @@ const aiModels = [
       </div>
     </div>
 
-    <!-- 设置内容区 - 左侧导航 + 右侧内容 -->
     <div class="settings-layout">
-      <!-- 左侧导航 -->
       <nav class="settings-nav">
+        <div class="nav-indicator" :style="indicatorStyle" />
         <button
           v-for="tab in navTabs"
           :key="tab.key"
@@ -103,345 +211,432 @@ const aiModels = [
         </button>
       </nav>
 
-      <!-- 右侧设置内容 -->
       <div class="settings-content">
-        <!-- 对比算法 -->
-        <div v-if="activeTab === 'algorithm'" class="settings-section">
-          <h2 class="section-title">对比算法</h2>
-          
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">N-gram 大小</label>
-              <p class="setting-desc">设置文本分片的字符数量</p>
+        <div class="content-header">
+          <div class="content-header-left">
+            <div class="content-header-icon">
+              <component :is="navTabs.find(t => t.key === activeTab)?.icon" size="20" color="#fff" />
             </div>
-            <div class="number-stepper">
-              <button class="stepper-btn" @click="settings.ngramSize = Math.max(1, settings.ngramSize - 1)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-              <input type="text" :value="settings.ngramSize" class="stepper-input" @input="settings.ngramSize = clampNumber($event.target.value, 1, 10)" />
-              <button class="stepper-btn" @click="settings.ngramSize = Math.min(10, settings.ngramSize + 1)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
+            <div class="content-header-texts">
+              <h3 class="content-title">{{ navTabs.find(t => t.key === activeTab)?.label }}</h3>
+              <span class="content-subtitle">{{ activeTab === 'theme' ? '选择你喜欢的界面风格' : activeTab === 'algorithm' ? '配置对比算法参数' : activeTab === 'preprocess' ? '配置文本处理选项' : activeTab === 'features' ? '配置查重参数' : activeTab === 'export' ? '配置导出默认格式' : '配置 AI 模型与密钥' }}</span>
             </div>
           </div>
-
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">最小查重字数</label>
-              <p class="setting-desc">标记为重复的最少连续字符数</p>
-            </div>
-            <div class="number-stepper">
-              <button class="stepper-btn" @click="settings.minDupChars = Math.max(5, settings.minDupChars - 5)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-              <input type="text" :value="settings.minDupChars" class="stepper-input" @input="settings.minDupChars = clampNumber($event.target.value, 5, 200)" />
-              <button class="stepper-btn" @click="settings.minDupChars = Math.min(200, settings.minDupChars + 5)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-            </div>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">相似度阈值</label>
-              <p class="setting-desc">文本片段相似度达到此百分比即标记为重复</p>
-            </div>
-            <div class="number-stepper">
-              <button class="stepper-btn" @click="settings.textSimilarityThreshold = Math.max(1, settings.textSimilarityThreshold - 1)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-              <input type="text" :value="settings.textSimilarityThreshold" class="stepper-input" @input="settings.textSimilarityThreshold = clampNumber($event.target.value, 1, 100)" />
-              <button class="stepper-btn" @click="settings.textSimilarityThreshold = Math.min(100, settings.textSimilarityThreshold + 1)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-            </div>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">图像相似度阈值</label>
-              <p class="setting-desc">图像相似度达到此百分比即标记为重复</p>
-            </div>
-            <div class="number-stepper">
-              <button class="stepper-btn" @click="settings.imageSimilarityThreshold = Math.max(1, settings.imageSimilarityThreshold - 1)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-              <input type="text" :value="settings.imageSimilarityThreshold" class="stepper-input" @input="settings.imageSimilarityThreshold = clampNumber($event.target.value, 1, 100)" />
-              <button class="stepper-btn" @click="settings.imageSimilarityThreshold = Math.min(100, settings.imageSimilarityThreshold + 1)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-            </div>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">最大结果数</label>
-              <p class="setting-desc">最多显示的相似片段数量</p>
-            </div>
-            <div class="number-stepper">
-              <button class="stepper-btn" @click="settings.maxResults = Math.max(10, settings.maxResults - 10)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-              <input type="text" :value="settings.maxResults" class="stepper-input" @input="settings.maxResults = clampNumber($event.target.value, 10, 500)" />
-              <button class="stepper-btn" @click="settings.maxResults = Math.min(500, settings.maxResults + 10)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-            </div>
+          <div class="content-header-actions">
+            <button class="action-btn-cancel" @click="handleCancel">取消</button>
+            <button class="action-btn-save" @click="handleSaveWithConfirm">保存</button>
           </div>
         </div>
 
-        <!-- 文本设置 -->
-
-        <!-- 文本设置 -->
-        <div v-if="activeTab === 'preprocess'" class="settings-section">
-          <h2 class="section-title">文本设置</h2>
-          
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">忽略大小写</label>
-              <p class="setting-desc">对比时是否忽略英文字母大小写差异</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.ignoreCase" />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">忽略标点符号</label>
-              <p class="setting-desc">对比时是否忽略标点符号差异</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.ignorePunctuation" />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">忽略空白字符</label>
-              <p class="setting-desc">对比时是否忽略空格、制表符等空白字符</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.ignoreWhitespace" />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">忽略不可见字符</label>
-              <p class="setting-desc">对比时是否忽略零宽字符等不可见字符</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.ignoreInvisibleChars" />
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
-
-        <!-- 查重参数设置 -->
-        <div v-if="activeTab === 'features'" class="settings-section">
-          <h2 class="section-title">参数设置</h2>
-          
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">水印文字剔除</label>
-              <p class="setting-desc">解析时自动过滤常见水印文字</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.removeWatermark" />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">相同条款剔除</label>
-              <p class="setting-desc">启用后自动剔除招标文件中完全相同的条款</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.clauseRemovalEnabled" />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-row" v-if="settings.clauseRemovalEnabled">
-            <div class="setting-label-group">
-              <label class="setting-label">剔除颗粒度</label>
-              <p class="setting-desc">条款剔除的最小连续相同字符数</p>
-            </div>
-            <div class="number-stepper">
-              <button class="stepper-btn" @click="settings.clauseRemovalGranularity = Math.max(2, settings.clauseRemovalGranularity - 1)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-              <input type="text" :value="settings.clauseRemovalGranularity" class="stepper-input" @input="settings.clauseRemovalGranularity = clampNumber($event.target.value, 2, 50)" />
-              <button class="stepper-btn" @click="settings.clauseRemovalGranularity = Math.min(50, settings.clauseRemovalGranularity + 1)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </button>
-            </div>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">图片查重</label>
-              <p class="setting-desc">开启后只对比上传图片中的雷同文字</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.enableImageCompare" />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">OCR 文字识别</label>
-              <p class="setting-desc">开启后对 Word/PDF 中的图片进行文字识别对比</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.enableOCRCompare" />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-row" v-if="settings.enableOCRCompare">
-            <div class="setting-label-group">
-              <label class="setting-label">OCR 识别语言</label>
-              <p class="setting-desc">选择图片文字识别的语言</p>
-            </div>
-            <select v-model="settings.ocrLanguage" class="select-input">
-              <option value="chi_sim+eng">中文简体 + 英文</option>
-              <option value="chi_tra+eng">中文繁体 + 英文</option>
-              <option value="eng">英文</option>
-              <option value="chi_sim">中文简体</option>
-            </select>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">多文件对比</label>
-              <p class="setting-desc">开启后可同时对比多个文件（3个以上）</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.enableMultiFileCompare" />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-row" v-if="settings.enableMultiFileCompare">
-            <div class="setting-label-group">
-              <label class="setting-label">最大文件数量</label>
-              <p class="setting-desc">单次对比最多支持的文件数</p>
-            </div>
-            <input type="number" 
-                   v-model.number="settings.maxMultiFileCount" 
-                   min="3" 
-                   max="20"
-                   class="number-input" />
-          </div>
-        </div>
-
-        <!-- 导出设置 -->
-        <div v-if="activeTab === 'export'" class="settings-section">
-          <h2 class="section-title">导出设置</h2>
-          
-          <div class="setting-row radio-row">
-            <div class="setting-label-group">
-              <label class="setting-label">默认导出格式</label>
-              <p class="setting-desc">导出报告时默认使用的文件格式</p>
-            </div>
-            <div class="radio-group">
-              <label
-                v-for="format in exportFormats"
-                :key="format.value"
-                class="radio-box-item"
-                :class="{ 'active': settings.exportFormat === format.value }"
+        <div class="content-scroll">
+          <!-- 主题设置 -->
+          <div v-if="activeTab === 'theme'" class="panel">
+            <div class="theme-cards-row">
+              <div
+                v-for="t in themes"
+                :key="t.id"
+                class="theme-card-new"
+                :class="{ 'theme-card-selected': settings.theme === t.id }"
+                @click="handleThemeChange(t.id)"
               >
-                <input type="radio" v-model="settings.exportFormat" :value="format.value" />
-                <span class="radio-box">
-                  <span class="radio-box-inner"></span>
-                </span>
-                <component :is="format.icon" class="radio-box-icon" />
-                <span class="radio-box-label">{{ format.label }}</span>
+                <div class="theme-preview-area" :style="{ background: t.previewBg }">
+                  <div class="theme-preview-nav" :style="{ background: t.navBg }">
+                    <div class="preview-logo" :style="{ background: t.logoBg }" />
+                    <span class="preview-brand" :style="{ color: t.brandColor }">文比猩</span>
+                  </div>
+                  <div class="theme-preview-body">
+                    <div class="preview-sidebar" :style="{ background: t.sidebarBg }" />
+                    <div class="preview-content">
+                      <div class="preview-card" :style="{ background: t.card1Bg }" />
+                      <div class="preview-card-sm" :style="{ background: t.card2Bg }" />
+                    </div>
+                  </div>
+                </div>
+                <div class="theme-info-area">
+                  <div class="theme-info-texts">
+                    <span class="theme-info-name" :style="{ color: t.textColor }">{{ t.name }}</span>
+                    <span class="theme-info-desc">{{ t.desc }}</span>
+                  </div>
+                  <div class="theme-check-circle" :class="{ 'theme-checked-circle': settings.theme === t.id }">
+                    <RiCheckLine v-if="settings.theme === t.id" size="14" color="#fff" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 对比算法 -->
+          <div v-if="activeTab === 'algorithm'" class="panel">
+            <div class="settings-card">
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <label class="setting-label">N-gram 大小</label>
+                  <p class="setting-desc">设置文本分片的字符数量</p>
+                </div>
+                <div class="number-stepper">
+                  <button class="stepper-btn" @click="settings.ngramSize = Math.max(1, settings.ngramSize - 1)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                  <input type="text" :value="settings.ngramSize" class="stepper-input" @input="settings.ngramSize = clampNumber($event.target.value, 1, 10)" />
+                  <button class="stepper-btn" @click="settings.ngramSize = Math.min(10, settings.ngramSize + 1)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <label class="setting-label">最小查重字数</label>
+                  <p class="setting-desc">标记为重复的最少连续字符数</p>
+                </div>
+                <div class="number-stepper">
+                  <button class="stepper-btn" @click="settings.minDupChars = Math.max(5, settings.minDupChars - 5)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                  <input type="text" :value="settings.minDupChars" class="stepper-input" @input="settings.minDupChars = clampNumber($event.target.value, 5, 200)" />
+                  <button class="stepper-btn" @click="settings.minDupChars = Math.min(200, settings.minDupChars + 5)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <label class="setting-label">相似度阈值</label>
+                  <p class="setting-desc">文本片段相似度达到此百分比即标记为重复</p>
+                </div>
+                <div class="number-stepper">
+                  <button class="stepper-btn" @click="settings.textSimilarityThreshold = Math.max(1, settings.textSimilarityThreshold - 1)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                  <input type="text" :value="settings.textSimilarityThreshold" class="stepper-input" @input="settings.textSimilarityThreshold = clampNumber($event.target.value, 1, 100)" />
+                  <button class="stepper-btn" @click="settings.textSimilarityThreshold = Math.min(100, settings.textSimilarityThreshold + 1)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <label class="setting-label">图像相似度阈值</label>
+                  <p class="setting-desc">图像相似度达到此百分比即标记为重复</p>
+                </div>
+                <div class="number-stepper">
+                  <button class="stepper-btn" @click="settings.imageSimilarityThreshold = Math.max(1, settings.imageSimilarityThreshold - 1)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                  <input type="text" :value="settings.imageSimilarityThreshold" class="stepper-input" @input="settings.imageSimilarityThreshold = clampNumber($event.target.value, 1, 100)" />
+                  <button class="stepper-btn" @click="settings.imageSimilarityThreshold = Math.min(100, settings.imageSimilarityThreshold + 1)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <label class="setting-label">最大结果数</label>
+                  <p class="setting-desc">最多显示的相似片段数量</p>
+                </div>
+                <div class="number-stepper">
+                  <button class="stepper-btn" @click="settings.maxResults = Math.max(10, settings.maxResults - 10)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                  <input type="text" :value="settings.maxResults" class="stepper-input" @input="settings.maxResults = clampNumber($event.target.value, 10, 500)" />
+                  <button class="stepper-btn" @click="settings.maxResults = Math.min(500, settings.maxResults + 10)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 文本设置 -->
+          <div v-if="activeTab === 'preprocess'" class="panel">
+            <div class="settings-card">
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <label class="setting-label">忽略大小写</label>
+                  <p class="setting-desc">对比时是否忽略英文字母大小写差异</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" v-model="settings.ignoreCase" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <label class="setting-label">忽略标点符号</label>
+                  <p class="setting-desc">对比时是否忽略标点符号差异</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" v-model="settings.ignorePunctuation" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <label class="setting-label">忽略空白字符</label>
+                  <p class="setting-desc">对比时是否忽略空格、制表符等空白字符</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" v-model="settings.ignoreWhitespace" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <label class="setting-label">忽略不可见字符</label>
+                  <p class="setting-desc">对比时是否忽略零宽字符等不可见字符</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" v-model="settings.ignoreInvisibleChars" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 参数设置 -->
+          <div v-if="activeTab === 'features'" class="panel">
+            <div class="settings-card">
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <label class="setting-label">水印文字剔除</label>
+                  <p class="setting-desc">解析时自动过滤常见水印文字</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" v-model="settings.removeWatermark" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <label class="setting-label">相同条款剔除</label>
+                  <p class="setting-desc">启用后自动剔除招标文件中完全相同的条款</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" v-model="settings.clauseRemovalEnabled" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-row" v-if="settings.clauseRemovalEnabled">
+                <div class="setting-label-group">
+                  <label class="setting-label">剔除颗粒度</label>
+                  <p class="setting-desc">条款剔除的最小连续相同字符数</p>
+                </div>
+                <div class="number-stepper">
+                  <button class="stepper-btn" @click="settings.clauseRemovalGranularity = Math.max(2, settings.clauseRemovalGranularity - 1)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                  <input type="text" :value="settings.clauseRemovalGranularity" class="stepper-input" @input="settings.clauseRemovalGranularity = clampNumber($event.target.value, 2, 50)" />
+                  <button class="stepper-btn" @click="settings.clauseRemovalGranularity = Math.min(50, settings.clauseRemovalGranularity + 1)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <label class="setting-label">图片查重</label>
+                  <p class="setting-desc">开启后只对比上传图片中的雷同文字</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" v-model="settings.enableImageCompare" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <label class="setting-label">OCR 文字识别</label>
+                  <p class="setting-desc">开启后对 Word/PDF 中的图片进行文字识别对比</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" v-model="settings.enableOCRCompare" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-row" v-if="settings.enableOCRCompare">
+                <div class="setting-label-group">
+                  <label class="setting-label">OCR 识别语言</label>
+                  <p class="setting-desc">选择图片文字识别的语言</p>
+                </div>
+                <select v-model="settings.ocrLanguage" class="select-input">
+                  <option value="chi_sim+eng">中文简体 + 英文</option>
+                  <option value="chi_tra+eng">中文繁体 + 英文</option>
+                  <option value="eng">英文</option>
+                  <option value="chi_sim">中文简体</option>
+                </select>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <label class="setting-label">多文件对比</label>
+                  <p class="setting-desc">开启后可同时对比多个文件（3个以上）</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" v-model="settings.enableMultiFileCompare" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-row" v-if="settings.enableMultiFileCompare">
+                <div class="setting-label-group">
+                  <label class="setting-label">最大文件数量</label>
+                  <p class="setting-desc">单次对比最多支持的文件数</p>
+                </div>
+                <input type="number"
+                       v-model.number="settings.maxMultiFileCount"
+                       min="3"
+                       max="20"
+                       class="number-input" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 导出设置 -->
+          <div v-if="activeTab === 'export'" class="panel">
+            <div class="export-cards-row">
+              <div
+                v-for="(fmt, idx) in exportFormats"
+                :key="fmt.value"
+                class="export-card-item"
+                :class="{ 'export-card-selected': settings.exportFormat === fmt.value }"
+                @click="settings.exportFormat = fmt.value"
+              >
+                <div class="export-card-header">
+                  <div class="export-card-icon" :style="{ background: fmt.iconBg }">
+                    <component :is="fmt.icon" size="28" :color="fmt.iconColor" />
+                  </div>
+                  <div class="export-card-titles">
+                    <span class="export-card-name">{{ fmt.label }}</span>
+                    <span class="export-card-ext">{{ fmt.ext }}</span>
+                  </div>
+                  <div class="export-check" :class="{ 'export-checked': settings.exportFormat === fmt.value }">
+                    <RiCheckLine v-if="settings.exportFormat === fmt.value" size="18" color="#fff" />
+                  </div>
+                </div>
+                <div class="export-features">
+                  <div v-for="f in (idx === 0 ? wordFeatures : mdFeatures)" :key="f" class="export-feature">
+                    <RiCheckLine size="16" color="#2D8A4E" />
+                    <span>{{ f }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="setting-row" style="margin-top: 24px;">
+              <div class="setting-label-group">
+                <label class="setting-label">包含高亮样式</label>
+                <p class="setting-desc">导出的报告中包含内容高亮样式</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" v-model="settings.includeHighlight" />
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-label-group">
+                <label class="setting-label">包含统计图表</label>
+                <p class="setting-desc">导出的报告中包含统计图表</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" v-model="settings.includeCharts" />
+                <span class="slider"></span>
               </label>
             </div>
           </div>
 
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">包含高亮样式</label>
-              <p class="setting-desc">导出的报告中包含内容高亮样式</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.includeHighlight" />
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">包含统计图表</label>
-              <p class="setting-desc">导出的报告中包含统计图表</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" v-model="settings.includeCharts" />
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
-
-        <!-- 模型设置 -->
-        <div v-if="activeTab === 'ai'" class="settings-section">
-          <h2 class="section-title">模型设置</h2>
-          
-          <div class="setting-row radio-row">
-            <div class="setting-label-group">
-              <label class="setting-label">AI 模型</label>
-              <p class="setting-desc">选择用于分析的 AI 模型</p>
-            </div>
-            <div class="radio-group">
-              <label
-                v-for="model in aiModels"
-                :key="model.value"
-                class="radio-box-item"
-                :class="{ 'active': settings.selectedModel === model.value }"
+          <!-- 模型设置 -->
+          <div v-if="activeTab === 'ai'" class="panel api-full-panel">
+            <div class="model-list">
+              <span class="model-section">国内模型</span>
+              <div
+                v-for="m in domesticModels"
+                :key="m.id"
+                class="model-item"
+                :class="{ 'model-item-active': settings.selectedModel === m.id }"
+                @click="settings.selectedModel = m.id"
               >
-                <input type="radio" v-model="settings.selectedModel" :value="model.value" />
-                <span class="radio-box">
-                  <span class="radio-box-inner"></span>
-                </span>
-                <span class="radio-box-label">{{ model.label }}</span>
-              </label>
-            </div>
-          </div>
+                <div class="model-icon-wrap" :class="{ 'model-icon-active': settings.selectedModel === m.id }">
+                  <component :is="m.icon" :size="'16'" :color="settings.selectedModel === m.id ? '#fff' : '#8B7355'" />
+                </div>
+                <span class="model-name" :class="{ 'model-name-active': settings.selectedModel === m.id }">{{ m.name }}</span>
+              </div>
 
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">API 端点</label>
-              <p class="setting-desc">API 请求地址，留空使用默认地址</p>
-            </div>
-            <input type="text" v-model="settings.apiEndpoint" class="setting-input api-input" placeholder="https://api.example.com" />
-          </div>
+              <div class="model-divider" />
 
-          <div class="setting-row">
-            <div class="setting-label-group">
-              <label class="setting-label">API Key</label>
-              <p class="setting-desc">用于身份验证的 API 密钥</p>
+              <span class="model-section">国外模型</span>
+              <div
+                v-for="m in foreignModels"
+                :key="m.id"
+                class="model-item"
+                :class="{ 'model-item-active': settings.selectedModel === m.id }"
+                @click="settings.selectedModel = m.id"
+              >
+                <div class="model-icon-wrap" :class="{ 'model-icon-active': settings.selectedModel === m.id }">
+                  <component :is="m.icon" :size="'16'" :color="settings.selectedModel === m.id ? '#fff' : '#8B7355'" />
+                </div>
+                <span class="model-name" :class="{ 'model-name-active': settings.selectedModel === m.id }">{{ m.name }}</span>
+              </div>
             </div>
-            <input type="password" v-model="settings.apiKey" class="setting-input api-input" placeholder="sk-..." />
-          </div>
-        </div>
 
-        <!-- 操作按钮 -->
-        <div class="action-buttons-card">
-          <div class="action-buttons">
-            <BorderBeam size="sm" color-variant="mono" theme="light" :duration="2.5">
-              <button class="btn btn-reset" @click="handleReset">恢复默认</button>
-            </BorderBeam>
-            <BorderBeam size="sm" color-variant="sunset" theme="dark" :duration="2">
-              <button class="btn btn-save" @click="handleSaveWithConfirm">保存设置</button>
-            </BorderBeam>
+            <div class="config-panel">
+              <div class="config-tabs">
+                <button class="config-tab" :class="{ 'config-tab-selected': configTab === 'provider' }" @click="configTab = 'provider'">模型制造商</button>
+                <button class="config-tab" :class="{ 'config-tab-selected': configTab === 'custom' }" @click="configTab = 'custom'">自定义配置</button>
+              </div>
+
+              <div class="config-form">
+                <div class="form-field">
+                  <label class="form-label">服务商</label>
+                  <input v-if="configTab === 'custom'" v-model="customProvider" class="form-input" placeholder="例如: OpenAI" />
+                  <div v-else class="form-input">{{ domesticModels.find(m => m.id === settings.selectedModel)?.provider || foreignModels.find(m => m.id === settings.selectedModel)?.provider || '' }}</div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">模型</label>
+                  <input v-if="configTab === 'custom'" v-model="customModel" class="form-input" placeholder="例如: gpt-4" />
+                  <div v-else class="form-input">{{ domesticModels.find(m => m.id === settings.selectedModel)?.model || foreignModels.find(m => m.id === settings.selectedModel)?.model || '' }}</div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">API Key</label>
+                  <div class="form-input-row">
+                    <input
+                      v-model="apiKeyValue"
+                      :type="keyVisible ? 'text' : 'password'"
+                      class="form-input"
+                      placeholder="sk-..."
+                    />
+                    <button class="form-key-toggle" @click="keyVisible = !keyVisible">
+                      <RiEyeOffLine v-if="!keyVisible" size="16" color="#8B7355" />
+                      <RiEyeLine v-else size="16" color="#8B7355" />
+                    </button>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button class="form-btn-cancel" @click="resetApiForm">取消</button>
+                  <button class="form-btn-add" @click="addApiKeyEntry">添加</button>
+                </div>
+              </div>
+
+              <div v-if="savedKeys.length > 0" class="saved-keys">
+                <span class="saved-keys-title">已保存的密钥</span>
+                <div v-for="key in savedKeys" :key="key.id" class="saved-key-item">
+                  <div class="saved-key-info">
+                    <span class="saved-key-provider">{{ key.provider }}</span>
+                    <span class="saved-key-model">{{ key.model }}</span>
+                  </div>
+                  <button class="saved-key-delete" @click="removeApiKey(key.id)">
+                    <RiDeleteBinLine size="14" color="#C43A31" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -504,11 +699,18 @@ const aiModels = [
   border: 1px solid var(--color-tan-border);
   box-shadow: var(--shadow-sm);
   align-self: stretch;
+  position: relative;
 }
 
-.settings-nav::after {
-  content: '';
-  flex: 1;
+.nav-indicator {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  z-index: 0;
+  border-radius: var(--radius-md);
+  background: rgba(var(--rgb-cinnabar), 0.08);
+  transition: top 0.3s ease-out, height 0.3s ease-out;
+  pointer-events: none;
 }
 
 .nav-tab {
@@ -524,6 +726,8 @@ const aiModels = [
   cursor: pointer;
   transition: all var(--transition-fast);
   text-align: left;
+  position: relative;
+  z-index: 1;
 }
 
 .nav-tab:hover {
@@ -532,7 +736,6 @@ const aiModels = [
 }
 
 .nav-tab.active {
-  background: rgba(var(--rgb-cinnabar), 0.08);
   color: var(--color-cinnabar);
   font-weight: 600;
 }
@@ -556,27 +759,238 @@ const aiModels = [
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 0;
 }
 
-.settings-section {
-  flex: 1;
+.content-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
   background: var(--color-cream);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-6);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   border: 1px solid var(--color-tan-border);
+  border-bottom: none;
   box-shadow: var(--shadow-sm);
 }
 
-.section-title {
-  font-size: var(--text-heading);
-  font-weight: 600;
-  color: var(--color-brown-dark);
-  margin: 0 0 20px 0;
-  padding-bottom: var(--spacing-3);
-  border-bottom: 1px solid var(--color-tan-light);
-  font-family: var(--font-ui);
+.content-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
+.content-header-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-cinnabar);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.content-header-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.content-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-brown-dark);
+  margin: 0;
+}
+
+.content-subtitle {
+  font-size: 12px;
+  color: var(--color-brown-muted);
+}
+
+.content-header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.action-btn-cancel {
+  padding: 10px 24px;
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  background: var(--color-cream-dark);
+  color: var(--color-brown-muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn-cancel:hover {
+  background: var(--color-cream-darker);
+  border-color: var(--color-tan-dark);
+}
+
+.action-btn-save {
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-cinnabar);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn-save:hover {
+  background: var(--color-cinnabar-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-cinnabar);
+}
+
+.content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.panel {
+  padding: 24px;
+  background: var(--color-cream);
+  border: 1px solid var(--color-tan-border);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Theme Settings */
+.theme-cards-row {
+  display: flex;
+  gap: 24px;
+}
+
+.theme-card-new {
+  flex: 1;
+  background: var(--color-white);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.theme-card-new:hover {
+  border-color: var(--color-tan-border);
+}
+
+.theme-card-selected {
+  border-color: var(--color-cinnabar);
+  box-shadow: 0 4px 20px rgba(194, 59, 34, 0.15);
+}
+
+.theme-preview-area {
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-preview-nav {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+
+.preview-logo {
+  width: 21px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.preview-brand {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.theme-preview-body {
+  flex: 1;
+  display: flex;
+}
+
+.preview-sidebar {
+  width: 51px;
+  flex-shrink: 0;
+}
+
+.preview-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.preview-card {
+  height: 60px;
+  border-radius: var(--radius-md);
+}
+
+.preview-card-sm {
+  height: 40px;
+  border-radius: var(--radius-md);
+}
+
+.theme-info-area {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--color-white);
+}
+
+.theme-info-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.theme-info-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.theme-info-desc {
+  font-size: 12px;
+  color: var(--color-brown-muted);
+}
+
+.theme-check-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--color-tan-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.theme-checked-circle {
+  background: var(--color-cinnabar);
+}
+
+/* Settings Card */
+.settings-card {
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+}
+
+/* Setting Rows */
 .setting-row {
   display: flex;
   justify-content: space-between;
@@ -587,10 +1001,6 @@ const aiModels = [
 
 .setting-row:last-child {
   border-bottom: none;
-}
-
-.setting-row.radio-row {
-  align-items: flex-start;
 }
 
 .setting-label-group {
@@ -712,34 +1122,13 @@ const aiModels = [
   text-align: center;
   background: var(--color-white);
   color: var(--color-brown-dark);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .number-input:focus {
   outline: none;
   border-color: var(--color-cinnabar);
   box-shadow: 0 0 0 1px rgba(var(--rgb-cinnabar), 0.25);
-}
-
-.setting-input {
-  width: 240px;
-  height: 36px;
-  padding: 0 12px;
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-md);
-  font-size: var(--text-body);
-  background: var(--color-white);
-  color: var(--color-brown-dark);
-}
-
-.setting-input:focus {
-  outline: none;
-  border-color: var(--color-cinnabar);
-  box-shadow: 0 0 0 1px rgba(var(--rgb-cinnabar), 0.25);
-}
-
-.api-input {
-  width: 100%;
-  max-width: 400px;
 }
 
 .select-input {
@@ -752,6 +1141,7 @@ const aiModels = [
   background: var(--color-white);
   color: var(--color-brown-dark);
   cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .select-input:focus {
@@ -760,127 +1150,382 @@ const aiModels = [
   box-shadow: 0 0 0 1px rgba(var(--rgb-cinnabar), 0.25);
 }
 
-.radio-group {
+/* Export Cards */
+.export-cards-row {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  min-width: 240px;
+  gap: 24px;
 }
 
-.radio-box-item {
+.export-card-item {
+  flex: 1;
+  background: var(--color-white);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.export-card-item:hover {
+  border-color: var(--color-tan-border);
+}
+
+.export-card-selected {
+  border-color: var(--color-cinnabar);
+  box-shadow: 0 4px 20px rgba(194, 59, 34, 0.1);
+}
+
+.export-card-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  background: var(--color-white);
+  gap: 16px;
 }
 
-.radio-box-item:hover {
-  border-color: rgba(var(--rgb-cinnabar), 0.4);
-}
-
-.radio-box-item.active {
-  border-color: var(--color-cinnabar);
-  background: rgba(var(--rgb-cinnabar), 0.05);
-}
-
-.radio-box-item input {
-  display: none;
-}
-
-.radio-box {
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--color-tan-dark);
-  border-radius: var(--radius-full);
+.export-card-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-.radio-box-item.active .radio-box {
-  border-color: var(--color-cinnabar);
+.export-card-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
 }
 
-.radio-box-inner {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-full);
-  background: transparent;
-  transition: all var(--transition-fast);
-}
-
-.radio-box-item.active .radio-box-inner {
-  background: var(--color-cinnabar);
-}
-
-.radio-box-icon,
-.radio-box-icon-svg {
-  width: 18px;
-  height: 18px;
-  color: var(--color-brown);
-}
-
-.radio-box-item.active .radio-box-icon,
-.radio-box-item.active .radio-box-icon-svg {
-  color: var(--color-cinnabar);
-}
-
-.radio-box-label {
-  font-size: var(--text-body-sm);
+.export-card-name {
+  font-size: 20px;
+  font-weight: 700;
   color: var(--color-brown-dark);
 }
 
-.action-buttons-card {
-  margin-top: var(--spacing-6);
-  padding: 16px 24px;
-  background: var(--color-cream);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-tan-border);
-  box-shadow: var(--shadow-sm);
+.export-card-ext {
+  font-size: 13px;
+  color: var(--color-brown-muted);
 }
 
-.action-buttons {
+.export-check {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--color-tan-dark);
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: var(--spacing-4);
+  transition: background 0.2s;
+  flex-shrink: 0;
 }
 
-.btn {
-  width: 140px;
-  height: 40px;
+.export-checked {
+  background: var(--color-cinnabar);
+}
+
+.export-features {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.export-feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-brown-dark);
+}
+
+/* API Key Panel */
+.api-full-panel {
+  display: flex;
+  gap: 24px;
+  min-height: 0;
+}
+
+.model-list {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.model-section {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-brown-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 0 4px;
+}
+
+.model-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.model-item:hover {
+  background: rgba(0,0,0,0.03);
+}
+
+.model-item-active {
+  background: var(--color-cinnabar);
+}
+
+.model-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--color-tan-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.model-icon-active {
+  background: rgba(255,255,255,0.2);
+}
+
+.model-name {
+  font-size: 14px;
+  color: var(--color-brown-muted);
+  font-weight: 500;
+}
+
+.model-name-active {
+  color: #fff;
+  font-weight: 600;
+}
+
+.model-divider {
+  height: 1px;
+  background: var(--color-tan-border);
+  margin: 8px 0;
+}
+
+.config-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.config-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--color-cream-darker);
+  border-radius: 12px;
+  padding: 4px;
+  width: fit-content;
+}
+
+.config-tab {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-brown-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.config-tab-selected {
+  background: var(--color-cinnabar);
+  color: #fff;
+  font-weight: 600;
+}
+
+.config-form {
+  background: var(--color-white);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-field {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.form-label {
+  width: 80px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-brown);
+  flex-shrink: 0;
+}
+
+.form-input {
+  flex: 1;
+  background: var(--color-parchment);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--color-brown-dark);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus {
+  border-color: var(--color-cinnabar);
+  box-shadow: 0 0 0 1px rgba(var(--rgb-cinnabar), 0.2);
+}
+
+.form-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex: 1;
+  position: relative;
+}
+
+.form-input-row .form-input {
+  padding-right: 36px;
+}
+
+.form-key-toggle {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.form-key-toggle:hover {
+  background: rgba(var(--rgb-cinnabar), 0.05);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.form-btn-cancel {
+  padding: 10px 24px;
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  background: var(--color-cream-dark);
+  color: var(--color-brown-muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.form-btn-cancel:hover {
+  background: var(--color-cream-darker);
+}
+
+.form-btn-add {
+  padding: 10px 24px;
   border: none;
   border-radius: var(--radius-md);
-  font-size: var(--text-body);
+  background: var(--color-cinnabar);
+  color: #fff;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.2s;
 }
 
-.btn-reset {
-  background: var(--color-cream-dark);
-  color: var(--color-brown);
-  border: 1px solid var(--color-tan-border);
-}
-
-.btn-reset:hover {
-  background: var(--color-cream-darker);
-  border-color: var(--color-tan-dark);
-}
-
-.btn-save {
-  background: var(--color-cinnabar);
-  color: white;
-  box-shadow: var(--shadow-cinnabar);
-}
-
-.btn-save:hover {
+.form-btn-add:hover {
   background: var(--color-cinnabar-dark);
-  transform: translateY(-1px);
+}
+
+.saved-keys {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.saved-keys-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-brown-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 0 4px;
+}
+
+.saved-key-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--color-parchment);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+}
+
+.saved-key-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.saved-key-provider {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-brown-dark);
+}
+
+.saved-key-model {
+  font-size: 11px;
+  color: var(--color-brown-muted);
+}
+
+.saved-key-delete {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.saved-key-delete:hover {
+  background: rgba(196, 58, 49, 0.08);
+}
+
+/* Transitions on interactive elements */
+button, .theme-card-new, .export-card-item, .model-item, .config-tab, .form-input, .select-input, .number-input {
+  transition: all 0.2s;
 }
 
 @media (max-width: 768px) {
@@ -896,10 +1541,44 @@ const aiModels = [
     padding-bottom: 8px;
   }
 
+  .nav-indicator {
+    display: none;
+  }
+
   .nav-tab {
     white-space: nowrap;
     padding: 10px 16px;
     font-size: var(--text-body-sm);
+  }
+
+  .nav-tab.active {
+    background: rgba(var(--rgb-cinnabar), 0.08);
+  }
+
+  .content-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .content-header-actions {
+    width: 100%;
+  }
+
+  .theme-cards-row {
+    flex-direction: column;
+  }
+
+  .export-cards-row {
+    flex-direction: column;
+  }
+
+  .api-full-panel {
+    flex-direction: column;
+  }
+
+  .model-list {
+    width: 100%;
   }
 
   .setting-row {
@@ -913,39 +1592,8 @@ const aiModels = [
     font-size: var(--text-body-sm);
   }
 
-  .setting-input,
-  .api-input {
-    width: 100%;
-    padding: 10px 12px;
-    font-size: var(--text-body-sm);
-  }
-
-  .settings-section {
+  .panel {
     padding: var(--spacing-4);
-  }
-
-  .section-title {
-    font-size: 15px;
-    margin-bottom: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .settings-layout {
-    padding: 12px;
-  }
-
-  .nav-tab {
-    padding: 8px 12px;
-    font-size: var(--text-caption);
-  }
-
-  .setting-row {
-    padding: 10px 0;
-  }
-
-  .setting-label {
-    font-size: var(--text-caption);
   }
 }
 </style>

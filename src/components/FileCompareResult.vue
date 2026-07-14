@@ -1336,7 +1336,8 @@ const handlePreviewRightScroll = () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  width: 40px;
+  padding: 6px 10px;
   border: 1px solid var(--color-tan-border);
   border-radius: var(--radius-sm);
   background: var(--color-white);
@@ -1344,10 +1345,13 @@ const handlePreviewRightScroll = () => {
   font-size: 13px;
   font-family: var(--font-ui);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: width 0.2s, background 0.15s, border-color 0.15s;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .export-btn:hover {
+  width: 100px;
   background: var(--color-cream-dark);
   border-color: var(--color-tan-dark);
 }
