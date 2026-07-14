@@ -20,12 +20,18 @@ const isActive = (path: string) => route.path.startsWith(path)
           <span class="brand-sub">Boomerang</span>
         </div>
       </div>
-      <div class="nav-right">
-        <button class="icon-btn" title="帮助">
-          <RiQuestionLine />
+      <div class="nav-actions">
+        <button class="nav-btn" title="帮助">
+          <span class="nav-btn-content">
+            <RiQuestionLine size="20" />
+            <span class="nav-btn-label">帮助</span>
+          </span>
         </button>
-        <button class="icon-btn" title="设置" @click="router.push('/settings')">
-          <RiSettings3Line />
+        <button class="nav-btn" title="设置" @click="router.push('/settings')">
+          <span class="nav-btn-content">
+            <RiSettings3Line size="20" />
+            <span class="nav-btn-label">设置</span>
+          </span>
         </button>
       </div>
     </header>
@@ -100,30 +106,50 @@ const isActive = (path: string) => route.path.startsWith(path)
   line-height: 1.2;
 }
 
-.nav-right {
+.nav-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
-.icon-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  background: var(--color-icon-bg);
-  color: var(--color-brown-muted);
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--color-cream-dark);
+  border: 0.7px solid var(--color-tan-border);
   cursor: pointer;
+  transition: all 0.2s;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--color-brown);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  transition: all 0.2s;
 }
 
-.icon-btn:hover {
-  background: var(--color-tan-light);
-  color: var(--color-brown);
+.nav-btn:hover {
+  width: 90px;
+  background: var(--color-cinnabar);
+  border-color: transparent;
+  color: #fff;
+}
+
+.nav-btn-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-btn-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: inherit;
+  display: none;
+}
+
+.nav-btn:hover .nav-btn-label {
+  display: inline;
 }
 
 .main-content {
