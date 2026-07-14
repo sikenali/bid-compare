@@ -1709,6 +1709,26 @@ const handlePreviewRightScroll = () => {
   font-size: 12px;
 }
 
+/* 高亮样式 */
+.data-table .col-content .highlighted-text,
+.data-table .col-content :deep(.highlighted-text) {
+  background: linear-gradient(135deg, rgba(var(--rgb-gold), 0.5) 0%, rgba(var(--rgb-gold), 0.4) 100%);
+  color: var(--color-cinnabar);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  box-shadow: 0 1px 3px rgba(var(--rgb-cinnabar), 0.15);
+  border-bottom: 2px solid rgba(var(--rgb-cinnabar), 0.3);
+}
+
+.data-table .col-content .highlighted-text:hover {
+  background: linear-gradient(135deg, rgba(var(--rgb-gold), 0.7) 0%, rgba(var(--rgb-gold), 0.6) 100%);
+  box-shadow: 0 2px 6px rgba(var(--rgb-cinnabar), 0.25);
+}
+
 .image-duplicate-section {
   background: #fff;
   border: 1px solid var(--color-tan-border);
