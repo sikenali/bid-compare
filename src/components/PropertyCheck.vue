@@ -6,7 +6,7 @@ import {
   RiCloseCircleLine,
   RiAlertLine,
   RiQuestionLine,
-  RiFileLine,
+  RiAddLine,
   RiUserLine,
   RiCalendarLine
 } from '@remixicon/vue'
@@ -542,7 +542,7 @@ const generateWordReport = () => {
     <!-- 文件信息条 -->
     <div class="file-info-bar">
       <div class="file-info-side">
-        <RiFileLine class="file-info-icon" />
+        <RiAddLine class="file-info-icon" />
         <div class="file-info-text">
           <span class="file-info-label">文件 A</span>
           <span class="file-info-name">{{ leftFileInfo.name || '未选择文件' }}</span>
@@ -552,7 +552,7 @@ const generateWordReport = () => {
         <RiExchangeLine class="divider-icon" />
       </div>
       <div class="file-info-side right">
-        <RiFileLine class="file-info-icon" />
+        <RiAddLine class="file-info-icon" />
         <div class="file-info-text">
           <span class="file-info-label">文件 B</span>
           <span class="file-info-name">{{ rightFileInfo.name || '未选择文件' }}</span>

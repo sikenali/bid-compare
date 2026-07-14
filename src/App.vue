@@ -29,8 +29,8 @@ const activeNav = computed(() => {
 const indicatorStyle = computed(() => {
   const idx = navItems.findIndex(i => i.key === activeNav.value)
   return {
-    left: `${idx * 48 + 6}px`,
-    width: '40px'
+    left: `${idx * 56 + 6}px`,
+    width: '44px'
   }
 })
 
@@ -132,13 +132,25 @@ const isActive = (path: string) => route.path.startsWith(path)
           <h3>历史记录</h3>
           <button class="history-close-btn" @click="toggleHistory">×</button>
         </div>
+        <div class="history-tabs">
+          <button class="history-tab" :class="{ active: historyTab === 'fileCompare' }" @click="historyTab = 'fileCompare'">文件对比</button>
+          <button class="history-tab" :class="{ active: historyTab === 'propertyCheck' }" @click="historyTab = 'propertyCheck'">属性检查</button>
+        </div>
         <div class="history-modal-body">
           <RecentRecords
-            v-if="recentRecords.length > 0"
-            :recent-records="recentRecords"
-            :on-clear-all="clearAllRecords"
+            v-if="historyTab === 'fileCompare' && fcRecords.length > 0"
+            :recent-records="fcRecords"
+            :on-clear-all="clearFcRecords"
             :on-view-record="viewHistoricalRecord"
-            :on-delete-record="deleteRecord"
+            :on-delete-record="deleteFcRecord"
+            :on-close="toggleHistory"
+          />
+          <RecentRecords
+            v-else-if="historyTab === 'propertyCheck' && pcRecords.length > 0"
+            :recent-records="pcRecords"
+            :on-clear-all="clearPcRecords"
+            :on-view-record="viewHistoricalRecord"
+            :on-delete-record="deletePcRecord"
             :on-close="toggleHistory"
           />
           <div v-else class="history-empty">
@@ -223,13 +235,13 @@ const isActive = (path: string) => route.path.startsWith(path)
 .nav-tabs {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: 12px;
+  padding: 6px 14px;
   background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 16px;
+  border-radius: 20px;
   position: relative;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
@@ -237,8 +249,8 @@ const isActive = (path: string) => route.path.startsWith(path)
 .nav-tabs-indicator {
   position: absolute;
   top: 6px;
-  height: 40px;
-  border-radius: 10px;
+  height: 44px;
+  border-radius: 12px;
   background: linear-gradient(135deg, var(--color-cinnabar), #d45a4a);
   transition: left 0.3s ease-out, width 0.3s ease-out;
   pointer-events: none;
@@ -250,10 +262,10 @@ const isActive = (path: string) => route.path.startsWith(path)
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   background: transparent;
   color: var(--color-brown-muted);
   cursor: pointer;
@@ -370,6 +382,36 @@ const isActive = (path: string) => route.path.startsWith(path)
   padding: 20px;
   max-height: 60vh;
   overflow-y: auto;
+}
+
+.history-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 20px 0;
+  border-bottom: 1px solid var(--color-tan-light);
+}
+
+.history-tab {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--color-brown-muted);
+  font-size: 13px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  margin-bottom: -1px;
+}
+
+.history-tab:hover {
+  color: var(--color-brown-dark);
+}
+
+.history-tab.active {
+  color: var(--color-cinnabar);
+  border-bottom-color: var(--color-cinnabar);
+  font-weight: 600;
 }
 
 .history-empty {

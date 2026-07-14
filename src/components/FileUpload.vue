@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RiUploadCloud2Line, RiFileLine, RiCloseLine } from '@remixicon/vue'
+import { RiAddLine } from '@remixicon/vue'
 
 interface FileInfo {
   file: File | null
@@ -35,13 +35,13 @@ const handleClear = () => props.onClearFile?.(props.side)
   <div class="upload-wrapper" @dragover="handleDragOver" @drop="handleDrop">
     <div class="upload-area">
       <div class="upload-icon">
-        <RiUploadCloud2Line class="upload-icon-svg" />
+        <RiAddLine class="upload-icon-svg" />
       </div>
       <template v-if="!fileInfo.file">
         <p class="upload-title">{{ titleText }}</p>
         <p class="upload-hint">支持 PDF、DOCX、DOC 格式，单个文件不超过 50MB</p>
         <label class="upload-btn">
-          <RiFileLine class="upload-btn-icon" />
+          <RiAddLine class="upload-btn-icon" />
           <span>选择文件</span>
           <input type="file" hidden @change="handleFileChange" :accept="acceptedFormats" />
         </label>
@@ -51,7 +51,7 @@ const handleClear = () => props.onClearFile?.(props.side)
         <p class="upload-title">{{ fileInfo.name }}</p>
         <p class="upload-hint">{{ fileInfo.size }} · {{ fileInfo.type }}</p>
         <label class="upload-btn upload-btn-replace">
-          <RiFileLine class="upload-btn-icon" />
+          <RiAddLine class="upload-btn-icon" />
           <span>重新选择</span>
           <input type="file" hidden @change="handleFileChange" :accept="acceptedFormats" />
         </label>

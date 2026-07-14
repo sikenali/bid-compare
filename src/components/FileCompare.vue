@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
-  RiFileWordLine,
+  RiAddLine,
   RiArrowRightLine,
   RiPercentLine,
   RiImageLine,
@@ -1127,7 +1127,7 @@ const generateWordReport = () => {
     <!-- 文件信息条 -->
     <div class="file-info-bar">
       <div class="file-info-side">
-        <RiFileWordLine class="file-info-icon" />
+        <RiAddLine class="file-info-icon" />
         <div class="file-info-text">
           <span class="file-info-label">文件 A</span>
           <span class="file-info-name">{{ leftFileInfo.name || '未选择文件' }}</span>
@@ -1137,7 +1137,7 @@ const generateWordReport = () => {
         <RiExchangeLine class="divider-icon" />
       </div>
       <div class="file-info-side right">
-        <RiFileWordLine class="file-info-icon" />
+        <RiAddLine class="file-info-icon" />
         <div class="file-info-text">
           <span class="file-info-label">文件 B</span>
           <span class="file-info-name">{{ rightFileInfo.name || '未选择文件' }}</span>
