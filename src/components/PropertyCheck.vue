@@ -628,6 +628,84 @@ const generateWordReport = () => {
   font-family: var(--font-ui);
 }
 
+/* 文件信息条 */
+.file-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--color-upload-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.file-info-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.file-info-side.right {
+  justify-content: flex-end;
+}
+
+.file-info-icon {
+  font-size: 20px;
+  color: var(--color-cinnabar);
+  flex-shrink: 0;
+}
+
+.file-info-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.file-info-side.right .file-info-text {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.file-info-label {
+  font-size: 11px;
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.file-info-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.file-info-divider {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-cream-darker);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition-normal);
+}
+
+.divider-icon {
+  font-size: 20px;
+  color: var(--color-cinnabar);
+}
+
 /* 文件上传区域 */
 .upload-section {
   display: flex;
