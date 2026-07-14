@@ -29,8 +29,8 @@ const activeNav = computed(() => {
 const indicatorStyle = computed(() => {
   const idx = navItems.findIndex(i => i.key === activeNav.value)
   return {
-    left: `${idx * 56 + 6}px`,
-    width: '44px'
+    left: `${idx * 64 + 6}px`,
+    width: '48px'
   }
 })
 
@@ -235,13 +235,13 @@ const isActive = (path: string) => route.path.startsWith(path)
 .nav-tabs {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 14px;
+  gap: 16px;
+  padding: 6px 16px;
   background: rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 20px;
+  border-radius: 24px;
   position: relative;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
@@ -249,8 +249,8 @@ const isActive = (path: string) => route.path.startsWith(path)
 .nav-tabs-indicator {
   position: absolute;
   top: 6px;
-  height: 44px;
-  border-radius: 12px;
+  height: 48px;
+  border-radius: 14px;
   background: linear-gradient(135deg, var(--color-cinnabar), #d45a4a);
   transition: left 0.3s ease-out, width 0.3s ease-out;
   pointer-events: none;
@@ -262,10 +262,10 @@ const isActive = (path: string) => route.path.startsWith(path)
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border: none;
-  border-radius: 12px;
+  border-radius: 14px;
   background: transparent;
   color: var(--color-brown-muted);
   cursor: pointer;
