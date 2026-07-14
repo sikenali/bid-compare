@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { RiExchangeLine, RiFilePaper2Line, RiSearchEyeLine, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
 import { useRecentRecords } from './composables/useRecentRecords'
@@ -24,14 +24,6 @@ const activeNav = computed(() => {
   if (route.path.startsWith('/file-compare')) return 'file-compare'
   if (route.path.startsWith('/property-check')) return 'property-check'
   return 'file-compare'
-})
-
-const indicatorStyle = computed(() => {
-  const idx = navItems.findIndex(i => i.key === activeNav.value)
-  return {
-    left: `${idx * 64 + 6}px`,
-    width: '48px'
-  }
 })
 
 const navigateTo = (item: typeof navItems[0]) => {
@@ -93,7 +85,6 @@ const isActive = (path: string) => route.path.startsWith(path)
         </div>
       </div>
       <nav class="nav-tabs">
-        <div class="nav-tabs-indicator" :style="indicatorStyle" />
         <button
           v-for="item in navItems"
           :key="item.key"
@@ -235,50 +226,36 @@ const isActive = (path: string) => route.path.startsWith(path)
 .nav-tabs {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 6px 16px;
-  background: var(--color-cream-dark);
-  border: 0.7px solid var(--color-tan-border);
-  border-radius: 24px;
-  position: relative;
-  box-shadow: var(--shadow-sm);
+  gap: 4px;
 }
 
 .nav-tabs-indicator {
-  position: absolute;
-  top: 6px;
-  height: 48px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, var(--color-cinnabar), #d45a4a);
-  transition: left 0.3s ease-out, width 0.3s ease-out;
-  pointer-events: none;
-  z-index: 0;
-  box-shadow: 0 2px 8px rgba(var(--rgb-cinnabar), 0.3);
+  display: none;
 }
 
 .nav-tab-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border: none;
-  border-radius: 14px;
+  border-radius: 10px;
   background: transparent;
   color: var(--color-brown-muted);
   cursor: pointer;
   transition: all 0.2s;
-  position: relative;
-  z-index: 1;
 }
 
 .nav-tab-item:hover {
   color: var(--color-brown-dark);
-  background: var(--color-cream-darker);
+  background: var(--color-cream-dark);
 }
 
 .nav-tab-item.active {
   color: #fff;
+  background: var(--color-cinnabar);
+  box-shadow: var(--shadow-cinnabar);
 }
 
 .nav-btn {
