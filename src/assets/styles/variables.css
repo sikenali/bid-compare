@@ -121,6 +121,19 @@
   --shadow-xl: 0 20px 60px rgba(0,0,0,0.15);
   --shadow-cinnabar: 0 4px 20px rgba(194,59,34,0.2);
 
+  /* ========== Colors — Calicat Design Tokens ========== */
+  --color-upload-bg: #F5EFE3;
+  --color-nav-bg: #FBF7F0;
+  --color-icon-bg: #F0E8D8;
+  --color-accent-red: #C43D3D;
+  --color-accent-red-dark: #A83028;
+  --color-diff-added: #E8F5E0;
+  --color-diff-modified: #FFF8E0;
+  --color-diff-deleted: #FFE8E0;
+  --color-diff-added-border: #4CAF50;
+  --color-diff-modified-border: #FF9800;
+  --color-diff-deleted-border: #F44336;
+
   /* ========== Layout ========== */
   --navbar-height: 64px;
   --sidebar-width: 240px;
