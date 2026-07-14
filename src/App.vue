@@ -11,7 +11,7 @@ const isActive = (path: string) => route.path.startsWith(path)
 <template>
   <div class="app-container">
     <header class="top-nav">
-      <div class="nav-left">
+      <div class="nav-left" @click="router.push('/')" style="cursor: pointer">
         <div class="logo-icon">
           <RiExchangeLine class="logo-svg" />
         </div>
