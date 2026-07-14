@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { RiExchangeLine, RiFileCopyLine, RiListCheck, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
+import { RiExchangeLine, RiFilePaper2Line, RiSearchEyeLine, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
 import { useRecentRecords } from './composables/useRecentRecords'
 import RecentRecords from './components/RecentRecords.vue'
 
@@ -16,8 +16,8 @@ const historyTab = ref('fileCompare')
 const showHistory = ref(false)
 
 const navItems = [
-  { key: 'file-compare', icon: RiFileCopyLine, route: '/file-compare' },
-  { key: 'property-check', icon: RiListCheck, route: '/property-check' },
+  { key: 'file-compare', icon: RiFilePaper2Line, route: '/file-compare' },
+  { key: 'property-check', icon: RiSearchEyeLine, route: '/property-check' },
 ]
 
 const activeNav = computed(() => {
@@ -237,13 +237,13 @@ const isActive = (path: string) => route.path.startsWith(path)
   align-items: center;
   gap: 16px;
   padding: 6px 16px;
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(245, 239, 227, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 24px;
   position: relative;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .nav-tabs-indicator {
@@ -276,7 +276,7 @@ const isActive = (path: string) => route.path.startsWith(path)
 
 .nav-tab-item:hover {
   color: var(--color-brown-dark);
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .nav-tab-item.active {
