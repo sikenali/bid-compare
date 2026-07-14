@@ -46,8 +46,9 @@ const indicatorStyle = computed(() => {
   const idx = navTabs.findIndex(t => t.key === activeTab.value)
   const itemHeight = 44
   const gap = 4
+  const navTitleOffset = 56
   return {
-    top: `${idx * (itemHeight + gap)}px`,
+    top: `${navTitleOffset + idx * (itemHeight + gap)}px`,
     height: `${itemHeight}px`
   }
 })
@@ -187,17 +188,9 @@ const resetApiForm = () => {
 
 <template>
   <div class="system-settings-container">
-    <div class="page-header">
-      <div class="title-row">
-        <div>
-          <h1 class="page-title">系统设置</h1>
-          <p class="page-subtitle">配置对比算法参数和系统功能选项</p>
-        </div>
-      </div>
-    </div>
-
     <div class="settings-layout">
       <nav class="settings-nav">
+        <div class="nav-title">系统设置</div>
         <div class="nav-indicator" :style="indicatorStyle" />
         <button
           v-for="tab in navTabs"
@@ -214,9 +207,6 @@ const resetApiForm = () => {
       <div class="settings-content">
         <div class="content-header">
           <div class="content-header-left">
-            <div class="content-header-icon">
-              <component :is="navTabs.find(t => t.key === activeTab)?.icon" size="20" color="#fff" />
-            </div>
             <div class="content-header-texts">
               <h3 class="content-title">{{ navTabs.find(t => t.key === activeTab)?.label }}</h3>
               <span class="content-subtitle">{{ activeTab === 'theme' ? '选择你喜欢的界面风格' : activeTab === 'algorithm' ? '配置对比算法参数' : activeTab === 'preprocess' ? '配置文本处理选项' : activeTab === 'features' ? '配置查重参数' : activeTab === 'export' ? '配置导出默认格式' : '配置 AI 模型与密钥' }}</span>
@@ -651,64 +641,44 @@ const resetApiForm = () => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: var(--color-parchment);
-  gap: var(--spacing-3);
-  font-family: var(--font-ui);
-}
-
-.page-header {
-  padding: var(--spacing-4) var(--spacing-6);
-  background: var(--color-cream);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-tan-border);
-  box-shadow: var(--shadow-sm);
-}
-
-.page-title {
-  font-size: var(--text-heading-lg);
-  font-weight: 700;
-  color: var(--color-brown-dark);
-  margin: 0 0 4px 0;
-  font-family: var(--font-ui);
-}
-
-.page-subtitle {
-  font-size: var(--text-caption);
-  color: var(--color-brown);
-  margin: 0;
+  background: #F5EFE3;
   font-family: var(--font-ui);
 }
 
 .settings-layout {
   display: flex;
-  gap: var(--spacing-6);
+  gap: 0;
   min-height: 0;
-  padding: 0 24px 24px 24px;
-  overflow-y: auto;
+  flex: 1;
+  overflow: hidden;
 }
 
 .settings-nav {
-  width: 180px;
+  width: 220px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: var(--spacing-2);
-  background: var(--color-cream);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-tan-border);
-  box-shadow: var(--shadow-sm);
+  padding: 20px 12px;
+  background: #F5EFE3;
   align-self: stretch;
   position: relative;
 }
 
+.nav-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #3D2B1F;
+  padding: 0 12px 16px 12px;
+}
+
 .nav-indicator {
   position: absolute;
-  left: 8px;
-  right: 8px;
+  left: 12px;
+  right: 12px;
   z-index: 0;
-  border-radius: var(--radius-md);
-  background: rgba(var(--rgb-cinnabar), 0.08);
+  border-radius: 12px;
+  background: #C43D3D;
   transition: top 0.3s ease-out, height 0.3s ease-out;
   pointer-events: none;
 }
@@ -716,13 +686,13 @@ const resetApiForm = () => {
 .nav-tab {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 12px 16px;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   background: transparent;
-  color: var(--color-brown);
-  font-size: var(--text-body);
+  color: #8B7355;
+  font-size: 14px;
   cursor: pointer;
   transition: all var(--transition-fast);
   text-align: left;
@@ -731,12 +701,12 @@ const resetApiForm = () => {
 }
 
 .nav-tab:hover {
-  background: var(--color-cream-dark);
-  color: var(--color-brown-dark);
+  background: rgba(196, 61, 61, 0.08);
+  color: #C43D3D;
 }
 
 .nav-tab.active {
-  color: var(--color-cinnabar);
+  color: #fff;
   font-weight: 600;
 }
 
@@ -747,7 +717,7 @@ const resetApiForm = () => {
 }
 
 .nav-tab.active .nav-tab-icon {
-  color: var(--color-cinnabar);
+  color: #fff;
 }
 
 .nav-tab-label {
@@ -760,18 +730,14 @@ const resetApiForm = () => {
   display: flex;
   flex-direction: column;
   gap: 0;
+  background: #FBF7F0;
 }
 
 .content-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
-  background: var(--color-cream);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  border: 1px solid var(--color-tan-border);
-  border-bottom: none;
-  box-shadow: var(--shadow-sm);
+  padding: 24px 32px 0 32px;
 }
 
 .content-header-left {
@@ -780,33 +746,22 @@ const resetApiForm = () => {
   gap: 12px;
 }
 
-.content-header-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-md);
-  background: var(--color-cinnabar);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
 .content-header-texts {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .content-title {
-  font-size: 16px;
+  font-size: 24px;
   font-weight: 700;
-  color: var(--color-brown-dark);
+  color: #3D2B1F;
   margin: 0;
 }
 
 .content-subtitle {
-  font-size: 12px;
-  color: var(--color-brown-muted);
+  font-size: 14px;
+  color: #8B7355;
 }
 
 .content-header-actions {
@@ -853,14 +808,11 @@ const resetApiForm = () => {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  padding: 0 32px 24px 32px;
 }
 
 .panel {
-  padding: 24px;
-  background: var(--color-cream);
-  border: 1px solid var(--color-tan-border);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  padding: 24px 0;
 }
 
 /* Theme Settings */
@@ -1538,7 +1490,11 @@ button, .theme-card-new, .export-card-item, .model-item, .config-tab, .form-inpu
     width: 100%;
     flex-direction: row;
     overflow-x: auto;
-    padding-bottom: 8px;
+    padding: 12px;
+  }
+
+  .nav-title {
+    display: none;
   }
 
   .nav-indicator {
@@ -1552,7 +1508,8 @@ button, .theme-card-new, .export-card-item, .model-item, .config-tab, .form-inpu
   }
 
   .nav-tab.active {
-    background: rgba(var(--rgb-cinnabar), 0.08);
+    background: #C43D3D;
+    color: #fff;
   }
 
   .content-header {
@@ -1563,6 +1520,10 @@ button, .theme-card-new, .export-card-item, .model-item, .config-tab, .form-inpu
 
   .content-header-actions {
     width: 100%;
+  }
+
+  .content-scroll {
+    padding: 0 16px 16px 16px;
   }
 
   .theme-cards-row {
@@ -1593,7 +1554,7 @@ button, .theme-card-new, .export-card-item, .model-item, .config-tab, .form-inpu
   }
 
   .panel {
-    padding: var(--spacing-4);
+    padding: 16px 0;
   }
 }
 </style>
