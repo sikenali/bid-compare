@@ -1198,7 +1198,7 @@ const handlePreviewRightScroll = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #F0E8D8;
+  background: var(--color-icon-bg);
   border-radius: 12px;
   padding: 12px 20px;
 }
@@ -1221,16 +1221,16 @@ const handlePreviewRightScroll = () => {
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  color: #fff;
+  color: var(--color-white);
   flex-shrink: 0;
 }
 
 .file-a-icon {
-  background: #C43D3D;
+  background: var(--color-accent-red);
 }
 
 .file-b-icon {
-  background: #2D6A9F;
+  background: var(--color-blue-accent);
 }
 
 .file-details {
@@ -1242,25 +1242,25 @@ const handlePreviewRightScroll = () => {
 .file-name {
   font-size: 14px;
   font-weight: 600;
-  color: #3D2B1F;
+  color: var(--color-brown-dark);
   line-height: 1.3;
 }
 
 .file-meta {
   font-size: 11px;
-  color: #8B7355;
+  color: var(--color-brown-muted);
 }
 
 .compare-icon-wrapper {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #E8DCC8;
+  background: var(--color-tan-light);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  color: #C43D3D;
+  color: var(--color-accent-red);
   flex-shrink: 0;
 }
 
@@ -1284,7 +1284,7 @@ const handlePreviewRightScroll = () => {
 
 .mode-switch {
   display: inline-flex;
-  background: #F0E8D8;
+  background: var(--color-icon-bg);
   padding: 4px;
   border-radius: 10px;
   gap: 0;
@@ -1295,7 +1295,7 @@ const handlePreviewRightScroll = () => {
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #8B7355;
+  color: var(--color-brown-muted);
   font-size: 13px;
   font-family: var(--font-ui);
   cursor: pointer;
@@ -1303,14 +1303,14 @@ const handlePreviewRightScroll = () => {
 }
 
 .mode-btn.active {
-  background: #C43D3D;
-  color: #fff;
+  background: var(--color-accent-red);
+  color: var(--color-white);
   font-weight: 600;
 }
 
 .diff-filter {
   display: inline-flex;
-  background: #F0E8D8;
+  background: var(--color-icon-bg);
   padding: 4px;
   border-radius: 10px;
   gap: 0;
@@ -1324,7 +1324,7 @@ const handlePreviewRightScroll = () => {
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #8B7355;
+  color: var(--color-brown-muted);
   font-size: 12px;
   font-family: var(--font-ui);
   cursor: pointer;
@@ -1332,8 +1332,8 @@ const handlePreviewRightScroll = () => {
 }
 
 .filter-btn.active {
-  background: #fff;
-  color: #3D2B1F;
+  background: var(--color-white);
+  color: var(--color-brown-dark);
   font-weight: 500;
 }
 
@@ -1346,7 +1346,7 @@ const handlePreviewRightScroll = () => {
 }
 
 .dot-add {
-  background: #2D8A4E;
+  background: var(--color-jade);
 }
 
 .dot-mod {
@@ -1354,7 +1354,7 @@ const handlePreviewRightScroll = () => {
 }
 
 .dot-del {
-  background: #C43D3D;
+  background: var(--color-accent-red);
 }
 
 .diff-nav {
@@ -1368,8 +1368,8 @@ const handlePreviewRightScroll = () => {
   height: 32px;
   border: none;
   border-radius: 8px;
-  background: #F0E8D8;
-  color: #8B7355;
+  background: var(--color-icon-bg);
+  color: var(--color-brown-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1379,14 +1379,14 @@ const handlePreviewRightScroll = () => {
 }
 
 .nav-btn:hover {
-  background: #E8DCC8;
-  color: #3D2B1F;
+  background: var(--color-tan-light);
+  color: var(--color-brown-dark);
 }
 
 .nav-count {
   font-size: 13px;
-  color: #3D2B1F;
-  background: #F0E8D8;
+  color: var(--color-brown-dark);
+  background: var(--color-icon-bg);
   padding: 4px 12px;
   border-radius: 8px;
   font-variant-numeric: tabular-nums;
@@ -1400,8 +1400,8 @@ const handlePreviewRightScroll = () => {
   padding: 8px 16px;
   border: none;
   border-radius: 8px;
-  background: #C43D3D;
-  color: #fff;
+  background: var(--color-accent-red);
+  color: var(--color-white);
   font-size: 13px;
   font-family: var(--font-ui);
   cursor: pointer;
@@ -1410,7 +1410,7 @@ const handlePreviewRightScroll = () => {
 }
 
 .export-btn:hover {
-  background: #A83028;
+  background: var(--color-accent-red-dark);
 }
 
 .back-btn {
@@ -1437,7 +1437,7 @@ const handlePreviewRightScroll = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #F5EFE3;
+  background: var(--color-upload-bg);
   border-radius: 10px;
   padding: 8px 16px;
 }
@@ -1447,18 +1447,18 @@ const handlePreviewRightScroll = () => {
   align-items: center;
   gap: 12px;
   font-size: 13px;
-  color: #8B7355;
+  color: var(--color-brown-muted);
 }
 
 .stats-icon {
   font-size: 16px;
-  color: #8B7355;
+  color: var(--color-brown-muted);
   flex-shrink: 0;
 }
 
 .stats-desc {
   font-size: 13px;
-  color: #8B7355;
+  color: var(--color-brown-muted);
 }
 
 .stat-item {
@@ -1477,13 +1477,13 @@ const handlePreviewRightScroll = () => {
 
 .similarity-label {
   font-size: 12px;
-  color: #8B7355;
+  color: var(--color-brown-muted);
 }
 
 .similarity-value {
   font-size: 14px;
   font-weight: 700;
-  color: #3D2B1F;
+  color: var(--color-brown-dark);
 }
 
 .compare-panels {
@@ -1497,7 +1497,7 @@ const handlePreviewRightScroll = () => {
 .panel {
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--color-white);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -1508,7 +1508,7 @@ const handlePreviewRightScroll = () => {
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  background: #F5EFE3;
+  background: var(--color-upload-bg);
 }
 
 .panel-header-left {
@@ -1526,22 +1526,22 @@ const handlePreviewRightScroll = () => {
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-white);
   flex-shrink: 0;
 }
 
 .version-v1 {
-  background: #C43D3D;
+  background: var(--color-accent-red);
 }
 
 .version-v2 {
-  background: #2D6A9F;
+  background: var(--color-blue-accent);
 }
 
 .version-name {
   font-size: 13px;
   font-weight: 600;
-  color: #3D2B1F;
+  color: var(--color-brown-dark);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1549,7 +1549,7 @@ const handlePreviewRightScroll = () => {
 
 .panel-page {
   font-size: 12px;
-  color: #8B7355;
+  color: var(--color-brown-muted);
   flex-shrink: 0;
 }
 
@@ -1578,20 +1578,20 @@ const handlePreviewRightScroll = () => {
 
 .panel-text :deep(.text-highlight[data-similarity="100"]),
 .panel-text :deep(.text-highlight[data-similarity="1"]) {
-  background: #E8F8F0;
-  color: #2D8A4E;
+  background: var(--color-diff-added);
+  color: var(--color-jade);
 }
 
 .panel-text :deep(.text-highlight[data-similarity="80"]),
 .panel-text :deep(.text-highlight[data-similarity="2"]) {
-  background: #FFF8E1;
+  background: var(--color-diff-modified);
   color: #D4842A;
 }
 
 .panel-text :deep(.text-highlight[data-similarity="0"]),
 .panel-text :deep(.text-highlight[data-similarity="3"]) {
-  background: #FDEDEC;
-  color: #C43D3D;
+  background: var(--color-diff-deleted);
+  color: var(--color-accent-red);
 }
 
 .panel-text :deep(.doc-paragraph.has-highlight) {
@@ -1608,18 +1608,18 @@ const handlePreviewRightScroll = () => {
   gap: 8px;
   height: 100%;
   min-height: 200px;
-  color: #D4C4A8;
+  color: var(--color-tan-dark);
   font-size: 14px;
 }
 
 .panel-empty-icon {
   font-size: 32px;
-  color: #E8DCC8;
+  color: var(--color-tan-light);
 }
 
 /* 数据表格 */
 .data-table {
-  background: #fff;
+  background: var(--color-white);
   border: 1px solid var(--color-tan-border);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -1730,7 +1730,7 @@ const handlePreviewRightScroll = () => {
 }
 
 .image-duplicate-section {
-  background: #fff;
+  background: var(--color-white);
   border: 1px solid var(--color-tan-border);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -1866,8 +1866,8 @@ const handlePreviewRightScroll = () => {
   height: 32px;
   border: none;
   border-radius: 8px;
-  background: #F0E8D8;
-  color: #8B7355;
+  background: var(--color-icon-bg);
+  color: var(--color-brown-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1877,8 +1877,8 @@ const handlePreviewRightScroll = () => {
 }
 
 .bottom-pagination .page-btn:hover:not(:disabled) {
-  background: #E8DCC8;
-  color: #3D2B1F;
+  background: var(--color-tan-light);
+  color: var(--color-brown-dark);
 }
 
 .bottom-pagination .page-btn:disabled {
@@ -1898,17 +1898,17 @@ const handlePreviewRightScroll = () => {
   font-size: 13px;
   font-weight: 500;
   background: transparent;
-  color: #8B7355;
+  color: var(--color-brown-muted);
   transition: all 0.15s;
 }
 
 .page-num:hover {
-  background: #F0E8D8;
+  background: var(--color-icon-bg);
 }
 
 .page-num.active {
-  background: #C43D3D;
-  color: #fff;
+  background: var(--color-accent-red);
+  color: var(--color-white);
 }
 
 .sync-toggle {
@@ -1919,7 +1919,7 @@ const handlePreviewRightScroll = () => {
 
 .sync-label {
   font-size: 13px;
-  color: #3D2B1F;
+  color: var(--color-brown-dark);
 }
 
 .toggle {
@@ -1942,13 +1942,13 @@ const handlePreviewRightScroll = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: #D4C4A8;
+  background: var(--color-tan-dark);
   border-radius: 11px;
   transition: 0.2s;
 }
 
 .toggle input:checked + .toggle-slider {
-  background: #C43D3D;
+  background: var(--color-accent-red);
 }
 
 .toggle-slider:before {
@@ -1958,7 +1958,7 @@ const handlePreviewRightScroll = () => {
   width: 19px;
   left: 2px;
   bottom: 2px;
-  background: #fff;
+  background: var(--color-white);
   border-radius: 9px;
   transition: 0.2s;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
