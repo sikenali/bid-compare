@@ -1004,19 +1004,12 @@ const handlePreviewRightScroll = () => {
           <button class="mode-btn active">并排对比</button>
           <button class="mode-btn" @click="showPreviewModal = true">叠加对比</button>
         </div>
-        <div class="diff-filter">
-          <button class="filter-btn active">全部</button>
-          <button class="filter-btn"><span class="filter-dot dot-add"></span>新增</button>
-          <button class="filter-btn"><span class="filter-dot dot-mod"></span>修改</button>
-          <button class="filter-btn"><span class="filter-dot dot-del"></span>删除</button>
-        </div>
       </div>
       <div class="toolbar-right">
+        <button class="export-btn" @click="handleExport">导出</button>
         <button class="back-btn" @click="handleBack">
-          <RiRestartLine />
           <span>返回</span>
         </button>
-        <button class="export-btn" @click="handleExport">导出</button>
       </div>
     </div>
 
