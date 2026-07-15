@@ -4,19 +4,7 @@ import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
   RiAddLine,
-  RiArrowRightLine,
-  RiPercentLine,
-  RiImageLine,
-  RiListCheck,
-  RiFileExcelLine,
-  RiCheckDoubleLine,
-  RiFilterLine,
-  RiArrowLeftSLine,
-  RiArrowRightSLine,
-  RiSearchLine,
-  RiEditLine,
-  RiInformationLine,
-  RiDownloadLine
+  RiArrowRightLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx'
 import { useFileParser } from '../composables/useFileParser'
@@ -802,9 +790,7 @@ const closeMultiResult = () => {
 // 取消对比
 const handleCancel = () => {
   cancelComparison()
-  if (!sessionStorage.getItem('compareResult')) {
-    comparisonParseError.value = '已取消对比'
-  }
+  comparisonParseError.value = '已取消对比'
 }
 
 // 导出对比报告
@@ -1079,7 +1065,7 @@ const generateWordReport = () => {
 <template>
   <div class="file-compare-page">
     <!-- 文件信息条 -->
-    <div class="file-info-bar" style="visibility:hidden">
+    <div class="file-info-bar">
       <div class="file-info-side">
         <RiAddLine class="file-info-icon" />
         <div class="file-info-text">

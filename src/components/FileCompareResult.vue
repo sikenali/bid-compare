@@ -2,14 +2,11 @@
 import { ref, computed, onMounted, onActivated, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  RiFileExcelLine,
   RiFileWordLine,
-  RiListCheck,
   RiExchange2Line,
   RiArrowLeftSLine,
   RiArrowRightSLine,
-  RiImageLine,
-  RiEyeLine
+  RiImageLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx'
 import { useSettings } from '../composables/useSettings'
@@ -241,11 +238,6 @@ const initData = () => {
     imageDuplicates.value = resultData.imageDuplicates || []
   }
 }
-
-// 解析文件内容为行数据 (已移除，不再使用全文本解析)
-// const parseFileLines = (leftContent: string, rightContent: string, segments: SimilarSegment[]) => {
-//   // ... (code removed)
-// }
 
 // 在组件挂载时初始化数据
 onMounted(() => {

@@ -105,7 +105,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   maxCount: 10,
-  acceptTypes: '.docx,.pdf,.pptx,.xlsx,.txt'
+  acceptTypes: '.docx,.doc,.pdf,.pptx,.ppt,.xlsx,.xls,.txt'
 })
 
 const emit = defineEmits<{

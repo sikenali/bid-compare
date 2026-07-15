@@ -3,11 +3,8 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
-  RiCloseCircleLine,
   RiAddLine,
-  RiArrowRightLine,
-  RiUserLine,
-  RiCalendarLine
+  RiArrowRightLine
 } from '@remixicon/vue'
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
@@ -536,7 +533,7 @@ const generateWordReport = () => {
 <template>
   <div class="property-check-container">
     <!-- 文件信息条 -->
-    <div class="file-info-bar" style="visibility:hidden">
+    <div class="file-info-bar">
       <div class="file-info-side">
         <RiAddLine class="file-info-icon" />
         <div class="file-info-text">
@@ -813,100 +810,6 @@ const generateWordReport = () => {
 }
 
 .compare-btn-icon.rotating {
-  animation: rotate 1s linear infinite;
-}
-
-/* 检查按钮区域 */
-.check-action-area {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  gap: 16px;
-}
-
-/* 检查按钮 */
-.start-check-btn {
-  position: relative;
-  width: 980px;
-  height: 40px;
-  border: none;
-  border-radius: var(--radius-lg);
-  background: var(--color-cinnabar);
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.3);
-  transition: all 0.3s ease;
-  font-size: 16px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  overflow: hidden;
-}
-
-.start-check-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, 
-    rgba(255, 255, 255, 0) 0%, 
-    rgba(255, 255, 255, 0.3) 50%, 
-    rgba(255, 255, 255, 0) 100%);
-  transform: translateX(-100%);
-  transition: transform 0.6s ease;
-}
-
-.start-check-btn:hover:not(:disabled)::before {
-  transform: translateX(100%);
-}
-
-.start-check-btn:hover:not(:disabled) {
-  box-shadow: 0 6px 20px rgba(var(--rgb-cinnabar), 0.4);
-  transform: translateY(-2px);
-}
-
-.start-check-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.start-check-btn.processing {
-  background: linear-gradient(90deg, 
-    var(--color-cinnabar) 0%, 
-    rgba(var(--rgb-cinnabar), 0.8) 50%, 
-    var(--color-cinnabar) 100%);
-  background-size: 200% 100%;
-  animation: gradient-shift 2s ease infinite;
-}
-
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.btn-text {
-  position: relative;
-  z-index: 1;
-}
-
-.check-icon {
-  font-size: 24px;
-  transition: all 0.3s ease;
-  position: relative;
-  z-index: 1;
-}
-
-.check-icon.rotating {
   animation: rotate 1s linear infinite;
 }
 
@@ -1574,33 +1477,12 @@ const generateWordReport = () => {
     gap: 12px;
   }
 
-  .check-action-area {
-    padding: 0;
-    gap: 12px;
-    width: 100%;
-    max-width: none;
-    margin: 0;
-  }
-
   .page-title {
     font-size: 18px;
   }
 
   .page-subtitle {
     font-size: 12px;
-  }
-
-  .btn-text {
-    font-size: 14px;
-  }
-
-  .start-check-btn {
-    width: 100%;
-    max-width: none;
-    height: 44px;
-    border-radius: var(--radius-lg);
-    font-size: 14px;
-    box-sizing: border-box;
   }
 
   .title-row {

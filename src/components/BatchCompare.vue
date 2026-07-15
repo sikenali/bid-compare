@@ -187,7 +187,7 @@ const handleBatchCompare = async () => {
           </button>
         </div>
         <label class="batch-file-select">
-          <input type="file" accept=".txt,.docx,.pdf,.xlsx,.pptx" @change="handleFileSelect(idx, $event)" />
+          <input type="file" accept=".txt,.docx,.doc,.pdf,.xlsx,.xls,.pptx,.ppt" @change="handleFileSelect(idx, $event)" />
           <div class="batch-file-placeholder">
             <RiFileExcelLine class="batch-file-icon" />
             <span>{{ f.file ? f.name : '点击选择文件' }}</span>

@@ -2,8 +2,6 @@
 import { ref, onMounted, onActivated, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  RiFileExcelLine,
-  RiArrowLeftLine,
   RiCheckLine,
   RiCloseCircleLine,
   RiAlertLine,

@@ -382,7 +382,6 @@ export function useHardwareInfo() {
     fingerprintInfo,
     isLoading,
     error,
-    isElectron,
     refresh: loadHardwareInfo
   }
 }
