@@ -9,21 +9,21 @@
 </p>
 
 <p align="center">
-  <img alt="Electron" src="https://img.shields.io/badge/Electron-41.2.0-47848F?logo=electron&logoColor=white">
   <img alt="Vue" src="https://img.shields.io/badge/Vue_3-3.5.24-4FC08D?logo=vue.js&logoColor=white">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white">
   <img alt="Vite" src="https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white">
+  <img alt="Deno" src="https://img.shields.io/badge/Deno-2.9-000000?logo=deno&logoColor=white">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-yellow">
   <img alt="Platform" src="https://img.shields.io/badge/Platform-Win%20|%20Mac%20|%20Linux-lightgrey">
 </p>
 
 ---
 
-## 项目介绍
+## 软件说明
 
-**文比猩**是一款专业的文档对比桌面工具，专为招投标文件、合同审阅、版本文档差异检测等场景设计。基于 Vue 3 + TypeScript + Electron 构建，支持多种文档格式的精准对比分析，并集成 AI 大模型辅助差异解读。
+**文比猩**是一款专业的文档对比工具，专为招投标文件、合同审阅、版本文档差异检测等场景设计。基于 Vue 3 + TypeScript + Vite 构建，支持多种文档格式的精准对比分析，并集成 AI 大模型辅助差异解读。
 
-### 核心功能
+**核心功能**
 
 | 功能 | 说明 |
 |------|------|
@@ -40,86 +40,82 @@
 
 ```
 bid-assistant/
-├── electron-main.js               # Electron 主进程 (窗口管理 + IPC)
-├── preload.cjs                    # 预加载脚本 (contextBridge)
-├── package.json                   # 项目配置、依赖、electron-builder
-├── vite.config.ts                 # Vite 构建配置 (base: './')
-├── index.html                     # HTML 入口
+├── desktop/
+│   └── desktop.ts                    # Deno 桌面客户端入口 (WebView + HTTP 子进程)
+├── deno.json                         # Deno 项目配置与 JSR 导入映射
+├── package.json                      # Node.js 项目配置与 Vite 构建脚本
+├── vite.config.ts                    # Vite 构建配置
+├── index.html                        # HTML 入口
 │
 ├── src/
-│   ├── main.ts                    # Vue 应用引导 (router + plugins + directives)
-│   ├── App.vue                    # 根组件 (国潮风格侧边栏导航)
+│   ├── main.ts                       # Vue 应用引导 (router + plugins + directives)
+│   ├── App.vue                       # 根组件 (国潮风格侧边栏导航)
 │   │
 │   ├── router/
-│   │   └── index.js               # 8 路由配置 (createWebHashHistory)
+│   │   └── index.js                  # 8 路由配置 (createWebHashHistory)
 │   │
-│   ├── components/                # 12 功能组件
-│   │   ├── FileCompare.vue         # 核心：双文件对比
-│   │   ├── FileCompareResult.vue   # 对比结果：分页 + 全文预览 + AI + 导出
-│   │   ├── FileUpload.vue          # 可复用拖拽上传 (文件类型图标)
-│   │   ├── PropertyCheck.vue       # 13 字段元数据属性检查
-│   │   ├── PropertyCheckResult.vue # 属性结果 (三级筛选 + Word 导出)
-│   │   ├── ImageCompare.vue        # 双图 dHash 感知哈希对比
-│   │   ├── BatchCompare.vue        # 3-10 文件批量对比
-│   │   ├── MultiFileUpload.vue     # 可复用多文件拖拽上传
-│   │   ├── MultiCompareResult.vue  # 批量结果 (矩阵 + 导出)
-│   │   ├── HardwareInfo.vue        # 三标签硬件信息 (OS/网络/指纹)
-│   │   ├── SystemSettings.vue      # 五标签设置面板
-│   │   └── RecentRecords.vue       # 可复用历史记录 (类型隔离, 10 条上限)
+│   ├── components/                   # 12 功能组件
+│   │   ├── FileCompare.vue            # 核心：双文件对比
+│   │   ├── FileCompareResult.vue      # 对比结果：分页 + 全文预览 + AI + 导出
+│   │   ├── FileUpload.vue             # 可复用拖拽上传 (文件类型图标)
+│   │   ├── PropertyCheck.vue          # 13 字段元数据属性检查
+│   │   ├── PropertyCheckResult.vue    # 属性结果 (三级筛选 + Word 导出)
+│   │   ├── ImageCompare.vue           # 双图 dHash 感知哈希对比
+│   │   ├── BatchCompare.vue           # 3-10 文件批量对比
+│   │   ├── MultiFileUpload.vue        # 可复用多文件拖拽上传
+│   │   ├── MultiCompareResult.vue     # 批量结果 (矩阵 + 导出)
+│   │   ├── HardwareInfo.vue           # 三标签硬件信息 (OS/网络/指纹)
+│   │   ├── SystemSettings.vue         # 五标签设置面板
+│   │   └── RecentRecords.vue          # 可复用历史记录 (类型隔离, 10 条上限)
 │   │
-│   ├── composables/               # 6 组合式函数
-│   │   ├── useFileParser.ts        # 文档解析：mammoth/pdfjs-dist/xlsx/text
-│   │   ├── useComparison.ts        # 对比调度：策略选择 + Worker/主线程 + 进度
-│   │   ├── useSettings.ts          # 响应式设置单例 (localStorage 持久化)
-│   │   ├── useRecentRecords.ts     # 类型化历史记录管理器
-│   │   ├── useAIModel.ts           # AI 模型 API 调用 (DeepSeek/Qwen/OpenAI)
-│   │   └── useHardwareInfo.ts       # IPC + Navigator 硬件信息获取
+│   ├── composables/                  # 6 组合式函数
+│   │   ├── useFileParser.ts           # 文档解析：mammoth/pdfjs-dist/xlsx/text
+│   │   ├── useComparison.ts           # 对比调度：策略选择 + Worker/主线程 + 进度
+│   │   ├── useSettings.ts             # 响应式设置单例 (localStorage 持久化)
+│   │   ├── useRecentRecords.ts        # 类型化历史记录管理器
+│   │   ├── useAIModel.ts              # AI 模型 API 调用 (DeepSeek/Qwen/OpenAI)
+│   │   └── useHardwareInfo.ts         # Navigator 浏览器硬件信息获取
 │   │
-│   ├── utils/                     # 7 工具模块
-│   │   ├── textAlgorithms.ts        # 核心：SimHash · LCS · Myers diff · 聚簇
-│   │   ├── compareResultStore.ts   # Map 存储：ID 生成 · set/get · 大小限制
-│   │   ├── sanitize.ts             # DOMPurify 安全过滤 + highlight 属性
-│   │   ├── ocr.ts                 # Tesseract.js 封装 (chi_sim+eng, 进度)
-│   │   ├── imageCompare.ts         # dHash 算法 (8×8 → 汉明距离 → 相似度%)
-│   │   ├── watermark.ts            # 45+ 中英文文档水印正则匹配
-│   │   └── extractImages.ts        # DOCX(word/media/) / PDF 图片提取
+│   ├── utils/                        # 7 工具模块
+│   │   ├── textAlgorithms.ts          # 核心：SimHash · LCS · Myers diff · 聚簇
+│   │   ├── compareResultStore.ts      # Map 存储：ID 生成 · set/get · 大小限制
+│   │   ├── sanitize.ts                # DOMPurify 安全过滤 + highlight 属性
+│   │   ├── ocr.ts                     # Tesseract.js 封装 (chi_sim+eng, 进度)
+│   │   ├── imageCompare.ts            # dHash 算法 (8×8 → 汉明距离 → 相似度%)
+│   │   ├── watermark.ts               # 45+ 中英文文档水印正则匹配
+│   │   └── extractImages.ts           # DOCX(word/media/) / PDF 图片提取
 │   │
 │   ├── workers/
-│   │   └── comparison.worker.ts    # Web Worker: 大文件对比卸载
+│   │   └── comparison.worker.ts       # Web Worker: 大文件对比卸载
 │   │
 │   ├── directives/
-│   │   └── highlightTooltip.ts     # v-highlight-tooltip 自定义指令
+│   │   └── highlightTooltip.ts        # v-highlight-tooltip 自定义指令
 │   │
 │   ├── plugins/
-│   │   └── icons.js               # RemixIcon 全局注册
-│   │
-│   ├── types/
-│   │   └── electron.d.ts           # window.electronAPI 类型声明
+│   │   └── icons.js                   # RemixIcon 全局注册
 │   │
 │   └── assets/
 │       └── styles/
-│           └── variables.css       # CSS 自定义属性 (国潮配色)
+│           └── variables.css          # CSS 自定义属性 (国潮配色)
 │
 ├── public/
-│   └── logo-icon.svg               # 应用 logo 源文件
+│   └── logo-icon.svg                  # 应用 logo 源文件
 │
-├── docs/                           # 示例文档
-└── release/                        # 打包输出 (构建后生成)
+└── docs/                              # 示例文档
 ```
 
 ### 架构层次
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                    Electron 主进程 (electron-main.js)             │
+│                      Deno 桌面客户端 (desktop/desktop.ts)         │
 │  ┌────────────────────────────────────────────────────────────┐  │
-│  │  窗口管理 (1600×950, 最小 1200×800)                        │  │
-│  │  IPC 通道: get-app-version, get-platform, get-hardware-info│  │
-│  │  Node.js: os, systeminformation, crypto, networkInterfaces │  │
-│  │  预加载: preload.cjs (contextBridge → window.electronAPI)  │  │
+│  │  WebView 原生窗口 (webkit2gtk / WKWebView / WebView2)     │  │
+│  │  HTTP 子进程: Deno.serve + serveDir 静态文件托管           │  │
+│  │  JS Bridge: webview.bind / webview.init 双向通信          │  │
 │  └────────────────────────────────────────────────────────────┘  │
 ├──────────────────────────────────────────────────────────────────┤
-│                     渲染进程 — Vue 3 应用                         │
+│                    SPA 渲染 — Vue 3 应用                           │
 │                                                                  │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────┐ ┌─────────────┐ │
 │  │  App.vue     │ │  Router      │ │ Plugins  │ │ Directives  │ │
@@ -161,68 +157,97 @@ bid-assistant/
 
 ---
 
-## 实现原理
+## 部署实施
 
-### 三阶智能对比算法
+### Web 方式
 
-```
-文件上传 → useFileParser 格式识别
-  → mammoth/pdfjs-dist/xlsx 文本提取
-  → 预处理：水印移除(watermark.ts) · 子句去重 · 忽略规则
-  → 文本较短？→ 主线程执行
-  → 文本 > 100K？→ Web Worker 执行
-  → 三阶算法(textAlgorithms.ts)：
-        1. SimHash 64-bit FNV-1a (滑动窗口 N-gram)
-        2. LCS 最长公共子序列 (中等精度)
-        3. Myers 差异算法 (精确 diff)
-  → 相似片段查找 + 索引映射
-  → compareResultStore 存储 (Map<id, result>)
-  → 页面渲染：高亮内容 (DOMPurify 安全过滤) + tooltip 悬浮
-  → 预览界面：全文展示 + 重复片段高亮
-  → AI 分析 (useAIModel → DeepSeek/Qwen/OpenAI)
-  → 导出 (docx 库生成 Word / markdown-it 生成 Markdown)
+以标准静态网站部署，无需 Node.js 或 Deno 运行时环境。
+
+**开发**
+
+```bash
+npm run dev
 ```
 
-#### 算法详解
+在 `http://localhost:5173` 启动开发服务器，支持 HMR 热更新。
 
-| 算法 | 原理 | 用途 |
-|------|------|------|
-| **SimHash** | 64-bit FNV-1a 指纹，滑动窗口 N-gram 分词 | 快速筛查相似文档，O(1) 比较 |
-| **LCS** | 最长公共子序列动态规划 | 中等精度定位相似片段 |
-| **Myers Diff** | 最优差异计算算法 | 精确到字符级别的增删改标注 |
-| **dHash** | 8×8 灰度缩放 + 64-bit 差异哈希 | 图片感知哈希，汉明距离计算相似度 |
+**构建**
 
-#### 水印移除
+```bash
+npm run build
+```
 
-45+ 正则表达式匹配中英文常见文档水印，包括：
-- 保密标识（内部资料、机密、秘密、绝密）
-- 版权声明（未经授权不得转载、版权所有）
-- 版本标记（草稿、修订版、版本号 Vx.x）
-- 英文水印（CONFIDENTIAL、PROPRIETARY、DO NOT COPY）
+产物输出到 `dist/` 目录，可直接部署到任意静态 Web 服务器（Nginx、Apache、OSS 等）。
 
-### 文档解析
+**Nginx 配置要点**
 
-| 格式 | 解析库 | 原理 |
-|------|--------|------|
-| **.docx** | mammoth + JSZip | 解压 ZIP 包，提取 word/text.xml 文本内容 |
-| **.pdf** | pdfjs-dist | 渲染页面提取文本，支持图片提取（页面渲染） |
-| **.xlsx** | xlsx | 解析工作表单元格数据 |
-| **.txt** | 原生读取 | 直接读取纯文本 |
-| **图片** | Tesseract.js | 浏览器端 OCR 文字识别（chi_sim+eng） |
+```nginx
+server {
+  listen 80;
+  server_name your-domain.com;
+  root /path/to/dist;
+  index index.html;
 
-### 状态管理
+  # SPA 路由回退
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
 
-- **Composables 模式**：Vue 3 组合式函数替代 Vuex/Pinia，每个功能模块独立管理状态
-- **localStorage 持久化**：设置项、历史记录自动保存到浏览器本地存储
-- **Map 存储对比结果**：`compareResultStore` 使用 Map 结构管理对比结果，自动 ID 生成和大小限制
+  # 静态资源缓存
+  location /assets {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+  }
+}
+```
 
-### Web Worker 多线程
+---
 
-大文件（>100K 字符）对比自动卸载到 `comparison.worker.ts` Worker 线程，避免阻塞 UI 主线程，确保界面流畅响应。
+### 客户端方式
 
-### 设备指纹
+使用 Deno 2 + WebView 将 Web 应用打包为原生桌面窗口，提供类似 Electron 的桌面体验，但体积更小、启动更快。
 
-基于 CPU/主板/MAC/磁盘序列号 SHA-256 哈希生成唯一设备标识，用于文档溯源和设备识别。
+**前置条件**
+
+- [Deno](https://deno.com/) ≥ 2.0
+- Linux: `sudo apt install libwebkitgtk-6.0-4`
+  - macOS / Windows: WebView 由系统内置，无需额外安装
+
+**运行**
+
+```bash
+# 构建前端 + 启动桌面窗口
+npm run build && npm run desktop
+
+# 或分步执行
+npm run build
+npm run desktop
+```
+
+**编译为单文件二进制**
+
+```bash
+npm run desktop:compile
+```
+
+产物为 `./bid-compare` 可执行文件，可直接分发运行（需目标系统已安装 libwebkitgtk-6.0-4）。
+
+**工作原理**
+
+```
+npm run build  →  dist/ (静态资源)
+                      ↓
+desktop/desktop.ts  →  Deno.Command 子进程
+                           ↓
+                    Deno.serve + serveDir
+                    (HTTP 静态文件服务, 端口 51730)
+                           ↓
+                    WebView 原生窗口
+                    (webkit2gtk / WKWebView / WebView2)
+                    navigate → http://localhost:51730/
+```
+
+`webview.run()` 会阻塞主线程运行 GTK 事件循环，因此 HTTP 服务以子进程方式独立运行，确保请求处理不被阻塞。
 
 ---
 
