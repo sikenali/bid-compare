@@ -187,15 +187,7 @@ const getStatusColor = (status: string): string => {
 </script>
 
 <template>
-  <div class="property-result-container">
-    <!-- 页面头部 -->
-    <div class="ba-page-header">
-      <div>
-        <h1 class="ba-page-title">属性检查结果</h1>
-        <p class="ba-page-subtitle">显示两个文件的基础属性差异和匹配统计</p>
-      </div>
-    </div>
-
+<div class="property-result-container">
     <!-- 文件信息条 -->
     <div class="file-info-bar">
       <div class="file-info-side">
