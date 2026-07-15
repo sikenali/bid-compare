@@ -1,0 +1,9 @@
+{
+  "content": [
+    {
+      "text": "{\"result\":[{\"id\":\"2cb39bcf-d934-48ab-ac93-991bce1f823c\",\"layer_data\":{\"id\":\"2cb39bcf-d934-48ab-ac93-991bce1f823c\",\"name\":\"标题区\",\"type\":\"frame\",\"width\":\"fit_content\",\"height\":\"fit_content\",\"x\":-324,\"y\":-10,\"layout\":\"horizontal\",\"alignItems\":\"center\",\"justifyContent\":\"start\",\"children\":[{\"id\":\"9fe8905f-ac9d-4907-bdb9-761541a7981b\",\"name\":\"版本标签\",\"type\":\"frame\",\"width\":\"fit_content\",\"height\":\"fit_content\",\"fills\":\"rgba(196,61,61,1)\",\"cornerRadius\":4,\"padding\":[2,10,2,10],\"layout\":\"horizontal\",\"alignItems\":\"center\",\"justifyContent\":\"center\",\"children\":[{\"id\":\"570dc4e0-8824-45ad-81f3-1459b0510362\",\"name\":\"图层\",\"type\":\"rectangle\",\"width\":14,\"height\":\"fit_content\",\"fontSize\":11,\"fontFamily\":\"SourceHanSans-SemiBold\",\"lineHeight\":1.2,\"textAlign\":\"left\",\"fontFill\":\"rgba(255,255,255,1)\",\"content\":\"v1\",\"textAlignVertical\":\"middle\"}]},{\"id\":\"bfd5603f-e7c1-4d51-822f-863b9d3d29b0\",\"name\":\"图层\",\"type\":\"rectangle\",\"width\":9,\"height\":\"fit_content\"},{\"id\":\"e1665c2a-349f-4a6d-a72c-763beed12485\",\"name\":\"图层\",\"type\":\"rectangle\",\"width\":53,\"height\":\"fit_content\",\"fontSize\":13,\"fontFamily\":\"SourceHanSans-Medium\",\"lineHeight\":1.2,\"textAlign\":\"left\",\"fontFill\":\"rgba(61,43,31,1)\",\"content\":\"原始版本\",\"textAlignVertical\":\"middle\"}]}}],\"status\":\"success\"}",
+      "type": "text"
+    }
+  ],
+  "isError": false
+}

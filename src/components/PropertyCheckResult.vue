@@ -450,7 +450,6 @@ const getStatusColor = (status: string): string => {
   align-items: center;
   gap: 12px;
 }
-}
 
 .property-table {
   border: 0.7px solid var(--color-tan-border);

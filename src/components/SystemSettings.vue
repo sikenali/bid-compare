@@ -35,7 +35,7 @@ const { show: showToast } = useToast()
 const activeTab = ref('theme')
 
 const navColors: Record<string, string> = {
-  theme: '#C23B22',
+  theme: '#2D8B57',
   algorithm: '#C23B22',
   preprocess: '#5B8C5A',
   features: '#C8A45C',
@@ -44,7 +44,7 @@ const navColors: Record<string, string> = {
 }
 
 const navTabs = [
-  { key: 'theme', label: '主题设置', icon: RiPaletteLine, color: '#C23B22' },
+  { key: 'theme', label: '主题设置', icon: RiPaletteLine, color: '#2D8B57' },
   { key: 'algorithm', label: '对比算法', icon: RiSettings3Line, color: '#C23B22' },
   { key: 'preprocess', label: '文本设置', icon: RiText, color: '#5B8C5A' },
   { key: 'features', label: '参数设置', icon: RiFilterLine, color: '#C8A45C' },

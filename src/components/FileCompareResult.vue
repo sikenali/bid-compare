@@ -6,6 +6,7 @@ import {
   RiRestartLine,
   RiSaveLine,
   RiSparkling2Fill,
+  RiSparkling2Line,
   RiLoaderLine,
   RiFileWordLine,
   RiListCheck,
@@ -139,6 +140,10 @@ watch(showPreviewModal, (val) => {
     })
   }
 })
+
+const togglePreviewMode = () => {
+  showPreviewModal.value = !showPreviewModal.value
+}
 
 // AI分析相关
 const showAIAnalysis = ref(false)
@@ -998,21 +1003,6 @@ const handlePreviewRightScroll = () => {
       </div>
     </div>
 
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <div class="mode-switch">
-          <button class="mode-btn active">并排对比</button>
-          <button class="mode-btn" @click="showPreviewModal = true">叠加对比</button>
-        </div>
-      </div>
-      <div class="toolbar-right">
-        <button class="export-btn" @click="handleExport">导出</button>
-        <button class="back-btn" @click="handleBack">
-          <span>返回</span>
-        </button>
-      </div>
-    </div>
-
     <div class="stats-bar">
       <div class="stats-left">
         <RiExchange2Line class="stats-icon" />
@@ -1091,12 +1081,10 @@ const handlePreviewRightScroll = () => {
           <RiArrowRightSLine />
         </button>
       </div>
-      <div class="sync-toggle">
-        <label class="toggle">
-          <input type="checkbox" v-model="syncScroll" />
-          <span class="toggle-slider"></span>
-        </label>
-        <span class="sync-label">同步滚动</span>
+      <div class="bottom-actions">
+        <button class="export-btn" @click="handleExport">导出</button>
+        <button class="back-btn" @click="handleBack">返回</button>
+        <button class="preview-btn" @click="togglePreviewMode">预览</button>
       </div>
     </div>
 
@@ -1421,6 +1409,60 @@ const handlePreviewRightScroll = () => {
 
 .back-btn:hover {
   background: var(--color-cream-darker);
+}
+
+.preview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2D8B57, #5B8C5A);
+  color: var(--color-white);
+  font-size: 13px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(45, 139, 87, 0.25);
+}
+
+.preview-btn:hover {
+  background: linear-gradient(135deg, #1A6B3A, #2D8B57);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(45, 139, 87, 0.35);
+}
+
+.preview-btn .remixicon {
+  font-size: 16px;
+}
+
+.ai-analysis-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #6366F1, #8B5CF6);
+  color: var(--color-white);
+  font-size: 13px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+
+.ai-analysis-btn:hover {
+  background: linear-gradient(135deg, #4F46E5, #7C3AED);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+.ai-analysis-btn .remixicon {
+  font-size: 16px;
 }
 
 .stats-bar {
@@ -1886,6 +1928,18 @@ const handlePreviewRightScroll = () => {
   gap: 4px;
 }
 
+.bottom-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bottom-pagination .sync-toggle-inline {
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 1px solid var(--color-tan-border);
+}
+
 .bottom-pagination .page-btn {
   width: 32px;
   height: 32px;
@@ -1940,6 +1994,58 @@ const handlePreviewRightScroll = () => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.sync-toggle-inline {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  width: 40px;
+  height: 22px;
+}
+
+.sync-toggle-inline input {
+  appearance: none;
+  -webkit-appearance: none;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.sync-toggle-inline::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-tan-dark);
+  border-radius: 11px;
+  transition: 0.2s;
+  cursor: pointer;
+}
+
+.sync-toggle-inline::after {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 19px;
+  left: 2px;
+  bottom: 2px;
+  background: var(--color-white);
+  border-radius: 9px;
+  transition: 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.sync-toggle-inline input:checked + ~ ::before {
+  background: var(--color-accent-red);
+}
+
+.sync-toggle-inline input:checked + ~ ::after {
+  transform: translateX(18px);
 }
 
 .sync-label {
