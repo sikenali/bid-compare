@@ -1,35 +1,30 @@
 import { ref } from 'vue'
 
-interface ToastState {
+interface ToastItem {
+  id: number
   message: string
-  visible: boolean
+  type: 'info' | 'success' | 'error' | 'warning'
 }
 
-const toast = ref<ToastState>({ message: '', visible: false })
-let timer: ReturnType<typeof setTimeout> | null = null
-let lastMessage = ''
+const toasts = ref<ToastItem[]>([])
+let toastId = 0
 
 export function useToast() {
-  const show = (message: string) => {
-    if (timer) clearTimeout(timer)
-    if (message === lastMessage && toast.value.visible) {
-      toast.value = { message, visible: true }
-      timer = setTimeout(() => {
-        toast.value.visible = false
-      }, 2000)
-      return
-    }
-    lastMessage = message
-    toast.value = { message, visible: true }
-    timer = setTimeout(() => {
-      toast.value.visible = false
-    }, 2000)
+  const show = (message: string, type: ToastItem['type'] = 'info', duration = 3000) => {
+    const id = ++toastId
+    toasts.value.push({ id, message, type })
+
+    setTimeout(() => {
+      toasts.value = toasts.value.filter(t => t.id !== id)
+    }, duration)
+
+    return id
   }
 
-  const dismiss = () => {
-    if (timer) clearTimeout(timer)
-    toast.value.visible = false
-  }
+  const info = (msg: string, duration?: number) => show(msg, 'info', duration)
+  const success = (msg: string, duration?: number) => show(msg, 'success', duration)
+  const error = (msg: string, duration?: number) => show(msg, 'error', duration)
+  const warning = (msg: string, duration?: number) => show(msg, 'warning', duration)
 
-  return { toast, show, dismiss }
+  return { toasts, show, info, success, error, warning }
 }

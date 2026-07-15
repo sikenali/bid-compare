@@ -3,15 +3,14 @@ import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { RiExchangeLine, RiFilePaper2Line, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
 import { useRecentRecords } from './composables/useRecentRecords'
-import { useToast } from './composables/useToast'
 import { useSettings } from './composables/useSettings'
 import RecentRecords from './components/RecentRecords.vue'
+import ToastContainer from './components/ToastContainer.vue'
 
 const router = useRouter()
 const route = useRoute()
 
 const { settings } = useSettings()
-const { toast, dismiss } = useToast()
 
 watch(() => settings.theme, (val) => {
   document.documentElement.dataset.theme = val === 'light' ? '' : val
@@ -161,9 +160,7 @@ const isActive = (path: string) => route.path.startsWith(path)
     </div>
 
     <!-- Toast 提示 -->
-    <div v-if="toast.visible" class="toast-overlay" @click="dismiss">
-      <div class="toast-message">{{ toast.message }}</div>
-    </div>
+    <ToastContainer />
   </div>
 </template>
 
@@ -407,32 +404,4 @@ const isActive = (path: string) => route.path.startsWith(path)
   font-family: var(--font-ui);
 }
 
-/* Toast 提示 */
-.toast-overlay {
-  position: fixed;
-  top: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
-  cursor: pointer;
-  animation: toast-slide-down 0.3s ease;
-}
-
-.toast-message {
-  padding: 12px 28px;
-  background: var(--color-cream);
-  border: 1px solid var(--color-tan-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  color: var(--color-brown-dark);
-  font-size: 14px;
-  font-family: var(--font-ui);
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-@keyframes toast-slide-down {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 </style>
