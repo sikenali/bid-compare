@@ -1351,7 +1351,7 @@ const generateWordReport = () => {
   justify-content: center;
   gap: 8px;
   background: var(--color-cinnabar);
-  color: #fff;
+  color: var(--color-white);
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
