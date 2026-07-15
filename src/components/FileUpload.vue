@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RiAddLine } from '@remixicon/vue'
+import {
+  RiAddLine,
+  RiFilePdfLine,
+  RiFileWordLine,
+  RiFileExcelLine,
+  RiFileTextLine
+} from '@remixicon/vue'
 
 interface FileInfo {
   file: File | null
@@ -20,7 +26,7 @@ const props = withDefaults(defineProps<{
   onClearFile?: (side: 'left' | 'right') => void
 }>(), {
   label: '',
-  acceptedFormats: '.pdf,.docx,.doc',
+  acceptedFormats: '.pdf,.docx,.doc,.xlsx,.txt',
 })
 
 const titleText = computed(() => props.label || (props.side === 'left' ? '原始文件' : '修改文件'))
@@ -29,17 +35,25 @@ const handleFileChange = (event: Event) => props.onFileChange?.(event, props.sid
 const handleDragOver = (event: DragEvent) => props.onDragOver?.(event)
 const handleDrop = (event: DragEvent) => props.onDrop?.(event, props.side)
 const handleClear = () => props.onClearFile?.(props.side)
+
+const isPdf = (t: string) => t.includes('PDF')
+const isWord = (t: string) => t.includes('Word')
+const isExcel = (t: string) => t.includes('Excel')
+const isTxt = (t: string) => t.includes('文本')
 </script>
 
 <template>
   <div class="upload-wrapper" @dragover="handleDragOver" @drop="handleDrop">
     <div class="upload-area">
-      <div class="upload-icon">
-        <RiAddLine class="upload-icon-svg" />
+      <div class="upload-icon" :class="side">
+        <RiFilePdfLine v-if="fileInfo.file && isPdf(fileInfo.type)" class="upload-icon-svg" />
+        <RiFileWordLine v-else-if="fileInfo.file && isWord(fileInfo.type)" class="upload-icon-svg" />
+        <RiFileExcelLine v-else-if="fileInfo.file && isExcel(fileInfo.type)" class="upload-icon-svg" />
+        <RiFileTextLine v-else class="upload-icon-svg" />
       </div>
       <template v-if="!fileInfo.file">
         <p class="upload-title">{{ titleText }}</p>
-        <p class="upload-hint">支持 PDF、DOCX、DOC 格式，单个文件不超过 50MB</p>
+        <p class="upload-hint">支持 PDF、Word、Excel、TXT 格式，单个文件不超过 50MB</p>
         <label class="upload-btn">
           <RiAddLine class="upload-btn-icon" />
           <span>选择文件</span>
@@ -91,16 +105,34 @@ const handleClear = () => props.onClearFile?.(props.side)
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: var(--color-icon-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 8px;
 }
 
+.upload-icon.left {
+  background: var(--color-diff-deleted);
+}
+
+.upload-icon.right {
+  background: var(--color-diff-added);
+}
+
 .upload-icon-svg {
   font-size: 36px;
+}
+
+.upload-icon.left .upload-icon-svg {
   color: var(--color-accent-red);
+}
+
+.upload-icon.right .upload-icon-svg {
+  color: var(--color-jade);
+}
+
+.upload-icon .upload-icon-svg {
+  color: var(--color-brown-muted);
 }
 
 .upload-title {
