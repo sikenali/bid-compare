@@ -1046,10 +1046,16 @@ const handlePreviewRightScroll = () => {
     <div class="data-table">
       <div class="table-header">
         <div class="col col-index">序号</div>
-        <div class="col col-content" :title="leftFileName || '文件A'">{{ leftFileName || '文件A' }}</div>
+        <div class="col col-content" :title="leftFileName || '文件A'">
+          <span class="version-badge version-badge-left">v1</span>
+          <span class="version-label">原始版本</span>
+        </div>
         <div class="col col-position">位置</div>
         <div class="col col-position">位置</div>
-        <div class="col col-content" :title="rightFileName || '文件B'">{{ rightFileName || '文件B' }}</div>
+        <div class="col col-content" :title="rightFileName || '文件B'">
+          <span class="version-badge version-badge-right">v2</span>
+          <span class="version-label">修订版本</span>
+        </div>
       </div>
       <div class="table-body" v-highlight-tooltip>
         <div v-for="segment in pageSegments" :key="segment.id" class="table-row">
@@ -1699,6 +1705,41 @@ const handlePreviewRightScroll = () => {
 
 .col-content.clickable:hover {
   color: var(--color-cinnabar);
+}
+
+/* 版本标签 */
+.col-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.version-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.version-badge-left {
+  background: var(--color-accent-red);
+}
+
+.version-badge-right {
+  background: var(--color-blue-accent);
+}
+
+.version-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-brown-dark);
+  white-space: nowrap;
 }
 
 .col-position {
