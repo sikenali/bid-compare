@@ -1934,12 +1934,6 @@ const handlePreviewRightScroll = () => {
   gap: 8px;
 }
 
-.bottom-pagination .sync-toggle-inline {
-  margin-left: 16px;
-  padding-left: 16px;
-  border-left: 1px solid var(--color-tan-border);
-}
-
 .bottom-pagination .page-btn {
   width: 32px;
   height: 32px;
@@ -1988,115 +1982,6 @@ const handlePreviewRightScroll = () => {
 .page-num.active {
   background: var(--color-accent-red);
   color: var(--color-white);
-}
-
-.sync-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sync-toggle-inline {
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
-  position: relative;
-  width: 40px;
-  height: 22px;
-}
-
-.sync-toggle-inline input {
-  appearance: none;
-  -webkit-appearance: none;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  position: absolute;
-}
-
-.sync-toggle-inline::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--color-tan-dark);
-  border-radius: 11px;
-  transition: 0.2s;
-  cursor: pointer;
-}
-
-.sync-toggle-inline::after {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 19px;
-  left: 2px;
-  bottom: 2px;
-  background: var(--color-white);
-  border-radius: 9px;
-  transition: 0.2s;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.sync-toggle-inline input:checked + ~ ::before {
-  background: var(--color-accent-red);
-}
-
-.sync-toggle-inline input:checked + ~ ::after {
-  transform: translateX(18px);
-}
-
-.sync-label {
-  font-size: 13px;
-  color: var(--color-brown-dark);
-}
-
-.toggle {
-  position: relative;
-  display: inline-block;
-  width: 40px;
-  height: 22px;
-  cursor: pointer;
-}
-
-.toggle input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-slider {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--color-tan-dark);
-  border-radius: 11px;
-  transition: 0.2s;
-}
-
-.toggle input:checked + .toggle-slider {
-  background: var(--color-accent-red);
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 19px;
-  left: 2px;
-  bottom: 2px;
-  background: var(--color-white);
-  border-radius: 9px;
-  transition: 0.2s;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.toggle input:checked + .toggle-slider:before {
-  transform: translateX(18px);
 }
 
 .modal-overlay {

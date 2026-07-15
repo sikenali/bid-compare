@@ -43,19 +43,6 @@ function generateDeviceFingerprint(components: string[]): string {
     '-' + Date.now().toString(36).slice(-6)
 }
 
-// Electron 模式获取硬件信息
-async function getElectronHardwareInfo(): Promise<HardwareData> {
-  if (!window.electronAPI || !window.electronAPI.getHardwareInfo) {
-    throw new Error('Electron API 不可用')
-  }
-  const result = await window.electronAPI.getHardwareInfo()
-  return {
-    systemInfo: result.systemInfo,
-    networkInfo: result.networkInfo,
-    fingerprintInfo: result.fingerprintInfo
-  }
-}
-
 // 检测浏览器类型
 function detectBrowser(ua: string): string {
   if (ua.includes('Edg/')) {
@@ -361,33 +348,19 @@ async function getBrowserHardwareInfo(): Promise<HardwareData> {
   }
 }
 
-// 检测运行环境
-function detectEnvironment(): 'electron' | 'browser' {
-  if (typeof window !== 'undefined' && window.electronAPI) {
-    return 'electron'
-  }
-  return 'browser'
-}
-
 export function useHardwareInfo() {
   const systemInfo = ref<HardwareData['systemInfo'] | null>(null)
   const networkInfo = ref<HardwareData['networkInfo'] | null>(null)
   const fingerprintInfo = ref<HardwareData['fingerprintInfo'] | null>(null)
   const isLoading = ref(true)
   const error = ref<string | null>(null)
-  const isElectron = ref(false)
 
   const loadHardwareInfo = async () => {
     isLoading.value = true
     error.value = null
 
     try {
-      const env = detectEnvironment()
-      isElectron.value = env === 'electron'
-      
-      const data = env === 'electron'
-        ? await getElectronHardwareInfo()
-        : await getBrowserHardwareInfo()
+      const data = await getBrowserHardwareInfo()
 
       systemInfo.value = data.systemInfo
       networkInfo.value = data.networkInfo
