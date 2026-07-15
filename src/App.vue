@@ -3,10 +3,13 @@ import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { RiExchangeLine, RiFilePaper2Line, RiSearchEyeLine, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
 import { useRecentRecords } from './composables/useRecentRecords'
+import { useToast } from './composables/useToast'
 import RecentRecords from './components/RecentRecords.vue'
 
 const router = useRouter()
 const route = useRoute()
+
+const { toast, dismiss } = useToast()
 
 const { recentRecords: fcRecords, addRecentRecord: addFcRecord, clearAllRecords: clearFcRecords, deleteRecord: deleteFcRecord } = useRecentRecords('fileCompare')
 const { recentRecords: pcRecords, addRecentRecord: addPcRecord, clearAllRecords: clearPcRecords, deleteRecord: deletePcRecord } = useRecentRecords('propertyCheck')
@@ -149,6 +152,11 @@ const isActive = (path: string) => route.path.startsWith(path)
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div v-if="toast.visible" class="toast-overlay" @click="dismiss">
+      <div class="toast-message">{{ toast.message }}</div>
     </div>
   </div>
 </template>
@@ -391,5 +399,34 @@ const isActive = (path: string) => route.path.startsWith(path)
   color: var(--color-brown-muted);
   font-size: 14px;
   font-family: var(--font-ui);
+}
+
+/* Toast 提示 */
+.toast-overlay {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  cursor: pointer;
+  animation: toast-fade-in 0.25s ease;
+}
+
+.toast-message {
+  padding: 12px 28px;
+  background: var(--color-cream);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  color: var(--color-brown-dark);
+  font-size: 14px;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+@keyframes toast-fade-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

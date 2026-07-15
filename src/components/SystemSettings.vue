@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useSettings } from '../composables/useSettings'
+import { useToast } from '../composables/useToast'
 import {
   RiSettings3Line,
   RiText,
@@ -28,6 +29,8 @@ const {
   cancelSettings: handleCancelSettings,
   resetToDefault: handleResetToDefault
 } = useSettings()
+
+const { show: showToast } = useToast()
 
 const activeTab = ref('theme')
 
@@ -64,17 +67,20 @@ const indicatorStyle = computed(() => {
 const handleReset = () => {
   if (window.confirm('确定要恢复默认设置吗？所有修改将丢失。')) {
     handleResetToDefault()
+    showToast('设置已恢复默认')
   }
 }
 
 const handleSaveWithConfirm = () => {
   if (window.confirm('确定要保存当前设置吗？')) {
     handleSaveSettings()
+    showToast('设置已保存')
   }
 }
 
 const handleCancel = () => {
   handleCancelSettings()
+  showToast('已取消修改')
 }
 
 const handleThemeChange = (theme: string) => {
