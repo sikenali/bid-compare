@@ -1,3 +1,5 @@
+Deno.env.set("GTK_A11Y", "none")
+
 import { Webview } from "@webview/webview"
 import { serveDir } from "jsr:@std/http@^1"
 
@@ -30,7 +32,7 @@ Deno.serve({ port: PORT, signal: ac.signal, onListen: () => {} }, (req) => {
   return serveDir(req, { fsRoot: distDir, urlRoot: "" })
 })
 
-const webview = new Webview(true)
+const webview = new Webview(false)
 webview.title = "文比猩"
 webview.navigate(`http://localhost:${PORT}`)
 

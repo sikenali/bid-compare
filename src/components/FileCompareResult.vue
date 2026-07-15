@@ -3,9 +3,6 @@ import { ref, computed, onMounted, onActivated, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   RiFileExcelLine,
-  RiSaveLine,
-  RiSparkling2Fill,
-  RiLoaderLine,
   RiFileWordLine,
   RiListCheck,
   RiExchange2Line,
@@ -16,7 +13,6 @@ import {
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx'
 import { useSettings } from '../composables/useSettings'
-import { useAIModel } from '../composables/useAIModel'
 import { getCompareResult, deleteCompareResult } from '../utils/compareResultStore'
 import { sanitizeHTML, sanitizeWithHighlight, htmlToMarkdown } from '../utils/sanitize'
 import MarkdownIt from 'markdown-it'
@@ -33,7 +29,6 @@ const md = new MarkdownIt({
 const route = useRoute()
 const router = useRouter()
 const { settings } = useSettings()
-const { isLoading, analysisResult, analyzeFileComparison } = useAIModel()
 
 // 数据
 const segments = ref<SimilarSegment[]>([])
@@ -142,10 +137,6 @@ watch(showPreviewModal, (val) => {
 const togglePreviewMode = () => {
   showPreviewModal.value = !showPreviewModal.value
 }
-
-// AI分析相关
-const showAIAnalysis = ref(false)
-const aiModelResponse = ref('')
 
 // 同步滚动状态
 const syncScroll = ref(true)
@@ -268,51 +259,6 @@ onActivated(() => {
 watch(() => route.query.t, () => {
   initData()
 })
-
-// AI分析处理函数
-const handleAIAnalysis = async () => {
-  if (segments.value.length === 0) {
-    alert('没有可分析的对比数据')
-    return
-  }
-
-  if (!settings.apiKey) {
-    alert('请先在系统设置中配置 API 密钥')
-    return
-  }
-
-  try {
-    const result = await analyzeFileComparison(
-      settings,
-      leftFileContent.value,
-      rightFileContent.value,
-      textSimilarity.value,
-      segments.value
-    )
-
-    // 格式化AI响应
-    if (result.error) {
-      aiModelResponse.value = `AI分析失败: ${result.error}`
-    } else {
-      let response = `## AI分析总结\n\n${result.summary}\n`
-
-      if (result.insights.length > 0) {
-        response += `\n## 关键发现\n${result.insights.map(insight => `- ${insight}`).join('\n')}\n`
-      }
-
-      if (result.suggestions.length > 0) {
-        response += `\n## 改进建议\n${result.suggestions.map(suggestion => `- ${suggestion}`).join('\n')}\n`
-      }
-
-      aiModelResponse.value = response
-    }
-
-    showAIAnalysis.value = true
-  } catch (error) {
-    aiModelResponse.value = `AI分析失败: ${(error as Error).message}`
-    showAIAnalysis.value = true
-  }
-}
 
 const getContextAround = (segment: SimilarSegment, side: 'left' | 'right', contextChars: number = 200): string => {
   const fullText = side === 'left' ? leftFileContent.value : rightFileContent.value
@@ -1076,25 +1022,6 @@ const handlePreviewRightScroll = () => {
       </div>
     </div>
 
-    <div v-if="showAIAnalysis" class="modal-overlay" @click="showAIAnalysis = false">
-      <div class="ai-modal" @click.stop>
-        <div class="modal-header">
-          <div class="modal-header-left">
-            <RiSparkling2Fill class="modal-header-icon" />
-            <h3>AI智能分析</h3>
-          </div>
-          <button class="modal-close" @click="showAIAnalysis = false">×</button>
-        </div>
-        <div class="modal-body">
-          <div v-if="isLoading" class="modal-loading">
-            <RiLoaderLine class="loading-spinner" />
-            <p>AI正在分析中，请稍候...</p>
-          </div>
-          <div v-else class="ai-result" v-html="formatMarkdown(aiModelResponse)"></div>
-        </div>
-      </div>
-    </div>
-
     <div v-if="showPreviewModal" class="modal-overlay" @click="showPreviewModal = false">
       <div class="preview-modal" @click.stop>
         <div class="modal-header">
@@ -1414,6 +1341,28 @@ const handlePreviewRightScroll = () => {
   font-size: 12px;
   color: var(--color-brown-muted);
   flex-shrink: 0;
+}
+
+.filter-dot {
+  width: 9px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+  flex-shrink: 0;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.dot-add {
+  background: var(--color-jade);
+}
+
+.dot-mod {
+  background: #D4842A;
+}
+
+.dot-del {
+  background: var(--color-accent-red);
 }
 
 .panel-content {
@@ -2111,15 +2060,6 @@ const handlePreviewRightScroll = () => {
 }
 
 @media (max-width: 768px) {
-  .toolbar {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .toolbar-left {
-    flex-wrap: wrap;
-  }
-
   .compare-panels {
     grid-template-columns: 1fr;
     max-height: none;

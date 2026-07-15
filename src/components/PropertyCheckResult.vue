@@ -187,7 +187,7 @@ const getStatusColor = (status: string): string => {
 </script>
 
 <template>
-<div class="property-result-container">
+  <div class="property-result-container">
     <!-- 文件信息条 -->
     <div class="file-info-bar">
       <div class="file-info-side">

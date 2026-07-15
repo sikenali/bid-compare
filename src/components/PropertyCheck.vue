@@ -816,11 +816,6 @@ const generateWordReport = () => {
   animation: rotate 1s linear infinite;
 }
 
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 /* 检查按钮区域 */
 .check-action-area {
   width: 100%;
@@ -913,11 +908,6 @@ const generateWordReport = () => {
 
 .check-icon.rotating {
   animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 /* 进度显示 */

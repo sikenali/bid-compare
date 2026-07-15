@@ -12,6 +12,7 @@ let lastMessage = ''
 export function useToast() {
   const show = (message: string) => {
     if (timer) clearTimeout(timer)
+    lastMessage = message
     if (lastMessage === message && toast.value.visible) {
       toast.value = { message, visible: true }
       timer = setTimeout(() => {
@@ -19,7 +20,6 @@ export function useToast() {
       }, 2000)
       return
     }
-    lastMessage = message
     toast.value = { message, visible: true }
     timer = setTimeout(() => {
       toast.value.visible = false
