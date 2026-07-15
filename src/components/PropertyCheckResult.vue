@@ -393,12 +393,22 @@ const getStatusColor = (status: string): string => {
 }
 
 .header-icon {
-  font-size: 20px;
+  font-size: 16px;
   color: var(--color-gold-dark);
 }
 
+.ba-card-header {
+  padding: 12px 20px;
+  margin-bottom: 0;
+}
+
+.ba-card-header-icon {
+  width: 32px;
+  height: 32px;
+}
+
 .ba-card-header-title {
-  font-size: var(--text-heading);
+  font-size: 14px;
   white-space: nowrap;
   font-family: var(--font-ui);
   color: var(--color-brown-dark);
@@ -410,6 +420,11 @@ const getStatusColor = (status: string): string => {
   gap: 6px;
   margin-left: auto;
   flex-wrap: wrap;
+}
+
+.header-stats :deep(.ba-stat-badge) {
+  font-size: 11px;
+  padding: 3px 8px;
 }
 
 .property-table {
