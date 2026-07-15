@@ -68,9 +68,9 @@ const handleClear = () => props.onClearFile?.(props.side)
 }
 
 .upload-area {
-  background: #F5EFE3;
+  background: var(--color-upload-bg);
   border-radius: 12px;
-  border: 1px dashed #D4C4A8;
+  border: 1px dashed var(--color-tan-dark);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -83,15 +83,15 @@ const handleClear = () => props.onClearFile?.(props.side)
 }
 
 .upload-area:hover {
-  border-color: #C43D3D;
-  background: #F0E8D8;
+  border-color: var(--color-accent-red);
+  background: var(--color-icon-bg);
 }
 
 .upload-icon {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: #F0E8D8;
+  background: var(--color-icon-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -100,19 +100,19 @@ const handleClear = () => props.onClearFile?.(props.side)
 
 .upload-icon-svg {
   font-size: 36px;
-  color: #C43D3D;
+  color: var(--color-accent-red);
 }
 
 .upload-title {
   font-size: 20px;
   font-weight: 600;
-  color: #3D2B1F;
+  color: var(--color-brown-dark);
   margin: 0;
 }
 
 .upload-hint {
   font-size: 14px;
-  color: #8B7355;
+  color: var(--color-brown-muted);
   margin: 0;
 }
 
@@ -121,8 +121,8 @@ const handleClear = () => props.onClearFile?.(props.side)
   align-items: center;
   gap: 8px;
   padding: 10px 24px;
-  background: #C43D3D;
-  color: #fff;
+  background: var(--color-accent-red);
+  color: var(--color-white);
   border: none;
   border-radius: 8px;
   font-size: 15px;
@@ -133,7 +133,7 @@ const handleClear = () => props.onClearFile?.(props.side)
 }
 
 .upload-btn:hover {
-  background: #A83028;
+  background: var(--color-accent-red-dark);
 }
 
 .upload-btn-replace {
@@ -146,14 +146,14 @@ const handleClear = () => props.onClearFile?.(props.side)
 
 .upload-drag-hint {
   font-size: 12px;
-  color: #8B7355;
+  color: var(--color-brown-muted);
   margin: 0;
 }
 
 .upload-clear-btn {
   background: none;
   border: none;
-  color: #8B7355;
+  color: var(--color-brown-muted);
   font-size: 12px;
   cursor: pointer;
   padding: 4px 8px;
@@ -162,6 +162,6 @@ const handleClear = () => props.onClearFile?.(props.side)
 }
 
 .upload-clear-btn:hover {
-  color: #C43D3D;
+  color: var(--color-accent-red);
 }
 </style>
