@@ -133,6 +133,7 @@
   --color-diff-added-border: #4CAF50;
   --color-diff-modified-border: #FF9800;
   --color-diff-deleted-border: #F44336;
+  --color-blue-accent: #2D6A9F;
 
   /* ========== Layout ========== */
   --navbar-height: 64px;
@@ -177,6 +178,7 @@
   --rgb-brown-dark: 232, 220, 200;
   --rgb-brown: 212, 196, 168;
   --rgb-brown-muted: 184, 168, 140;
+  --color-blue-accent: #1E4D73;
 
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
@@ -213,6 +215,7 @@
   --rgb-brown-dark: 51, 51, 51;
   --rgb-brown: 85, 85, 85;
   --rgb-brown-muted: 153, 153, 153;
+  --color-blue-accent: #2D6A9F;
 
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
