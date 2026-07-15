@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
   RiCloseCircleLine,
-  RiAlertLine,
-  RiQuestionLine,
   RiAddLine,
   RiArrowRightLine,
   RiUserLine,
@@ -107,7 +105,6 @@ const isParsing = ref(false)
 const parseError = ref('')
 
 // 属性检查结果
-const showResults = ref(false)
 const matchingProperties = ref(0)
 const nonMatchingProperties = ref(0)
 const warningProperties = ref(0)
@@ -335,7 +332,6 @@ const handleExportReport = async () => {
 
 // 返回文件上传界面
 const handleBack = () => {
-  showResults.value = false
   // 重置检查结果状态，但保留已上传的文件信息
   isParsing.value = false;
   parseError.value = '';

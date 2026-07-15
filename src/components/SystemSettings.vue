@@ -22,8 +22,6 @@ import {
   RiKeyLine,
   RiAddLine
 } from '@remixicon/vue'
-import { BorderBeam } from 'vue3-border-beam'
-
 const {
   settings,
   saveSettings: handleSaveSettings,
@@ -151,6 +149,18 @@ const apiKeyValue = ref('')
 const keyVisible = ref(false)
 const savedKeys = ref<Array<{ id: string; provider: string; model: string; key: string }>>([])
 
+// 从已有 settings.apiKey 初始化
+onMounted(() => {
+  if (settings.apiKey) {
+    savedKeys.value.push({
+      id: 'default',
+      provider: '自定义',
+      model: settings.selectedModel || '',
+      key: settings.apiKey,
+    })
+  }
+})
+
 const addApiKeyEntry = () => {
   const key = apiKeyValue.value.trim()
   if (!key) {
@@ -179,13 +189,18 @@ const addApiKeyEntry = () => {
       })
     }
   }
+  settings.apiKey = key
   apiKeyValue.value = ''
   customProvider.value = ''
   customModel.value = ''
 }
 
 const removeApiKey = (id: string) => {
+  const removed = savedKeys.value.find(k => k.id === id)
   savedKeys.value = savedKeys.value.filter(k => k.id !== id)
+  if (removed && removed.key === settings.apiKey) {
+    settings.apiKey = savedKeys.value.length > 0 ? savedKeys.value[savedKeys.value.length - 1].key : ''
+  }
 }
 
 const resetApiForm = () => {

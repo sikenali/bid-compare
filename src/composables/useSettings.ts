@@ -1,4 +1,4 @@
-import { reactive, onMounted } from 'vue'
+import { reactive } from 'vue'
 
 // 定义设置类型
 export interface FileCompareSettings {
@@ -133,9 +133,6 @@ export function useSettings() {
 
   // 初始化时加载设置（仅执行一次）
   if (!isInitialized) {
-    onMounted(() => {
-      loadSettings()
-    })
     isInitialized = true
     loadSettings()
   }

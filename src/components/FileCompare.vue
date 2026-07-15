@@ -16,7 +16,6 @@ import {
   RiSearchLine,
   RiEditLine,
   RiInformationLine,
-  RiHistoryLine,
   RiDownloadLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx'
@@ -35,7 +34,6 @@ import type { ImageDuplicate } from '../utils/imageCompare'
 import { recognizeImages, extractTextFromImage, isOCRAvailable, getSupportedLanguages } from '../utils/ocr'
 import type { OCRResult, OCRConfig } from '../utils/ocr'
 import FileUpload from './FileUpload.vue'
-import RecentRecords from './RecentRecords.vue'
 import MultiFileUpload from './MultiFileUpload.vue'
 import MultiCompareResult from './MultiCompareResult.vue'
 
@@ -269,52 +267,8 @@ watch(
 
 // 使用最近记录组合式函数 - 传入fileCompare类型
 const {
-  showRecentRecords,
-  recentRecords,
   addRecentRecord,
-  clearAllRecords,
-  deleteRecord
 } = useRecentRecords('fileCompare')
-
-// 历史记录弹窗
-const showHistory = ref(false)
-
-const toggleHistory = () => {
-  showHistory.value = !showHistory.value
-}
-
-// 当记录为空时自动关闭弹窗
-watch(
-  () => recentRecords.length,
-  (newLen) => {
-    if (newLen === 0 && showHistory.value) {
-      showHistory.value = false
-    }
-  }
-)
-
-// 查看历史对比记录
-const viewHistoricalRecord = (record: any) => {
-  // 将历史记录数据存储到模块级存储中
-  const compareResult = {
-    segments: record.similarSegments || [],
-    leftFileName: record.leftFileName,
-    rightFileName: record.rightFileName,
-    textSimilarity: record.similarity,
-    similarSegmentsCount: record.similarSegments ? record.similarSegments.length : 0,
-    leftTotalPages: 1,
-    rightTotalPages: 1
-  }
-
-  // 存储到模块级存储
-  const resultId = storeCompareResult(compareResult)
-
-  // 跳转到结果页面，传递存储 ID 和时间戳
-  router.push({ path: '/file-compare-result', query: { resultId, t: Date.now() } })
-  
-  // 关闭历史记录弹窗
-  showHistory.value = false
-}
 
 // 格式化文件大小
 const formatFileSize = (size: number): string => {
@@ -1141,29 +1095,6 @@ const generateWordReport = () => {
         <div class="file-info-text">
           <span class="file-info-label">文件 B</span>
           <span class="file-info-name">{{ rightFileInfo.name || '未选择文件' }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 历史记录弹窗 -->
-    <div v-if="showHistory" class="help-modal-overlay" @click="toggleHistory">
-      <div class="history-modal" @click.stop>
-        <div class="help-modal-header">
-          <h3>历史记录</h3>
-          <button class="help-close-btn" @click="toggleHistory">×</button>
-        </div>
-        <div class="history-modal-body">
-          <RecentRecords
-            v-if="recentRecords.length > 0"
-            :recent-records="recentRecords"
-            :on-clear-all="clearAllRecords"
-            :on-view-record="(record) => { viewHistoricalRecord(record); toggleHistory(); }"
-            :on-delete-record="deleteRecord"
-            :on-close="toggleHistory"
-          />
-          <div v-else class="empty-history">
-            <p>暂无历史记录</p>
-          </div>
         </div>
       </div>
     </div>

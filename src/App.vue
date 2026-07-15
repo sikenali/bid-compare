@@ -229,10 +229,6 @@ const isActive = (path: string) => route.path.startsWith(path)
   gap: 28px;
 }
 
-.nav-tabs-indicator {
-  display: none;
-}
-
 .nav-tab-item {
   display: flex;
   align-items: center;
