@@ -215,29 +215,6 @@ const getStatusColor = (status: string): string => {
 
     <!-- 属性对比表格区 -->
     <div class="ba-card property-table-card">
-      <!-- 表格头部 -->
-      <div class="ba-card-header">
-        <div class="ba-card-header-icon">
-          <RiFilterLine class="header-icon" />
-        </div>
-        <h2 class="ba-card-header-title">属性对比详情</h2>
-
-        <!-- 统计徽章 -->
-        <div class="header-stats">
-          <div class="ba-stat-badge ba-stat-success">
-            <span class="ba-stat-badge-icon">✓</span>
-            <span>匹配：{{ matchCount }}项</span>
-          </div>
-          <div class="ba-stat-badge ba-stat-danger">
-            <span class="ba-stat-badge-icon">✕</span>
-            <span>不匹配：{{ mismatchCount }}项</span>
-          </div>
-          <div class="ba-stat-badge ba-stat-warn">
-            <span class="ba-stat-badge-icon">!</span>
-            <span>警告：{{ warningCount }}项</span>
-          </div>
-        </div>
-      </div>
 
       <!-- 表格内容 -->
       <div class="ba-table-scroll property-table">
@@ -287,9 +264,20 @@ const getStatusColor = (status: string): string => {
         </div>
         </div>
       </div>
-      <div class="card-actions">
-        <button class="card-action-btn" @click="handleBack">返回</button>
-        <button class="card-action-btn card-action-primary" @click="handleExport">导出</button>
+      <div class="card-footer">
+        <div class="card-footer-left">
+          <RiFilterLine class="footer-icon" />
+          <span class="footer-title">属性对比详情</span>
+          <div class="footer-stats">
+            <span class="footer-stat stat-match">✓ 匹配：{{ matchCount }}项</span>
+            <span class="footer-stat stat-mismatch">✕ 不匹配：{{ mismatchCount }}项</span>
+            <span class="footer-stat stat-warn">! 警告：{{ warningCount }}项</span>
+          </div>
+        </div>
+        <div class="card-footer-right">
+          <button class="card-action-btn" @click="handleBack">返回</button>
+          <button class="card-action-btn card-action-primary" @click="handleExport">导出</button>
+        </div>
       </div>
     </div>
   </div>
@@ -407,24 +395,61 @@ const getStatusColor = (status: string): string => {
   height: 32px;
 }
 
-.ba-card-header-title {
-  font-size: 14px;
-  white-space: nowrap;
-  font-family: var(--font-ui);
-  color: var(--color-brown-dark);
-}
-
-.header-stats {
+.card-footer {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-left: auto;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-top: 1px solid var(--color-tan-light);
 }
 
-.header-stats :deep(.ba-stat-badge) {
-  font-size: 11px;
-  padding: 3px 8px;
+.card-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-icon {
+  font-size: 16px;
+  color: var(--color-gold-dark);
+}
+
+.footer-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
+}
+
+.footer-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.footer-stat {
+  font-size: 12px;
+  font-family: var(--font-ui);
+}
+
+.stat-match {
+  color: var(--color-jade-dark);
+}
+
+.stat-mismatch {
+  color: var(--color-cinnabar);
+}
+
+.stat-warn {
+  color: var(--color-gold-dark);
+}
+
+.card-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 }
 
 .property-table {
@@ -611,14 +636,6 @@ const getStatusColor = (status: string): string => {
     font-size: 11px;
     padding: 3px 8px;
   }
-}
-
-.card-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 24px;
-  border-top: 1px solid var(--color-tan-light);
 }
 
 .card-action-btn {
