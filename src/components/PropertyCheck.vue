@@ -536,7 +536,7 @@ const generateWordReport = () => {
 <template>
   <div class="property-check-container">
     <!-- 文件信息条 -->
-    <div class="file-info-bar">
+    <div class="file-info-bar" v-if="false">
       <div class="file-info-side">
         <RiAddLine class="file-info-icon" />
         <div class="file-info-text">
@@ -544,8 +544,9 @@ const generateWordReport = () => {
           <span class="file-info-name">{{ leftFileInfo.name || '未选择文件' }}</span>
         </div>
       </div>
-      <div class="file-info-divider">
-        <RiExchangeLine class="divider-icon" />
+      <div class="file-info-divider" :class="{ 'processing': isParsing }">
+        <RiExchangeLine class="divider-icon" :class="{ 'rotating': isParsing }" />
+        <span v-if="isParsing" class="divider-text">检查中...</span>
       </div>
       <div class="file-info-side right">
         <RiAddLine class="file-info-icon" />
@@ -557,7 +558,7 @@ const generateWordReport = () => {
     </div>
 
     <!-- 文件上传区域 -->
-    <div class="upload-section" :class="{ 'processing': isParsing }">
+    <div class="upload-section">
       <FileUpload
         side="left"
         :file-info="leftFileInfo"
@@ -620,9 +621,7 @@ const generateWordReport = () => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: rgba(var(--rgb-parchment), 1);
-  gap: 12px;
-  font-family: var(--font-ui);
+  gap: 16px;
 }
 
 /* 文件信息条 */
@@ -687,34 +686,50 @@ const generateWordReport = () => {
 }
 
 .file-info-divider {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--color-cream-darker);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: all var(--transition-normal);
+  flex-direction: column;
+  gap: 2px;
+  width: auto;
+  height: auto;
+}
+
+.file-info-divider.processing {
+  gap: 4px;
+}
+
+.divider-text {
+  font-size: 10px;
+  color: var(--color-cinnabar);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .divider-icon {
   font-size: 20px;
   color: var(--color-cinnabar);
+  transition: transform 0.3s ease;
+}
+
+.divider-icon.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* 文件上传区域 */
 .upload-section {
   display: flex;
-  gap: 20px;
-  align-items: center;
-  justify-content: center;
-  padding: 0 24px;
+  gap: 16px;
+  align-items: stretch;
   position: relative;
-}
-
-.upload-section.processing {
-  pointer-events: none;
+  flex-wrap: wrap;
 }
 
 .upload-divider {
@@ -733,13 +748,11 @@ const generateWordReport = () => {
 
 /* 属性检查按钮区域 */
 .compare-action-section {
-  width: 100%;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  gap: 16px;
+  gap: 12px;
+  text-align: center;
 }
 
 .compare-btn {
@@ -747,18 +760,18 @@ const generateWordReport = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 12px 32px;
+  gap: 8px;
+  padding: 10px 24px;
   background: var(--color-cinnabar);
-  color: white;
+  color: var(--color-white);
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   font-family: var(--font-ui);
-  transition: all 0.3s ease;
   box-shadow: var(--shadow-cinnabar);
+  transition: all 0.3s ease;
   overflow: hidden;
 }
 
@@ -787,21 +800,9 @@ const generateWordReport = () => {
 }
 
 .compare-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
-}
-
-.compare-btn.processing {
-  background: var(--color-cinnabar);
-  background-size: 200% 100%;
-  animation: gradient-shift 2s ease infinite;
-}
-
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
 }
 
 .compare-btn-icon {
@@ -1581,7 +1582,6 @@ const generateWordReport = () => {
   .upload-section {
     flex-direction: column;
     gap: 12px;
-    padding: 0 12px;
   }
 
   .check-action-area {

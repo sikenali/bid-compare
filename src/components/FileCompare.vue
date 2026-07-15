@@ -1079,7 +1079,7 @@ const generateWordReport = () => {
 <template>
   <div class="file-compare-page">
     <!-- 文件信息条 -->
-    <div class="file-info-bar">
+    <div class="file-info-bar" v-if="false">
       <div class="file-info-side">
         <RiAddLine class="file-info-icon" />
         <div class="file-info-text">
@@ -1087,8 +1087,9 @@ const generateWordReport = () => {
           <span class="file-info-name">{{ leftFileInfo.name || '未选择文件' }}</span>
         </div>
       </div>
-      <div class="file-info-divider">
-        <RiExchangeLine class="divider-icon" />
+      <div class="file-info-divider" :class="{ 'processing': isProcessing }">
+        <RiExchangeLine class="divider-icon" :class="{ 'rotating': isProcessing }" />
+        <span v-if="isProcessing" class="divider-text">对比中...</span>
       </div>
       <div class="file-info-side right">
         <RiAddLine class="file-info-icon" />
@@ -1105,7 +1106,7 @@ const generateWordReport = () => {
         side="left"
         :file-info="leftFileInfo"
         label="上传文件 A"
-        accepted-formats=".pdf,.docx,.doc,.txt"
+        accepted-formats=".pdf,.docx,.doc,.xlsx,.txt"
         :on-file-change="handleFileUpload"
         :on-drag-over="handleDragOver"
         :on-drop="handleDrop"
@@ -1118,7 +1119,7 @@ const generateWordReport = () => {
         side="right"
         :file-info="rightFileInfo"
         label="上传文件 B"
-        accepted-formats=".pdf,.docx,.doc,.txt"
+        accepted-formats=".pdf,.docx,.doc,.xlsx,.txt"
         :on-file-change="handleFileUpload"
         :on-drag-over="handleDragOver"
         :on-drop="handleDrop"
@@ -1304,11 +1305,37 @@ const generateWordReport = () => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  flex-direction: column;
+  gap: 2px;
+  width: auto;
+  height: auto;
+}
+
+.file-info-divider.processing {
+  gap: 4px;
+}
+
+.divider-text {
+  font-size: 10px;
+  color: var(--color-cinnabar);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .divider-icon {
   font-size: 20px;
   color: var(--color-cinnabar);
+  transition: transform 0.3s ease;
+}
+
+.divider-icon.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* 上传区域 */
