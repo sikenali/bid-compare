@@ -1012,15 +1012,6 @@ const handlePreviewRightScroll = () => {
         </div>
       </div>
       <div class="toolbar-right">
-        <div class="diff-nav">
-          <button class="nav-btn" @click="goToPrevDiff">
-            <RiArrowLeftSLine />
-          </button>
-          <span class="nav-count">第 {{ currentPage }} / {{ totalPages }} 处差异</span>
-          <button class="nav-btn" @click="goToNextDiff">
-            <RiArrowRightSLine />
-          </button>
-        </div>
         <button class="back-btn" @click="handleBack">
           <RiRestartLine />
           <span>返回</span>
