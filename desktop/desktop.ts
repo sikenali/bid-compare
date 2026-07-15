@@ -26,13 +26,17 @@ const distDir = (() => {
   }
 })()
 
-Deno.serve({ port: PORT, signal: ac.signal, onListen: () => {} }, (req) => {
-  return serveDir(req, { fsRoot: distDir, urlRoot: "" })
+const serverReady = new Promise<void>((resolve) => {
+  Deno.serve({ port: PORT, signal: ac.signal, onListen: resolve }, (req) => {
+    return serveDir(req, { fsRoot: distDir, urlRoot: "" })
+  })
 })
+
+await serverReady
 
 const webview = new Webview(false)
 webview.title = "文比猩"
-webview.navigate(`http://localhost:${PORT}`)
+webview.navigate(`http://localhost:${PORT}/`)
 
 webview.run()
 ac.abort()
