@@ -2,7 +2,6 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useSettings } from '../composables/useSettings'
 import { useToast } from '../composables/useToast'
-import { useConfirm } from '../composables/useConfirm'
 import {
   RiSettings3Line,
   RiText,
@@ -32,7 +31,6 @@ const {
 } = useSettings()
 
 const { show: showToast } = useToast()
-const { show: showConfirm } = useConfirm()
 
 const activeTab = ref('theme')
 
@@ -66,16 +64,12 @@ const indicatorStyle = computed(() => {
   }
 })
 
-const handleReset = async () => {
-  const ok = await showConfirm('确定要恢复默认设置吗？所有修改将丢失。')
-  if (!ok) return
+const handleReset = () => {
   handleResetToDefault()
   showToast('设置已恢复默认')
 }
 
-const handleSaveWithConfirm = async () => {
-  const ok = await showConfirm('确定要保存当前设置吗？')
-  if (!ok) return
+const handleSave = () => {
   handleSaveSettings()
   showToast('设置已保存')
 }
@@ -246,7 +240,7 @@ const resetApiForm = () => {
           </div>
           <div class="content-header-actions">
             <button class="action-btn-cancel" @click="handleCancel">取消</button>
-            <button class="action-btn-save" @click="handleSaveWithConfirm">保存</button>
+            <button class="action-btn-save" @click="handleSave">保存</button>
           </div>
         </div>
 
