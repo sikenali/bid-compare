@@ -533,7 +533,7 @@ const generateWordReport = () => {
 <template>
   <div class="property-check-container">
     <!-- 文件信息条 -->
-    <div class="file-info-bar">
+    <div class="file-info-bar" style="display:none">
       <div class="file-info-side">
         <RiAddLine class="file-info-icon" />
         <div class="file-info-text">

@@ -1065,7 +1065,7 @@ const generateWordReport = () => {
 <template>
   <div class="file-compare-page">
     <!-- 文件信息条 -->
-    <div class="file-info-bar">
+    <div class="file-info-bar" style="display:none">
       <div class="file-info-side">
         <RiAddLine class="file-info-icon" />
         <div class="file-info-text">
