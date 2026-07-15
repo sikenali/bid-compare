@@ -1,5 +1,3 @@
-Deno.env.set("GTK_A11Y", "none")
-
 import { Webview } from "@webview/webview"
 import { serveDir } from "jsr:@std/http@^1"
 
