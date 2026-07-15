@@ -8,8 +8,6 @@ import {
   RiCloseCircleLine,
   RiAlertLine,
   RiFilterLine,
-  RiRestartLine,
-  RiSaveLine,
   RiFileLine,
   RiExchangeLine
 } from '@remixicon/vue'
@@ -196,16 +194,6 @@ const getStatusColor = (status: string): string => {
         <h1 class="ba-page-title">属性检查结果</h1>
         <p class="ba-page-subtitle">显示两个文件的基础属性差异和匹配统计</p>
       </div>
-      <div class="ba-page-actions">
-        <button class="ba-btn-primary ba-btn-text-mobile-hide" @click="handleBack" title="返回">
-          <RiRestartLine class="ba-btn-icon" />
-          <span>返回</span>
-        </button>
-        <button class="ba-btn-secondary" @click="handleExport" title="导出报告">
-          <RiSaveLine class="ba-btn-icon" />
-          <span>导出</span>
-        </button>
-      </div>
     </div>
 
     <!-- 文件信息条 -->
@@ -306,6 +294,10 @@ const getStatusColor = (status: string): string => {
           </div>
         </div>
         </div>
+      </div>
+      <div class="card-actions">
+        <button class="card-action-btn" @click="handleBack">返回</button>
+        <button class="card-action-btn card-action-primary" @click="handleExport">导出</button>
       </div>
     </div>
   </div>
@@ -612,5 +604,40 @@ const getStatusColor = (status: string): string => {
     font-size: 11px;
     padding: 3px 8px;
   }
+}
+
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--color-tan-light);
+}
+
+.card-action-btn {
+  padding: 8px 20px;
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  background: var(--color-cream-dark);
+  color: var(--color-brown-muted);
+  font-size: 13px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.card-action-btn:hover {
+  background: var(--color-cream-darker);
+}
+
+.card-action-primary {
+  border: none;
+  background: var(--color-accent-red);
+  color: var(--color-white);
+  font-weight: 600;
+}
+
+.card-action-primary:hover {
+  background: var(--color-accent-red-dark);
 }
 </style>
