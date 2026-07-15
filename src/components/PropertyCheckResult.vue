@@ -334,7 +334,7 @@ const getStatusColor = (status: string): string => {
   align-items: center;
   gap: 16px;
   padding: 12px 20px;
-  background: #F0E8D8;
+  background: var(--color-icon-bg);
   border-radius: 12px;
 }
 
@@ -357,16 +357,16 @@ const getStatusColor = (status: string): string => {
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  color: #fff;
+  color: var(--color-white);
   flex-shrink: 0;
 }
 
 .file-a-icon {
-  background: #C43D3D;
+  background: var(--color-accent-red);
 }
 
 .file-b-icon {
-  background: #2D6A9F;
+  background: var(--color-blue-accent);
 }
 
 .file-details {
@@ -379,7 +379,7 @@ const getStatusColor = (status: string): string => {
 .file-name {
   font-size: 14px;
   font-weight: 600;
-  color: #3D2B1F;
+  color: var(--color-brown-dark);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -387,19 +387,19 @@ const getStatusColor = (status: string): string => {
 
 .file-meta {
   font-size: 11px;
-  color: #8B7355;
+  color: var(--color-brown-muted);
 }
 
 .compare-icon-wrapper {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #E8DCC8;
+  background: var(--color-tan-light);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  color: #C43D3D;
+  color: var(--color-accent-red);
   flex-shrink: 0;
 }
 
