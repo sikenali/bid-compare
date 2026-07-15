@@ -4,12 +4,14 @@ import { useRouter, useRoute } from 'vue-router'
 import { RiExchangeLine, RiFilePaper2Line, RiSearchEyeLine, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
 import { useRecentRecords } from './composables/useRecentRecords'
 import { useToast } from './composables/useToast'
+import { useConfirm } from './composables/useConfirm'
 import RecentRecords from './components/RecentRecords.vue'
 
 const router = useRouter()
 const route = useRoute()
 
 const { toast, dismiss } = useToast()
+const { confirm, confirmAction, cancel } = useConfirm()
 
 const { recentRecords: fcRecords, addRecentRecord: addFcRecord, clearAllRecords: clearFcRecords, deleteRecord: deleteFcRecord } = useRecentRecords('fileCompare')
 const { recentRecords: pcRecords, addRecentRecord: addPcRecord, clearAllRecords: clearPcRecords, deleteRecord: deletePcRecord } = useRecentRecords('propertyCheck')
@@ -157,6 +159,17 @@ const isActive = (path: string) => route.path.startsWith(path)
     <!-- Toast 提示 -->
     <div v-if="toast.visible" class="toast-overlay" @click="dismiss">
       <div class="toast-message">{{ toast.message }}</div>
+    </div>
+
+    <!-- 自定义确认弹窗 -->
+    <div v-if="confirm.visible" class="confirm-overlay" @click="cancel">
+      <div class="confirm-dialog" @click.stop>
+        <p class="confirm-message">{{ confirm.message }}</p>
+        <div class="confirm-actions">
+          <button class="confirm-btn-cancel" @click="cancel">取消</button>
+          <button class="confirm-btn-ok" @click="confirmAction">确定</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -428,5 +441,81 @@ const isActive = (path: string) => route.path.startsWith(path)
 @keyframes toast-fade-in {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* 自定义确认弹窗 */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: confirm-fade-in 0.15s ease;
+}
+
+.confirm-dialog {
+  background: var(--color-cream);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  padding: 28px 32px 24px;
+  width: 380px;
+  max-width: 90vw;
+}
+
+.confirm-message {
+  margin: 0 0 24px;
+  font-size: 15px;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.confirm-btn-cancel {
+  padding: 10px 28px;
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  background: var(--color-cream-dark);
+  color: var(--color-brown-muted);
+  font-size: 14px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.confirm-btn-cancel:hover {
+  background: var(--color-cream-darker);
+}
+
+.confirm-btn-ok {
+  padding: 10px 28px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-red);
+  color: var(--color-white);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.confirm-btn-ok:hover {
+  background: var(--color-accent-red-dark);
+}
+
+@keyframes confirm-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 </style>
