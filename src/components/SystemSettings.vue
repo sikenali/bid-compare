@@ -87,7 +87,6 @@ const handleCancel = () => {
 
 const handleThemeChange = (theme: string) => {
   settings.theme = theme
-  document.documentElement.dataset.theme = theme === 'light' ? '' : theme
 }
 
 const themes = [

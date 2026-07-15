@@ -101,10 +101,6 @@ export function useSettings() {
       } else {
         Object.assign(settings, defaultSettings)
       }
-      // Apply saved theme
-      if (settings.theme) {
-        document.documentElement.dataset.theme = settings.theme === 'light' ? '' : settings.theme
-      }
     } catch (error) {
       Object.assign(settings, defaultSettings)
     }

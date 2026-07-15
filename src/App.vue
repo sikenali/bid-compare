@@ -1,17 +1,23 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { RiExchangeLine, RiFilePaper2Line, RiSearchEyeLine, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
+import { RiExchangeLine, RiFilePaper2Line, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
 import { useRecentRecords } from './composables/useRecentRecords'
 import { useToast } from './composables/useToast'
 import { useConfirm } from './composables/useConfirm'
+import { useSettings } from './composables/useSettings'
 import RecentRecords from './components/RecentRecords.vue'
 
 const router = useRouter()
 const route = useRoute()
 
+const { settings } = useSettings()
 const { toast, dismiss } = useToast()
 const { confirm, confirmAction, cancel } = useConfirm()
+
+watch(() => settings.theme, (val) => {
+  document.documentElement.dataset.theme = val === 'light' ? '' : val
+}, { immediate: true })
 
 const { recentRecords: fcRecords, addRecentRecord: addFcRecord, clearAllRecords: clearFcRecords, deleteRecord: deleteFcRecord } = useRecentRecords('fileCompare')
 const { recentRecords: pcRecords, addRecentRecord: addPcRecord, clearAllRecords: clearPcRecords, deleteRecord: deletePcRecord } = useRecentRecords('propertyCheck')
@@ -21,8 +27,8 @@ const historyTab = ref('fileCompare')
 const showHistory = ref(false)
 
 const navItems = [
-  { key: 'file-compare', icon: RiFilePaper2Line, route: '/file-compare' },
-  { key: 'property-check', icon: RiSearchEyeLine, route: '/property-check' },
+  { key: 'file-compare', icon: RiExchangeLine, route: '/file-compare' },
+  { key: 'property-check', icon: RiFilePaper2Line, route: '/property-check' },
 ]
 
 const activeNav = computed(() => {
