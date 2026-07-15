@@ -666,7 +666,7 @@ const resetApiForm = () => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: #F5EFE3;
+  background: var(--color-upload-bg);
   font-family: var(--font-ui);
 }
 
@@ -685,7 +685,7 @@ const resetApiForm = () => {
   flex-direction: column;
   gap: 4px;
   padding: 20px 12px;
-  background: #F5EFE3;
+  background: var(--color-upload-bg);
   align-self: stretch;
   position: relative;
 }
@@ -693,7 +693,7 @@ const resetApiForm = () => {
 .nav-title {
   font-size: 14px;
   font-weight: 700;
-  color: #3D2B1F;
+  color: var(--color-brown-dark);
   padding: 0 12px 16px 12px;
 }
 
@@ -703,7 +703,7 @@ const resetApiForm = () => {
   right: 12px;
   z-index: 0;
   border-radius: 12px;
-  background: #C43D3D;
+  background: var(--color-accent-red);
   transition: top 0.3s ease-out, height 0.3s ease-out;
   pointer-events: none;
 }
@@ -716,7 +716,7 @@ const resetApiForm = () => {
   border: none;
   border-radius: 12px;
   background: transparent;
-  color: #8B7355;
+  color: var(--color-brown-muted);
   font-size: 14px;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -728,11 +728,11 @@ const resetApiForm = () => {
 
 .nav-tab:hover {
   background: rgba(196, 61, 61, 0.08);
-  color: #C43D3D;
+  color: var(--color-accent-red);
 }
 
 .nav-tab.active {
-  color: #fff;
+  color: var(--color-white);
   font-weight: 600;
 }
 
@@ -743,7 +743,7 @@ const resetApiForm = () => {
 }
 
 .nav-tab.active .nav-tab-icon {
-  color: #fff;
+  color: var(--color-white);
 }
 
 .nav-tab-label {
@@ -756,7 +756,7 @@ const resetApiForm = () => {
   display: flex;
   flex-direction: column;
   gap: 0;
-  background: #FBF7F0;
+  background: var(--color-nav-bg);
 }
 
 .content-header {
@@ -781,13 +781,13 @@ const resetApiForm = () => {
 .content-title {
   font-size: 24px;
   font-weight: 700;
-  color: #3D2B1F;
+  color: var(--color-brown-dark);
   margin: 0;
 }
 
 .content-subtitle {
   font-size: 14px;
-  color: #8B7355;
+  color: var(--color-brown-muted);
 }
 
 .content-header-actions {
@@ -817,7 +817,7 @@ const resetApiForm = () => {
   border: none;
   border-radius: var(--radius-md);
   background: var(--color-cinnabar);
-  color: #fff;
+  color: var(--color-white);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -1285,7 +1285,7 @@ const resetApiForm = () => {
 }
 
 .model-name-active {
-  color: #fff;
+  color: var(--color-white);
   font-weight: 600;
 }
 
@@ -1326,7 +1326,7 @@ const resetApiForm = () => {
 
 .config-tab-selected {
   background: var(--color-cinnabar);
-  color: #fff;
+  color: var(--color-white);
   font-weight: 600;
 }
 
@@ -1431,7 +1431,7 @@ const resetApiForm = () => {
   border: none;
   border-radius: var(--radius-md);
   background: var(--color-cinnabar);
-  color: #fff;
+  color: var(--color-white);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -1534,8 +1534,8 @@ button, .theme-card-new, .export-card-item, .model-item, .config-tab, .form-inpu
   }
 
   .nav-tab.active {
-    background: #C43D3D;
-    color: #fff;
+    background: var(--color-accent-red);
+    color: var(--color-white);
   }
 
   .content-header {
