@@ -3,10 +3,8 @@ import { ref, computed, onMounted, onActivated, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   RiFileExcelLine,
-  RiRestartLine,
   RiSaveLine,
   RiSparkling2Fill,
-  RiSparkling2Line,
   RiLoaderLine,
   RiFileWordLine,
   RiListCheck,
@@ -782,16 +780,6 @@ const countThresholdSimilarity = computed(() => {
   return filteredSegments.value.filter(s => s.similarityValue >= threshold).length
 })
 
-// 上一处差异
-const goToPrevDiff = () => {
-  // TODO: 实现跳转到上一处差异的逻辑
-}
-
-// 下一处差异
-const goToNextDiff = () => {
-  // TODO: 实现跳转到下一处差异的逻辑
-}
-
 // 滚动同步处理
 let isSyncing = false
 
@@ -1242,133 +1230,12 @@ const handlePreviewRightScroll = () => {
   flex-shrink: 0;
 }
 
-.toolbar {
+.stats-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.toolbar-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.mode-switch {
-  display: inline-flex;
-  background: var(--color-icon-bg);
-  padding: 4px;
-  border-radius: 10px;
-  gap: 0;
-}
-
-.mode-btn {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-brown-muted);
-  font-size: 13px;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.mode-btn.active {
-  background: var(--color-accent-red);
-  color: var(--color-white);
-  font-weight: 600;
-}
-
-.diff-filter {
-  display: inline-flex;
-  background: var(--color-icon-bg);
-  padding: 4px;
-  border-radius: 10px;
-  gap: 0;
-}
-
-.filter-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-brown-muted);
-  font-size: 12px;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.filter-btn.active {
-  background: var(--color-white);
-  color: var(--color-brown-dark);
-  font-weight: 500;
-}
-
-.filter-dot {
-  width: 9px;
-  height: 8px;
-  border-radius: 2px;
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-.dot-add {
-  background: var(--color-jade);
-}
-
-.dot-mod {
-  background: #D4842A;
-}
-
-.dot-del {
-  background: var(--color-accent-red);
-}
-
-.diff-nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.nav-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 8px;
-  background: var(--color-icon-bg);
-  color: var(--color-brown-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  transition: all 0.15s;
-}
-
-.nav-btn:hover {
-  background: var(--color-tan-light);
-  color: var(--color-brown-dark);
-}
-
-.nav-count {
-  font-size: 13px;
-  color: var(--color-brown-dark);
-  background: var(--color-icon-bg);
-  padding: 4px 12px;
-  border-radius: 8px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  padding: 12px 0;
+  gap: 16px;
 }
 
 .export-btn {
@@ -1436,42 +1303,6 @@ const handlePreviewRightScroll = () => {
 
 .preview-btn .remixicon {
   font-size: 16px;
-}
-
-.ai-analysis-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #6366F1, #8B5CF6);
-  color: var(--color-white);
-  font-size: 13px;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
-}
-
-.ai-analysis-btn:hover {
-  background: linear-gradient(135deg, #4F46E5, #7C3AED);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
-}
-
-.ai-analysis-btn .remixicon {
-  font-size: 16px;
-}
-
-.stats-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--color-upload-bg);
-  border-radius: 10px;
-  padding: 8px 16px;
 }
 
 .stats-left {
