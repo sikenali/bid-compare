@@ -981,7 +981,7 @@ const handlePreviewRightScroll = () => {
           <div class="image-duplicate-pair">
             <div class="image-duplicate-side">
               <span class="image-side-label">左侧</span>
-              <img :src="dup.leftImage" class="image-duplicate-img" />
+              <img :src="dup.leftImage" class="image-duplicate-img" :alt="'左侧 ' + dup.leftPage" />
               <span class="image-name">{{ dup.leftPage }}</span>
             </div>
             <div class="image-duplicate-vs">
@@ -989,7 +989,7 @@ const handlePreviewRightScroll = () => {
             </div>
             <div class="image-duplicate-side">
               <span class="image-side-label">右侧</span>
-              <img :src="dup.rightImage" class="image-duplicate-img" />
+              <img :src="dup.rightImage" class="image-duplicate-img" :alt="'右侧 ' + dup.rightPage" />
               <span class="image-name">{{ dup.rightPage }}</span>
             </div>
           </div>

@@ -593,6 +593,11 @@ export function useFileParser() {
     parsePdfFile,
     parseDocFile,
     parseXlsxFile,
-    parsePptxFile
+    parsePptxFile,
+    disposeFileResult: (result: FileParseResult) => {
+      if (result.images) {
+        result.images.forEach(img => URL.revokeObjectURL(img.url))
+      }
+    }
   };
 }

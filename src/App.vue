@@ -260,6 +260,10 @@ const isActive = (path: string) => route.path.startsWith(path)
   color: #fff;
 }
 
+.nav-tab-item:active {
+  transform: scale(0.95);
+}
+
 .nav-tab-item .format-tooltip {
   position: absolute;
   top: calc(100% + 6px);
@@ -308,6 +312,10 @@ const isActive = (path: string) => route.path.startsWith(path)
   background: var(--color-cinnabar);
   border-color: transparent;
   color: #fff;
+}
+
+.nav-btn:active {
+  transform: scale(0.95);
 }
 
 .nav-btn-content {

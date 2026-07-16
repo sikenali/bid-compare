@@ -32,6 +32,11 @@
   transform: translateY(-1px);
 }
 
+.ba-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
 .ba-btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -85,6 +90,11 @@
 
 .ba-btn-secondary:hover:not(:disabled) {
   background: var(--color-cream-darker);
+  border-color: var(--color-tan-dark);
+}
+
+.ba-btn-secondary:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .ba-btn-secondary:disabled {
@@ -135,6 +145,10 @@
   background: rgba(var(--rgb-cinnabar), 0.05);
 }
 
+.ba-btn-ghost:active:not(:disabled) {
+  background: rgba(var(--rgb-cinnabar), 0.12);
+}
+
 .ba-btn-ghost .ba-btn-icon {
   font-size: 18px;
   flex-shrink: 0;
@@ -166,6 +180,10 @@
 .ba-btn-gold:hover:not(:disabled) {
   background: var(--color-gold-dark);
   transform: translateY(-1px);
+}
+
+.ba-btn-gold:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .ba-btn-gold .ba-btn-icon {

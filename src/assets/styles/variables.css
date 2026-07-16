@@ -60,6 +60,8 @@
   --rgb-brown: 92, 64, 51;
   --rgb-brown-muted: 139, 115, 85;
   --rgb-tan-border: 224, 213, 192;
+  --rgb-tan-light: 232, 220, 200;
+  --rgb-tan-dark: 212, 196, 168;
   --rgb-white: 255, 255, 255;
 
   /* ========== Typography — Font Families ========== */
@@ -120,6 +122,7 @@
   --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
   --shadow-xl: 0 20px 60px rgba(0,0,0,0.15);
   --shadow-cinnabar: 0 4px 20px rgba(194,59,34,0.2);
+  --shadow-cinnabar-hover: 0 6px 24px rgba(194,59,34,0.3);
 
   /* ========== Colors — Calicat Design Tokens ========== */
   --color-upload-bg: #F5EFE3;
@@ -164,8 +167,8 @@
 
   --color-ink-black: #E8DCC8;
   --color-brown-dark: #E8DCC8;
-  --color-brown: #D4C4A8;
-  --color-brown-muted: #B8A88C;
+  --color-brown: #D8C8B0;
+  --color-brown-muted: #C0B098;
 
   --rgb-parchment: 18, 18, 18;
   --rgb-cream: 26, 26, 26;
@@ -173,11 +176,12 @@
   --rgb-cream-darker: 46, 46, 46;
   --rgb-white: 51, 51, 51;
   --rgb-tan-border: 61, 61, 61;
+  --rgb-tan-light: 74, 74, 74;
   --rgb-tan-dark: 74, 74, 74;
   --rgb-ink-black: 232, 220, 200;
   --rgb-brown-dark: 232, 220, 200;
-  --rgb-brown: 212, 196, 168;
-  --rgb-brown-muted: 184, 168, 140;
+  --rgb-brown: 216, 200, 176;
+  --rgb-brown-muted: 192, 176, 152;
   --color-blue-accent: #1E4D73;
 
   --color-upload-bg: #1A1A1A;
@@ -230,6 +234,7 @@
   --rgb-cream-darker: 238, 238, 238;
   --rgb-white: 255, 255, 255;
   --rgb-tan-border: 224, 224, 224;
+  --rgb-tan-light: 238, 238, 238;
   --rgb-tan-dark: 204, 204, 204;
   --rgb-ink-black: 34, 34, 34;
   --rgb-brown-dark: 51, 51, 51;

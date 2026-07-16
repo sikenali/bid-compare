@@ -170,11 +170,19 @@ ${JSON.stringify(similarSegments.slice(0, 5), null, 2)}
       }
 
       // 发送API请求
-      const response = await fetch(apiConfig.apiUrl, {
-        method: 'POST',
-        headers: apiConfig.headers,
-        body: JSON.stringify(requestData)
-      })
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
+      let response
+      try {
+        response = await fetch(apiConfig.apiUrl, {
+          method: 'POST',
+          headers: apiConfig.headers,
+          body: JSON.stringify(requestData),
+          signal: controller.signal
+        })
+      } finally {
+        clearTimeout(timeoutId)
+      }
 
       // 检查响应状态
       if (!response.ok) {
@@ -182,8 +190,11 @@ ${JSON.stringify(similarSegments.slice(0, 5), null, 2)}
         throw new Error(`API请求失败：${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`)
       }
 
-      // 解析响应数据（所有模型使用 OpenAI 兼容格式）
+      // 解析响应数据
       const responseData = await response.json()
+      if (!responseData.choices?.length || !responseData.choices[0]?.message?.content) {
+        throw new Error('API 返回格式异常，缺少 choices 字段')
+      }
       const aiResponse = responseData.choices[0].message.content
 
       // 解析AI响应为结构化数据

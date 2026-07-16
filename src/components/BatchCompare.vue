@@ -56,6 +56,10 @@ const handleFileSelect = (idx: number, event: Event) => {
   const input = event.target as HTMLInputElement
   if (!input.files?.length) return
   const f = input.files[0]
+  if (f.size > 100 * 1024 * 1024) {
+    parseError.value = `文件 ${f.name} 超过 100MB 大小限制`
+    return
+  }
   files.value[idx] = {
     file: f,
     name: f.name,

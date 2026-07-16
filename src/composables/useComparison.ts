@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import {
   selectStrategy,
   selectSmartStrategy,
@@ -18,6 +18,8 @@ export function useComparison() {
   const progressMessage = ref('')
   const canCancel = ref(false)
   const parseError = ref('')
+
+  onUnmounted(cleanup)
 
   let currentWorker: Worker | null = null
   let timeoutId: number | null = null
@@ -134,6 +136,9 @@ export function useComparison() {
           } else if (e.data.type === 'ERROR') {
             cleanup()
             reject(new Error(e.data.message))
+          } else {
+            cleanup()
+            reject(new Error(`Worker 返回未知消息类型: ${e.data.type}`))
           }
         }
 

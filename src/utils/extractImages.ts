@@ -3,7 +3,14 @@
  * 支持从 Word (.docx) 和 PDF 文件中提取图片
  */
 
-import JSZip from 'jszip'
+let JSZip: any = null
+
+async function getJSZip() {
+  if (!JSZip) {
+    JSZip = (await import('jszip')).default
+  }
+  return JSZip
+}
 
 /**
  * 从 DOCX 文件中提取图片
@@ -15,10 +22,10 @@ export async function extractImagesFromDocx(file: File): Promise<Array<{ name: s
   
   try {
     const arrayBuffer = await file.arrayBuffer()
-    const zip = await JSZip.loadAsync(arrayBuffer)
+    const zip = await (await getJSZip()).loadAsync(arrayBuffer)
     
     // 查找所有图片文件
-    const imageFiles: JSZip.JSZipObject[] = []
+    const imageFiles: any[] = []
     zip.forEach((path, entry) => {
       if (path.match(/^word\/media\/image\d+\.\w+$/i)) {
         imageFiles.push(entry)

@@ -70,6 +70,8 @@
       </div>
     </BorderBeam>
 
+    <div v-if="addErrorMessage" class="upload-error">{{ addErrorMessage }}</div>
+
     <div class="compare-action-section">
       <button class="compare-btn" 
               @click="$emit('compare')" 
@@ -108,6 +110,7 @@ const emit = defineEmits<{
 const files = ref<File[]>([])
 const isDragOver = ref(false)
 const fileInput = ref<HTMLInputElement>()
+const addErrorMessage = ref('')
 
 const triggerFileInput = () => {
   fileInput.value?.click()
@@ -134,10 +137,18 @@ const onDrop = (event: DragEvent) => {
 const addFiles = (newFiles: File[]) => {
   const existingNames = new Set(files.value.map(f => f.name))
   const uniqueNewFiles = newFiles.filter(f => !existingNames.has(f.name))
-  
+
+  const MAX_SIZE = 100 * 1024 * 1024
+  const oversize = uniqueNewFiles.find(f => f.size > MAX_SIZE)
+  if (oversize) {
+    addErrorMessage.value = `文件 ${oversize.name} 超过 100MB 大小限制`
+    setTimeout(() => addErrorMessage.value = '', 3000)
+    return
+  }
+
   const remaining = props.maxCount - files.value.length
   const toAdd = uniqueNewFiles.slice(0, remaining)
-  
+
   files.value = [...files.value, ...toAdd]
   emit('update:files', files.value)
 }
@@ -455,8 +466,17 @@ defineExpose({ clearFiles, files })
 
 .compare-action-section {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   margin-top: var(--spacing-5);
+}
+
+.upload-error {
+  font-size: 13px;
+  color: var(--color-cinnabar);
+  text-align: center;
+  padding: 8px;
 }
 
 .compare-btn {

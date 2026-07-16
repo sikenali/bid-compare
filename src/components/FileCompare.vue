@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
@@ -493,6 +493,11 @@ const handleCompare = async () => {
 // 图片对比
 const leftImages = ref<{ url: string; name: string }[]>([])
 const rightImages = ref<{ url: string; name: string }[]>([])
+
+onUnmounted(() => {
+  leftImages.value.forEach(img => URL.revokeObjectURL(img.url))
+  rightImages.value.forEach(img => URL.revokeObjectURL(img.url))
+})
 
 const handleLeftImageUpload = (event: Event) => {
   const input = event.target as HTMLInputElement
