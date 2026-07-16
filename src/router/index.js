@@ -4,7 +4,6 @@ import FileCompareResult from '../components/FileCompareResult.vue'
 import PropertyCheck from '../components/PropertyCheck.vue'
 import PropertyCheckResult from '../components/PropertyCheckResult.vue'
 import ImageCompare from '../components/ImageCompare.vue'
-import HardwareInfo from '../components/HardwareInfo.vue'
 import SystemSettings from '../components/SystemSettings.vue'
 import BatchCompare from '../components/BatchCompare.vue'
 
@@ -42,12 +41,6 @@ const routes = [
     name: 'ImageCompare',
     component: ImageCompare,
     meta: { title: '文比猩 - 图片对比' }
-  },
-  {
-    path: '/hardware-info',
-    name: 'HardwareInfo',
-    component: HardwareInfo,
-    meta: { title: '文比猩 - 硬件信息' }
   },
   {
     path: '/settings',

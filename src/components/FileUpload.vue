@@ -197,4 +197,54 @@ const isTxt = (t: string) => t.includes('文本')
 .upload-clear-btn:hover {
   color: var(--color-accent-red);
 }
+
+@media (max-width: 768px) {
+  .upload-area {
+    padding: 28px 20px;
+    min-height: 200px;
+  }
+
+  .upload-icon {
+    width: 64px;
+    height: 64px;
+  }
+
+  .upload-icon-svg {
+    font-size: 28px;
+  }
+
+  .upload-title {
+    font-size: 17px;
+  }
+
+  .upload-btn {
+    padding: 8px 20px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+
+  .upload-drag-hint {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .upload-area {
+    padding: 20px 16px;
+    min-height: 160px;
+  }
+
+  .upload-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .upload-icon-svg {
+    font-size: 24px;
+  }
+
+  .upload-title {
+    font-size: 15px;
+  }
+}
 </style>

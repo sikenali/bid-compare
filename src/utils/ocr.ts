@@ -3,7 +3,14 @@
  * 使用 Tesseract.js 实现浏览器端 OCR
  */
 
-import Tesseract from 'tesseract.js'
+let tesseractModule: any = null;
+
+async function getTesseract() {
+  if (!tesseractModule) {
+    tesseractModule = await import('tesseract.js');
+  }
+  return tesseractModule.default || tesseractModule;
+}
 
 // OCR 配置
 export interface OCRConfig {
@@ -55,7 +62,8 @@ export async function recognizeImage(
   const finalConfig = { ...DEFAULT_CONFIG, ...config }
 
   try {
-    const result = await Tesseract.recognize(
+    const Tess = await getTesseract();
+    const result = await Tess.recognize(
       image as any,
       finalConfig.language,
       {
@@ -207,7 +215,7 @@ function calculateEditDistanceSimilarity(text1: string, text2: string): number {
  * 检查浏览器是否支持 OCR
  */
 export function isOCRAvailable(): boolean {
-  return typeof Tesseract !== 'undefined'
+  return true
 }
 
 /**

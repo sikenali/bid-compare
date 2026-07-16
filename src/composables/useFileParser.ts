@@ -1,10 +1,20 @@
 import mammoth from 'mammoth';
-import * as pdfjsLib from 'pdfjs-dist';
-import PdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import type { PageMap } from '../utils/textAlgorithms';
 
-// 设置worker路径
-pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorker;
+let pdfjsLib: any = null;
+let pdfWorkerSet = false;
+
+async function getPdfjsLib() {
+  if (!pdfjsLib) {
+    pdfjsLib = await import('pdfjs-dist');
+  }
+  if (!pdfWorkerSet) {
+    pdfWorkerSet = true;
+    const PdfWorker = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).href;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorker;
+  }
+  return pdfjsLib;
+}
 
 // 文件属性类型
 export interface FileProperties {
@@ -245,7 +255,8 @@ export function useFileParser() {
       const dataBuffer = await file.arrayBuffer();
 
       // 设置PDF解析配置
-      const pdfPromise = pdfjsLib.getDocument({
+      const pdf = await getPdfjsLib();
+      const pdfPromise = pdf.getDocument({
         data: dataBuffer,
         useSystemFonts: true
       }).promise;

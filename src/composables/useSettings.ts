@@ -48,7 +48,7 @@ export const defaultSettings: FileCompareSettings = {
   minDuplicateWords: 8,
   textSimilarityThreshold: 75,
   imageSimilarityThreshold: 80,
-  maxResults: 100,
+  maxResults: 500,
   ignorePunctuation: true,
   ignoreWhitespace: true,
   ignoreCase: false,

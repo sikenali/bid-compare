@@ -34,7 +34,7 @@ const { show: showToast } = useToast()
 
 const activeTab = ref('theme')
 const navRef = ref<HTMLElement | null>(null)
-const indicatorStyle = ref({ top: '0px', height: '0px' })
+const indicatorStyle = ref({ top: '0px', height: '0px', left: '0px', width: '0px' })
 const isInitialized = ref(false)
 
 function selectTab(key: string) {
@@ -59,6 +59,8 @@ function positionIndicator() {
   indicatorStyle.value = {
     top: `${btnRect.top - containerRect.top}px`,
     height: `${btnRect.height}px`,
+    left: window.innerWidth <= 768 ? `${btnRect.left - containerRect.left}px` : '12px',
+    width: window.innerWidth <= 768 ? `${btnRect.width}px` : 'auto',
   }
 }
 
@@ -1516,29 +1518,59 @@ button, .theme-card-new, .export-card-item, .model-item, .config-tab, .form-inpu
 @media (max-width: 768px) {
   .settings-layout {
     flex-direction: column;
-    padding: 16px;
+    padding: 12px;
   }
 
   .settings-nav {
     width: 100%;
     flex-direction: row;
     overflow-x: auto;
-    padding: 12px;
+    overflow-y: hidden;
+    padding: 0;
+    background: transparent;
+    gap: 0;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+    border-bottom: 2px solid var(--color-tan-light);
+  }
+
+  .settings-nav::-webkit-scrollbar {
+    display: none;
   }
 
   .nav-indicator {
-    display: none;
+    top: auto !important;
+    bottom: 0;
+    height: 2px !important;
+    left: 0;
+    right: auto;
+    border-radius: 0;
+    display: block;
   }
 
   .nav-tab {
     white-space: nowrap;
-    padding: 10px 16px;
+    padding: 12px 14px;
     font-size: var(--text-body-sm);
+    min-height: 44px;
+    scroll-snap-align: start;
+    flex-shrink: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .nav-tab:hover {
+    background: transparent;
   }
 
   .nav-tab.active {
-    background: var(--color-accent-red);
-    color: var(--color-white);
+    background: transparent;
+    color: var(--color-cinnabar);
+  }
+
+  .nav-tab.active .nav-tab-icon {
+    color: var(--color-cinnabar);
   }
 
   .content-header {
@@ -1584,6 +1616,22 @@ button, .theme-card-new, .export-card-item, .model-item, .config-tab, .form-inpu
 
   .panel {
     padding: 16px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-nav {
+    padding: 0;
+  }
+
+  .nav-tab {
+    padding: 10px 10px;
+    font-size: var(--text-caption);
+  }
+
+  .nav-tab-icon {
+    width: 16px;
+    height: 16px;
   }
 }
 </style>

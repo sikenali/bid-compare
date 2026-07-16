@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { RiExchangeLine, RiListCheck, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
 import { useRecentRecords } from './composables/useRecentRecords'
 import { useSettings } from './composables/useSettings'
+import { storeCompareResult, storePropertyCheckResult } from './utils/compareResultStore'
 import RecentRecords from './components/RecentRecords.vue'
 import ToastContainer from './components/ToastContainer.vue'
 
@@ -44,7 +45,6 @@ const toggleHistory = () => {
 
 const viewHistoricalRecord = async (record: any) => {
   if (historyTab.value === 'fileCompare') {
-    const { storeCompareResult } = await import('./utils/compareResultStore')
     const compareResult = {
       segments: record.similarSegments || [],
       leftFileName: record.leftFileName,
@@ -57,7 +57,6 @@ const viewHistoricalRecord = async (record: any) => {
     const resultId = storeCompareResult(compareResult)
     router.push({ path: '/file-compare-result', query: { resultId, t: Date.now() } })
   } else {
-    const { storePropertyCheckResult } = await import('./utils/compareResultStore')
     const checkResult = {
       propertyDetails: record.propertyDetails || [],
       leftFileName: record.leftFileName,
@@ -425,6 +424,64 @@ const isActive = (path: string) => route.path.startsWith(path)
   color: var(--color-brown-muted);
   font-size: 14px;
   font-family: var(--font-ui);
+}
+
+@media (max-width: 768px) {
+  .top-nav {
+    padding: 0 16px;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .brand-name {
+    font-size: 18px;
+  }
+
+  .nav-tabs,
+  .nav-actions {
+    gap: 4px;
+  }
+
+  .main-content {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-nav {
+    padding: 0 10px;
+    height: 56px;
+    min-height: 56px;
+  }
+
+  .nav-left {
+    gap: 8px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .logo-svg {
+    font-size: 18px;
+  }
+
+  .brand-name {
+    font-size: 16px;
+  }
+
+  .nav-tab-item,
+  .nav-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .main-content {
+    padding: 12px;
+  }
 }
 
 </style>

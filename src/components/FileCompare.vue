@@ -824,33 +824,114 @@ const handleExportReport = async () => {
   }
 };
 
+// 解析高亮 HTML，返回带高亮标记的 TextRun 数组
+function parseHighlightedContent(htmlContent: string): any[] {
+  let content = htmlContent.replace(/^…/, '').replace(/…$/, '')
+  const runs: any[] = []
+  const highlightRegex = /<span class="highlighted-text">([\s\S]*?)<\/span>/g
+  let lastIndex = 0
+  let match
+
+  while ((match = highlightRegex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      const plainText = content.substring(lastIndex, match.index)
+      const decodedText = plainText
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#039;/g, "'")
+        .replace(/<[^>]*>/g, '')
+      runs.push(new TextRun({
+        text: decodedText,
+        size: 20,
+        font: 'Microsoft YaHei'
+      }))
+    }
+
+    const highlightedHtml = match[1]
+    const decodedHighlight = highlightedHtml
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+    runs.push(new TextRun({
+      text: decodedHighlight,
+      size: 20,
+      font: 'Microsoft YaHei',
+      bold: true,
+      color: '8B0000',
+      highlight: 'FFD700'
+    }))
+
+    lastIndex = match.index + match[0].length
+  }
+
+  if (lastIndex < content.length) {
+    const plainText = content.substring(lastIndex)
+    const decodedText = plainText
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/<[^>]*>/g, '')
+    runs.push(new TextRun({
+      text: decodedText,
+      size: 20,
+      font: 'Microsoft YaHei'
+    }))
+  }
+
+  return runs.length > 0 ? runs : [new TextRun({ text: content.replace(/<[^>]*>/g, ''), size: 20, font: 'Microsoft YaHei' })]
+}
+
 // 生成 Markdown 报告
 const generateMarkdownReport = (): string => {
   let md = '# 文件对比报告\n\n';
-  
+
   // 元数据
   md += `> **生成时间**：${new Date().toLocaleString()}  \n`;
   md += `> **左侧文件**：${leftFileInfo.value.name}  \n`;
   md += `> **右侧文件**：${rightFileInfo.value.name}  \n\n`;
-  
+
   md += '---\n\n';
-  
+
   // 相似度统计
   md += '## 一、相似度统计\n\n';
   md += '| 指标 | 数值 |\n';
   md += '|------|------|\n';
   md += `| 文本重复率 | ${textSimilarity.value} |\n`;
   md += `| 雷同片段数 | ${similarSegmentsList.value.length}处 |\n\n`;
-  
+
+  if (settings.includeCharts) {
+    md += '### 文件信息\n\n';
+    md += '| 项目 | 左侧文件 | 右侧文件 |\n';
+    md += '|------|----------|----------|\n';
+    md += `| 文件名 | ${leftFileInfo.value.name} | ${rightFileInfo.value.name} |\n`;
+    md += `| 文件大小 | ${leftFileInfo.value.size || '-'} | ${rightFileInfo.value.size || '-'} |\n`;
+    md += `| 文件类型 | ${leftFileInfo.value.type || '-'} | ${rightFileInfo.value.type || '-'} |\n\n`;
+  }
+
   md += '---\n\n';
   
   // 详细对比结果
   md += '## 二、雷同片段详情\n\n';
-  
+
   similarSegmentsList.value.forEach((segment, index) => {
-    const leftClean = htmlToMarkdown(segment.leftContent || '');
-    const rightClean = htmlToMarkdown(segment.rightContent || '');
-    
+    const leftContent = segment.leftContent || '';
+    const rightContent = segment.rightContent || '';
+
+    let leftClean: string, rightClean: string
+    if (settings.includeHighlight) {
+      leftClean = leftContent.replace(/<span class="highlighted-text">/g, '**').replace(/<\/span>/g, '**')
+      rightClean = rightContent.replace(/<span class="highlighted-text">/g, '**').replace(/<\/span>/g, '**')
+    } else {
+      leftClean = htmlToMarkdown(leftContent)
+      rightClean = htmlToMarkdown(rightContent)
+    }
+
     md += `### 第 ${index + 1} 段\n\n`;
     md += `| 项目 | 内容 |\n`;
     md += `|------|------|\n`;
@@ -871,197 +952,122 @@ const generateMarkdownReport = (): string => {
 
 // 生成Word报告内容
 const generateWordReport = () => {
-  // 创建文档
+  const includeHighlight = settings.includeHighlight
+  const includeCharts = settings.includeCharts
+
+  const children: any[] = [
+    // 报告标题
+    new Paragraph({
+      children: [new TextRun({ text: '文件对比报告', bold: true, size: 28 })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 300 }
+    }),
+
+    // 相似度统计
+    new Paragraph({
+      children: [new TextRun({ text: '一、相似度统计', bold: true, size: 20 })],
+      spacing: { after: 200 }
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: `文本重复率：${textSimilarity.value}`, size: 16 })],
+      spacing: { after: 100 }
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: `雷同片段：${similarSegments.value}处`, size: 16 })],
+      spacing: { after: 200 }
+    }),
+  ]
+
+  if (includeCharts) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: '二、文件信息', bold: true, size: 20 })],
+        spacing: { after: 200 }
+      }),
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '项目', bold: true, size: 16 })], alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '左侧文件', bold: true, size: 16 })], alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '右侧文件', bold: true, size: 16 })], alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+            ]
+          }),
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '文件名', size: 16 })], alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: leftFileInfo.value.name, size: 16 })], alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: rightFileInfo.value.name, size: 16 })], alignment: AlignmentType.CENTER })] }),
+            ]
+          }),
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '文件大小', size: 16 })], alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: leftFileInfo.value.size || '-', size: 16 })], alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: rightFileInfo.value.size || '-', size: 16 })], alignment: AlignmentType.CENTER })] }),
+            ]
+          }),
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '文件类型', size: 16 })], alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: leftFileInfo.value.type || '-', size: 16 })], alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: rightFileInfo.value.type || '-', size: 16 })], alignment: AlignmentType.CENTER })] }),
+            ]
+          }),
+        ]
+      }),
+      new Paragraph({ spacing: { after: 200 } }),
+    )
+  }
+
+  const segmentTitle = includeCharts ? '三、雷同片段详情' : '二、雷同片段详情'
+  children.push(
+    new Paragraph({
+      children: [new TextRun({ text: segmentTitle, bold: true, size: 20 })],
+      spacing: { after: 200 }
+    }),
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph({ text: '序号', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+            new TableCell({ children: [new Paragraph({ text: '左侧文件内容', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+            new TableCell({ children: [new Paragraph({ text: '页码', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+            new TableCell({ children: [new Paragraph({ text: '相似度', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+            new TableCell({ children: [new Paragraph({ text: '页码', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+            new TableCell({ children: [new Paragraph({ text: '右侧文件内容', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+          ]
+        }),
+        ...similarSegmentsList.value.map((segment, index) => {
+          const leftRuns = includeHighlight
+            ? parseHighlightedContent(segment.leftContent || '')
+            : [new TextRun({ text: (segment.leftContent || '').replace(/<[^>]*>/g, ''), size: 16 })]
+          const rightRuns = includeHighlight
+            ? parseHighlightedContent(segment.rightContent || '')
+            : [new TextRun({ text: (segment.rightContent || '').replace(/<[^>]*>/g, ''), size: 16 })]
+          return new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ text: (index + 1).toString(), alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: leftRuns })] }),
+              new TableCell({ children: [new Paragraph({ text: segment.leftPage, alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ text: segment.similarity, alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ text: segment.rightPage, alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: rightRuns })] }),
+            ]
+          })
+        }),
+      ]
+    })
+  )
+
   const doc = new Document({
-    sections: [
-      {
-        properties: {},
-        children: [
-          // 添加标题
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '文件对比报告',
-                bold: true,
-                size: 24,
-              })
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: {
-              after: 200,
-            }
-          }),
-          
-          // 添加相似度统计
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '相似度统计：',
-                bold: true,
-                size: 20,
-              })
-            ],
-            spacing: {
-              after: 100,
-            }
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `文本重复率：${textSimilarity.value}`,
-                size: 16,
-              })
-            ]
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '图片相似度：暂不支持',
-                size: 16,
-              })
-            ]
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `雷同片段：${similarSegments.value}处`,
-                size: 16,
-              })
-            ],
-            spacing: {
-              after: 200,
-            }
-          }),
-          
-          // 添加文件信息
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '文件信息：',
-                bold: true,
-                size: 20,
-              })
-            ],
-            spacing: {
-              after: 100,
-            }
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `左侧文件：${leftFileInfo.value.name}`,
-                size: 16,
-              })
-            ]
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `右侧文件：${rightFileInfo.value.name}`,
-                size: 16,
-              })
-            ],
-            spacing: {
-              after: 200,
-            }
-          }),
-          
-          // 添加雷同片段详情表格
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '雷同片段详情：',
-                bold: true,
-                size: 20,
-              })
-            ],
-            spacing: {
-              after: 100,
-            }
-          }),
-          
-          // 创建表格
-          new Table({
-            width: {
-              size: 100,
-              type: WidthType.PERCENTAGE,
-            },
-            rows: [
-              // 表格标题行
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph({ text: '序号', bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: '左侧文件内容', bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: '页码', bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: '相似度', bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: '页码', bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: '右侧文件内容', bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                ],
-              }),
-              // 表格数据行
-              ...similarSegmentsList.value.map((segment, index) => {
-                return new TableRow({
-                  children: [
-                    new TableCell({
-                      children: [new Paragraph({ text: (index + 1).toString(), alignment: AlignmentType.CENTER })]
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: segment.leftContent.replace(/<[^>]*>/g, '') })]
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: segment.leftPage, alignment: AlignmentType.CENTER })]
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: segment.similarity, alignment: AlignmentType.CENTER })]
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: segment.rightPage, alignment: AlignmentType.CENTER })]
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: segment.rightContent.replace(/<[^>]*>/g, '') })]
-                    }),
-                  ],
-                });
-              }),
-            ],
-          }),
-        ],
-      }
-    ],
-  });
-  
-  return doc;
-};
+    sections: [{ properties: {}, children }]
+  })
+
+  return doc
+}
 </script>
 
 <template>
