@@ -7,6 +7,7 @@ import {
   RiFileExcelLine,
   RiFileTextLine
 } from '@remixicon/vue'
+import FormatIcons from './FormatIcons.vue'
 
 interface FileInfo {
   file: File | null
@@ -53,7 +54,7 @@ const isTxt = (t: string) => t.includes('文本')
       </div>
       <template v-if="!fileInfo.file">
         <p class="upload-title">{{ titleText }}</p>
-        <p class="upload-hint">支持 PDF、Word、Excel、TXT 格式，单个文件不超过 50MB</p>
+        <FormatIcons />
         <label class="upload-btn">
           <RiAddLine class="upload-btn-icon" />
           <span>选择文件</span>
