@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import FileCompare from '../components/FileCompare.vue'
 import FileCompareResult from '../components/FileCompareResult.vue'
 import PropertyCheck from '../components/PropertyCheck.vue'
@@ -71,16 +71,10 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes
 })
 
-// 设置页面标题
-router.beforeEach((to, from, next) => {
-  if (to.meta.title) {
-    document.title = to.meta.title
-  }
-  next()
-})
+
 
 export default router

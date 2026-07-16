@@ -711,6 +711,16 @@ const resetApiForm = () => {
   position: relative;
 }
 
+.nav-indicator {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  border-radius: 12px;
+  z-index: 0;
+  pointer-events: none;
+  transition: top 0.3s ease-out, height 0.3s ease-out;
+}
+
 .nav-tab {
   display: flex;
   align-items: center;
@@ -722,7 +732,6 @@ const resetApiForm = () => {
   color: var(--color-brown-muted);
   font-size: 14px;
   cursor: pointer;
-  transition: all var(--transition-fast);
   text-align: left;
   position: relative;
   z-index: 1;
@@ -730,11 +739,16 @@ const resetApiForm = () => {
 }
 
 .nav-tab:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(0,0,0,0.04);
 }
 
 .nav-tab.active {
   font-weight: 600;
+  color: #fff;
+}
+
+.nav-tab.active .nav-tab-icon {
+  color: #fff;
 }
 
 .nav-tab-icon {
@@ -1512,10 +1526,19 @@ button, .theme-card-new, .export-card-item, .model-item, .config-tab, .form-inpu
     padding: 12px;
   }
 
+  .nav-indicator {
+    display: none;
+  }
+
   .nav-tab {
     white-space: nowrap;
     padding: 10px 16px;
     font-size: var(--text-body-sm);
+  }
+
+  .nav-tab.active {
+    background: var(--color-accent-red);
+    color: var(--color-white);
   }
 
   .content-header {

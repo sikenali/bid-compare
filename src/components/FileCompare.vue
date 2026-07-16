@@ -1093,7 +1093,7 @@ const generateWordReport = () => {
       <FileUpload
         side="left"
         :file-info="leftFileInfo"
-        label="上传文件 A"
+        label="快将奏折给朕呈上来～"
         accepted-formats=".pdf,.docx,.doc,.xlsx,.txt"
         :on-file-change="handleFileUpload"
         :on-drag-over="handleDragOver"
@@ -1106,7 +1106,7 @@ const generateWordReport = () => {
       <FileUpload
         side="right"
         :file-info="rightFileInfo"
-        label="上传文件 B"
+        label="快将奏折给朕呈上来～"
         accepted-formats=".pdf,.docx,.doc,.xlsx,.txt"
         :on-file-change="handleFileUpload"
         :on-drag-over="handleDragOver"

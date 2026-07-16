@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { RiExchangeLine, RiFilePaper2Line, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
+import { RiExchangeLine, RiListCheck, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
 import { useRecentRecords } from './composables/useRecentRecords'
 import { useSettings } from './composables/useSettings'
 import RecentRecords from './components/RecentRecords.vue'
@@ -25,7 +25,7 @@ const showHistory = ref(false)
 
 const navItems = [
   { key: 'file-compare', icon: RiExchangeLine, route: '/file-compare' },
-  { key: 'property-check', icon: RiFilePaper2Line, route: '/property-check' },
+  { key: 'property-check', icon: RiListCheck, route: '/property-check' },
 ]
 
 const activeNav = computed(() => {
@@ -89,7 +89,7 @@ const isActive = (path: string) => route.path.startsWith(path)
         </div>
         <div class="brand-group">
           <span class="brand-name">文比猩</span>
-          <span class="brand-sub">Boomerang</span>
+          <span class="brand-sub">文档智能对比平台</span>
         </div>
       </div>
       <nav class="nav-tabs">
@@ -101,7 +101,7 @@ const isActive = (path: string) => route.path.startsWith(path)
           @click="navigateTo(item)"
         >
           <component :is="item.icon" size="20" />
-          <span class="nav-tab-tooltip">{{ item.key === 'file-compare' ? '文件对比' : '属性检查' }}</span>
+          <span class="format-tooltip">{{ item.key === 'file-compare' ? '文件对比' : '属性检查' }}</span>
         </button>
       </nav>
       <div class="nav-actions">
@@ -237,38 +237,33 @@ const isActive = (path: string) => route.path.startsWith(path)
 .nav-tabs {
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 8px;
 }
 
 .nav-tab-item {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--color-cream-dark);
+  border: 0.7px solid var(--color-tan-border);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--color-brown);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--color-brown-muted);
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
 }
 
 .nav-tab-item:hover {
-  color: var(--color-brown-dark);
-  background: var(--color-cream-dark);
-}
-
-.nav-tab-item.active {
-  color: #fff;
   background: var(--color-cinnabar);
-  box-shadow: var(--shadow-cinnabar);
+  border-color: transparent;
+  color: #fff;
 }
 
-.nav-tab-tooltip {
+.nav-tab-item .format-tooltip {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
   padding: 4px 8px;
@@ -283,8 +278,14 @@ const isActive = (path: string) => route.path.startsWith(path)
   z-index: 10;
 }
 
-.nav-tab-item:hover .nav-tab-tooltip {
+.nav-tab-item:hover .format-tooltip {
   opacity: 1;
+}
+
+.nav-tab-item.active {
+  background: var(--color-cinnabar);
+  border-color: transparent;
+  color: #fff;
 }
 
 .nav-btn {

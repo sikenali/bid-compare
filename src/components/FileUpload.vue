@@ -5,7 +5,7 @@ import {
   RiFilePdfLine,
   RiFileWordLine,
   RiFileExcelLine,
-  RiFileTextLine
+  RiUploadCloud2Line
 } from '@remixicon/vue'
 import FormatIcons from './FormatIcons.vue'
 
@@ -50,7 +50,7 @@ const isTxt = (t: string) => t.includes('文本')
         <RiFilePdfLine v-if="fileInfo.file && isPdf(fileInfo.type)" class="upload-icon-svg" />
         <RiFileWordLine v-else-if="fileInfo.file && isWord(fileInfo.type)" class="upload-icon-svg" />
         <RiFileExcelLine v-else-if="fileInfo.file && isExcel(fileInfo.type)" class="upload-icon-svg" />
-        <RiFileTextLine v-else class="upload-icon-svg" />
+        <RiUploadCloud2Line v-else class="upload-icon-svg" />
       </div>
       <template v-if="!fileInfo.file">
         <p class="upload-title">{{ titleText }}</p>

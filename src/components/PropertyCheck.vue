@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
@@ -29,6 +29,9 @@ const { parseFile } = useFileParser()
 
 // 使用设置组合式函数
 const { settings } = useSettings()
+
+// 当前年份
+const currentYear = computed(() => new Date().getFullYear())
 
 // 响应式数据
 const leftFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' });
@@ -559,7 +562,7 @@ const generateWordReport = () => {
       <FileUpload
         side="left"
         :file-info="leftFileInfo"
-        label="上传文件 A"
+        label="快将奏折给朕呈上来～"
         accepted-formats=".pdf,.docx,.doc,.xlsx,.txt"
         :on-file-change="handleFileUpload"
         :on-drag-over="handleDragOver"
@@ -572,7 +575,7 @@ const generateWordReport = () => {
       <FileUpload
         side="right"
         :file-info="rightFileInfo"
-        label="上传文件 B"
+        label="快将奏折给朕呈上来～"
         accepted-formats=".pdf,.docx,.doc,.xlsx,.txt"
         :on-file-change="handleFileUpload"
         :on-drag-over="handleDragOver"
@@ -607,6 +610,12 @@ const generateWordReport = () => {
     <!-- 解析错误显示 -->
     <div v-if="parseError" class="error-message">
       {{ parseError }}
+    </div>
+
+    <!-- 页脚 -->
+    <div class="app-footer">
+      <span>© {{ currentYear }} 文比猩</span>
+      <span class="footer-powered">Powered by LightOS</span>
     </div>
   </div>
 </template>
@@ -1674,5 +1683,20 @@ const generateWordReport = () => {
   .table-cell {
     padding: 3px 5px;
   }
+}
+
+.app-footer {
+  margin-top: auto;
+  padding: 16px 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-brown-muted);
+}
+
+.footer-powered {
+  color: var(--color-tan-dark);
 }
 </style>
