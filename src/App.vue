@@ -99,9 +99,9 @@ const isActive = (path: string) => route.path.startsWith(path)
           class="nav-tab-item"
           :class="{ active: activeNav === item.key }"
           @click="navigateTo(item)"
-          :title="item.key === 'file-compare' ? '文件对比' : '属性检查'"
         >
           <component :is="item.icon" size="20" />
+          <span class="nav-tab-tooltip">{{ item.key === 'file-compare' ? '文件对比' : '属性检查' }}</span>
         </button>
       </nav>
       <div class="nav-actions">
@@ -254,6 +254,7 @@ const isActive = (path: string) => route.path.startsWith(path)
   color: var(--color-brown-muted);
   cursor: pointer;
   transition: all 0.2s;
+  position: relative;
 }
 
 .nav-tab-item:hover {
@@ -265,6 +266,27 @@ const isActive = (path: string) => route.path.startsWith(path)
   color: #fff;
   background: var(--color-cinnabar);
   box-shadow: var(--shadow-cinnabar);
+}
+
+.nav-tab-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: rgba(var(--rgb-brown-dark), 0.9);
+  color: white;
+  font-size: 11px;
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+  z-index: 10;
+}
+
+.nav-tab-item:hover .nav-tab-tooltip {
+  opacity: 1;
 }
 
 .nav-btn {
