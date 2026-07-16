@@ -476,7 +476,7 @@ const runOCRComparison = async () => {
   font-size: var(--text-heading-lg);
   font-weight: 600;
   color: var(--color-brown-dark);
-  font-family: var(--font-ui);
+  font-family: var(--font-calligraphy);
 }
 
 .image-upload-card .upload-area {

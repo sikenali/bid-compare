@@ -210,7 +210,7 @@ defineExpose({ clearFiles, files })
   font-size: var(--text-heading);
   font-weight: 600;
   color: var(--color-brown-dark);
-  font-family: var(--font-ui);
+  font-family: var(--font-calligraphy);
   letter-spacing: 1px;
 }
 

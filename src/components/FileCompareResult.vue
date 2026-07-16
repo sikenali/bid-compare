@@ -1967,7 +1967,7 @@ const handlePreviewRightScroll = () => {
   font-size: 14px;
   line-height: 1.8;
   color: var(--color-brown-dark);
-  font-family: var(--font-body);
+  font-family: var(--font-songti);
 }
 
 .preview-panel-inner :deep(.text-highlight) {

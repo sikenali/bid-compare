@@ -220,12 +220,14 @@ const isActive = (path: string) => route.path.startsWith(path)
   font-weight: 700;
   color: var(--color-brown-dark);
   line-height: 1.2;
+  font-family: var(--font-calligraphy);
 }
 
 .brand-sub {
   font-size: 12px;
   color: var(--color-brown-muted);
   line-height: 1.2;
+  font-family: var(--font-calligraphy);
 }
 
 .nav-actions {
