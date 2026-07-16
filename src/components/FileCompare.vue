@@ -4,7 +4,8 @@ import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
   RiAddLine,
-  RiArrowRightLine
+  RiArrowRightLine,
+  RiRobot2Line
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx'
 import { useFileParser } from '../composables/useFileParser'
@@ -77,6 +78,7 @@ const showMultiResult = ref(false)
 const multiSimilarityMatrix = ref<number[][]>([])
 const multiDuplicateGroups = ref<any[]>([])
 const multiFileUploadRef = ref<InstanceType<typeof MultiFileUpload> | null>(null)
+const currentYear = computed(() => new Date().getFullYear())
 
 watch(showMultiResult, (val) => {
   if (val) {
@@ -1122,6 +1124,14 @@ const generateWordReport = () => {
         <RiExchangeLine class="compare-btn-icon" :class="{ rotating: isProcessing }" />
         <span>{{ isProcessing ? '对比中...' : '开始对比' }}</span>
       </button>
+      <button
+        class="compare-btn"
+        style="display: none"
+        :disabled="!leftFileInfo.file || !rightFileInfo.file || isProcessing"
+      >
+        <RiRobot2Line class="compare-btn-icon" />
+        <span>AI对比</span>
+      </button>
     </div>
 
     <!-- 处理中遮罩 -->
@@ -1212,6 +1222,12 @@ const generateWordReport = () => {
     <!-- 错误提示 -->
     <div v-if="comparisonParseError" class="error-message">
       {{ comparisonParseError }}
+    </div>
+
+    <!-- 页脚 -->
+    <div class="app-footer">
+      <span>© {{ currentYear }} 文比猩</span>
+      <span class="footer-powered">Powered by LightOS</span>
     </div>
   </div>
 </template>
@@ -1816,6 +1832,21 @@ const generateWordReport = () => {
   .ocr-text-compare {
     flex-direction: column;
   }
+}
+
+.app-footer {
+  margin-top: auto;
+  padding: 16px 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-brown-muted);
+}
+
+.footer-powered {
+  color: var(--color-tan-dark);
 }
 
 @media (max-width: 480px) {
