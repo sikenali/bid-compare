@@ -75,17 +75,13 @@
       </div>
     </BorderBeam>
 
-    <!-- 多文件对比圆形按钮 -->
-    <div class="compare-circle-wrapper">
-      <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4">
-        <button class="compare-circle-btn" 
-                @click="$emit('compare')" 
-                :disabled="files.length < 2"
-                :class="{ 'disabled': files.length < 2 }">
-          <RiExchangeLine class="compare-circle-icon" />
-          <span class="compare-circle-text">多文件对比</span>
-        </button>
-      </BorderBeam>
+    <div class="compare-action-section">
+      <button class="compare-btn" 
+              @click="$emit('compare')" 
+              :disabled="files.length < 2">
+        <RiExchangeLine class="compare-btn-icon" />
+        <span>文件对比</span>
+      </button>
     </div>
   </div>
 </template>
@@ -518,51 +514,44 @@ defineExpose({ clearFiles, files })
   transform: scale(1.1);
 }
 
-.compare-circle-wrapper {
+.compare-action-section {
   display: flex;
   justify-content: center;
   margin-top: var(--spacing-5);
 }
 
-.compare-circle-btn {
-  width: 100px;
-  height: 100px;
-  border-radius: var(--radius-full);
-  border: none;
-  background: var(--color-cinnabar);
-  color: white;
-  cursor: pointer;
+.compare-btn {
+  padding: 10px 24px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  box-shadow: var(--shadow-cinnabar);
-  transition: all var(--transition-normal);
-}
-
-.compare-circle-btn:hover:not(:disabled) {
-  transform: scale(1.05);
-  background: var(--color-cinnabar-dark);
-}
-
-.compare-circle-btn:disabled,
-.compare-circle-btn.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: var(--color-brown-muted);
-  box-shadow: var(--shadow-sm);
-}
-
-.compare-circle-icon {
-  font-size: 28px;
-  transition: transform var(--transition-normal);
-}
-
-.compare-circle-text {
-  font-size: var(--text-caption);
+  gap: 8px;
+  background: var(--color-cinnabar);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 14px;
   font-weight: 600;
   font-family: var(--font-ui);
+  box-shadow: var(--shadow-cinnabar);
+  transition: all 0.3s ease;
+}
+
+.compare-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-cinnabar);
+}
+
+.compare-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.compare-btn-icon {
+  font-size: 20px;
+  transition: transform 0.3s ease;
 }
 
 @media (max-width: 768px) {
@@ -639,21 +628,8 @@ defineExpose({ clearFiles, files })
     font-size: 11px;
   }
 
-  .compare-circle-wrapper {
+  .compare-action-section {
     margin-top: var(--spacing-4);
-  }
-
-  .compare-circle-btn {
-    width: 80px;
-    height: 80px;
-  }
-
-  .compare-circle-icon {
-    font-size: 24px;
-  }
-
-  .compare-circle-text {
-    font-size: 11px;
   }
 }
 

@@ -1113,7 +1113,7 @@ const generateWordReport = () => {
       />
     </div>
 
-    <div class="compare-action-section">
+    <div v-if="!multiFileMode" class="compare-action-section">
       <button
         class="compare-btn"
         :disabled="!leftFileInfo.file || !rightFileInfo.file || isProcessing"

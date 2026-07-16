@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RiCheckLine, RiErrorWarningLine, RiInformationLine } from '@remixicon/vue'
+import { RiCheckLine, RiErrorWarningLine, RiInformationLine, RiCloseCircleLine } from '@remixicon/vue'
 import { useToast } from '../composables/useToast'
 
 const { toasts } = useToast()
@@ -9,18 +9,19 @@ const { toasts } = useToast()
   <Teleport to="body">
     <div class="toast-container">
       <TransitionGroup name="toast">
-        <div
-          v-for="toast in toasts"
-          :key="toast.id"
-          class="toast-item"
-          :class="[`toast-${toast.type}`]"
-        >
-          <RiCheckLine v-if="toast.type === 'success'" class="toast-icon" />
-          <RiErrorWarningLine v-else-if="toast.type === 'error'" class="toast-icon" />
-          <RiInformationLine v-else-if="toast.type === 'warning'" class="toast-icon" />
-          <RiInformationLine v-else class="toast-icon" />
-          <span>{{ toast.message }}</span>
-        </div>
+        <template v-for="toast in toasts" :key="toast.id">
+          <div
+            v-if="toast.visible"
+            class="toast-item"
+            :class="[`toast-${toast.type}`]"
+          >
+            <RiCheckLine v-if="toast.type === 'success'" class="toast-icon" />
+            <RiCloseCircleLine v-else-if="toast.type === 'error'" class="toast-icon" />
+            <RiInformationLine v-else-if="toast.type === 'warning'" class="toast-icon" />
+            <RiInformationLine v-else class="toast-icon" />
+            <span>{{ toast.message }}</span>
+          </div>
+        </template>
       </TransitionGroup>
     </div>
   </Teleport>
@@ -29,7 +30,7 @@ const { toasts } = useToast()
 <style scoped>
 .toast-container {
   position: fixed;
-  top: 80px;
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
@@ -44,42 +45,44 @@ const { toasts } = useToast()
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 24px;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  padding: 10px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   font-size: 14px;
   font-family: var(--font-ui);
   font-weight: 500;
-  white-space: nowrap;
+  min-width: 200px;
+  max-width: 320px;
   pointer-events: auto;
+  border: 1px solid;
 }
 
 .toast-info {
   background: var(--color-cream);
-  border: 1px solid var(--color-tan-border);
+  border-color: var(--color-tan-border);
   color: var(--color-brown-dark);
 }
 
 .toast-success {
   background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  border-color: #bbf7d0;
   color: #166534;
 }
 
 .toast-error {
   background: #fef2f2;
-  border: 1px solid #fecaca;
+  border-color: #fecaca;
   color: #991b1b;
 }
 
 .toast-warning {
   background: #fffbeb;
-  border: 1px solid #fde68a;
+  border-color: #fde68a;
   color: #92400e;
 }
 
 .toast-icon {
-  font-size: 18px;
+  font-size: 16px;
   flex-shrink: 0;
 }
 

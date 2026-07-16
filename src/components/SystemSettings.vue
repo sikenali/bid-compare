@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useSettings } from '../composables/useSettings'
 import { useToast } from '../composables/useToast'
 import {
@@ -33,36 +33,52 @@ const {
 const { show: showToast } = useToast()
 
 const activeTab = ref('theme')
+const navRef = ref<HTMLElement | null>(null)
+const indicatorStyle = ref({ top: '0px', height: '0px' })
+const isInitialized = ref(false)
 
-const navColors: Record<string, string> = {
-  theme: '#2D8B57',
-  algorithm: '#C23B22',
-  preprocess: '#5B8C5A',
-  features: '#C8A45C',
-  export: '#2D6A9F',
-  ai: '#6366F1'
+function selectTab(key: string) {
+  activeTab.value = key
+  nextTick(positionIndicator)
 }
+
+function positionIndicator() {
+  const container = navRef.value
+  if (!container) return
+  const btns = container.querySelectorAll('button')
+  let targetBtn: HTMLElement | null = null
+  for (const btn of btns) {
+    if (btn.dataset.tabKey === activeTab.value) {
+      targetBtn = btn as HTMLElement
+      break
+    }
+  }
+  if (!targetBtn) return
+  const containerRect = container.getBoundingClientRect()
+  const btnRect = targetBtn.getBoundingClientRect()
+  indicatorStyle.value = {
+    top: `${btnRect.top - containerRect.top}px`,
+    height: `${btnRect.height}px`,
+  }
+}
+
+onMounted(() => {
+  nextTick(() => {
+    positionIndicator()
+    setTimeout(() => { isInitialized.value = true }, 150)
+  })
+})
 
 const navTabs = [
   { key: 'theme', label: '主题设置', icon: RiPaletteLine, color: '#2D8B57' },
   { key: 'algorithm', label: '对比算法', icon: RiSettings3Line, color: '#C23B22' },
-  { key: 'preprocess', label: '文本设置', icon: RiText, color: '#5B8C5A' },
+  { key: 'preprocess', label: '文本设置', icon: RiText, color: '#8B6F47' },
   { key: 'features', label: '参数设置', icon: RiFilterLine, color: '#C8A45C' },
   { key: 'export', label: '导出设置', icon: RiFileDownloadLine, color: '#2D6A9F' },
   { key: 'ai', label: '模型设置', icon: RiRobot2Line, color: '#6366F1' }
 ]
 
-const indicatorStyle = computed(() => {
-  const idx = navTabs.findIndex(t => t.key === activeTab.value)
-  const itemHeight = 48
-  const gap = 4
-  const navTitleOffset = 56
-  return {
-    top: `${navTitleOffset + idx * (itemHeight + gap)}px`,
-    height: `${itemHeight}px`,
-    background: navColors[activeTab.value] || '#C23B22'
-  }
-})
+
 
 const handleReset = () => {
   handleResetToDefault()
@@ -215,15 +231,19 @@ const resetApiForm = () => {
 <template>
   <div class="system-settings-container">
     <div class="settings-layout">
-      <nav class="settings-nav">
-        <div class="nav-title">系统设置</div>
-        <div class="nav-indicator" :style="indicatorStyle" />
+      <nav ref="navRef" class="settings-nav">
+        <div
+          class="nav-indicator"
+          :class="isInitialized ? 'transition-all duration-300 ease-out' : ''"
+          :style="{ ...indicatorStyle, background: navTabs.find(t => t.key === activeTab)?.color || '#C23B22' }"
+        />
         <button
           v-for="tab in navTabs"
           :key="tab.key"
+          :data-tab-key="tab.key"
           class="nav-tab"
           :class="{ active: activeTab === tab.key }"
-          @click="activeTab = tab.key"
+          @click="selectTab(tab.key)"
         >
           <component :is="tab.icon" class="nav-tab-icon" size="20" />
           <span class="nav-tab-label">{{ tab.label }}</span>
@@ -691,24 +711,6 @@ const resetApiForm = () => {
   position: relative;
 }
 
-.nav-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--color-brown-dark);
-  padding: 0 12px 16px 12px;
-}
-
-.nav-indicator {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  z-index: 0;
-  border-radius: 12px;
-  background: var(--color-accent-red);
-  transition: top 0.3s ease-out, height 0.3s ease-out;
-  pointer-events: none;
-}
-
 .nav-tab {
   display: flex;
   align-items: center;
@@ -728,12 +730,10 @@ const resetApiForm = () => {
 }
 
 .nav-tab:hover {
-  background: rgba(196, 61, 61, 0.08);
-  color: var(--color-accent-red);
+  background: rgba(0, 0, 0, 0.06);
 }
 
 .nav-tab.active {
-  color: var(--color-white);
   font-weight: 600;
 }
 
@@ -741,14 +741,6 @@ const resetApiForm = () => {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-}
-
-.nav-tab.active .nav-tab-icon {
-  color: var(--color-white);
-}
-
-.nav-tab-label {
-  line-height: 1.3;
 }
 
 .settings-content {
@@ -1520,23 +1512,10 @@ button, .theme-card-new, .export-card-item, .model-item, .config-tab, .form-inpu
     padding: 12px;
   }
 
-  .nav-title {
-    display: none;
-  }
-
-  .nav-indicator {
-    display: none;
-  }
-
   .nav-tab {
     white-space: nowrap;
     padding: 10px 16px;
     font-size: var(--text-body-sm);
-  }
-
-  .nav-tab.active {
-    background: var(--color-accent-red);
-    color: var(--color-white);
   }
 
   .content-header {
