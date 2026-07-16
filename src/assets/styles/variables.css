@@ -67,7 +67,7 @@
   --font-xiaowei: 'ZCOOL XiaoWei', 'Ma Shan Zheng', cursive;
   --font-songti: 'Noto Serif SC', 'Source Han Serif SC', 'STSongti', 'SimSun', serif;
   --font-sans: 'Noto Sans SC', 'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: var(--font-sans);
+  --font-body: var(--font-songti);
   --font-ui: var(--font-sans);
 
   /* ========== Typography — Type Scale ========== */
