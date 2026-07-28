@@ -312,8 +312,7 @@ export function findSimilarSegmentsSimHash(
 // 估算页码（基于字符位置）
 // 这是一个后备方案，当无法获取真实页数时使用
 const estimatePage = (charPosition: number, totalPages: number = 1): string => {
-  // 假设平均每页约 1000 字符
-  const CHARS_PER_PAGE = 1000
+  const CHARS_PER_PAGE = 1500
   const estimatedPage = Math.floor(charPosition / CHARS_PER_PAGE) + 1
   
   // 如果总页数已知，限制不超过总页数
@@ -387,7 +386,7 @@ export function removeCommonClauses(
     const normalizeClause = (c: string): string => {
       let cleaned = c
         .replace(/^\d+\s*\.?\s*/, '')      // 剥离 "1. " "200." "3. "
-        .replace(/^\s*[\(]\s*\d+\s*[)\]\s*/, '') // 剥离 "(1)" "（2）"
+        .replace(/^\s*[\(（]\s*\d+\s*[\)）]\s*/, '') // 剥离 "(1)" "（2）"
         .replace(/^[零一二三四五六七八九十百千万]+\.?/, '') // 剥离 "一." "二、"
         .replace(/^\s*[\u4e00-\u9fa5]+[\s：.]*\s*/, '');     // 剥离 "甲方：" "乙方："
       return cleaned;

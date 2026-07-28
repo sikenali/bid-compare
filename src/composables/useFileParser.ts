@@ -112,6 +112,7 @@ const extractOfficeMetadata = async (zip: any): Promise<Partial<FileProperties>>
                         appXmlContent.match(/<Slides[^>]*>(\d+)<\/Slides>/i);
       if (pageMatch?.[1]) {
         properties.页码范围 = `1-${pageMatch[1]}`;
+        properties.页数 = pageMatch[1];
       }
 
       // 程序名称
@@ -233,10 +234,16 @@ export function useFileParser() {
         // ignore
       }
 
+      const pageMap = buildEstimatedPageMap(textResult.value);
+      if (properties.页码范围 === '1' && pageMap.totalPages > 1) {
+        properties.页码范围 = `1-${pageMap.totalPages}`;
+        properties.页数 = pageMap.totalPages.toString();
+      }
+
       return {
         content: textResult.value,
         properties,
-        pageMap: buildEstimatedPageMap(textResult.value),
+        pageMap,
         images
       };
     } catch (error) {
@@ -289,10 +296,10 @@ export function useFileParser() {
           .map((item: any) => item.str)
           .join('');
 
-        // 添加页码映射
+        // 添加页码映射（包括 \n 分隔符）
         pageMap.ranges.push({
           start: offset,
-          end: offset + pageText.length,
+          end: offset + pageText.length + (pageNum < extractPageCount ? 1 : 0),
           page: pageNum
         })
 
@@ -314,6 +321,7 @@ export function useFileParser() {
         最后一次保存者: '未知用户',
         修订号: '未知',
         页码范围: `1-${pageCount}`,
+        页数: pageCount.toString(),
         版本号: '1.0',
         程序名称: '未知',
         公司: '未知',
@@ -460,10 +468,16 @@ export function useFileParser() {
         // ignore
       }
 
+      const pageMap = buildEstimatedPageMap(textContent);
+      if (properties.页码范围 === '1' && pageMap.totalPages > 1) {
+        properties.页码范围 = `1-${pageMap.totalPages}`;
+        properties.页数 = pageMap.totalPages.toString();
+      }
+
       return {
         content: textContent,
         properties,
-        pageMap: buildEstimatedPageMap(textContent)
+        pageMap
       };
     } catch (error) {
       return {
@@ -535,6 +549,7 @@ export function useFileParser() {
           }
 
           properties.页码范围 = `1-${slideFiles.length}`;
+          properties.页数 = slideFiles.length.toString();
         }
       } catch (zipError) {
         // ignore
