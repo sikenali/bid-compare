@@ -781,6 +781,104 @@ export function findSimilarSegmentsRabinKarp(
 }
 
 // 分块匹配——按段落切分后匹配
+/**
+ * 验证对比设置的有效性，返回警告列表
+ */
+export function validateComparisonSettings(
+  settings: Partial<ComparisonSettings>
+): { valid: boolean; warnings: string[] } {
+  const warnings: string[] = [];
+
+  if (settings.ngramSize && settings.ngramSize > 20) {
+    warnings.push(`ngramSize 建议不超过20，当前值：${settings.ngramSize}`);
+  }
+
+  if (settings.minDuplicateWords && settings.ngramSize) {
+    if (settings.minDuplicateWords < settings.ngramSize) {
+      warnings.push(
+        `minDuplicateWords (${settings.minDuplicateWords}) 不应小于 ngramSize (${settings.ngramSize})`
+      );
+    }
+  }
+
+  if (settings.textSimilarityThreshold) {
+    if (settings.textSimilarityThreshold < 0 || settings.textSimilarityThreshold > 100) {
+      warnings.push(`textSimilarityThreshold 应在 0-100 之间，当前值：${settings.textSimilarityThreshold}`);
+    }
+  }
+
+  return {
+    valid: warnings.length === 0,
+    warnings
+  };
+}
+
+/**
+ * 带条款剔除的智能比对主入口
+ * 当 clauseRemovalEnabled 为 true 时，先过滤通用条款，再执行智能比对
+ */
+export function findSimilarSegmentsWithClauseFilter(
+  text1: string,
+  text2: string,
+  settings: ComparisonSettings,
+  contextLength: number = 10,
+  pageMap1?: PageMap,
+  pageMap2?: PageMap,
+  onProgress?: (progress: number) => void,
+  onCancel?: () => boolean
+): SimilarSegment[] {
+  let filtered1 = text1;
+  let filtered2 = text2;
+
+  // 步骤1: 条款过滤（如启用）
+  if (settings.clauseRemovalEnabled) {
+    onProgress?.(0.1);
+    [filtered1, filtered2] = removeCommonClauses(
+      text1, text2,
+      settings.clauseRemovalGranularity || 5
+    );
+    onProgress?.(0.2);
+  }
+
+  // 步骤2: 智能策略比对
+  const strategy = selectSmartStrategy(filtered1, filtered2);
+  onProgress?.(0.3);
+
+  switch (strategy) {
+    case 'lcs':
+      return findSimilarSegments(
+        filtered1, filtered2, settings, contextLength, pageMap1, pageMap2
+      );
+    case 'myers':
+      return findSimilarSegmentsMyers(
+        filtered1, filtered2, settings,
+        settings.minDuplicateWords, contextLength,
+        pageMap1, pageMap2,
+        onProgress, onCancel
+      );
+    case 'rabin-karp':
+      return findSimilarSegmentsRabinKarp(
+        filtered1, filtered2, settings, contextLength,
+        onProgress, onCancel, pageMap1, pageMap2
+      );
+    case 'simhash':
+      return findSimilarSegmentsSimHash(
+        filtered1, filtered2, settings,
+        onProgress, onCancel, pageMap1, pageMap2
+      );
+    case 'minhash':
+      return findSimilarSegmentsMinHash(
+        filtered1, filtered2, settings,
+        onProgress, onCancel, pageMap1, pageMap2
+      );
+    default:
+      return findSimilarSegmentsSmart(
+        filtered1, filtered2, settings,
+        onProgress, onCancel, pageMap1, pageMap2
+      );
+  }
+}
+
 export function findSimilarSegmentsBlockMatch(
   text1: string,
   text2: string,

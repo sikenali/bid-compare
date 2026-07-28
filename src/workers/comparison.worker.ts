@@ -75,18 +75,29 @@ function handleComparison(data: ComparisonMessage) {
   }
 
   try {
+    let filtered1 = text1
+    let filtered2 = text2
+
+    // 步骤1: 条款过滤（如启用）— 所有策略统一使用过滤后的文本
+    if (settings.clauseRemovalEnabled) {
+      [filtered1, filtered2] = removeCommonClauses(
+        text1, text2,
+        settings.clauseRemovalGranularity || 5
+      )
+    }
+
     let segments: SimilarSegment[] = []
     let similarity = 0
 
     switch (strategy) {
       case 'lcs':
         // 小文件：使用暴力 LCS 算法
-        segments = findSimilarSegments(text1, text2, settings, 10, pageMap1, pageMap2)
-        similarity = segments.length > 0 ? 100 : 0
+        segments = findSimilarSegments(filtered1, filtered2, settings, 10, pageMap1, pageMap2)
+        similarity = estimateSimilarityFromSegments(segments, filtered1.length)
         break
       case 'rabin-karp':
         segments = findSimilarSegmentsRabinKarp(
-          text1, text2, settings, 10,
+          filtered1, filtered2, settings, 10,
           (progress) => {
             if (!cancelled) {
               self.postMessage({ type: 'PROGRESS', progress, message: '正在分析...' })
@@ -96,11 +107,11 @@ function handleComparison(data: ComparisonMessage) {
           pageMap1,
           pageMap2
         )
-        similarity = estimateSimilarityFromSegments(segments, text1.length)
+        similarity = estimateSimilarityFromSegments(segments, filtered1.length)
         break
       case 'minhash':
         segments = findSimilarSegmentsMinHash(
-          text1, text2, settings,
+          filtered1, filtered2, settings,
           (progress) => {
             if (!cancelled) {
               self.postMessage({ type: 'PROGRESS', progress, message: 'MinHash 计算中...' })
@@ -110,12 +121,12 @@ function handleComparison(data: ComparisonMessage) {
           pageMap1,
           pageMap2
         )
-        similarity = estimateSimilarityFromSegments(segments, text1.length)
+        similarity = estimateSimilarityFromSegments(segments, filtered1.length)
         break
       case 'simhash':
         // SimHash 快速粗筛 - 用于大文件
         segments = findSimilarSegmentsSimHash(
-          text1, text2, settings,
+          filtered1, filtered2, settings,
           (progress) => {
             if (!cancelled) {
               self.postMessage({ type: 'PROGRESS', progress, message: 'SimHash 粗筛中...' })
@@ -125,24 +136,23 @@ function handleComparison(data: ComparisonMessage) {
           pageMap1,
           pageMap2
         )
-        similarity = estimateSimilarityFromSegments(segments, text1.length)
+        similarity = estimateSimilarityFromSegments(segments, filtered1.length)
         break
       case 'myers':
         // Myers Diff 精确比对 - 用于中等长度文本
         segments = findSimilarSegmentsMyers(
-          text1, text2,
-          settings,
-          settings.minDuplicateWords,
-          10,
-          pageMap1,
-          pageMap2
+          filtered1, filtered2, settings,
+          settings.minDuplicateWords, 10,
+          pageMap1, pageMap2,
+          undefined, () => cancelled
         )
-        similarity = estimateSimilarityFromSegments(segments, text1.length)
+        similarity = estimateSimilarityFromSegments(segments, filtered1.length)
         break
+
       case 'smart':
         // 智能策略 - 自动选择最佳算法
         segments = findSimilarSegmentsSmart(
-          text1, text2, settings,
+          filtered1, filtered2, settings,
           (progress) => {
             if (!cancelled) {
               self.postMessage({ type: 'PROGRESS', progress, message: '智能分析中...' })
@@ -152,7 +162,7 @@ function handleComparison(data: ComparisonMessage) {
           pageMap1,
           pageMap2
         )
-        similarity = estimateSimilarityFromSegments(segments, text1.length)
+        similarity = estimateSimilarityFromSegments(segments, filtered1.length)
         break
     }
 

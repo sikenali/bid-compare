@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { validateComparisonSettings } from '../utils/textAlgorithms'
 
 // 定义设置类型
 export interface FileCompareSettings {
@@ -109,6 +110,17 @@ export function useSettings() {
   // 保存设置
   const saveSettings = () => {
     try {
+      // 先验证设置（仅验证文本相关的设置部分）
+      const validation = validateComparisonSettings({
+        ngramSize: settings.ngramSize,
+        minDuplicateWords: settings.minDuplicateWords,
+        textSimilarityThreshold: settings.textSimilarityThreshold
+      })
+      // 验证失败仅产生警告，不阻止保存
+      if (!validation.valid && validation.warnings.length > 0) {
+        console.warn('设置验证警告:', validation.warnings)
+      }
+
       localStorage.setItem('fileCompareSettings', JSON.stringify(settings))
       return true
     } catch (error) {
