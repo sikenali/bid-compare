@@ -374,29 +374,52 @@ export function buildHighlightedHtml(
 export function removeCommonClauses(
   text1: string,
   text2: string,
-  minChars: number = 10
+  minChars: number = 5
 ): [string, string] {
-  // 按句号、分号、换行切分为子句
+  // 扩展中文标点支持：。；！？：，、……？
+  const clausePunctuation = /[。！？：，、…；]/u;
+  
+  // 按标点切分条款，并剥离序号前缀（如 "1. "、"200."、"（一）" 等）
   const splitClauses = (text: string): string[] => {
-    const raw = text.split(/(?<=[。；;．])\s*/)
-    return raw.map(s => s.trim()).filter(s => s.length >= minChars)
-  }
+    const raw = text.split(clausePunctuation);
+    const clauses = raw.map(s => s.trim()).filter(s => s.length > 0);
+    // 剥离序号前缀：数字+点、数字+括号、中文数字序号等
+    const normalizeClause = (c: string): string => {
+      let cleaned = c
+        .replace(/^\d+\s*\.?\s*/, '')      // 剥离 "1. " "200." "3. "
+        .replace(/^\s*[\(]\s*\d+\s*[)\]\s*/, '') // 剥离 "(1)" "（2）"
+        .replace(/^[零一二三四五六七八九十百千万]+\.?/, '') // 剥离 "一." "二、"
+        .replace(/^\s*[\u4e00-\u9fa5]+[\s：.]*\s*/, '');     // 剥离 "甲方：" "乙方："
+      return cleaned;
+    };
+    return clauses
+      .map(normalizeClause)
+      .map(s => s.trim())
+      .filter(s => s.length >= minChars);
+  };
 
-  const clauses1 = splitClauses(text1)
-  const clauses2 = splitClauses(text2)
+  const clauses1 = splitClauses(text1);
+  const clauses2 = splitClauses(text2);
 
   if (clauses1.length === 0 || clauses2.length === 0) {
-    return [text1, text2]
+    return [text1, text2];
   }
 
-  // 双向剔除:将同时出现在两侧的条款从两侧都去掉
-  const set2 = new Set(clauses2.map(c => c.replace(/\s+/g, '')))
-  const set1 = new Set(clauses1.map(c => c.replace(/\s+/g, '')))
+  // 归一化后构建集合（保留原文用于返回）
+  const normalizeForMatch = (c: string): string => {
+    // 移除非汉字/非字母数字的干扰字符（对标点敏感时可关闭，此处默认清理）
+    let normalized = c.replace(/[^\w\u4e00-\u9fa5]/g, '');
+    normalized = normalized.replace(/\s+/g, ' ').trim(); // 统一空格
+    return normalized.toLowerCase(); // 忽略大小写
+  };
 
-  const filtered1 = clauses1.filter(c => !set2.has(c.replace(/\s+/g, '')))
-  const filtered2 = clauses2.filter(c => !set1.has(c.replace(/\s+/g, '')))
+  const set2 = new Set(clauses2.map(c => normalizeForMatch(c)));
+  const set1 = new Set(clauses1.map(c => normalizeForMatch(c)));
 
-  return [filtered1.join('\n'), filtered2.join('\n')]
+  const filtered1 = clauses1.filter(c => !set2.has(normalizeForMatch(c)));
+  const filtered2 = clauses2.filter(c => !set1.has(normalizeForMatch(c)));
+
+  return [filtered1.join('\n'), filtered2.join('\n')];
 }
 
 export function findPageByIndex(pageMap: PageMap, charIndex: number): number {
