@@ -34,7 +34,10 @@
 
 ```
 bid-compare/
-├── desktop/desktop.ts          # Deno 桌面客户端入口
+├── electron/
+│   ├── main.ts                 # Electron 主进程
+│   ├── preload.ts              # 预加载脚本
+│   └── tsconfig.json           # Electron TS 配置
 ├── src/
 │   ├── main.ts                 # Vue 应用引导
 │   ├── App.vue                 # 根组件
@@ -103,14 +106,38 @@ server {
 }
 ```
 
-### 桌面客户端
+## 桌面客户端
 
-需要 [Deno](https://deno.com/) ≥ 2.0，Linux 需安装 `libwebkitgtk-6.0-4`。
+基于 Electron，支持 Windows、macOS、Linux 三平台打包发布。
+
+### 本地开发
 
 ```bash
-npm run build && npm run desktop         # 构建并运行桌面窗口
-npm run desktop:compile                  # 编译为单文件二进制
+npm install
+npm run electron:dev      # 启动开发模式（热更新）
 ```
+
+### 本地打包
+
+```bash
+npm run electron:build    # 打包当前平台
+npm run electron:build:win    # 仅打包 Windows (exe)
+npm run electron:build:mac    # 仅打包 macOS (dmg, x64+arm64)
+npm run electron:build:linux  # 仅打包 Linux (deb)
+```
+
+产物输出至 `release/` 目录。
+
+### 自动生成 Release（GitHub Actions）
+
+推送 Git tag 自动触发 CI/CD，在三平台并行构建并发布到 GitHub Releases。
+
+```bash
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin dev --tags
+```
+
+构建完成后自动发布，下载地址：https://github.com/sikenali/bid-compare/releases
 
 ## 声明
 
