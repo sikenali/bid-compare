@@ -4,15 +4,16 @@
   "version": "1.0.0",
   "description": "专业文档对比工具",
   "type": "module",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "electron:dev": "vite --port=5173 & concurrently \"tsc -p electron/tsconfig.json --watch\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "electron:build": "npm run build && electron-builder",
-    "electron:build:win": "npm run build && electron-builder --win",
-    "electron:build:mac": "npm run build && electron-builder --mac",
-    "electron:build:linux": "npm run build && electron-builder --linux"
+    "electron:build:win": "npm run build && electron-builder --win --x64",
+    "electron:build:mac": "npm run build && electron-builder --mac --x64 --arm64",
+    "electron:build:linux": "npm run build && electron-builder --linux --x64"
   },
   "dependencies": {
     "@remixicon/vue": "^4.7.0",
@@ -35,18 +36,18 @@
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",
-    "concurrently": "^9.2.1",
+    "concurrently": "^9.2.4",
     "cross-env": "^10.1.0",
-    "electron": "^38.3.2",
-    "electron-builder": "^26.4.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
     "vue-tsc": "^3.1.4",
-    "wait-on": "^9.0.1"
+    "wait-on": "^9.1.0"
   },
   "build": {
     "appId": "com.bidcompare.app",
-    "productName": "文比猩",
+    "productName": "bid-compare",
     "directories": {
       "output": "release"
     },
@@ -57,26 +58,36 @@
     "extraMetadata": {
       "main": "electron/main.js"
     },
+    "icon": "public/logo-icon.svg",
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
-      "icon": "public/vite.svg"
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "public/logo-icon.svg",
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "public/vite.svg",
-      "uninstallerIcon": "public/vite.svg",
-      "shortcutName": "文比猩"
+      "installerIcon": "public/logo-icon.svg",
+      "uninstallerIcon": "public/logo-icon.svg",
+      "shortcutName": "bid-compare"
     },
     "mac": {
-      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
-      "icon": "public/vite.svg",
-      "category": "public.app-category.productivity"
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "public/logo-icon.svg",
+      "category": "public.app-category.productivity",
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
     },
     "linux": {
-      "target": [{ "target": "deb", "arch": ["x64"] }],
-      "icon": "public/vite.svg",
-      "category": "Office"
+      "target": [
+        { "target": "deb", "arch": ["x64"] }
+      ],
+      "icon": "public/logo-icon.svg",
+      "category": "Office",
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
     }
   }
 }

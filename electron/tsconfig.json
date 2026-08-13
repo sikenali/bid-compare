@@ -1,11 +1,23 @@
 {
-  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "outDir": "../electron",
-    "noEmit": false,
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "lib": ["ES2022"],
+    "outDir": "./",
+    "rootDir": "./",
     "strict": false,
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "noEmit": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
-  "include": ["main.ts", "preload.ts"]
+  "include": ["main.ts", "preload.ts"],
+  "exclude": ["node_modules"]
 }

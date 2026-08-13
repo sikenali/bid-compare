@@ -8,9 +8,11 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   build:
+    name: Build ${{ matrix.os }}
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-22.04]
@@ -20,7 +22,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -32,21 +34,23 @@ jobs:
       - name: Build Vite app
         run: npm run build
 
-      - name: Build & Release (Windows)
+      - name: Compile Electron
+        run: npx tsc -p electron/tsconfig.json
+
+      - name: Build & Publish (Windows)
         if: runner.os == 'Windows'
         run: npx electron-builder --win --x64 --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & Release (macOS)
+      - name: Build & Publish (macOS)
         if: runner.os == 'macOS'
         run: npx electron-builder --mac --x64 --arm64 --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & Release (Linux)
+      - name: Build & Publish (Linux)
         if: runner.os == 'Linux'
         run: npx electron-builder --linux --x64 --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
