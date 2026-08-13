@@ -8,8 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "desktop": "GTK_A11Y=none /home/jingle/.deno/bin/deno run -A desktop/desktop.ts",
-    "desktop:compile": "/home/jingle/.deno/bin/deno compile -A --include dist --output bid-compare desktop/desktop.ts"
+    "desktop": "deno run -A desktop/desktop.ts",
+    "desktop:compile": "deno compile -A --include dist --output bid-compare desktop/desktop.ts"
   },
   "dependencies": {
     "@remixicon/vue": "^4.7.0",

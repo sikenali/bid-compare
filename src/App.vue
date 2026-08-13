@@ -14,7 +14,7 @@ const route = useRoute()
 const { settings } = useSettings()
 
 watch(() => settings.theme, (val) => {
-  document.documentElement.dataset.theme = val === 'light' ? '' : val
+  document.documentElement.dataset.theme = val
 }, { immediate: true })
 
 const { recentRecords: fcRecords, addRecentRecord: addFcRecord, clearAllRecords: clearFcRecords, deleteRecord: deleteFcRecord } = useRecentRecords('fileCompare')
@@ -153,6 +153,7 @@ const isActive = (path: string) => route.path.startsWith(path)
           />
           <div v-else class="history-empty">
             <p>暂无历史记录</p>
+            <p class="history-empty-hint">完成文件对比或属性检查后，结果将自动保存至此</p>
           </div>
         </div>
       </div>
@@ -432,6 +433,13 @@ const isActive = (path: string) => route.path.startsWith(path)
   color: var(--color-brown-muted);
   font-size: 14px;
   font-family: var(--font-ui);
+}
+
+.history-empty-hint {
+  font-size: 12px;
+  color: var(--color-brown-muted);
+  margin-top: 8px;
+  opacity: 0.7;
 }
 
 @media (max-width: 768px) {

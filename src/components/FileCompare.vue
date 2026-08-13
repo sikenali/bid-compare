@@ -13,6 +13,7 @@ import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
 import { useAIModel } from '../composables/useAIModel'
 import { useComparison } from '../composables/useComparison'
+import { useToast } from '../composables/useToast'
 import type { ComparisonSettings, SimilarSegment } from '../utils/textAlgorithms'
 import { removeCommonClauses } from '../utils/textAlgorithms'
 import { htmlToMarkdown } from '../utils/sanitize'
@@ -20,7 +21,7 @@ import { storeCompareResult, deleteCompareResult } from '../utils/compareResultS
 import { removeWatermarks } from '../utils/watermark'
 import { computeImageHash, hammingDistance, calculateImageSimilarity, loadImageAsDataUrl } from '../utils/imageCompare'
 import type { ImageDuplicate } from '../utils/imageCompare'
-import { recognizeImages, extractTextFromImage, isOCRAvailable, getSupportedLanguages } from '../utils/ocr'
+import { recognizeImages, extractTextFromImage, isOCRAvailable, getSupportedLanguages, calculateEditDistanceSimilarity } from '../utils/ocr'
 import type { OCRResult, OCRConfig } from '../utils/ocr'
 import FileUpload from './FileUpload.vue'
 import MultiFileUpload from './MultiFileUpload.vue'
@@ -28,6 +29,9 @@ import MultiCompareResult from './MultiCompareResult.vue'
 
 
 const router = useRouter()
+
+// 使用 Toast
+const { error: showError, success: showSuccess } = useToast()
 
 // 文件信息类型定义
 interface FileInfo {
@@ -294,7 +298,14 @@ const handleFileUpload = (event: Event, side: 'left' | 'right') => {
     const file = input.files[0]
     // 文件大小限制 100MB
     if (file.size > 100 * 1024 * 1024) {
-      alert('文件大小超过 100MB 限制')
+      showError('文件大小超过 100MB 限制')
+      return
+    }
+    // 文件格式校验
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    const allowedExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt']
+    if (!allowedExts.includes(ext)) {
+      showError(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
       return
     }
     const fileInfo = {
@@ -340,6 +351,18 @@ const handleDrop = (event: DragEvent, side: 'left' | 'right') => {
   event.preventDefault()
   if (event.dataTransfer && event.dataTransfer.files[0]) {
     const file = event.dataTransfer.files[0]
+    // 文件格式校验
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    const allowedExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt']
+    if (!allowedExts.includes(ext)) {
+      showError(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
+      return
+    }
+    // 文件大小限制 100MB
+    if (file.size > 100 * 1024 * 1024) {
+      showError('文件大小超过 100MB 限制')
+      return
+    }
     const fileInfo = {
       file: file,
       name: file.name,
@@ -497,6 +520,28 @@ const rightImages = ref<{ url: string; name: string }[]>([])
 onUnmounted(() => {
   leftImages.value.forEach(img => URL.revokeObjectURL(img.url))
   rightImages.value.forEach(img => URL.revokeObjectURL(img.url))
+  leftImages.value = []
+  rightImages.value = []
+  window.removeEventListener('keydown', handleKeyboardShortcut)
+})
+
+const handleKeyboardShortcut = (e: KeyboardEvent) => {
+  // Ctrl+S 导出报告
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault()
+    if (showResults.value && similarSegmentsList.value.length > 0) {
+      handleExportReport()
+    }
+  }
+  // Esc 关闭弹窗
+  if (e.key === 'Escape') {
+    if (showOCRResult.value) showOCRResult.value = false
+    if (showAIAnalysis.value) showAIAnalysis.value = false
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyboardShortcut)
 })
 
 const handleLeftImageUpload = (event: Event) => {
@@ -535,6 +580,14 @@ const runImageComparison = async (): Promise<ImageDuplicate[]> => {
   if (!settings.enableImageCompare) return []
   if (leftImages.value.length === 0 || rightImages.value.length === 0) return []
 
+  // 限制图片数量，防止 O(n²) 性能问题
+  const MAX_COMPARE_IMAGES = 50
+  if (leftImages.value.length > MAX_COMPARE_IMAGES || rightImages.value.length > MAX_COMPARE_IMAGES) {
+    showError(`图片数量超过 ${MAX_COMPARE_IMAGES} 张限制，仅对比前 ${MAX_COMPARE_IMAGES} 张`)
+  }
+  const leftImg = leftImages.value.slice(0, MAX_COMPARE_IMAGES)
+  const rightImg = rightImages.value.slice(0, MAX_COMPARE_IMAGES)
+
   progressMessage.value = '正在进行图片对比...'
   const duplicates: ImageDuplicate[] = []
   let idCounter = 0
@@ -551,8 +604,8 @@ const runImageComparison = async (): Promise<ImageDuplicate[]> => {
     return results
   }
 
-  const leftHashes = await computeAll(leftImages.value)
-  const rightHashes = await computeAll(rightImages.value)
+  const leftHashes = await computeAll(leftImg)
+  const rightHashes = await computeAll(rightImg)
 
   for (const lh of leftHashes) {
     for (const rh of rightHashes) {
@@ -628,79 +681,35 @@ const runOCRComparison = async () => {
   ocrProgressMessage.value = '正在进行图片文字识别...'
 
   try {
-    // 识别左侧图片
-    ocrProgressMessage.value = '正在识别左侧图片文字...'
-    const leftResults = await runOCR(leftImages.value, 'left')
-    
-    // 识别右侧图片
-    ocrProgressMessage.value = '正在识别右侧图片文字...'
-    const rightResults = await runOCR(rightImages.value, 'right')
+    // 限制图片数量，防止性能问题
+    const maxImages = 50
+    const leftImg = leftImages.value.slice(0, maxImages)
+    const rightImg = rightImages.value.slice(0, maxImages)
 
-    // 合并文本
+    ocrProgressMessage.value = '正在识别左侧图片文字...'
+    const leftResults = await runOCR(leftImg, 'left')
+
+    ocrProgressMessage.value = '正在识别右侧图片文字...'
+    const rightResults = await runOCR(rightImg, 'right')
+
     const leftText = leftResults.map(r => r.result.text).join('\n')
     const rightText = rightResults.map(r => r.result.text).join('\n')
 
-    // 使用编辑距离算法计算相似度
     let similarity = 0
     if (leftText && rightText) {
       similarity = calculateEditDistanceSimilarity(leftText, rightText)
     }
 
-    ocrCompareResult.value = {
-      leftText,
-      rightText,
-      similarity
-    }
-
+    ocrCompareResult.value = { leftText, rightText, similarity }
     ocrResults.value = [...leftResults, ...rightResults]
     showOCRResult.value = true
   } catch (error) {
-    // OCR 对比失败
+    showError('OCR 对比失败，请重试')
   } finally {
     isOCRProcessing.value = false
     ocrProgress.value = 0
     ocrProgressMessage.value = ''
   }
-}
-
-// 编辑距离相似度计算函数
-const calculateEditDistanceSimilarity = (text1: string, text2: string): number => {
-  const len1 = text1.length
-  const len2 = text2.length
-
-  if (len1 === 0 && len2 === 0) return 100
-  if (len1 === 0 || len2 === 0) return 0
-
-  // 优化：对于长文本，只比较前1000个字符
-  const maxLen = 1000
-  const t1 = text1.substring(0, maxLen)
-  const t2 = text2.substring(0, maxLen)
-
-  // 动态规划计算编辑距离
-  const dp: number[][] = Array.from({ length: t1.length + 1 }, () => Array(t2.length + 1).fill(0))
-
-  for (let i = 0; i <= t1.length; i++) {
-    dp[i][0] = i
-  }
-  for (let j = 0; j <= t2.length; j++) {
-    dp[0][j] = j
-  }
-
-  for (let i = 1; i <= t1.length; i++) {
-    for (let j = 1; j <= t2.length; j++) {
-      const cost = t1[i - 1] === t2[j - 1] ? 0 : 1
-      dp[i][j] = Math.min(
-        dp[i - 1][j] + 1,      // 删除
-        dp[i][j - 1] + 1,      // 插入
-        dp[i - 1][j - 1] + cost // 替换
-      )
-    }
-  }
-
-  const editDistance = dp[t1.length][t2.length]
-  const maxLen2 = Math.max(t1.length, t2.length)
-  const similarityResult = Math.round((1 - editDistance / maxLen2) * 100)
-  return Math.max(0, similarityResult)
 }
 
 // 获取支持的语言列表
@@ -1137,8 +1146,8 @@ const generateWordReport = () => {
       </button>
       <button
         class="compare-btn"
-        style="display: none"
-        :disabled="!leftFileInfo.file || !rightFileInfo.file || isProcessing"
+        :disabled="!leftFileInfo.file || !rightFileInfo.file || isProcessing || !settings.apiKey"
+        @click="handleAIAnalysis"
       >
         <RiRobot2Line class="compare-btn-icon" />
         <span>AI对比</span>

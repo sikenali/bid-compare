@@ -377,23 +377,11 @@ export function useFileParser() {
         images: [] // PDF 图片提取在外部处理
       };
     } catch (error) {
-      // PDF解析错误
+      // PDF解析错误，抛出明确异常而非静默回退
       return {
-        content: 'PDF文件内容（浏览器环境下无法直接解析）',
-        properties: {
-          文件名: file.name,
-          文件大小: formatFileSize(file.size),
-          文件类型: 'PDF文档',
-          作者: '未知作者',
-          最后一次保存者: '未知用户',
-          页码范围: '1',
-          版本号: '1.0',
-          程序名称: '未知',
-          公司: '未知',
-          文本内容长度: '0',
-          创建时间: new Date(file.lastModified).toLocaleString(),
-          修改时间: new Date(file.lastModified).toLocaleString()
-        }
+        content: '',
+        properties: {},
+        error: `PDF解析失败: ${(error as Error).message || '文件损坏或格式不支持'}`
       };
     }
   };

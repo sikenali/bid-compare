@@ -172,7 +172,7 @@ export async function compareImageText(
  * 使用编辑距离算法计算文本相似度
  * 对中文文本效果更好
  */
-function calculateEditDistanceSimilarity(text1: string, text2: string): number {
+export function calculateEditDistanceSimilarity(text1: string, text2: string): number {
   const len1 = text1.length
   const len2 = text2.length
 
@@ -199,7 +199,7 @@ function calculateEditDistanceSimilarity(text1: string, text2: string): number {
       const cost = t1[i - 1] === t2[j - 1] ? 0 : 1
       dp[i][j] = Math.min(
         dp[i - 1][j] + 1,      // 删除
-        dp[i][j - 1] + 1,      // 插入
+        dp[i - 1][j] + 1,      // 插入
         dp[i - 1][j - 1] + cost // 替换
       )
     }

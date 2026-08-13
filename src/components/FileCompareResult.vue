@@ -10,6 +10,7 @@ import {
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx'
 import { useSettings } from '../composables/useSettings'
+import { useToast } from '../composables/useToast'
 import { getCompareResult, deleteCompareResult } from '../utils/compareResultStore'
 import { sanitizeHTML, sanitizeWithHighlight, htmlToMarkdown } from '../utils/sanitize'
 import MarkdownIt from 'markdown-it'
@@ -26,6 +27,7 @@ const md = new MarkdownIt({
 const route = useRoute()
 const router = useRouter()
 const { settings } = useSettings()
+const { error: showError } = useToast()
 
 // 数据
 const segments = ref<SimilarSegment[]>([])
@@ -287,7 +289,7 @@ const handleBack = () => {
 
 const handleExport = async () => {
   if (segments.value.length === 0) {
-    alert('没有可导出的对比数据')
+    showError('没有可导出的对比数据')
     return
   }
 
@@ -321,7 +323,7 @@ const handleExport = async () => {
       document.body.removeChild(link)
     }
   } catch (error) {
-    alert('导出报告失败，请重试')
+    showError('导出报告失败，请重试')
   }
 }
 

@@ -11,6 +11,7 @@ import {
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx'
 import { getPropertyCheckResult, deletePropertyCheckResult } from '../utils/compareResultStore'
+import { useToast } from '../composables/useToast'
 
 interface PropertyDetail {
   name: string;
@@ -21,6 +22,7 @@ interface PropertyDetail {
 
 const route = useRoute()
 const router = useRouter()
+const { error: showError } = useToast()
 
 const propertyDetails = ref<PropertyDetail[]>([])
 const matchCount = ref(0)
@@ -90,7 +92,7 @@ const handleBack = () => {
 
 const handleExport = async () => {
   if (propertyDetails.value.length === 0) {
-    alert('没有可导出的对比数据')
+    showError('没有可导出的对比数据')
     return
   }
 
@@ -167,7 +169,7 @@ const handleExport = async () => {
     link.click()
     document.body.removeChild(link)
   } catch (error) {
-    alert('导出报告失败，请重试')
+    showError('导出报告失败，请重试')
   }
 }
 

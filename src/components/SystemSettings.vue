@@ -183,12 +183,12 @@ onMounted(() => {
 const addApiKeyEntry = () => {
   const key = apiKeyValue.value.trim()
   if (!key) {
-    window.alert('请输入 API Key')
+    showToast('请输入 API Key', 'warning')
     return
   }
   if (configTab.value === 'custom') {
     if (!customProvider.value.trim() || !customModel.value.trim()) {
-      window.alert('请填写服务商和模型名称')
+      showToast('请填写服务商和模型名称', 'warning')
       return
     }
     savedKeys.value.push({

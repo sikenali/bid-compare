@@ -1,20 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  RiExchangeLine,
-  RiAddLine,
-  RiArrowRightLine
-} from '@remixicon/vue'
+import { RiExchangeLine, RiAddLine, RiArrowRightLine } from '@remixicon/vue'
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
+import { useToast } from '../composables/useToast'
 import { calculateTextSimilarity } from '../utils/textAlgorithms'
 import { storePropertyCheckResult } from '../utils/compareResultStore'
 import { buildPropertyDetails, propsMapSource, recordSource } from '../utils/propertyFields'
 import FileUpload from './FileUpload.vue'
 
 const router = useRouter()
+const { error: showError } = useToast()
 
 // 文件信息类型定义
 interface FileInfo {
@@ -149,7 +147,14 @@ const handleFileUpload = (event: Event, side: 'left' | 'right') => {
     const file = input.files[0]
     // 文件大小限制 100MB
     if (file.size > 100 * 1024 * 1024) {
-      alert('文件大小超过 100MB 限制')
+      showError('文件大小超过 100MB 限制')
+      return
+    }
+    // 文件格式校验
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    const allowedExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt']
+    if (!allowedExts.includes(ext)) {
+      showError(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
       return
     }
     const fileInfo = {
@@ -176,6 +181,16 @@ const handleDrop = (event: DragEvent, side: 'left' | 'right') => {
   event.preventDefault()
   if (event.dataTransfer && event.dataTransfer.files[0]) {
     const file = event.dataTransfer.files[0]
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    const allowedExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt']
+    if (!allowedExts.includes(ext)) {
+      showError(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
+      return
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      showError('文件大小超过 100MB 限制')
+      return
+    }
     const fileInfo = {
       file: file,
       name: file.name,
@@ -326,7 +341,7 @@ const handleExportReport = async () => {
     link.click()
     document.body.removeChild(link)
   } catch (error) {
-    alert('导出报告失败，请重试')
+    showError('导出报告失败，请重试')
   }
 }
 
@@ -351,7 +366,7 @@ const handleBack = () => {
 const generateWordReport = () => {
   // 确保只有当有属性数据时才生成报告
   if (propertyDetails.value.length === 0) {
-    alert('没有可导出的属性对比数据')
+    showError('没有可导出的属性对比数据')
     return new Document()
   }
   
