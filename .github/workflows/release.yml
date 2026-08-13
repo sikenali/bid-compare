@@ -70,13 +70,13 @@ jobs:
 
       - name: Publish Draft Release
         run: |
-          # Find and publish the draft release
-          DRAFT_RELEASE=$(gh release view --json isDraft,title --jq '.[] | select(.isDraft == true) | .tag_name' 2>/dev/null || true)
+          # Find and publish the draft release for this tag
+          DRAFT_RELEASE=$(gh release list --repo ${{ github.repository }} --json tagName,isDraft --jq '.[] | select(.tagName == "${{ steps.version.outputs.VERSION }}" and .isDraft == true) | .tagName' 2>/dev/null || true)
           if [ -n "$DRAFT_RELEASE" ]; then
-            gh release edit "$DRAFT_RELEASE" --latest --draft=false
+            gh release edit "$DRAFT_RELEASE" --draft=false
             echo "✅ Release $DRAFT_RELEASE 已发布"
           else
-            echo "⚠️ 未找到草稿 Release，手动检查: https://github.com/$GITHUB_REPOSITORY/releases"
+            echo "⚠️ 未找到草稿 Release，手动检查: https://github.com/${{ github.repository }}/releases"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
