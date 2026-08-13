@@ -8,8 +8,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "desktop": "deno run -A desktop/desktop.ts",
-    "desktop:compile": "deno compile -A --include dist --output bid-compare desktop/desktop.ts"
+    "electron:dev": "vite --port=5173 & concurrently \"tsc -p electron/tsconfig.json --watch\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
+    "electron:build": "npm run build && electron-builder",
+    "electron:build:win": "npm run build && electron-builder --win",
+    "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:build:linux": "npm run build && electron-builder --linux"
   },
   "dependencies": {
     "@remixicon/vue": "^4.7.0",
@@ -32,8 +35,48 @@
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^38.3.2",
+    "electron-builder": "^26.4.0",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
-    "vue-tsc": "^3.1.4"
+    "vue-tsc": "^3.1.4",
+    "wait-on": "^9.0.1"
+  },
+  "build": {
+    "appId": "com.bidcompare.app",
+    "productName": "文比猩",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "public/vite.svg"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "public/vite.svg",
+      "uninstallerIcon": "public/vite.svg",
+      "shortcutName": "文比猩"
+    },
+    "mac": {
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "icon": "public/vite.svg",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": [{ "target": "deb", "arch": ["x64"] }],
+      "icon": "public/vite.svg",
+      "category": "Office"
+    }
   }
 }

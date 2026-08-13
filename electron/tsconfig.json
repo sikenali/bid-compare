@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../electron",
+    "noEmit": false,
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "include": ["main.ts", "preload.ts"]
+}

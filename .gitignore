@@ -23,4 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 "release/*"  
-".qwen/settings.json.orig"  
+".qwen/settings.json.orig"
+
+# Electron compiled outputs
+electron/main.js
+electron/preload.js
