@@ -56,4 +56,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify Release
-        run: echo "✅ Release 已自动生成到 GitHub Releases 页面"
+        if: runner.os == 'Linux'
+        run: echo "✅ Release 已自动生成并发布到 GitHub Releases 页面"
