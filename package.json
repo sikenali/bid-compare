@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "description": "专业文档对比工具",
+  "author": "sikenali <sikenali@example.com>",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
