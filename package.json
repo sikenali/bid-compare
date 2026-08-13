@@ -59,11 +59,8 @@
     "extraMetadata": {
       "main": "electron/main.js"
     },
-    "icon": "public/logo-icon.svg",
     "win": {
-      "target": [
-        { "target": "nsis", "arch": ["x64"] }
-      ],
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
       "icon": "public/logo-icon.svg",
       "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
     },
@@ -75,18 +72,12 @@
       "shortcutName": "bid-compare"
     },
     "mac": {
-      "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] }
-      ],
-      "icon": "public/logo-icon.svg",
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
       "category": "public.app-category.productivity",
       "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
     },
     "linux": {
-      "target": [
-        { "target": "deb", "arch": ["x64"] }
-      ],
-      "icon": "public/logo-icon.svg",
+      "target": [{ "target": "deb", "arch": ["x64"] }],
       "category": "Office",
       "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
     }
