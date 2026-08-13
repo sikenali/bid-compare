@@ -61,14 +61,11 @@
     },
     "win": {
       "target": [{ "target": "nsis", "arch": ["x64"] }],
-      "icon": "public/logo-icon.svg",
       "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "public/logo-icon.svg",
-      "uninstallerIcon": "public/logo-icon.svg",
       "shortcutName": "bid-compare"
     },
     "mac": {
