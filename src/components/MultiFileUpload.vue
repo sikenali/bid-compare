@@ -33,12 +33,7 @@
             <RiUploadCloud2Line class="upload-icon" />
           </div>
           <p class="upload-main-text">拖拽文件到此处或点击上传</p>
-          <div class="upload-format-icons">
-            <div class="format-icon-wrapper" v-for="fmt in formatIcons" :key="fmt.type">
-              <component :is="fmt.icon" class="format-icon-svg" />
-              <span class="format-tooltip">{{ fmt.label }}</span>
-            </div>
-          </div>
+          <FormatIcons />
           <p class="upload-size-text">最多 {{ maxCount }} 个文件</p>
         </div>
 
@@ -75,28 +70,27 @@
       </div>
     </BorderBeam>
 
-    <!-- 多文件对比圆形按钮 -->
-    <div class="compare-circle-wrapper">
-      <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4">
-        <button class="compare-circle-btn" 
-                @click="$emit('compare')" 
-                :disabled="files.length < 2"
-                :class="{ 'disabled': files.length < 2 }">
-          <RiExchangeLine class="compare-circle-icon" />
-          <span class="compare-circle-text">多文件对比</span>
-        </button>
-      </BorderBeam>
+    <div v-if="addErrorMessage" class="upload-error">{{ addErrorMessage }}</div>
+
+    <div class="compare-action-section">
+      <button class="compare-btn" 
+              @click="$emit('compare')" 
+              :disabled="files.length < 2">
+        <RiExchangeLine class="compare-btn-icon" />
+        <span>文件对比</span>
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { 
+import {
   RiUploadCloud2Line, RiFileLine, RiCloseCircleLine, RiExchangeLine, RiAddLine,
   RiFileWord2Line, RiFileExcel2Line, RiSlideshow2Line, RiFilePdf2Line, RiFileTextLine
 } from '@remixicon/vue'
 import { BorderBeam } from 'vue3-border-beam'
+import FormatIcons from './FormatIcons.vue'
 
 interface Props {
   maxCount?: number
@@ -105,7 +99,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   maxCount: 10,
-  acceptTypes: '.docx,.pdf,.pptx,.xlsx,.txt'
+  acceptTypes: '.docx,.doc,.pdf,.pptx,.ppt,.xlsx,.xls,.txt'
 })
 
 const emit = defineEmits<{
@@ -116,14 +110,7 @@ const emit = defineEmits<{
 const files = ref<File[]>([])
 const isDragOver = ref(false)
 const fileInput = ref<HTMLInputElement>()
-
-const formatIcons = [
-  { type: 'word', icon: RiFileWord2Line, label: 'Word' },
-  { type: 'excel', icon: RiFileExcel2Line, label: 'Excel' },
-  { type: 'ppt', icon: RiSlideshow2Line, label: 'PPT' },
-  { type: 'pdf', icon: RiFilePdf2Line, label: 'PDF' },
-  { type: 'txt', icon: RiFileTextLine, label: 'TXT' }
-]
+const addErrorMessage = ref('')
 
 const triggerFileInput = () => {
   fileInput.value?.click()
@@ -150,10 +137,18 @@ const onDrop = (event: DragEvent) => {
 const addFiles = (newFiles: File[]) => {
   const existingNames = new Set(files.value.map(f => f.name))
   const uniqueNewFiles = newFiles.filter(f => !existingNames.has(f.name))
-  
+
+  const MAX_SIZE = 100 * 1024 * 1024
+  const oversize = uniqueNewFiles.find(f => f.size > MAX_SIZE)
+  if (oversize) {
+    addErrorMessage.value = `文件 ${oversize.name} 超过 100MB 大小限制`
+    setTimeout(() => addErrorMessage.value = '', 3000)
+    return
+  }
+
   const remaining = props.maxCount - files.value.length
   const toAdd = uniqueNewFiles.slice(0, remaining)
-  
+
   files.value = [...files.value, ...toAdd]
   emit('update:files', files.value)
 }
@@ -320,55 +315,6 @@ defineExpose({ clearFiles, files })
   margin-bottom: var(--spacing-4);
 }
 
-.upload-format-icons {
-  display: flex;
-  gap: var(--spacing-3);
-  margin-bottom: var(--spacing-4);
-}
-
-.format-icon-wrapper {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: var(--color-cream-darker);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition-normal);
-}
-
-.format-icon-wrapper:hover {
-  background: var(--color-cream-darker);
-  transform: translateY(-2px);
-}
-
-.format-icon-svg {
-  font-size: 20px;
-  color: var(--color-brown-muted);
-}
-
-.format-tooltip {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 8px;
-  background: rgba(var(--rgb-brown-dark), 0.9);
-  color: white;
-  font-size: 11px;
-  border-radius: var(--radius-xs);
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--transition-fast);
-  z-index: 10;
-}
-
-.format-icon-wrapper:hover .format-tooltip {
-  opacity: 1;
-}
-
 .upload-size-text {
   font-size: var(--text-caption);
   color: var(--color-brown-muted);
@@ -518,51 +464,53 @@ defineExpose({ clearFiles, files })
   transform: scale(1.1);
 }
 
-.compare-circle-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-top: var(--spacing-5);
-}
-
-.compare-circle-btn {
-  width: 100px;
-  height: 100px;
-  border-radius: var(--radius-full);
-  border: none;
-  background: var(--color-cinnabar);
-  color: white;
-  cursor: pointer;
+.compare-action-section {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 8px;
+  margin-top: var(--spacing-5);
+}
+
+.upload-error {
+  font-size: 13px;
+  color: var(--color-cinnabar);
+  text-align: center;
+  padding: 8px;
+}
+
+.compare-btn {
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 6px;
-  box-shadow: var(--shadow-cinnabar);
-  transition: all var(--transition-normal);
-}
-
-.compare-circle-btn:hover:not(:disabled) {
-  transform: scale(1.05);
-  background: var(--color-cinnabar-dark);
-}
-
-.compare-circle-btn:disabled,
-.compare-circle-btn.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: var(--color-brown-muted);
-  box-shadow: var(--shadow-sm);
-}
-
-.compare-circle-icon {
-  font-size: 28px;
-  transition: transform var(--transition-normal);
-}
-
-.compare-circle-text {
-  font-size: var(--text-caption);
+  gap: 8px;
+  background: var(--color-cinnabar);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 14px;
   font-weight: 600;
   font-family: var(--font-ui);
+  box-shadow: var(--shadow-cinnabar);
+  transition: all 0.3s ease;
+}
+
+.compare-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-cinnabar);
+}
+
+.compare-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.compare-btn-icon {
+  font-size: 20px;
+  transition: transform 0.3s ease;
 }
 
 @media (max-width: 768px) {
@@ -597,19 +545,6 @@ defineExpose({ clearFiles, files })
     font-size: 15px;
   }
 
-  .upload-format-icons {
-    gap: 8px;
-  }
-
-  .format-icon-wrapper {
-    width: 36px;
-    height: 36px;
-  }
-
-  .format-icon-svg {
-    font-size: 18px;
-  }
-
   .upload-size-text {
     font-size: 11px;
   }
@@ -639,21 +574,8 @@ defineExpose({ clearFiles, files })
     font-size: 11px;
   }
 
-  .compare-circle-wrapper {
+  .compare-action-section {
     margin-top: var(--spacing-4);
-  }
-
-  .compare-circle-btn {
-    width: 80px;
-    height: 80px;
-  }
-
-  .compare-circle-icon {
-    font-size: 24px;
-  }
-
-  .compare-circle-text {
-    font-size: 11px;
   }
 }
 
@@ -674,19 +596,6 @@ defineExpose({ clearFiles, files })
 
   .upload-icon {
     font-size: 28px;
-  }
-
-  .upload-format-icons {
-    gap: 6px;
-  }
-
-  .format-icon-wrapper {
-    width: 32px;
-    height: 32px;
-  }
-
-  .format-icon-svg {
-    font-size: 16px;
   }
 
   .file-list-scroll {

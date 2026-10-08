@@ -1,27 +1,18 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  RiExchangeLine,
-  RiCloseCircleLine,
-  RiAlertLine,
-  RiQuestionLine,
-  RiFileLine,
-  RiUserLine,
-  RiCalendarLine,
-  RiHistoryLine
-} from '@remixicon/vue'
+import { RiExchangeLine, RiAddLine, RiArrowRightLine } from '@remixicon/vue'
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
+import { useToast } from '../composables/useToast'
 import { calculateTextSimilarity } from '../utils/textAlgorithms'
 import { storePropertyCheckResult } from '../utils/compareResultStore'
 import { buildPropertyDetails, propsMapSource, recordSource } from '../utils/propertyFields'
 import FileUpload from './FileUpload.vue'
-import RecentRecords from './RecentRecords.vue'
-import { BorderBeam } from 'vue3-border-beam'
 
 const router = useRouter()
+const { error: showError } = useToast()
 
 // 文件信息类型定义
 interface FileInfo {
@@ -37,13 +28,15 @@ const { parseFile } = useFileParser()
 // 使用设置组合式函数
 const { settings } = useSettings()
 
+// 当前年份
+const currentYear = computed(() => new Date().getFullYear())
+
 // 响应式数据
 const leftFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' });
 const rightFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' });
 
 // 使用最近记录组合式函数 - 传入propertyCheck类型
 const {
-  showRecentRecords,
   recentRecords,
   addRecentRecord,
   clearAllRecords,
@@ -99,9 +92,6 @@ const viewHistoricalRecord = (record: any) => {
 
   // 跳转到结果页面，传递存储 ID 和时间戳
   router.push({ path: '/property-check-result', query: { resultId, t: Date.now() } })
-  
-  // 关闭历史记录弹窗
-  showHistory.value = false
 }
 
 // 解析结果
@@ -113,7 +103,6 @@ const isParsing = ref(false)
 const parseError = ref('')
 
 // 属性检查结果
-const showResults = ref(false)
 const matchingProperties = ref(0)
 const nonMatchingProperties = ref(0)
 const warningProperties = ref(0)
@@ -158,7 +147,14 @@ const handleFileUpload = (event: Event, side: 'left' | 'right') => {
     const file = input.files[0]
     // 文件大小限制 100MB
     if (file.size > 100 * 1024 * 1024) {
-      alert('文件大小超过 100MB 限制')
+      showError('文件大小超过 100MB 限制')
+      return
+    }
+    // 文件格式校验
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    const allowedExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt']
+    if (!allowedExts.includes(ext)) {
+      showError(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
       return
     }
     const fileInfo = {
@@ -185,6 +181,16 @@ const handleDrop = (event: DragEvent, side: 'left' | 'right') => {
   event.preventDefault()
   if (event.dataTransfer && event.dataTransfer.files[0]) {
     const file = event.dataTransfer.files[0]
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    const allowedExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt']
+    if (!allowedExts.includes(ext)) {
+      showError(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
+      return
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      showError('文件大小超过 100MB 限制')
+      return
+    }
     const fileInfo = {
       file: file,
       name: file.name,
@@ -215,23 +221,6 @@ const handleClearFile = (side: 'left' | 'right') => {
     rightFileInfo.value = emptyFileInfo;
   }
 }
-
-// 历史记录弹窗
-const showHistory = ref(false)
-
-const toggleHistory = () => {
-  showHistory.value = !showHistory.value
-}
-
-// 当记录为空时自动关闭弹窗
-watch(
-  () => recentRecords.length,
-  (newLen) => {
-    if (newLen === 0 && showHistory.value) {
-      showHistory.value = false
-    }
-  }
-)
 
 // 执行属性检查
 const handleCheck = async () => {
@@ -352,13 +341,12 @@ const handleExportReport = async () => {
     link.click()
     document.body.removeChild(link)
   } catch (error) {
-    alert('导出报告失败，请重试')
+    showError('导出报告失败，请重试')
   }
 }
 
 // 返回文件上传界面
 const handleBack = () => {
-  showResults.value = false
   // 重置检查结果状态，但保留已上传的文件信息
   isParsing.value = false;
   parseError.value = '';
@@ -378,7 +366,7 @@ const handleBack = () => {
 const generateWordReport = () => {
   // 确保只有当有属性数据时才生成报告
   if (propertyDetails.value.length === 0) {
-    alert('没有可导出的属性对比数据')
+    showError('没有可导出的属性对比数据')
     return new Document()
   }
   
@@ -562,83 +550,67 @@ const generateWordReport = () => {
 
 <template>
   <div class="property-check-container">
-    <!-- 页面标题区 -->
-    <div class="page-header">
-      <div class="title-row">
-        <div>
-          <h1 class="page-title">属性检查</h1>
-          <p class="page-subtitle">对比两个文件的基础属性信息，快速识别差异</p>
-        </div>
-        <div class="header-actions">
-          <button v-if="recentRecords.length > 0" class="icon-btn-wrapper" @click="toggleHistory">
-            <RiHistoryLine class="icon-btn-svg" />
-            <span class="icon-btn-tooltip">历史记录</span>
-          </button>
+    <!-- 文件信息条 -->
+    <div class="file-info-bar" style="visibility:hidden">
+      <div class="file-info-side">
+        <RiAddLine class="file-info-icon" />
+        <div class="file-info-text">
+          <span class="file-info-label">文件 A</span>
+          <span class="file-info-name">{{ leftFileInfo.name || '未选择文件' }}</span>
         </div>
       </div>
-    </div>
-
-    <!-- 历史记录弹窗 -->
-    <div v-if="showHistory" class="help-modal-overlay" @click="toggleHistory">
-      <div class="history-modal" @click.stop>
-        <div class="help-modal-header">
-          <h3>历史记录</h3>
-          <button class="help-close-btn" @click="toggleHistory">×</button>
-        </div>
-        <div class="history-modal-body">
-          <RecentRecords
-            v-if="recentRecords.length > 0"
-            :recent-records="recentRecords"
-            :on-clear-all="clearAllRecords"
-            :on-view-record="(record) => { viewHistoricalRecord(record); toggleHistory(); }"
-            :on-delete-record="deleteRecord"
-            :on-close="toggleHistory"
-          />
-          <div v-else class="empty-history">
-            <p>暂无历史记录</p>
-          </div>
+      <div class="file-info-divider" :class="{ 'processing': isParsing }">
+        <RiExchangeLine class="divider-icon" :class="{ 'rotating': isParsing }" />
+        <span v-if="isParsing" class="divider-text">检查中...</span>
+      </div>
+      <div class="file-info-side right">
+        <RiAddLine class="file-info-icon" />
+        <div class="file-info-text">
+          <span class="file-info-label">文件 B</span>
+          <span class="file-info-name">{{ rightFileInfo.name || '未选择文件' }}</span>
         </div>
       </div>
     </div>
 
     <!-- 文件上传区域 -->
-    <div class="upload-section" :class="{ 'processing': isParsing }">
-      <!-- 文件A上传 -->
+    <div class="upload-section">
       <FileUpload
         side="left"
         :file-info="leftFileInfo"
+        label="快将奏折给朕呈上来～"
+        accepted-formats=".pdf,.docx,.doc,.xlsx,.txt"
         :on-file-change="handleFileUpload"
         :on-drag-over="handleDragOver"
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
-
-      <!-- 属性检查圆形按钮 -->
-      <div class="check-circle-wrapper">
-        <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4">
-          <button class="check-circle-btn" @click="handleCheck" :disabled="isParsing" :class="{ 'processing': isParsing }">
-            <RiExchangeLine class="check-circle-icon" :class="{ 'rotating': isParsing }" />
-            <span class="check-circle-text">属性检查</span>
-          </button>
-        </BorderBeam>
+      <div class="upload-divider">
+        <RiArrowRightLine class="upload-divider-icon" />
       </div>
-
-      <!-- 文件B上传 -->
       <FileUpload
         side="right"
         :file-info="rightFileInfo"
+        label="快将奏折给朕呈上来～"
+        accepted-formats=".pdf,.docx,.doc,.xlsx,.txt"
         :on-file-change="handleFileUpload"
         :on-drag-over="handleDragOver"
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
+    </div>
 
-      <!-- 处理中遮罩 -->
-      <div v-if="isParsing" class="processing-overlay">
-        <div class="processing-content">
-          <div class="processing-spinner"></div>
-          <p class="processing-text">正在检查文件...</p>
-        </div>
+    <div class="compare-action-section">
+      <button class="compare-btn" @click="handleCheck" :disabled="!leftFileInfo.file || !rightFileInfo.file || isParsing" :class="{ 'processing': isParsing }">
+        <RiExchangeLine class="compare-btn-icon" :class="{ 'rotating': isParsing }" />
+        <span>{{ isParsing ? '检查中...' : '属性检查' }}</span>
+      </button>
+    </div>
+
+    <!-- 处理中遮罩 -->
+    <div v-if="isParsing" class="processing-overlay">
+      <div class="processing-content">
+        <div class="processing-spinner"></div>
+        <p class="processing-text">正在检查文件...</p>
       </div>
     </div>
 
@@ -654,6 +626,12 @@ const generateWordReport = () => {
     <div v-if="parseError" class="error-message">
       {{ parseError }}
     </div>
+
+    <!-- 页脚 -->
+    <div class="app-footer">
+      <span>© {{ currentYear }} 文比猩</span>
+      <span class="footer-powered">Powered by LightOS</span>
+    </div>
   </div>
 </template>
 
@@ -664,281 +642,161 @@ const generateWordReport = () => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: rgba(var(--rgb-parchment), 1);
-  gap: 12px;
-  font-family: var(--font-ui);
+  gap: 16px;
 }
 
-/* 页面标题区 */
-.page-header {
-  padding: 16px 24px;
-  background-color: #F5EFE3;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  box-shadow: 0 2px 8px rgba(var(--rgb-brown-dark), 0.08);
-}
-
-.title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.page-title {
-  font-size: var(--text-heading-lg);
-  font-weight: 700;
-  color: var(--color-brown-dark);
-  margin: 0 0 4px 0;
-  font-family: var(--font-ui);
-}
-
-.page-subtitle {
-  font-size: 12px;
-  color: var(--color-brown);
-  margin: 0;
-  font-family: var(--font-ui);
-}
-
-.header-actions {
+/* 文件信息条 */
+.file-info-bar {
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 16px 20px;
+  background: var(--color-upload-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-tan-border);
+  box-shadow: var(--shadow-sm);
 }
 
-.header-back-btn {
-  height: 40px;
-  padding: 0 20px;
-  background-color: var(--color-white);
+.file-info-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.file-info-side.right {
+  justify-content: flex-end;
+}
+
+.file-info-icon {
+  font-size: 20px;
   color: var(--color-cinnabar);
-  border: 1px solid rgba(var(--rgb-cinnabar), 0.3);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.file-info-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.file-info-side.right .file-info-text {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.file-info-label {
+  font-size: 11px;
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.file-info-name {
   font-size: 14px;
   font-weight: 600;
+  color: var(--color-brown-dark);
   font-family: var(--font-ui);
-  transition: all 0.3s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
 }
 
-.header-back-btn:hover {
-  background-color: rgba(var(--rgb-cinnabar), 0.05);
-  border-color: var(--color-cinnabar);
-}
-
-.header-export-btn {
-  height: 40px;
-  padding: 0 20px;
-  background: var(--color-cinnabar);
-  color: white;
-  border: none;
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.3);
-  transition: all 0.3s ease;
-}
-
-.header-export-btn:hover {
-  box-shadow: 0 6px 16px rgba(var(--rgb-cinnabar), 0.4);
-  transform: translateY(-2px);
-}
-
-/* 图标按钮容器 */
-.icon-btn-wrapper {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: var(--radius-lg);
-  background: var(--color-cinnabar);
-  color: var(--color-white);
-  cursor: pointer;
+.file-info-divider {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.3);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.icon-btn-wrapper:hover {
-  box-shadow: 0 6px 20px rgba(var(--rgb-cinnabar), 0.4);
-  transform: translateY(-2px);
-  background: var(--color-cinnabar-dark);
-}
-
-.icon-btn-wrapper:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(var(--rgb-cinnabar), 0.3);
-}
-
-.icon-btn-svg {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-  color: var(--color-white);
   flex-shrink: 0;
-  transition: all 0.3s ease;
+  flex-direction: column;
+  gap: 2px;
+  width: auto;
+  height: auto;
 }
 
-/* Tooltip 样式 */
-.icon-btn-tooltip {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 8px;
-  background-color: rgba(var(--rgb-brown-dark), 0.9);
-  color: white;
-  font-size: 11px;
+.file-info-divider.processing {
+  gap: 4px;
+}
+
+.divider-text {
+  font-size: 10px;
+  color: var(--color-cinnabar);
   font-family: var(--font-ui);
-  border-radius: var(--radius-xs);
+  font-weight: 500;
   white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-  z-index: 10;
 }
 
-.icon-btn-wrapper:hover .icon-btn-tooltip {
-  opacity: 1;
-}
-
-.history-modal {
-  background-color: var(--color-white);
-  border-radius: var(--radius-lg);
-  width: min(600px, 90vw);
-  max-height: 80vh;
-  overflow: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-}
-
-.history-modal-body {
-  padding: 24px;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.empty-history {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--color-brown-muted);
-  font-size: 14px;
-  font-family: var(--font-ui);
-}
-
-.help-btn:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
-}
-
-.help-icon {
+.divider-icon {
   font-size: 20px;
-  color: var(--color-brown);
+  color: var(--color-cinnabar);
+  transition: transform 0.3s ease;
 }
 
-.decorative-line {
-  width: 100%;
-  height: 3px;
-  margin-top: 24px;
-  background: var(--color-tan-dark);
-  border-radius: var(--radius-xs);
+.divider-icon.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* 文件上传区域 */
 .upload-section {
   display: flex;
-  gap: 20px;
-  align-items: center;
-  justify-content: center;
-  padding: 0 24px;
-  position: relative;
-}
-
-.upload-section.processing {
-  pointer-events: none;
-}
-
-/* 属性检查圆形按钮 */
-.check-circle-wrapper {
-  flex-shrink: 0;
-}
-
-.check-circle-btn {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  border: none;
-  background: var(--color-cinnabar);
-  color: white;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  box-shadow: 0 6px 20px rgba(var(--rgb-cinnabar), 0.35);
-  transition: all 0.3s ease;
-}
-
-.check-circle-btn:hover:not(:disabled) {
-  transform: scale(1.05);
-  box-shadow: 0 8px 24px rgba(var(--rgb-cinnabar), 0.45);
-}
-
-.check-circle-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.check-circle-icon {
-  font-size: 28px;
-  transition: transform 0.3s ease;
-}
-
-.check-circle-icon.rotating {
-  animation: rotate 1s linear infinite;
-}
-
-.check-circle-text {
-  font-size: 12px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-}
-
-/* 检查按钮区域 */
-.check-action-area {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
   gap: 16px;
+  align-items: stretch;
+  position: relative;
+  flex-wrap: wrap;
 }
 
-/* 检查按钮 */
-.start-check-btn {
+.upload-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+
+.upload-divider-icon {
+  font-size: 24px;
+  color: var(--color-cinnabar);
+  opacity: 0.6;
+}
+
+/* 属性检查按钮区域 */
+.compare-action-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.compare-btn {
   position: relative;
-  width: 980px;
-  height: 40px;
-  border: none;
-  border-radius: var(--radius-lg);
-  background: var(--color-cinnabar);
-  color: white;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.3);
-  transition: all 0.3s ease;
-  font-size: 16px;
+  padding: 10px 24px;
+  background: var(--color-cinnabar);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 14px;
   font-weight: 600;
   font-family: var(--font-ui);
+  box-shadow: var(--shadow-cinnabar);
+  transition: all 0.3s ease;
   overflow: hidden;
 }
 
-.start-check-btn::before {
+.compare-btn::before {
   content: '';
   position: absolute;
   top: 0;
@@ -946,62 +804,37 @@ const generateWordReport = () => {
   right: 0;
   bottom: 0;
   background: linear-gradient(90deg, 
-    rgba(255, 255, 255, 0) 0%, 
-    rgba(255, 255, 255, 0.3) 50%, 
-    rgba(255, 255, 255, 0) 100%);
+    rgba(var(--rgb-cream), 0) 0%, 
+    rgba(var(--rgb-cream), 0.3) 50%, 
+    rgba(var(--rgb-cream), 0) 100%);
   transform: translateX(-100%);
   transition: transform 0.6s ease;
 }
 
-.start-check-btn:hover:not(:disabled)::before {
+.compare-btn:hover:not(:disabled)::before {
   transform: translateX(100%);
 }
 
-.start-check-btn:hover:not(:disabled) {
-  box-shadow: 0 6px 20px rgba(var(--rgb-cinnabar), 0.4);
+.compare-btn:hover:not(:disabled) {
+  box-shadow: var(--shadow-cinnabar);
   transform: translateY(-2px);
 }
 
-.start-check-btn:disabled {
-  opacity: 0.6;
+.compare-btn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
 }
 
-.start-check-btn.processing {
-  background: linear-gradient(90deg, 
-    var(--color-cinnabar) 0%, 
-    rgba(var(--rgb-cinnabar), 0.8) 50%, 
-    var(--color-cinnabar) 100%);
-  background-size: 200% 100%;
-  animation: gradient-shift 2s ease infinite;
-}
-
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.btn-text {
-  position: relative;
-  z-index: 1;
-}
-
-.check-icon {
+.compare-btn-icon {
   font-size: 24px;
   transition: all 0.3s ease;
   position: relative;
   z-index: 1;
 }
 
-.check-icon.rotating {
+.compare-btn-icon.rotating {
   animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 /* 进度显示 */
@@ -1661,171 +1494,11 @@ const generateWordReport = () => {
   background-color: rgba(var(--rgb-brown-muted), 0.8);
 }
 
-/* 历史记录/帮助弹窗 - 统一样式 */
-.help-modal-overlay,
-.history-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.help-modal,
-.history-modal {
-  background-color: rgba(var(--rgb-parchment), 1);
-  border-radius: var(--radius-lg);
-  width: 600px;
-  max-height: 80vh;
-  overflow: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-}
-
-.help-modal-header,
-.history-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  background-color: var(--color-cream);
-}
-
-.help-modal-header h3,
-.history-modal-header h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-brown-dark);
-  margin: 0;
-  font-family: var(--font-ui);
-}
-
-.help-close-btn,
-.history-close-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: var(--radius-md);
-  background-color: transparent;
-  cursor: pointer;
-  font-size: 20px;
-  color: var(--color-brown);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.help-close-btn:hover,
-.history-close-btn:hover {
-  background-color: rgba(var(--rgb-cinnabar), 0.1);
-  color: var(--color-cinnabar);
-}
-
-.help-modal-body,
-.history-modal-body {
-  padding: 20px 24px;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.help-feature-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 24px;
-}
-
-.help-feature-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 32px 20px;
-  background-color: rgba(var(--rgb-parchment), 0.5);
-  border-radius: var(--radius-lg);
-  border: 0.7px solid rgba(var(--rgb-tan-dark), 0.3);
-  transition: all 0.3s ease;
-}
-
-.help-feature-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
-}
-
-.help-feature-card .card-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 12px;
-}
-
-.help-feature-card .card-icon .icon {
-  font-size: 24px;
-}
-
-.help-feature-card .card-icon.accuracy {
-  background-color: rgba(254, 243, 199, 1);
-}
-
-.help-feature-card .card-icon.accuracy .icon {
-  color: rgba(217, 119, 6, 1);
-}
-
-.help-feature-card .card-icon.highlight {
-  background-color: rgba(219, 234, 254, 1);
-}
-
-.help-feature-card .card-icon.highlight .icon {
-  color: rgba(37, 99, 235, 1);
-}
-
-.help-feature-card .card-icon.export {
-  background-color: rgba(252, 231, 243, 1);
-}
-
-.help-feature-card .card-icon.export .icon {
-  color: rgba(219, 39, 119, 1);
-}
-
-.help-feature-card .card-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-brown-dark);
-  font-family: var(--font-ui);
-  margin: 0 0 8px 0;
-}
-
-.help-feature-card .card-desc {
-  font-size: 13px;
-  color: var(--color-brown);
-  font-family: var(--font-ui);
-  margin: 0;
-  line-height: 1.4;
-}
-
 /* 移动端响应式优化 */
 @media (max-width: 768px) {
   .upload-section {
     flex-direction: column;
     gap: 12px;
-    padding: 0 12px;
-  }
-
-  .check-action-area {
-    padding: 0;
-    gap: 12px;
-    width: 100%;
-    max-width: none;
-    margin: 0;
   }
 
   .page-title {
@@ -1834,19 +1507,6 @@ const generateWordReport = () => {
 
   .page-subtitle {
     font-size: 12px;
-  }
-
-  .btn-text {
-    font-size: 14px;
-  }
-
-  .start-check-btn {
-    width: 100%;
-    max-width: none;
-    height: 44px;
-    border-radius: var(--radius-lg);
-    font-size: 14px;
-    box-sizing: border-box;
   }
 
   .title-row {
@@ -2038,5 +1698,20 @@ const generateWordReport = () => {
   .table-cell {
     padding: 3px 5px;
   }
+}
+
+.app-footer {
+  margin-top: auto;
+  padding: 16px 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-brown-muted);
+}
+
+.footer-powered {
+  color: var(--color-tan-dark);
 }
 </style>

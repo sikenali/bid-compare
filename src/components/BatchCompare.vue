@@ -56,6 +56,10 @@ const handleFileSelect = (idx: number, event: Event) => {
   const input = event.target as HTMLInputElement
   if (!input.files?.length) return
   const f = input.files[0]
+  if (f.size > 100 * 1024 * 1024) {
+    parseError.value = `文件 ${f.name} 超过 100MB 大小限制`
+    return
+  }
   files.value[idx] = {
     file: f,
     name: f.name,
@@ -187,7 +191,7 @@ const handleBatchCompare = async () => {
           </button>
         </div>
         <label class="batch-file-select">
-          <input type="file" accept=".txt,.docx,.pdf,.xlsx,.pptx" @change="handleFileSelect(idx, $event)" />
+          <input type="file" accept=".txt,.docx,.doc,.pdf,.xlsx,.xls,.pptx,.ppt" @change="handleFileSelect(idx, $event)" />
           <div class="batch-file-placeholder">
             <RiFileExcelLine class="batch-file-icon" />
             <span>{{ f.file ? f.name : '点击选择文件' }}</span>
@@ -574,5 +578,90 @@ const handleBatchCompare = async () => {
 .sim-badge.low {
   background: rgba(var(--rgb-cloud-blue), 0.1);
   color: var(--color-cloud-blue);
+}
+
+@media (max-width: 768px) {
+  .batch-compare-container {
+    gap: var(--spacing-3);
+  }
+
+  .page-header {
+    padding: var(--spacing-3) var(--spacing-4);
+  }
+
+  .page-title {
+    font-size: var(--text-heading);
+  }
+
+  .batch-upload-area {
+    padding: var(--spacing-3);
+    gap: var(--spacing-2);
+  }
+
+  .batch-file-card {
+    min-height: 44px;
+  }
+
+  .batch-file-placeholder {
+    min-height: 44px;
+  }
+
+  .batch-action-area {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .batch-compare-btn {
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .results-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-4);
+  }
+
+  .results-summary {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .results-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .results-table-header,
+  .results-table-row {
+    min-width: 500px;
+  }
+}
+
+@media (max-width: 480px) {
+  .batch-upload-area {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .batch-file-card {
+    padding: var(--spacing-2);
+  }
+
+  .batch-add-btn {
+    min-height: 80px;
+  }
+
+  .results-table-header,
+  .results-table-row {
+    min-width: 440px;
+    padding: 8px 12px;
+    font-size: var(--text-caption);
+  }
+
+  .rt-col.sim,
+  .rt-col.seg {
+    width: 60px;
+  }
 }
 </style>

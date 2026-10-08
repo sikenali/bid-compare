@@ -2,17 +2,16 @@
 import { ref, onMounted, onActivated, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  RiFileExcelLine,
-  RiArrowLeftLine,
   RiCheckLine,
   RiCloseCircleLine,
   RiAlertLine,
   RiFilterLine,
-  RiRestartLine,
-  RiSaveLine
+  RiFileLine,
+  RiExchangeLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx'
 import { getPropertyCheckResult, deletePropertyCheckResult } from '../utils/compareResultStore'
+import { useToast } from '../composables/useToast'
 
 interface PropertyDetail {
   name: string;
@@ -23,6 +22,7 @@ interface PropertyDetail {
 
 const route = useRoute()
 const router = useRouter()
+const { error: showError } = useToast()
 
 const propertyDetails = ref<PropertyDetail[]>([])
 const matchCount = ref(0)
@@ -92,7 +92,7 @@ const handleBack = () => {
 
 const handleExport = async () => {
   if (propertyDetails.value.length === 0) {
-    alert('没有可导出的对比数据')
+    showError('没有可导出的对比数据')
     return
   }
 
@@ -169,7 +169,7 @@ const handleExport = async () => {
     link.click()
     document.body.removeChild(link)
   } catch (error) {
-    alert('导出报告失败，请重试')
+    showError('导出报告失败，请重试')
   }
 }
 
@@ -188,49 +188,33 @@ const getStatusColor = (status: string): string => {
 
 <template>
   <div class="property-result-container">
-    <!-- 页面头部 -->
-    <div class="ba-page-header">
-      <div>
-        <h1 class="ba-page-title">属性检查结果</h1>
-        <p class="ba-page-subtitle">显示两个文件的基础属性差异和匹配统计</p>
+    <!-- 文件信息条 -->
+    <div class="file-info-bar">
+      <div class="file-info-side">
+        <div class="file-icon file-a-icon">
+          <RiFileLine />
+        </div>
+        <div class="file-details">
+          <div class="file-name">{{ leftFileName }}</div>
+          <div class="file-meta">文档 A</div>
+        </div>
       </div>
-      <div class="ba-page-actions">
-        <button class="ba-btn-primary ba-btn-text-mobile-hide" @click="handleBack" title="返回">
-          <RiRestartLine class="ba-btn-icon" />
-          <span>返回</span>
-        </button>
-        <button class="ba-btn-secondary" @click="handleExport" title="导出报告">
-          <RiSaveLine class="ba-btn-icon" />
-          <span>导出</span>
-        </button>
+      <div class="compare-icon-wrapper">
+        <RiExchangeLine />
+      </div>
+      <div class="file-info-side right">
+        <div class="file-details">
+          <div class="file-name">{{ rightFileName }}</div>
+          <div class="file-meta">文档 B</div>
+        </div>
+        <div class="file-icon file-b-icon">
+          <RiFileLine />
+        </div>
       </div>
     </div>
 
     <!-- 属性对比表格区 -->
     <div class="ba-card property-table-card">
-      <!-- 表格头部 -->
-      <div class="ba-card-header">
-        <div class="ba-card-header-icon">
-          <RiFilterLine class="header-icon" />
-        </div>
-        <h2 class="ba-card-header-title">属性对比详情</h2>
-
-        <!-- 统计徽章 -->
-        <div class="header-stats">
-          <div class="ba-stat-badge ba-stat-success">
-            <span class="ba-stat-badge-icon">✓</span>
-            <span>匹配：{{ matchCount }}项</span>
-          </div>
-          <div class="ba-stat-badge ba-stat-danger">
-            <span class="ba-stat-badge-icon">✕</span>
-            <span>不匹配：{{ mismatchCount }}项</span>
-          </div>
-          <div class="ba-stat-badge ba-stat-warn">
-            <span class="ba-stat-badge-icon">!</span>
-            <span>警告：{{ warningCount }}项</span>
-          </div>
-        </div>
-      </div>
 
       <!-- 表格内容 -->
       <div class="ba-table-scroll property-table">
@@ -280,6 +264,21 @@ const getStatusColor = (status: string): string => {
         </div>
         </div>
       </div>
+      <div class="card-footer">
+        <div class="card-footer-left">
+          <RiFilterLine class="footer-icon" />
+          <span class="footer-title">属性对比详情</span>
+          <div class="footer-stats">
+            <span class="footer-stat stat-match">✓ 匹配：{{ matchCount }}项</span>
+            <span class="footer-stat stat-mismatch">✕ 不匹配：{{ mismatchCount }}项</span>
+            <span class="footer-stat stat-warn">! 警告：{{ warningCount }}项</span>
+          </div>
+        </div>
+        <div class="card-footer-right">
+          <button class="card-action-btn" @click="handleBack">返回</button>
+          <button class="card-action-btn card-action-primary" @click="handleExport">导出</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -301,29 +300,155 @@ const getStatusColor = (status: string): string => {
   padding: var(--spacing-5);
 }
 
+/* 文件信息条 */
+.file-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: var(--color-icon-bg);
+  border-radius: 12px;
+}
+
+.file-info-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-info-side.right {
+  flex-direction: row-reverse;
+}
+
+.file-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--color-white);
+  flex-shrink: 0;
+}
+
+.file-a-icon {
+  background: var(--color-accent-red);
+}
+
+.file-b-icon {
+  background: var(--color-blue-accent);
+}
+
+.file-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-brown-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-meta {
+  font-size: 11px;
+  color: var(--color-brown-muted);
+}
+
+.compare-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-tan-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: var(--color-accent-red);
+  flex-shrink: 0;
+}
+
 .property-table-card .ba-card-header {
   margin-bottom: var(--spacing-4);
   gap: 10px;
 }
 
 .header-icon {
-  font-size: 20px;
+  font-size: 16px;
   color: var(--color-gold-dark);
 }
 
-.ba-card-header-title {
-  font-size: var(--text-heading);
-  white-space: nowrap;
-  font-family: var(--font-ui);
-  color: var(--color-brown-dark);
+.ba-card-header {
+  padding: 12px 20px;
+  margin-bottom: 0;
 }
 
-.header-stats {
+.ba-card-header-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.card-footer {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-left: auto;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-top: 1px solid var(--color-tan-light);
+}
+
+.card-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-icon {
+  font-size: 16px;
+  color: var(--color-gold-dark);
+}
+
+.footer-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
+}
+
+.footer-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.footer-stat {
+  font-size: 12px;
+  font-family: var(--font-ui);
+}
+
+.stat-match {
+  color: var(--color-jade-dark);
+}
+
+.stat-mismatch {
+  color: var(--color-cinnabar);
+}
+
+.stat-warn {
+  color: var(--color-gold-dark);
+}
+
+.card-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .property-table {
@@ -510,5 +635,32 @@ const getStatusColor = (status: string): string => {
     font-size: 11px;
     padding: 3px 8px;
   }
+}
+
+.card-action-btn {
+  padding: 8px 20px;
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  background: var(--color-cream-dark);
+  color: var(--color-brown-muted);
+  font-size: 13px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.card-action-btn:hover {
+  background: var(--color-cream-darker);
+}
+
+.card-action-primary {
+  border: none;
+  background: var(--color-accent-red);
+  color: var(--color-white);
+  font-weight: 600;
+}
+
+.card-action-primary:hover {
+  background: var(--color-accent-red-dark);
 }
 </style>

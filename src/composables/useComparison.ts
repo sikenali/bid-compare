@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import {
   selectStrategy,
   selectSmartStrategy,
@@ -18,6 +18,8 @@ export function useComparison() {
   const progressMessage = ref('')
   const canCancel = ref(false)
   const parseError = ref('')
+
+  onUnmounted(cleanup)
 
   let currentWorker: Worker | null = null
   let timeoutId: number | null = null
@@ -57,14 +59,29 @@ export function useComparison() {
       if (strategy === 'lcs' || strategy === 'myers') {
         progressMessage.value = strategy === 'lcs' ? '正在对比...' : '精确比对中...'
         const onCancel = () => abortController?.signal.aborted ?? false
+
+        // 如果启用条款剔除，先过滤条款再比对
+        let effectiveText1 = text1
+        let effectiveText2 = text2
+
+        if (settings.clauseRemovalEnabled) {
+          const [filtered1, filtered2] = removeCommonClauses(
+            text1, text2,
+            settings.clauseRemovalGranularity || 5
+          )
+          effectiveText1 = filtered1
+          effectiveText2 = filtered2
+        }
+
         const segments = strategy === 'lcs'
-          ? findSimilarSegments(text1, text2, settings, 10, pageMap1, pageMap2)
+          ? findSimilarSegments(effectiveText1, effectiveText2, settings, 10, pageMap1, pageMap2)
           : findSimilarSegmentsMyers(
-              text1, text2, settings,
-              settings.minDupChars, 10,
+              effectiveText1, effectiveText2, settings,
+              settings.minDuplicateWords, 10,
               pageMap1, pageMap2,
               undefined, onCancel
             )
+
         const similarity = calculateTextSimilarity(text1, text2, settings)
         isProcessing.value = false
         return { segments, similarity }
@@ -134,6 +151,9 @@ export function useComparison() {
           } else if (e.data.type === 'ERROR') {
             cleanup()
             reject(new Error(e.data.message))
+          } else {
+            cleanup()
+            reject(new Error(`Worker 返回未知消息类型: ${e.data.type}`))
           }
         }
 

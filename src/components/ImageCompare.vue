@@ -136,14 +136,14 @@
         <div v-for="(dup, idx) in imageDuplicates" :key="idx" class="image-result-card">
           <div class="image-result-pair">
             <div class="image-result-side">
-              <img :src="dup.leftImage" class="result-image" />
+              <img :src="dup.leftImage" class="result-image" :alt="'左侧 ' + dup.leftPage" />
               <span class="image-label">{{ dup.leftPage }}</span>
             </div>
             <div class="similarity-badge" :class="{ 'high': dup.similarity >= 80 }">
               {{ dup.similarity }}%
             </div>
             <div class="image-result-side">
-              <img :src="dup.rightImage" class="result-image" />
+              <img :src="dup.rightImage" class="result-image" :alt="'右侧 ' + dup.rightPage" />
               <span class="image-label">{{ dup.rightPage }}</span>
             </div>
           </div>
@@ -196,7 +196,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { RiImageLine, RiExchangeLine, RiAddLine } from '@remixicon/vue'
 import { useSettings } from '../composables/useSettings'
 import { computeImageHash, hammingDistance, calculateImageSimilarity, loadImageAsDataUrl } from '../utils/imageCompare'
@@ -209,6 +209,11 @@ const { settings } = useSettings()
 // 图片数据
 const leftImages = ref<Array<{ url: string; name: string }>>([])
 const rightImages = ref<Array<{ url: string; name: string }>>([])
+
+onUnmounted(() => {
+  leftImages.value.forEach(img => URL.revokeObjectURL(img.url))
+  rightImages.value.forEach(img => URL.revokeObjectURL(img.url))
+})
 
 // 文件输入引用
 const leftInputRef = ref<HTMLInputElement | null>(null)

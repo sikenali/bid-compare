@@ -1,552 +1,503 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { RiExchangeLine, RiFileLine, RiFileInfoLine, RiSettings3Line, RiCpuLine, RiFileExcelLine, RiImageLine } from '@remixicon/vue'
+import { ref, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { RiExchangeLine, RiListCheck, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
+import { useRecentRecords } from './composables/useRecentRecords'
 import { useSettings } from './composables/useSettings'
+import { storeCompareResult, storePropertyCheckResult } from './utils/compareResultStore'
+import RecentRecords from './components/RecentRecords.vue'
+import ToastContainer from './components/ToastContainer.vue'
 
-const route = useRoute()
 const router = useRouter()
+const route = useRoute()
+
 const { settings } = useSettings()
 
-const isMobileMenuOpen = ref(false)
-const isMobile = ref(false)
+watch(() => settings.theme, (val) => {
+  document.documentElement.dataset.theme = val
+}, { immediate: true })
 
-const checkMobile = () => {
-  isMobile.value = window.innerWidth <= 768
-  if (!isMobile.value) {
-    isMobileMenuOpen.value = false
-  }
-}
+const { recentRecords: fcRecords, addRecentRecord: addFcRecord, clearAllRecords: clearFcRecords, deleteRecord: deleteFcRecord } = useRecentRecords('fileCompare')
+const { recentRecords: pcRecords, addRecentRecord: addPcRecord, clearAllRecords: clearPcRecords, deleteRecord: deletePcRecord } = useRecentRecords('propertyCheck')
 
-const toggleMobileMenu = () => {
-  isMobileMenuOpen.value = !isMobileMenuOpen.value
-}
+const historyTab = ref('fileCompare')
 
-const closeMobileMenu = () => {
-  isMobileMenuOpen.value = false
-}
+const showHistory = ref(false)
 
-const handleKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Escape' && isMobileMenuOpen.value) {
-    closeMobileMenu()
-  }
-}
+const navItems = [
+  { key: 'file-compare', icon: RiExchangeLine, route: '/file-compare' },
+  { key: 'property-check', icon: RiListCheck, route: '/property-check' },
+]
 
-onMounted(() => {
-  checkMobile()
-  window.addEventListener('resize', checkMobile)
-  window.addEventListener('keydown', handleKeydown)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', checkMobile)
-  window.removeEventListener('keydown', handleKeydown)
-})
-
-const activeMenu = computed(() => {
-  if (route.path === '/file-compare' || route.path === '/file-compare-result') return 'file-compare'
-  if (route.path === '/property-check' || route.path === '/property-check-result') return 'property-check'
-  if (route.path === '/image-compare') return 'image-compare'
-  if (route.path === '/hardware-info') return 'hardware-info'
-  if (route.path === '/settings') return 'system-settings'
-  if (route.path === '/batch-compare') return 'batch-compare'
+const activeNav = computed(() => {
+  if (route.path.startsWith('/file-compare')) return 'file-compare'
+  if (route.path.startsWith('/property-check')) return 'property-check'
   return 'file-compare'
 })
 
-const handleMenuClick = (menu: string) => {
-  switch (menu) {
-    case 'file-compare':
-      router.push('/file-compare')
-      break
-    case 'property-check':
-      router.push('/property-check')
-      break
-    case 'image-compare':
-      router.push('/image-compare')
-      break
-    case 'hardware-info':
-      router.push('/hardware-info')
-      break
-      case 'system-settings':
-        router.push('/settings')
-        break
-      case 'batch-compare':
-        router.push('/batch-compare')
-        break
-    }
-  closeMobileMenu()
+const navigateTo = (item: typeof navItems[0]) => {
+  router.push(item.route)
 }
+
+const toggleHistory = () => {
+  showHistory.value = !showHistory.value
+}
+
+const viewHistoricalRecord = async (record: any) => {
+  if (historyTab.value === 'fileCompare') {
+    const compareResult = {
+      segments: record.similarSegments || [],
+      leftFileName: record.leftFileName,
+      rightFileName: record.rightFileName,
+      textSimilarity: record.similarity,
+      similarSegmentsCount: record.similarSegments ? record.similarSegments.length : 0,
+      leftTotalPages: 1,
+      rightTotalPages: 1
+    }
+    const resultId = storeCompareResult(compareResult)
+    router.push({ path: '/file-compare-result', query: { resultId, t: Date.now() } })
+  } else {
+    const checkResult = {
+      propertyDetails: record.propertyDetails || [],
+      leftFileName: record.leftFileName,
+      rightFileName: record.rightFileName,
+      totalProperties: record.propertyDetails?.length || 0,
+      matchingProperties: record.propertyDetails?.filter((p: any) => p.status === 'match').length || 0,
+      nonMatchingProperties: record.propertyDetails?.filter((p: any) => p.status === 'mismatch').length || 0,
+      warningProperties: record.propertyDetails?.filter((p: any) => p.status === 'warning').length || 0,
+      similarity: record.similarity,
+      leftFileProperties: {},
+      rightFileProperties: {},
+      similarityStatus: 'match'
+    }
+    const resultId = storePropertyCheckResult(checkResult)
+    router.push({ path: '/property-check-result', query: { resultId, t: Date.now() } })
+  }
+  showHistory.value = false
+}
+
+const isActive = (path: string) => route.path.startsWith(path)
 </script>
 
 <template>
   <div class="app-container">
-    <header v-if="isMobile" class="mobile-header">
-      <button class="hamburger-btn" @click="toggleMobileMenu" aria-label="切换菜单">
-        <span class="hamburger-icon">
-          <span class="hamburger-line"></span>
-          <span class="hamburger-line"></span>
-          <span class="hamburger-line"></span>
-        </span>
-      </button>
-      <div class="mobile-logo">
-        <div class="mobile-logo-seal">
-          <RiExchangeLine class="mobile-logo-icon" />
+    <header class="top-nav">
+      <div class="nav-left" @click="router.push('/')" style="cursor: pointer">
+        <div class="logo-icon">
+          <RiExchangeLine class="logo-svg" />
         </div>
-        <span class="mobile-title">文比猩</span>
+        <div class="brand-group">
+          <span class="brand-name">文比猩</span>
+          <span class="brand-sub">文档智能对比平台</span>
+        </div>
       </div>
-      <div class="mobile-header-spacer"></div>
-    </header>
-
-    <Transition name="overlay">
-      <div v-if="isMobile && isMobileMenuOpen" class="mobile-overlay" @click="closeMobileMenu"></div>
-    </Transition>
-
-    <Transition name="sidebar">
-      <aside v-show="isMobile ? isMobileMenuOpen : true" class="sidebar" :class="{ 'mobile-open': isMobileMenuOpen }">
-        <button v-if="isMobile" class="mobile-close-btn" @click="closeMobileMenu" aria-label="关闭菜单">
-          <span class="close-icon">×</span>
+      <nav class="nav-tabs">
+        <button
+          v-for="item in navItems"
+          :key="item.key"
+          class="nav-tab-item"
+          :class="{ active: activeNav === item.key }"
+          @click="navigateTo(item)"
+        >
+          <component :is="item.icon" size="20" />
+          <span class="format-tooltip">{{ item.key === 'file-compare' ? '文件对比' : '属性检查' }}</span>
         </button>
-
-        <div class="sidebar-top-accent"></div>
-
-        <div class="logo-section">
-          <div class="logo-seal">
-            <RiExchangeLine class="logo-icon-svg" />
-          </div>
-          <h1 class="logo-title">文比猩</h1>
-          <p class="logo-subtitle">专业文件智能对比工具</p>
-        </div>
-
-        <div class="sidebar-divider"></div>
-
-        <nav class="nav-menu">
-          <button
-            class="nav-item"
-            :class="{ active: activeMenu === 'file-compare' }"
-            @click="handleMenuClick('file-compare')"
-          >
-            <RiExchangeLine class="nav-icon" />
-            <span class="nav-text">文件对比</span>
-          </button>
-          <button
-            class="nav-item"
-            :class="{ active: activeMenu === 'property-check' }"
-            @click="handleMenuClick('property-check')"
-          >
-            <RiFileInfoLine class="nav-icon" />
-            <span class="nav-text">属性检查</span>
-          </button>
-          <button
-            v-if="settings.enableImageCompare"
-            class="nav-item"
-            :class="{ active: activeMenu === 'image-compare' }"
-            @click="handleMenuClick('image-compare')"
-          >
-            <RiImageLine class="nav-icon" />
-            <span class="nav-text">图片对比</span>
-          </button>
-          <button
-            class="nav-item"
-            :class="{ active: activeMenu === 'hardware-info' }"
-            @click="handleMenuClick('hardware-info')"
-          >
-            <RiCpuLine class="nav-icon" />
-            <span class="nav-text">硬件信息</span>
-          </button>
-          <button
-            class="nav-item"
-            :class="{ active: activeMenu === 'system-settings' }"
-            @click="handleMenuClick('system-settings')"
-          >
-            <RiSettings3Line class="nav-icon" />
-            <span class="nav-text">系统设置</span>
-          </button>
-        </nav>
-
-        <div class="sidebar-divider"></div>
-
-        <div class="version-info">
-          <p class="version-title">© 2026 sikenali</p>
-          <p class="version-subtitle">LightOS Walk Coding</p>
-        </div>
-      </aside>
-    </Transition>
+      </nav>
+      <div class="nav-actions">
+        <button class="nav-btn" title="历史记录" @click="toggleHistory">
+          <span class="nav-btn-content">
+            <RiHistoryLine size="20" />
+            <span class="nav-btn-label">历史</span>
+          </span>
+        </button>
+        <button class="nav-btn" title="设置" @click="router.push('/settings')">
+          <span class="nav-btn-content">
+            <RiSettings3Line size="20" />
+            <span class="nav-btn-label">设置</span>
+          </span>
+        </button>
+      </div>
+    </header>
 
     <main class="main-content">
       <router-view />
     </main>
+
+    <!-- 历史记录弹窗 -->
+    <div v-if="showHistory" class="ba-modal-overlay" @click="toggleHistory">
+      <div class="history-modal" @click.stop>
+        <div class="history-modal-header">
+          <h3>历史记录</h3>
+          <button class="history-close-btn" @click="toggleHistory">×</button>
+        </div>
+        <div class="history-tabs">
+          <button class="history-tab" :class="{ active: historyTab === 'fileCompare' }" @click="historyTab = 'fileCompare'">文件对比</button>
+          <button class="history-tab" :class="{ active: historyTab === 'propertyCheck' }" @click="historyTab = 'propertyCheck'">属性检查</button>
+        </div>
+        <div class="history-modal-body">
+          <RecentRecords
+            v-if="historyTab === 'fileCompare' && fcRecords.length > 0"
+            :recent-records="fcRecords"
+            :on-clear-all="clearFcRecords"
+            :on-view-record="viewHistoricalRecord"
+            :on-delete-record="deleteFcRecord"
+            :on-close="toggleHistory"
+          />
+          <RecentRecords
+            v-else-if="historyTab === 'propertyCheck' && pcRecords.length > 0"
+            :recent-records="pcRecords"
+            :on-clear-all="clearPcRecords"
+            :on-view-record="viewHistoricalRecord"
+            :on-delete-record="deletePcRecord"
+            :on-close="toggleHistory"
+          />
+          <div v-else class="history-empty">
+            <p>暂无历史记录</p>
+            <p class="history-empty-hint">完成文件对比或属性检查后，结果将自动保存至此</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <ToastContainer />
   </div>
 </template>
 
 <style scoped>
 .app-container {
-  display: flex;
   width: 100%;
   height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-nav-bg);
   font-family: var(--font-ui);
-  background: var(--color-parchment);
   overflow: hidden;
 }
 
-/* ========== Sidebar ========== */
-.sidebar {
-  width: var(--sidebar-width);
-  height: 100%;
-  background: var(--color-cream);
+.top-nav {
+  height: 64px;
+  min-height: 64px;
   display: flex;
-  flex-direction: column;
-  box-shadow: 1px 0 0 var(--color-tan-light);
-  overflow-y: auto;
-  overflow-x: hidden;
-  position: relative;
-}
-
-.sidebar-top-accent {
-  height: 4px;
-  background: var(--color-cinnabar);
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: var(--color-nav-bg);
+  border-bottom: 1px solid var(--color-tan-light);
   flex-shrink: 0;
 }
 
-/* ========== Logo Section ========== */
-.logo-section {
-  padding: var(--spacing-6) var(--spacing-4);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  border-bottom: 1px solid var(--color-tan-light);
-}
-
-.logo-seal {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--color-cinnabar);
+.nav-left {
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-cinnabar);
-  margin-bottom: var(--spacing-3);
-  position: relative;
-}
-
-.logo-seal::before {
-  content: '';
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  right: 3px;
-  bottom: 3px;
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-}
-
-.logo-icon-svg {
-  font-size: 28px;
-  color: #fff;
-}
-
-.logo-title {
-  font-size: 24px;
-  font-weight: 400;
-  color: var(--color-brown-dark);
-  margin: 0 0 2px 0;
-  font-family: var(--font-calligraphy);
-  letter-spacing: 2px;
-}
-
-.logo-subtitle {
-  font-size: var(--text-caption);
-  color: var(--color-brown-muted);
-  margin: 0;
-  font-family: var(--font-xiaowei);
-  letter-spacing: 1px;
-}
-
-/* ========== Navigation ========== */
-.nav-menu {
-  flex: 1;
-  padding: var(--spacing-3);
-  display: flex;
-  flex-direction: column;
   gap: 12px;
 }
 
-/* ========== Sidebar Divider ========== */
-.sidebar-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-tan-dark), transparent);
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-accent-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
-.nav-item {
+.logo-svg {
+  font-size: 22px;
+  color: #fff;
+}
+
+.brand-group {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.brand-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-brown-dark);
+  line-height: 1.2;
+}
+
+.brand-sub {
+  font-size: 12px;
+  color: var(--color-brown-muted);
+  line-height: 1.2;
+}
+
+.nav-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 14px 18px;
-  border: none;
-  border-radius: var(--radius-md);
-  background: transparent;
+  gap: 8px;
+}
+
+.nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-tab-item {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--color-cream-dark);
+  border: 0.7px solid var(--color-tan-border);
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
+  transition: all 0.2s;
   color: var(--color-brown);
-  transition: all var(--transition-normal);
-  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-tab-item:hover {
+  background: var(--color-cinnabar);
+  border-color: transparent;
+  color: #fff;
+}
+
+.nav-tab-item:active {
+  transform: scale(0.95);
+}
+
+.nav-tab-item .format-tooltip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: rgba(var(--rgb-brown-dark), 0.9);
+  color: white;
+  font-size: 11px;
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+  z-index: 10;
+}
+
+.nav-tab-item:hover .format-tooltip {
+  opacity: 1;
+}
+
+.nav-tab-item.active {
+  background: var(--color-cinnabar);
+  border-color: transparent;
+  color: #fff;
+}
+
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--color-cream-dark);
+  border: 0.7px solid var(--color-tan-border);
+  cursor: pointer;
+  transition: all 0.2s;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--color-brown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-btn:hover {
+  width: 90px;
+  background: var(--color-cinnabar);
+  border-color: transparent;
+  color: #fff;
+}
+
+.nav-btn:active {
+  transform: scale(0.95);
+}
+
+.nav-btn-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-btn-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: inherit;
+  display: none;
+}
+
+.nav-btn:hover .nav-btn-label {
+  display: inline;
+}
+
+.main-content {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+  background: var(--color-nav-bg);
+}
+
+/* 历史记录弹窗 */
+.history-modal {
+  background: var(--color-cream);
+  border-radius: var(--radius-lg);
+  width: min(600px, 90vw);
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+}
+
+.history-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-tan-light);
+}
+
+.history-modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-brown-dark);
+  margin: 0;
   font-family: var(--font-ui);
 }
 
-.nav-item:hover {
+.history-close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
   background: var(--color-cream-dark);
+  color: var(--color-brown);
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.history-close-btn:hover {
+  background: rgba(var(--rgb-cinnabar), 0.1);
+  color: var(--color-cinnabar);
+}
+
+.history-modal-body {
+  padding: 20px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.history-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 20px 0;
+  border-bottom: 1px solid var(--color-tan-light);
+}
+
+.history-tab {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--color-brown-muted);
+  font-size: 13px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  margin-bottom: -1px;
+}
+
+.history-tab:hover {
   color: var(--color-brown-dark);
 }
 
-.nav-item.active {
-  background: var(--color-cinnabar);
-  color: #fff;
-  box-shadow: var(--shadow-cinnabar);
+.history-tab.active {
+  color: var(--color-cinnabar);
+  border-bottom-color: var(--color-cinnabar);
   font-weight: 600;
 }
 
-.nav-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-.nav-text {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ========== Version Info ========== */
-.version-info {
-  padding: var(--spacing-4) var(--spacing-3);
-  border-top: 1px solid var(--color-tan-light);
+.history-empty {
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.version-title {
-  font-size: 13px;
-  font-weight: 500;
+  padding: 40px 20px;
   color: var(--color-brown-muted);
-  margin: 0;
+  font-size: 14px;
   font-family: var(--font-ui);
 }
 
-.version-subtitle {
-  font-size: var(--text-micro);
+.history-empty-hint {
+  font-size: 12px;
   color: var(--color-brown-muted);
-  margin: 0;
+  margin-top: 8px;
   opacity: 0.7;
-  font-family: var(--font-ui);
 }
 
-/* ========== Main Content ========== */
-.main-content {
-  flex: 1;
-  height: 100%;
-  overflow: auto;
-  background: var(--color-parchment);
-  padding: var(--spacing-6);
-}
-
-/* ========== Mobile Header ========== */
-.mobile-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: var(--navbar-height);
-  background: var(--color-cream);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--spacing-4);
-  z-index: 999;
-  box-shadow: 0 1px 0 var(--color-tan-light);
-  border-bottom: 3px solid var(--color-cinnabar);
-}
-
-.hamburger-btn {
-  width: 44px;
-  height: 44px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  flex-shrink: 0;
-}
-
-.hamburger-icon {
-  width: 24px;
-  height: 18px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.hamburger-line {
-  width: 100%;
-  height: 2px;
-  background: var(--color-brown);
-  border-radius: 1px;
-  transition: all var(--transition-normal);
-}
-
-.mobile-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-  justify-content: center;
-}
-
-.mobile-logo-seal {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--color-cinnabar);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.mobile-logo-icon {
-  font-size: 20px;
-  color: #fff;
-}
-
-.mobile-title {
-  font-size: 20px;
-  font-weight: 400;
-  color: var(--color-brown-dark);
-  font-family: var(--font-calligraphy);
-  letter-spacing: 2px;
-}
-
-.mobile-header-spacer {
-  width: 44px;
-  flex-shrink: 0;
-}
-
-/* ========== Overlay ========== */
-.mobile-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
-}
-
-/* ========== Mobile Sidebar ========== */
 @media (max-width: 768px) {
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 280px;
-    transform: translateX(-100%);
-    z-index: 1001;
-    transition: transform var(--transition-slow);
-    will-change: transform;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+  .top-nav {
+    padding: 0 16px;
   }
 
-  .sidebar.mobile-open {
-    transform: translateX(0);
+  .brand-sub {
+    display: none;
   }
 
-  .mobile-close-btn {
-    position: absolute;
-    top: 16px;
-    right: 16px;
+  .brand-name {
+    font-size: 18px;
+  }
+
+  .nav-tabs,
+  .nav-actions {
+    gap: 4px;
+  }
+
+  .main-content {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-nav {
+    padding: 0 10px;
+    height: 56px;
+    min-height: 56px;
+  }
+
+  .nav-left {
+    gap: 8px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .logo-svg {
+    font-size: 18px;
+  }
+
+  .brand-name {
+    font-size: 16px;
+  }
+
+  .nav-tab-item,
+  .nav-btn {
     width: 36px;
     height: 36px;
-    border: none;
-    border-radius: 50%;
-    background: var(--color-cream-dark);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--transition-fast);
-  }
-
-  .mobile-close-btn:hover {
-    background: var(--color-cream-darker);
-  }
-
-  .close-icon {
-    font-size: 24px;
-    color: var(--color-brown);
-    line-height: 1;
   }
 
   .main-content {
-    padding-top: var(--navbar-height);
-    padding-left: var(--spacing-4);
-    padding-right: var(--spacing-4);
+    padding: 12px;
   }
 }
 
-/* ========== Tablet ========== */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .main-content {
-    padding: var(--spacing-6);
-  }
-}
-
-/* ========== Mobile Nav Items ========== */
-@media (max-width: 768px) {
-  .nav-item {
-    min-height: 48px;
-    padding: 14px 16px;
-  }
-
-  .nav-icon {
-    font-size: 22px;
-    width: 22px;
-    height: 22px;
-  }
-
-  .nav-text {
-    font-size: 15px;
-  }
-}
-
-/* ========== Transitions ========== */
-.sidebar-enter-active,
-.sidebar-leave-active {
-  transition: transform var(--transition-slow);
-}
-
-.sidebar-enter-from,
-.sidebar-leave-to {
-  transform: translateX(-100%);
-}
-
-.overlay-enter-active,
-.overlay-leave-active {
-  transition: opacity var(--transition-slow);
-}
-
-.overlay-enter-from,
-.overlay-leave-to {
-  opacity: 0;
-}
 </style>

@@ -312,8 +312,7 @@ export function findSimilarSegmentsSimHash(
 // 估算页码（基于字符位置）
 // 这是一个后备方案，当无法获取真实页数时使用
 const estimatePage = (charPosition: number, totalPages: number = 1): string => {
-  // 假设平均每页约 1000 字符
-  const CHARS_PER_PAGE = 1000
+  const CHARS_PER_PAGE = 1500
   const estimatedPage = Math.floor(charPosition / CHARS_PER_PAGE) + 1
   
   // 如果总页数已知，限制不超过总页数
@@ -374,29 +373,52 @@ export function buildHighlightedHtml(
 export function removeCommonClauses(
   text1: string,
   text2: string,
-  minChars: number = 10
+  minChars: number = 5
 ): [string, string] {
-  // 按句号、分号、换行切分为子句
+  // 扩展中文标点支持：。；！？：，、……？
+  const clausePunctuation = /[。！？：，、…；]/u;
+  
+  // 按标点切分条款，并剥离序号前缀（如 "1. "、"200."、"（一）" 等）
   const splitClauses = (text: string): string[] => {
-    const raw = text.split(/(?<=[。；;．])\s*/)
-    return raw.map(s => s.trim()).filter(s => s.length >= minChars)
-  }
+    const raw = text.split(clausePunctuation);
+    const clauses = raw.map(s => s.trim()).filter(s => s.length > 0);
+    // 剥离序号前缀：数字+点、数字+括号、中文数字序号等
+    const normalizeClause = (c: string): string => {
+      let cleaned = c
+        .replace(/^\d+\s*\.?\s*/, '')      // 剥离 "1. " "200." "3. "
+        .replace(/^\s*[\(（]\s*\d+\s*[\)）]\s*/, '') // 剥离 "(1)" "（2）"
+        .replace(/^[零一二三四五六七八九十百千万]+\.?/, '') // 剥离 "一." "二、"
+        .replace(/^\s*[\u4e00-\u9fa5]+[\s：.]*\s*/, '');     // 剥离 "甲方：" "乙方："
+      return cleaned;
+    };
+    return clauses
+      .map(normalizeClause)
+      .map(s => s.trim())
+      .filter(s => s.length >= minChars);
+  };
 
-  const clauses1 = splitClauses(text1)
-  const clauses2 = splitClauses(text2)
+  const clauses1 = splitClauses(text1);
+  const clauses2 = splitClauses(text2);
 
   if (clauses1.length === 0 || clauses2.length === 0) {
-    return [text1, text2]
+    return [text1, text2];
   }
 
-  // 双向剔除:将同时出现在两侧的条款从两侧都去掉
-  const set2 = new Set(clauses2.map(c => c.replace(/\s+/g, '')))
-  const set1 = new Set(clauses1.map(c => c.replace(/\s+/g, '')))
+  // 归一化后构建集合（保留原文用于返回）
+  const normalizeForMatch = (c: string): string => {
+    // 移除非汉字/非字母数字的干扰字符（对标点敏感时可关闭，此处默认清理）
+    let normalized = c.replace(/[^\w\u4e00-\u9fa5]/g, '');
+    normalized = normalized.replace(/\s+/g, ' ').trim(); // 统一空格
+    return normalized.toLowerCase(); // 忽略大小写
+  };
 
-  const filtered1 = clauses1.filter(c => !set2.has(c.replace(/\s+/g, '')))
-  const filtered2 = clauses2.filter(c => !set1.has(c.replace(/\s+/g, '')))
+  const set2 = new Set(clauses2.map(c => normalizeForMatch(c)));
+  const set1 = new Set(clauses1.map(c => normalizeForMatch(c)));
 
-  return [filtered1.join('\n'), filtered2.join('\n')]
+  const filtered1 = clauses1.filter(c => !set2.has(normalizeForMatch(c)));
+  const filtered2 = clauses2.filter(c => !set1.has(normalizeForMatch(c)));
+
+  return [filtered1.join('\n'), filtered2.join('\n')];
 }
 
 export function findPageByIndex(pageMap: PageMap, charIndex: number): number {
@@ -759,6 +781,104 @@ export function findSimilarSegmentsRabinKarp(
 }
 
 // 分块匹配——按段落切分后匹配
+/**
+ * 验证对比设置的有效性，返回警告列表
+ */
+export function validateComparisonSettings(
+  settings: Partial<ComparisonSettings>
+): { valid: boolean; warnings: string[] } {
+  const warnings: string[] = [];
+
+  if (settings.ngramSize && settings.ngramSize > 20) {
+    warnings.push(`ngramSize 建议不超过20，当前值：${settings.ngramSize}`);
+  }
+
+  if (settings.minDuplicateWords && settings.ngramSize) {
+    if (settings.minDuplicateWords < settings.ngramSize) {
+      warnings.push(
+        `minDuplicateWords (${settings.minDuplicateWords}) 不应小于 ngramSize (${settings.ngramSize})`
+      );
+    }
+  }
+
+  if (settings.textSimilarityThreshold) {
+    if (settings.textSimilarityThreshold < 0 || settings.textSimilarityThreshold > 100) {
+      warnings.push(`textSimilarityThreshold 应在 0-100 之间，当前值：${settings.textSimilarityThreshold}`);
+    }
+  }
+
+  return {
+    valid: warnings.length === 0,
+    warnings
+  };
+}
+
+/**
+ * 带条款剔除的智能比对主入口
+ * 当 clauseRemovalEnabled 为 true 时，先过滤通用条款，再执行智能比对
+ */
+export function findSimilarSegmentsWithClauseFilter(
+  text1: string,
+  text2: string,
+  settings: ComparisonSettings,
+  contextLength: number = 10,
+  pageMap1?: PageMap,
+  pageMap2?: PageMap,
+  onProgress?: (progress: number) => void,
+  onCancel?: () => boolean
+): SimilarSegment[] {
+  let filtered1 = text1;
+  let filtered2 = text2;
+
+  // 步骤1: 条款过滤（如启用）
+  if (settings.clauseRemovalEnabled) {
+    onProgress?.(0.1);
+    [filtered1, filtered2] = removeCommonClauses(
+      text1, text2,
+      settings.clauseRemovalGranularity || 5
+    );
+    onProgress?.(0.2);
+  }
+
+  // 步骤2: 智能策略比对
+  const strategy = selectSmartStrategy(filtered1, filtered2);
+  onProgress?.(0.3);
+
+  switch (strategy) {
+    case 'lcs':
+      return findSimilarSegments(
+        filtered1, filtered2, settings, contextLength, pageMap1, pageMap2
+      );
+    case 'myers':
+      return findSimilarSegmentsMyers(
+        filtered1, filtered2, settings,
+        settings.minDuplicateWords, contextLength,
+        pageMap1, pageMap2,
+        onProgress, onCancel
+      );
+    case 'rabin-karp':
+      return findSimilarSegmentsRabinKarp(
+        filtered1, filtered2, settings, contextLength,
+        onProgress, onCancel, pageMap1, pageMap2
+      );
+    case 'simhash':
+      return findSimilarSegmentsSimHash(
+        filtered1, filtered2, settings,
+        onProgress, onCancel, pageMap1, pageMap2
+      );
+    case 'minhash':
+      return findSimilarSegmentsMinHash(
+        filtered1, filtered2, settings,
+        onProgress, onCancel, pageMap1, pageMap2
+      );
+    default:
+      return findSimilarSegmentsSmart(
+        filtered1, filtered2, settings,
+        onProgress, onCancel, pageMap1, pageMap2
+      );
+  }
+}
+
 export function findSimilarSegmentsBlockMatch(
   text1: string,
   text2: string,

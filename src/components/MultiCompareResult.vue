@@ -200,7 +200,10 @@ import {
 import { BorderBeam } from 'vue3-border-beam'
 import { htmlToMarkdown } from '../utils/sanitize'
 import { useSettings } from '../composables/useSettings'
+import { useToast } from '../composables/useToast'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, ShadingType } from 'docx'
+
+const { error: showError } = useToast()
 
 interface DuplicatePair {
   leftFileName: string
@@ -400,7 +403,7 @@ const handleMatrixCellClick = (rowIdx: number, colIdx: number) => {
 // 导出功能
 const handleExport = () => {
   if (totalDuplicates.value === 0) {
-    alert('没有可导出的对比数据')
+    showError('没有可导出的对比数据')
     return
   }
 

@@ -1,10 +1,20 @@
 import mammoth from 'mammoth';
-import * as pdfjsLib from 'pdfjs-dist';
-import PdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 import type { PageMap } from '../utils/textAlgorithms';
 
-// 设置worker路径
-pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorker;
+let pdfjsLib: any = null;
+let pdfWorkerSet = false;
+
+async function getPdfjsLib() {
+  if (!pdfjsLib) {
+    pdfjsLib = await import('pdfjs-dist');
+  }
+  if (!pdfWorkerSet) {
+    pdfWorkerSet = true;
+    const PdfWorker = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).href;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorker;
+  }
+  return pdfjsLib;
+}
 
 // 文件属性类型
 export interface FileProperties {
@@ -102,6 +112,7 @@ const extractOfficeMetadata = async (zip: any): Promise<Partial<FileProperties>>
                         appXmlContent.match(/<Slides[^>]*>(\d+)<\/Slides>/i);
       if (pageMatch?.[1]) {
         properties.页码范围 = `1-${pageMatch[1]}`;
+        properties.页数 = pageMatch[1];
       }
 
       // 程序名称
@@ -223,10 +234,16 @@ export function useFileParser() {
         // ignore
       }
 
+      const pageMap = buildEstimatedPageMap(textResult.value);
+      if (properties.页码范围 === '1' && pageMap.totalPages > 1) {
+        properties.页码范围 = `1-${pageMap.totalPages}`;
+        properties.页数 = pageMap.totalPages.toString();
+      }
+
       return {
         content: textResult.value,
         properties,
-        pageMap: buildEstimatedPageMap(textResult.value),
+        pageMap,
         images
       };
     } catch (error) {
@@ -245,7 +262,8 @@ export function useFileParser() {
       const dataBuffer = await file.arrayBuffer();
 
       // 设置PDF解析配置
-      const pdfPromise = pdfjsLib.getDocument({
+      const pdf = await getPdfjsLib();
+      const pdfPromise = pdf.getDocument({
         data: dataBuffer,
         useSystemFonts: true
       }).promise;
@@ -278,10 +296,10 @@ export function useFileParser() {
           .map((item: any) => item.str)
           .join('');
 
-        // 添加页码映射
+        // 添加页码映射（包括 \n 分隔符）
         pageMap.ranges.push({
           start: offset,
-          end: offset + pageText.length,
+          end: offset + pageText.length + (pageNum < extractPageCount ? 1 : 0),
           page: pageNum
         })
 
@@ -303,6 +321,7 @@ export function useFileParser() {
         最后一次保存者: '未知用户',
         修订号: '未知',
         页码范围: `1-${pageCount}`,
+        页数: pageCount.toString(),
         版本号: '1.0',
         程序名称: '未知',
         公司: '未知',
@@ -358,23 +377,11 @@ export function useFileParser() {
         images: [] // PDF 图片提取在外部处理
       };
     } catch (error) {
-      // PDF解析错误
+      // PDF解析错误，抛出明确异常而非静默回退
       return {
-        content: 'PDF文件内容（浏览器环境下无法直接解析）',
-        properties: {
-          文件名: file.name,
-          文件大小: formatFileSize(file.size),
-          文件类型: 'PDF文档',
-          作者: '未知作者',
-          最后一次保存者: '未知用户',
-          页码范围: '1',
-          版本号: '1.0',
-          程序名称: '未知',
-          公司: '未知',
-          文本内容长度: '0',
-          创建时间: new Date(file.lastModified).toLocaleString(),
-          修改时间: new Date(file.lastModified).toLocaleString()
-        }
+        content: '',
+        properties: {},
+        error: `PDF解析失败: ${(error as Error).message || '文件损坏或格式不支持'}`
       };
     }
   };
@@ -449,10 +456,16 @@ export function useFileParser() {
         // ignore
       }
 
+      const pageMap = buildEstimatedPageMap(textContent);
+      if (properties.页码范围 === '1' && pageMap.totalPages > 1) {
+        properties.页码范围 = `1-${pageMap.totalPages}`;
+        properties.页数 = pageMap.totalPages.toString();
+      }
+
       return {
         content: textContent,
         properties,
-        pageMap: buildEstimatedPageMap(textContent)
+        pageMap
       };
     } catch (error) {
       return {
@@ -524,6 +537,7 @@ export function useFileParser() {
           }
 
           properties.页码范围 = `1-${slideFiles.length}`;
+          properties.页数 = slideFiles.length.toString();
         }
       } catch (zipError) {
         // ignore
@@ -582,6 +596,11 @@ export function useFileParser() {
     parsePdfFile,
     parseDocFile,
     parseXlsxFile,
-    parsePptxFile
+    parsePptxFile,
+    disposeFileResult: (result: FileParseResult) => {
+      if (result.images) {
+        result.images.forEach(img => URL.revokeObjectURL(img.url))
+      }
+    }
   };
 }

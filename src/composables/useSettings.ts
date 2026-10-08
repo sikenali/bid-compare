@@ -1,4 +1,5 @@
-import { reactive, onMounted } from 'vue'
+import { reactive } from 'vue'
+import { validateComparisonSettings } from '../utils/textAlgorithms'
 
 // 定义设置类型
 export interface FileCompareSettings {
@@ -35,6 +36,8 @@ export interface FileCompareSettings {
   exportFormat: string
   includeHighlight: boolean
   includeCharts: boolean
+  // 主题设置
+  theme: string
 }
 
 const SETTINGS_VERSION = 2
@@ -46,7 +49,7 @@ export const defaultSettings: FileCompareSettings = {
   minDuplicateWords: 8,
   textSimilarityThreshold: 75,
   imageSimilarityThreshold: 80,
-  maxResults: 100,
+  maxResults: 500,
   ignorePunctuation: true,
   ignoreWhitespace: true,
   ignoreCase: false,
@@ -66,7 +69,8 @@ export const defaultSettings: FileCompareSettings = {
   apiEndpoint: '',
   exportFormat: 'word',
   includeHighlight: true,
-  includeCharts: true
+  includeCharts: true,
+  theme: 'light'
 }
 
 // 模块级单例 - 确保所有组件共享同一个 settings 对象
@@ -106,6 +110,17 @@ export function useSettings() {
   // 保存设置
   const saveSettings = () => {
     try {
+      // 先验证设置（仅验证文本相关的设置部分）
+      const validation = validateComparisonSettings({
+        ngramSize: settings.ngramSize,
+        minDuplicateWords: settings.minDuplicateWords,
+        textSimilarityThreshold: settings.textSimilarityThreshold
+      })
+      // 验证失败仅产生警告，不阻止保存
+      if (!validation.valid && validation.warnings.length > 0) {
+        console.warn('设置验证警告:', validation.warnings)
+      }
+
       localStorage.setItem('fileCompareSettings', JSON.stringify(settings))
       return true
     } catch (error) {
@@ -126,9 +141,6 @@ export function useSettings() {
 
   // 初始化时加载设置（仅执行一次）
   if (!isInitialized) {
-    onMounted(() => {
-      loadSettings()
-    })
     isInitialized = true
     loadSettings()
   }

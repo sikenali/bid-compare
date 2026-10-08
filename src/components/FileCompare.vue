@@ -1,23 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
-  RiFileWordLine,
+  RiAddLine,
   RiArrowRightLine,
-  RiPercentLine,
-  RiImageLine,
-  RiListCheck,
-  RiFileExcelLine,
-  RiCheckDoubleLine,
-  RiFilterLine,
-  RiArrowLeftSLine,
-  RiArrowRightSLine,
-  RiSearchLine,
-  RiEditLine,
-  RiInformationLine,
-  RiHistoryLine,
-  RiDownloadLine
+  RiRobot2Line
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx'
 import { useFileParser } from '../composables/useFileParser'
@@ -25,6 +13,7 @@ import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
 import { useAIModel } from '../composables/useAIModel'
 import { useComparison } from '../composables/useComparison'
+import { useToast } from '../composables/useToast'
 import type { ComparisonSettings, SimilarSegment } from '../utils/textAlgorithms'
 import { removeCommonClauses } from '../utils/textAlgorithms'
 import { htmlToMarkdown } from '../utils/sanitize'
@@ -32,15 +21,17 @@ import { storeCompareResult, deleteCompareResult } from '../utils/compareResultS
 import { removeWatermarks } from '../utils/watermark'
 import { computeImageHash, hammingDistance, calculateImageSimilarity, loadImageAsDataUrl } from '../utils/imageCompare'
 import type { ImageDuplicate } from '../utils/imageCompare'
-import { recognizeImages, extractTextFromImage, isOCRAvailable, getSupportedLanguages } from '../utils/ocr'
+import { recognizeImages, extractTextFromImage, isOCRAvailable, getSupportedLanguages, calculateEditDistanceSimilarity } from '../utils/ocr'
 import type { OCRResult, OCRConfig } from '../utils/ocr'
 import FileUpload from './FileUpload.vue'
-import RecentRecords from './RecentRecords.vue'
 import MultiFileUpload from './MultiFileUpload.vue'
 import MultiCompareResult from './MultiCompareResult.vue'
-import { BorderBeam } from 'vue3-border-beam'
+
 
 const router = useRouter()
+
+// 使用 Toast
+const { error: showError, success: showSuccess } = useToast()
 
 // 文件信息类型定义
 interface FileInfo {
@@ -91,6 +82,7 @@ const showMultiResult = ref(false)
 const multiSimilarityMatrix = ref<number[][]>([])
 const multiDuplicateGroups = ref<any[]>([])
 const multiFileUploadRef = ref<InstanceType<typeof MultiFileUpload> | null>(null)
+const currentYear = computed(() => new Date().getFullYear())
 
 watch(showMultiResult, (val) => {
   if (val) {
@@ -269,52 +261,8 @@ watch(
 
 // 使用最近记录组合式函数 - 传入fileCompare类型
 const {
-  showRecentRecords,
-  recentRecords,
   addRecentRecord,
-  clearAllRecords,
-  deleteRecord
 } = useRecentRecords('fileCompare')
-
-// 历史记录弹窗
-const showHistory = ref(false)
-
-const toggleHistory = () => {
-  showHistory.value = !showHistory.value
-}
-
-// 当记录为空时自动关闭弹窗
-watch(
-  () => recentRecords.length,
-  (newLen) => {
-    if (newLen === 0 && showHistory.value) {
-      showHistory.value = false
-    }
-  }
-)
-
-// 查看历史对比记录
-const viewHistoricalRecord = (record: any) => {
-  // 将历史记录数据存储到模块级存储中
-  const compareResult = {
-    segments: record.similarSegments || [],
-    leftFileName: record.leftFileName,
-    rightFileName: record.rightFileName,
-    textSimilarity: record.similarity,
-    similarSegmentsCount: record.similarSegments ? record.similarSegments.length : 0,
-    leftTotalPages: 1,
-    rightTotalPages: 1
-  }
-
-  // 存储到模块级存储
-  const resultId = storeCompareResult(compareResult)
-
-  // 跳转到结果页面，传递存储 ID 和时间戳
-  router.push({ path: '/file-compare-result', query: { resultId, t: Date.now() } })
-  
-  // 关闭历史记录弹窗
-  showHistory.value = false
-}
 
 // 格式化文件大小
 const formatFileSize = (size: number): string => {
@@ -350,7 +298,14 @@ const handleFileUpload = (event: Event, side: 'left' | 'right') => {
     const file = input.files[0]
     // 文件大小限制 100MB
     if (file.size > 100 * 1024 * 1024) {
-      alert('文件大小超过 100MB 限制')
+      showError('文件大小超过 100MB 限制')
+      return
+    }
+    // 文件格式校验
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    const allowedExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt']
+    if (!allowedExts.includes(ext)) {
+      showError(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
       return
     }
     const fileInfo = {
@@ -396,6 +351,18 @@ const handleDrop = (event: DragEvent, side: 'left' | 'right') => {
   event.preventDefault()
   if (event.dataTransfer && event.dataTransfer.files[0]) {
     const file = event.dataTransfer.files[0]
+    // 文件格式校验
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    const allowedExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt']
+    if (!allowedExts.includes(ext)) {
+      showError(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
+      return
+    }
+    // 文件大小限制 100MB
+    if (file.size > 100 * 1024 * 1024) {
+      showError('文件大小超过 100MB 限制')
+      return
+    }
     const fileInfo = {
       file: file,
       name: file.name,
@@ -550,6 +517,33 @@ const handleCompare = async () => {
 const leftImages = ref<{ url: string; name: string }[]>([])
 const rightImages = ref<{ url: string; name: string }[]>([])
 
+onUnmounted(() => {
+  leftImages.value.forEach(img => URL.revokeObjectURL(img.url))
+  rightImages.value.forEach(img => URL.revokeObjectURL(img.url))
+  leftImages.value = []
+  rightImages.value = []
+  window.removeEventListener('keydown', handleKeyboardShortcut)
+})
+
+const handleKeyboardShortcut = (e: KeyboardEvent) => {
+  // Ctrl+S 导出报告
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault()
+    if (showResults.value && similarSegmentsList.value.length > 0) {
+      handleExportReport()
+    }
+  }
+  // Esc 关闭弹窗
+  if (e.key === 'Escape') {
+    if (showOCRResult.value) showOCRResult.value = false
+    if (showAIAnalysis.value) showAIAnalysis.value = false
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyboardShortcut)
+})
+
 const handleLeftImageUpload = (event: Event) => {
   const input = event.target as HTMLInputElement
   if (!input.files) return
@@ -586,6 +580,14 @@ const runImageComparison = async (): Promise<ImageDuplicate[]> => {
   if (!settings.enableImageCompare) return []
   if (leftImages.value.length === 0 || rightImages.value.length === 0) return []
 
+  // 限制图片数量，防止 O(n²) 性能问题
+  const MAX_COMPARE_IMAGES = 50
+  if (leftImages.value.length > MAX_COMPARE_IMAGES || rightImages.value.length > MAX_COMPARE_IMAGES) {
+    showError(`图片数量超过 ${MAX_COMPARE_IMAGES} 张限制，仅对比前 ${MAX_COMPARE_IMAGES} 张`)
+  }
+  const leftImg = leftImages.value.slice(0, MAX_COMPARE_IMAGES)
+  const rightImg = rightImages.value.slice(0, MAX_COMPARE_IMAGES)
+
   progressMessage.value = '正在进行图片对比...'
   const duplicates: ImageDuplicate[] = []
   let idCounter = 0
@@ -602,8 +604,8 @@ const runImageComparison = async (): Promise<ImageDuplicate[]> => {
     return results
   }
 
-  const leftHashes = await computeAll(leftImages.value)
-  const rightHashes = await computeAll(rightImages.value)
+  const leftHashes = await computeAll(leftImg)
+  const rightHashes = await computeAll(rightImg)
 
   for (const lh of leftHashes) {
     for (const rh of rightHashes) {
@@ -679,79 +681,35 @@ const runOCRComparison = async () => {
   ocrProgressMessage.value = '正在进行图片文字识别...'
 
   try {
-    // 识别左侧图片
-    ocrProgressMessage.value = '正在识别左侧图片文字...'
-    const leftResults = await runOCR(leftImages.value, 'left')
-    
-    // 识别右侧图片
-    ocrProgressMessage.value = '正在识别右侧图片文字...'
-    const rightResults = await runOCR(rightImages.value, 'right')
+    // 限制图片数量，防止性能问题
+    const maxImages = 50
+    const leftImg = leftImages.value.slice(0, maxImages)
+    const rightImg = rightImages.value.slice(0, maxImages)
 
-    // 合并文本
+    ocrProgressMessage.value = '正在识别左侧图片文字...'
+    const leftResults = await runOCR(leftImg, 'left')
+
+    ocrProgressMessage.value = '正在识别右侧图片文字...'
+    const rightResults = await runOCR(rightImg, 'right')
+
     const leftText = leftResults.map(r => r.result.text).join('\n')
     const rightText = rightResults.map(r => r.result.text).join('\n')
 
-    // 使用编辑距离算法计算相似度
     let similarity = 0
     if (leftText && rightText) {
       similarity = calculateEditDistanceSimilarity(leftText, rightText)
     }
 
-    ocrCompareResult.value = {
-      leftText,
-      rightText,
-      similarity
-    }
-
+    ocrCompareResult.value = { leftText, rightText, similarity }
     ocrResults.value = [...leftResults, ...rightResults]
     showOCRResult.value = true
   } catch (error) {
-    // OCR 对比失败
+    showError('OCR 对比失败，请重试')
   } finally {
     isOCRProcessing.value = false
     ocrProgress.value = 0
     ocrProgressMessage.value = ''
   }
-}
-
-// 编辑距离相似度计算函数
-const calculateEditDistanceSimilarity = (text1: string, text2: string): number => {
-  const len1 = text1.length
-  const len2 = text2.length
-
-  if (len1 === 0 && len2 === 0) return 100
-  if (len1 === 0 || len2 === 0) return 0
-
-  // 优化：对于长文本，只比较前1000个字符
-  const maxLen = 1000
-  const t1 = text1.substring(0, maxLen)
-  const t2 = text2.substring(0, maxLen)
-
-  // 动态规划计算编辑距离
-  const dp: number[][] = Array.from({ length: t1.length + 1 }, () => Array(t2.length + 1).fill(0))
-
-  for (let i = 0; i <= t1.length; i++) {
-    dp[i][0] = i
-  }
-  for (let j = 0; j <= t2.length; j++) {
-    dp[0][j] = j
-  }
-
-  for (let i = 1; i <= t1.length; i++) {
-    for (let j = 1; j <= t2.length; j++) {
-      const cost = t1[i - 1] === t2[j - 1] ? 0 : 1
-      dp[i][j] = Math.min(
-        dp[i - 1][j] + 1,      // 删除
-        dp[i][j - 1] + 1,      // 插入
-        dp[i - 1][j - 1] + cost // 替换
-      )
-    }
-  }
-
-  const editDistance = dp[t1.length][t2.length]
-  const maxLen2 = Math.max(t1.length, t2.length)
-  const similarityResult = Math.round((1 - editDistance / maxLen2) * 100)
-  return Math.max(0, similarityResult)
 }
 
 // 获取支持的语言列表
@@ -848,9 +806,7 @@ const closeMultiResult = () => {
 // 取消对比
 const handleCancel = () => {
   cancelComparison()
-  if (!sessionStorage.getItem('compareResult')) {
-    comparisonParseError.value = '已取消对比'
-  }
+  comparisonParseError.value = '已取消对比'
 }
 
 // 导出对比报告
@@ -882,33 +838,114 @@ const handleExportReport = async () => {
   }
 };
 
+// 解析高亮 HTML，返回带高亮标记的 TextRun 数组
+function parseHighlightedContent(htmlContent: string): any[] {
+  let content = htmlContent.replace(/^…/, '').replace(/…$/, '')
+  const runs: any[] = []
+  const highlightRegex = /<span class="highlighted-text">([\s\S]*?)<\/span>/g
+  let lastIndex = 0
+  let match
+
+  while ((match = highlightRegex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      const plainText = content.substring(lastIndex, match.index)
+      const decodedText = plainText
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#039;/g, "'")
+        .replace(/<[^>]*>/g, '')
+      runs.push(new TextRun({
+        text: decodedText,
+        size: 20,
+        font: 'Microsoft YaHei'
+      }))
+    }
+
+    const highlightedHtml = match[1]
+    const decodedHighlight = highlightedHtml
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+    runs.push(new TextRun({
+      text: decodedHighlight,
+      size: 20,
+      font: 'Microsoft YaHei',
+      bold: true,
+      color: '8B0000',
+      highlight: 'FFD700'
+    }))
+
+    lastIndex = match.index + match[0].length
+  }
+
+  if (lastIndex < content.length) {
+    const plainText = content.substring(lastIndex)
+    const decodedText = plainText
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/<[^>]*>/g, '')
+    runs.push(new TextRun({
+      text: decodedText,
+      size: 20,
+      font: 'Microsoft YaHei'
+    }))
+  }
+
+  return runs.length > 0 ? runs : [new TextRun({ text: content.replace(/<[^>]*>/g, ''), size: 20, font: 'Microsoft YaHei' })]
+}
+
 // 生成 Markdown 报告
 const generateMarkdownReport = (): string => {
   let md = '# 文件对比报告\n\n';
-  
+
   // 元数据
   md += `> **生成时间**：${new Date().toLocaleString()}  \n`;
   md += `> **左侧文件**：${leftFileInfo.value.name}  \n`;
   md += `> **右侧文件**：${rightFileInfo.value.name}  \n\n`;
-  
+
   md += '---\n\n';
-  
+
   // 相似度统计
   md += '## 一、相似度统计\n\n';
   md += '| 指标 | 数值 |\n';
   md += '|------|------|\n';
   md += `| 文本重复率 | ${textSimilarity.value} |\n`;
   md += `| 雷同片段数 | ${similarSegmentsList.value.length}处 |\n\n`;
-  
+
+  if (settings.includeCharts) {
+    md += '### 文件信息\n\n';
+    md += '| 项目 | 左侧文件 | 右侧文件 |\n';
+    md += '|------|----------|----------|\n';
+    md += `| 文件名 | ${leftFileInfo.value.name} | ${rightFileInfo.value.name} |\n`;
+    md += `| 文件大小 | ${leftFileInfo.value.size || '-'} | ${rightFileInfo.value.size || '-'} |\n`;
+    md += `| 文件类型 | ${leftFileInfo.value.type || '-'} | ${rightFileInfo.value.type || '-'} |\n\n`;
+  }
+
   md += '---\n\n';
   
   // 详细对比结果
   md += '## 二、雷同片段详情\n\n';
-  
+
   similarSegmentsList.value.forEach((segment, index) => {
-    const leftClean = htmlToMarkdown(segment.leftContent || '');
-    const rightClean = htmlToMarkdown(segment.rightContent || '');
-    
+    const leftContent = segment.leftContent || '';
+    const rightContent = segment.rightContent || '';
+
+    let leftClean: string, rightClean: string
+    if (settings.includeHighlight) {
+      leftClean = leftContent.replace(/<span class="highlighted-text">/g, '**').replace(/<\/span>/g, '**')
+      rightClean = rightContent.replace(/<span class="highlighted-text">/g, '**').replace(/<\/span>/g, '**')
+    } else {
+      leftClean = htmlToMarkdown(leftContent)
+      rightClean = htmlToMarkdown(rightContent)
+    }
+
     md += `### 第 ${index + 1} 段\n\n`;
     md += `| 项目 | 内容 |\n`;
     md += `|------|------|\n`;
@@ -929,311 +966,230 @@ const generateMarkdownReport = (): string => {
 
 // 生成Word报告内容
 const generateWordReport = () => {
-  // 创建文档
+  const includeHighlight = settings.includeHighlight
+  const includeCharts = settings.includeCharts
+
+  const children: any[] = [
+    // 报告标题
+    new Paragraph({
+      children: [new TextRun({ text: '文件对比报告', bold: true, size: 28 })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 300 }
+    }),
+
+    // 相似度统计
+    new Paragraph({
+      children: [new TextRun({ text: '一、相似度统计', bold: true, size: 20 })],
+      spacing: { after: 200 }
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: `文本重复率：${textSimilarity.value}`, size: 16 })],
+      spacing: { after: 100 }
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: `雷同片段：${similarSegments.value}处`, size: 16 })],
+      spacing: { after: 200 }
+    }),
+  ]
+
+  if (includeCharts) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: '二、文件信息', bold: true, size: 20 })],
+        spacing: { after: 200 }
+      }),
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '项目', bold: true, size: 16 })], alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '左侧文件', bold: true, size: 16 })], alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '右侧文件', bold: true, size: 16 })], alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+            ]
+          }),
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '文件名', size: 16 })], alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: leftFileInfo.value.name, size: 16 })], alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: rightFileInfo.value.name, size: 16 })], alignment: AlignmentType.CENTER })] }),
+            ]
+          }),
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '文件大小', size: 16 })], alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: leftFileInfo.value.size || '-', size: 16 })], alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: rightFileInfo.value.size || '-', size: 16 })], alignment: AlignmentType.CENTER })] }),
+            ]
+          }),
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '文件类型', size: 16 })], alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: leftFileInfo.value.type || '-', size: 16 })], alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: rightFileInfo.value.type || '-', size: 16 })], alignment: AlignmentType.CENTER })] }),
+            ]
+          }),
+        ]
+      }),
+      new Paragraph({ spacing: { after: 200 } }),
+    )
+  }
+
+  const segmentTitle = includeCharts ? '三、雷同片段详情' : '二、雷同片段详情'
+  children.push(
+    new Paragraph({
+      children: [new TextRun({ text: segmentTitle, bold: true, size: 20 })],
+      spacing: { after: 200 }
+    }),
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph({ text: '序号', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+            new TableCell({ children: [new Paragraph({ text: '左侧文件内容', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+            new TableCell({ children: [new Paragraph({ text: '页码', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+            new TableCell({ children: [new Paragraph({ text: '相似度', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+            new TableCell({ children: [new Paragraph({ text: '页码', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+            new TableCell({ children: [new Paragraph({ text: '右侧文件内容', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+          ]
+        }),
+        ...similarSegmentsList.value.map((segment, index) => {
+          const leftRuns = includeHighlight
+            ? parseHighlightedContent(segment.leftContent || '')
+            : [new TextRun({ text: (segment.leftContent || '').replace(/<[^>]*>/g, ''), size: 16 })]
+          const rightRuns = includeHighlight
+            ? parseHighlightedContent(segment.rightContent || '')
+            : [new TextRun({ text: (segment.rightContent || '').replace(/<[^>]*>/g, ''), size: 16 })]
+          return new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ text: (index + 1).toString(), alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: leftRuns })] }),
+              new TableCell({ children: [new Paragraph({ text: segment.leftPage, alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ text: segment.similarity, alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ text: segment.rightPage, alignment: AlignmentType.CENTER })] }),
+              new TableCell({ children: [new Paragraph({ children: rightRuns })] }),
+            ]
+          })
+        }),
+      ]
+    })
+  )
+
   const doc = new Document({
-    sections: [
-      {
-        properties: {},
-        children: [
-          // 添加标题
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '文件对比报告',
-                bold: true,
-                size: 24,
-              })
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: {
-              after: 200,
-            }
-          }),
-          
-          // 添加相似度统计
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '相似度统计：',
-                bold: true,
-                size: 20,
-              })
-            ],
-            spacing: {
-              after: 100,
-            }
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `文本重复率：${textSimilarity.value}`,
-                size: 16,
-              })
-            ]
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '图片相似度：暂不支持',
-                size: 16,
-              })
-            ]
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `雷同片段：${similarSegments.value}处`,
-                size: 16,
-              })
-            ],
-            spacing: {
-              after: 200,
-            }
-          }),
-          
-          // 添加文件信息
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '文件信息：',
-                bold: true,
-                size: 20,
-              })
-            ],
-            spacing: {
-              after: 100,
-            }
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `左侧文件：${leftFileInfo.value.name}`,
-                size: 16,
-              })
-            ]
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `右侧文件：${rightFileInfo.value.name}`,
-                size: 16,
-              })
-            ],
-            spacing: {
-              after: 200,
-            }
-          }),
-          
-          // 添加雷同片段详情表格
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '雷同片段详情：',
-                bold: true,
-                size: 20,
-              })
-            ],
-            spacing: {
-              after: 100,
-            }
-          }),
-          
-          // 创建表格
-          new Table({
-            width: {
-              size: 100,
-              type: WidthType.PERCENTAGE,
-            },
-            rows: [
-              // 表格标题行
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph({ text: '序号', bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: '左侧文件内容', bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: '页码', bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: '相似度', bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: '页码', bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: '右侧文件内容', bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                ],
-              }),
-              // 表格数据行
-              ...similarSegmentsList.value.map((segment, index) => {
-                return new TableRow({
-                  children: [
-                    new TableCell({
-                      children: [new Paragraph({ text: (index + 1).toString(), alignment: AlignmentType.CENTER })]
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: segment.leftContent.replace(/<[^>]*>/g, '') })]
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: segment.leftPage, alignment: AlignmentType.CENTER })]
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: segment.similarity, alignment: AlignmentType.CENTER })]
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: segment.rightPage, alignment: AlignmentType.CENTER })]
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: segment.rightContent.replace(/<[^>]*>/g, '') })]
-                    }),
-                  ],
-                });
-              }),
-            ],
-          }),
-        ],
-      }
-    ],
-  });
-  
-  return doc;
-};
+    sections: [{ properties: {}, children }]
+  })
+
+  return doc
+}
 </script>
 
 <template>
-  <div class="file-compare-container">
-    <!-- 页面标题区 -->
-    <div class="page-header">
-      <div class="title-row">
-        <div>
-          <h1 class="page-title">文件对比</h1>
-          <p class="page-subtitle">精准识别两个（或以上）版本文档之间的内容差异、相似片段和结构变更</p>
+  <div class="file-compare-page">
+    <!-- 文件信息条 -->
+    <div class="file-info-bar" style="visibility:hidden">
+      <div class="file-info-side">
+        <RiAddLine class="file-info-icon" />
+        <div class="file-info-text">
+          <span class="file-info-label">文件 A</span>
+          <span class="file-info-name">{{ leftFileInfo.name || '未选择文件' }}</span>
         </div>
-        <div class="header-actions">
-          <button v-if="recentRecords.length > 0" class="icon-btn-wrapper" @click="toggleHistory">
-            <RiHistoryLine class="icon-btn-svg" />
-            <span class="icon-btn-tooltip">历史记录</span>
-          </button>
+      </div>
+      <div class="file-info-divider" :class="{ 'processing': isProcessing }">
+        <RiExchangeLine class="divider-icon" :class="{ 'rotating': isProcessing }" />
+        <span v-if="isProcessing" class="divider-text">对比中...</span>
+      </div>
+      <div class="file-info-side right">
+        <RiAddLine class="file-info-icon" />
+        <div class="file-info-text">
+          <span class="file-info-label">文件 B</span>
+          <span class="file-info-name">{{ rightFileInfo.name || '未选择文件' }}</span>
         </div>
       </div>
     </div>
 
-    <!-- 历史记录弹窗 -->
-    <div v-if="showHistory" class="help-modal-overlay" @click="toggleHistory">
-      <div class="history-modal" @click.stop>
-        <div class="help-modal-header">
-          <h3>历史记录</h3>
-          <button class="help-close-btn" @click="toggleHistory">×</button>
-        </div>
-        <div class="history-modal-body">
-          <RecentRecords
-            v-if="recentRecords.length > 0"
-            :recent-records="recentRecords"
-            :on-clear-all="clearAllRecords"
-            :on-view-record="(record) => { viewHistoricalRecord(record); toggleHistory(); }"
-            :on-delete-record="deleteRecord"
-            :on-close="toggleHistory"
-          />
-          <div v-else class="empty-history">
-            <p>暂无历史记录</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 文件上传区域（单文件模式） -->
-    <div v-if="!multiFileMode && !showResults && !showMultiResult" class="upload-section" :class="{ 'processing': isProcessing }">
-      <!-- 左侧文件上传 -->
+    <!-- 上传区域（单文件模式） -->
+    <div v-if="!multiFileMode && !showResults && !showMultiResult" class="upload-section">
       <FileUpload
         side="left"
         :file-info="leftFileInfo"
+        label="快将奏折给朕呈上来～"
+        accepted-formats=".pdf,.docx,.doc,.xlsx,.txt"
         :on-file-change="handleFileUpload"
         :on-drag-over="handleDragOver"
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
-
-      <!-- 一键对比圆形按钮 -->
-      <div class="compare-circle-wrapper">
-        <BorderBeam size="md" color-variant="colorful" theme="dark" :duration="2.4">
-          <button class="compare-circle-btn" @click="handleCompare" :disabled="isProcessing || isViewingHistory" :title="isViewingHistory ? '请重新上传文件后再进行对比' : '一键对比'">
-            <RiExchangeLine class="compare-circle-icon" :class="{ 'rotating': isProcessing }" />
-            <span class="compare-circle-text">{{ isViewingHistory ? '请重新上传' : '一键对比' }}</span>
-          </button>
-        </BorderBeam>
+      <div class="upload-divider">
+        <RiArrowRightLine class="upload-divider-icon" />
       </div>
-
-      <!-- 右侧文件上传 -->
       <FileUpload
         side="right"
         :file-info="rightFileInfo"
+        label="快将奏折给朕呈上来～"
+        accepted-formats=".pdf,.docx,.doc,.xlsx,.txt"
         :on-file-change="handleFileUpload"
         :on-drag-over="handleDragOver"
         :on-drop="handleDrop"
         :on-clear-file="handleClearFile"
       />
+    </div>
 
-      <!-- 处理中遮罩 -->
-      <div v-if="isProcessing" class="processing-overlay">
-        <div class="processing-content">
-          <div class="processing-spinner"></div>
-          <p class="processing-text">{{ progressMessage || '正在处理中...' }}</p>
-          <p v-if="progress > 0" class="processing-percent">{{ Math.round(progress * 100) }}%</p>
-          <button class="cancel-btn-overlay" @click="handleCancel">取消</button>
-        </div>
+    <div v-if="!multiFileMode" class="compare-action-section">
+      <button
+        class="compare-btn"
+        :disabled="!leftFileInfo.file || !rightFileInfo.file || isProcessing"
+        @click="handleCompare"
+      >
+        <RiExchangeLine class="compare-btn-icon" :class="{ rotating: isProcessing }" />
+        <span>{{ isProcessing ? '对比中...' : '开始对比' }}</span>
+      </button>
+      <button
+        class="compare-btn"
+        :disabled="!leftFileInfo.file || !rightFileInfo.file || isProcessing || !settings.apiKey"
+        @click="handleAIAnalysis"
+      >
+        <RiRobot2Line class="compare-btn-icon" />
+        <span>AI对比</span>
+      </button>
+    </div>
+
+    <!-- 处理中遮罩 -->
+    <div v-if="isProcessing" class="processing-overlay">
+      <div class="processing-content">
+        <div class="processing-spinner"></div>
+        <p class="processing-text">{{ progressMessage || '正在处理中...' }}</p>
+        <p v-if="progress > 0" class="processing-percent">{{ Math.round(progress * 100) }}%</p>
+        <button class="cancel-btn-overlay" @click="handleCancel">取消</button>
       </div>
     </div>
 
     <!-- 进度显示（单文件模式） -->
-    <div v-if="!multiFileMode && !showResults && !showMultiResult && isProcessing" class="progress-display">
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" :style="{ width: `${Math.round(progress * 100)}%` }"></div>
+    <div v-if="!multiFileMode && !showResults && !showMultiResult && isProcessing" class="progress-section">
+      <div class="progress-track">
+        <div class="progress-fill" :style="{ width: `${Math.round(progress * 100)}%` }"></div>
       </div>
-      <span class="progress-text">{{ progressMessage || '正在处理中...' }} {{ Math.round(progress * 100) }}%</span>
+      <span class="progress-label">{{ progressMessage }} {{ Math.round(progress * 100) }}%</span>
     </div>
 
-    <!-- 多文件上传区域（多文件模式） -->
+    <!-- 多文件上传区域 -->
     <template v-if="multiFileMode && !showResults && !showMultiResult">
-      <MultiFileUpload 
+      <MultiFileUpload
         ref="multiFileUploadRef"
         :max-count="settings.maxMultiFileCount"
         @update:files="multiFiles = $event"
         @compare="handleMultiFileCompare"
       />
-      
-      <!-- 进度显示 -->
-      <div v-if="isProcessing" class="progress-display">
-        <div class="progress-bar-bg">
-          <div class="progress-bar-fill" :style="{ width: `${Math.round(progress * 100)}%` }"></div>
+      <div v-if="isProcessing" class="progress-section">
+        <div class="progress-track">
+          <div class="progress-fill" :style="{ width: `${Math.round(progress * 100)}%` }"></div>
         </div>
-        <span class="progress-text">{{ progressMessage || '正在处理中...' }} {{ Math.round(progress * 100) }}%</span>
+        <span class="progress-label">{{ progressMessage }} {{ Math.round(progress * 100) }}%</span>
       </div>
     </template>
 
     <!-- 多文件对比结果 -->
-    <MultiCompareResult 
+    <MultiCompareResult
       v-if="showMultiResult"
       :file-names="multiFiles.map(f => f.name)"
       :similarity-matrix="multiSimilarityMatrix"
@@ -1249,7 +1205,6 @@ const generateWordReport = () => {
           <button class="help-close-btn" @click="showOCRResult = false">×</button>
         </div>
         <div class="ocr-result-body">
-          <!-- 相似度统计 -->
           <div class="ocr-compare-summary" v-if="ocrCompareResult">
             <div class="ocr-similarity-badge">
               <span class="ocr-similarity-label">文字相似度</span>
@@ -1258,8 +1213,6 @@ const generateWordReport = () => {
               </span>
             </div>
           </div>
-
-          <!-- 文字内容对比 -->
           <div class="ocr-text-compare">
             <div class="ocr-text-column">
               <div class="ocr-column-header">左侧识别文字</div>
@@ -1270,8 +1223,6 @@ const generateWordReport = () => {
               <pre class="ocr-text-content">{{ ocrCompareResult?.rightText || '无识别结果' }}</pre>
             </div>
           </div>
-
-          <!-- 识别详情 -->
           <div class="ocr-detail-section" v-if="ocrResults.length > 0">
             <div class="ocr-detail-header">识别详情</div>
             <div class="ocr-detail-list">
@@ -1288,168 +1239,410 @@ const generateWordReport = () => {
       </div>
     </div>
 
-    <!-- 解析错误显示 -->
+    <!-- 错误提示 -->
     <div v-if="comparisonParseError" class="error-message">
       {{ comparisonParseError }}
+    </div>
+
+    <!-- 页脚 -->
+    <div class="app-footer">
+      <span>© {{ currentYear }} 文比猩</span>
+      <span class="footer-powered">Powered by LightOS</span>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* 基础样式 - 国潮古风 */
-.file-compare-container {
+.file-compare-page {
   width: 100%;
   height: 100%;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: rgba(var(--rgb-parchment), 1);
-  gap: 12px;
-  font-family: var(--font-ui);
+  gap: 16px;
 }
 
-/* 页面标题区 */
-.page-header {
-  padding: 16px 24px;
-  background-color: #F5EFE3;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+/* 文件信息条 */
+.file-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--color-upload-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-tan-border);
   box-shadow: var(--shadow-sm);
 }
 
-.title-row {
+.file-info-side {
+  flex: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
 }
 
-.page-title {
-  font-size: var(--text-heading-lg);
-  font-weight: 700;
-  color: rgba(var(--rgb-brown-dark), 1);
-  margin: 0 0 4px 0;
+.file-info-side.right {
+  justify-content: flex-end;
+}
+
+.file-info-icon {
+  font-size: 20px;
+  color: var(--color-cinnabar);
+  flex-shrink: 0;
+}
+
+.file-info-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.file-info-side.right .file-info-text {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.file-info-label {
+  font-size: 11px;
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.file-info-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.file-info-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 2px;
+  width: auto;
+  height: auto;
+}
+
+.file-info-divider.processing {
+  gap: 4px;
+}
+
+.divider-text {
+  font-size: 10px;
+  color: var(--color-cinnabar);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.divider-icon {
+  font-size: 20px;
+  color: var(--color-cinnabar);
+  transition: transform 0.3s ease;
+}
+
+.divider-icon.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 上传区域 */
+.upload-section {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  position: relative;
+  flex-wrap: wrap;
+}
+
+/* 上传分隔线 */
+.upload-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+
+.upload-divider-icon {
+  font-size: 24px;
+  color: var(--color-cinnabar);
+  opacity: 0.6;
+}
+
+/* 操作按钮区域 */
+.compare-action-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.compare-btn {
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--color-cinnabar);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  box-shadow: var(--shadow-cinnabar);
+  transition: all 0.3s ease;
+}
+
+.compare-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-cinnabar);
+}
+
+.compare-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.compare-btn-icon {
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+.compare-btn-icon.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.history-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--color-cream-dark);
+  color: var(--color-brown);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-ui);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.history-btn:hover {
+  background: var(--color-cream-darker);
+  color: var(--color-cinnabar);
+  border-color: var(--color-cinnabar);
+}
+
+.history-btn-icon {
+  font-size: 16px;
+}
+
+/* 进度条 */
+.progress-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: var(--color-cream-darker);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-cinnabar);
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+.progress-label {
+  font-size: 13px;
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
+  text-align: center;
+}
+
+/* 错误提示 */
+.error-message {
+  color: var(--color-cinnabar);
+  font-size: 14px;
+  text-align: center;
+  padding: 12px 16px;
+  background: rgba(var(--rgb-cinnabar), 0.05);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(var(--rgb-cinnabar), 0.2);
   font-family: var(--font-ui);
 }
 
-.page-subtitle {
-  font-size: 12px;
-  color: rgba(var(--rgb-brown), 1);
+/* 处理中遮罩 */
+.processing-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(var(--rgb-parchment), 0.9);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: var(--radius-lg);
+}
+
+.processing-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px;
+}
+
+.processing-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(var(--rgb-tan-dark), 0.3);
+  border-top-color: rgba(var(--rgb-cinnabar), 1);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.processing-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-brown-dark);
+  font-family: var(--font-ui);
+  margin: 0;
+}
+
+.processing-percent {
+  font-size: 14px;
+  color: var(--color-brown-muted);
+  font-family: var(--font-ui);
+  margin: 0;
+}
+
+.cancel-btn-overlay {
+  padding: 8px 24px;
+  background: transparent;
+  border: 1px solid var(--color-cinnabar);
+  color: var(--color-cinnabar);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-ui);
+  transition: all 0.2s;
+}
+
+.cancel-btn-overlay:hover {
+  background: rgba(var(--rgb-cinnabar), 0.1);
+}
+
+/* 历史记录弹窗 */
+.help-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.history-modal {
+  background: white;
+  border-radius: var(--radius-xl);
+  width: min(600px, 90vw);
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.help-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
+  background: rgba(var(--rgb-cream), 0.9);
+}
+
+.help-modal-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-brown-dark);
   margin: 0;
   font-family: var(--font-ui);
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.header-back-btn {
-  height: 40px;
-  padding: 0 20px;
-  background-color: rgba(var(--rgb-cream), 1);
-  color: rgba(var(--rgb-cinnabar), 1);
-  border: 1px solid rgba(var(--rgb-cinnabar), 0.3);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  transition: all 0.3s ease;
-}
-
-.header-back-btn:hover {
-  background-color: rgba(var(--rgb-cinnabar), 0.05);
-  border-color: rgba(var(--rgb-cinnabar), 1);
-}
-
-.header-export-btn {
-  height: 40px;
-  padding: 0 20px;
-  background: var(--color-cinnabar);
-  color: white;
+.help-close-btn {
+  width: 32px;
+  height: 32px;
   border: none;
   border-radius: var(--radius-md);
+  background: transparent;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  box-shadow: var(--shadow-cinnabar);
-  transition: all 0.3s ease;
-}
-
-.header-export-btn:hover {
-  box-shadow: var(--shadow-cinnabar);
-  transform: translateY(-2px);
-}
-
-/* 图标按钮容器 */
-.icon-btn-wrapper {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: var(--radius-lg);
-  background: rgba(var(--rgb-cinnabar), 1);
-  color: rgba(var(--rgb-cream), 1);
-  cursor: pointer;
+  font-size: 20px;
+  color: var(--color-brown-muted);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-cinnabar);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
 }
 
-.icon-btn-wrapper:hover {
-  box-shadow: var(--shadow-cinnabar);
-  transform: translateY(-2px);
-  background: var(--color-cinnabar-dark);
-}
-
-.icon-btn-wrapper:active {
-  transform: translateY(0);
-  box-shadow: var(--shadow-cinnabar);
-}
-
-.icon-btn-svg {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-  color: rgba(var(--rgb-cream), 1);
-  flex-shrink: 0;
-  transition: all 0.3s ease;
-}
-
-/* Tooltip 样式 */
-.icon-btn-tooltip {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 8px;
-  background-color: rgba(var(--rgb-brown-dark), 0.9);
-  color: white;
-  font-size: 11px;
-  font-family: var(--font-ui);
-  border-radius: var(--radius-xs);
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-  z-index: 10;
-}
-
-.icon-btn-wrapper:hover .icon-btn-tooltip {
-  opacity: 1;
-}
-
-.history-modal {
-  background-color: rgba(var(--rgb-cream), 1);
-  border-radius: var(--radius-lg);
-  width: min(600px, 90vw);
-  max-height: 80vh;
-  overflow: auto;
-  box-shadow: var(--shadow-xl);
+.help-close-btn:hover {
+  background: rgba(var(--rgb-cinnabar), 0.1);
+  color: var(--color-cinnabar);
 }
 
 .history-modal-body {
@@ -1461,1262 +1654,9 @@ const generateWordReport = () => {
 .empty-history {
   text-align: center;
   padding: 40px 20px;
-  color: rgba(var(--rgb-brown-muted), 1);
+  color: var(--color-brown-muted);
   font-size: 14px;
   font-family: var(--font-ui);
-}
-
-.decorative-line {
-  width: 100%;
-  height: 3px;
-  margin-top: 24px;
-  background: var(--color-tan-dark);
-  border-radius: var(--radius-xs);
-}
-
-/* 文件上传区域 */
-.upload-section {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  justify-content: center;
-  padding: 0 24px;
-}
-
-/* 一键对比圆形按钮 */
-.compare-circle-wrapper {
-  flex-shrink: 0;
-}
-
-.compare-circle-btn {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  border: none;
-  background: var(--color-cinnabar);
-  color: white;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  box-shadow: var(--shadow-cinnabar);
-  transition: all 0.3s ease;
-}
-
-.compare-circle-btn:hover:not(:disabled) {
-  transform: scale(1.05);
-  box-shadow: var(--shadow-cinnabar);
-}
-
-.compare-circle-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.compare-circle-icon {
-  font-size: 28px;
-  transition: transform 0.3s ease;
-}
-
-.compare-circle-icon.rotating {
-  animation: rotate 1s linear infinite;
-}
-
-.compare-circle-text {
-  font-size: 12px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-}
-
-/* 对比按钮区域 */
-.compare-action-area {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  gap: 16px;
-}
-
-/* 对比按钮 */
-.compare-main-btn {
-  position: relative;
-  width: 980px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background: var(--color-cinnabar);
-  color: white;
-  border: none;
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  transition: all 0.3s ease;
-  box-shadow: var(--shadow-cinnabar);
-  overflow: hidden;
-}
-
-.compare-main-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, 
-    rgba(var(--rgb-cream), 0) 0%, 
-    rgba(var(--rgb-cream), 0.3) 50%, 
-    rgba(var(--rgb-cream), 0) 100%);
-  transform: translateX(-100%);
-  transition: transform 0.6s ease;
-}
-
-.compare-main-btn:hover:not(:disabled)::before {
-  transform: translateX(100%);
-}
-
-.compare-main-btn:hover:not(:disabled) {
-  box-shadow: var(--shadow-cinnabar);
-  transform: translateY(-2px);
-}
-
-.compare-main-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.compare-main-btn.processing {
-  background: var(--color-cinnabar);
-  background-size: 200% 100%;
-  animation: gradient-shift 2s ease infinite;
-}
-
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.btn-text {
-  position: relative;
-  z-index: 1;
-}
-
-.compare-icon {
-  font-size: 24px;
-  transition: all 0.3s ease;
-  position: relative;
-  z-index: 1;
-}
-
-.compare-icon.rotating {
-  animation: rotate 1s linear infinite;
-}
-
-/* 进度显示 */
-.progress-display {
-  width: 100%;
-  max-width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.progress-bar-bg {
-  width: 100%;
-  height: 8px;
-  background-color: rgba(var(--rgb-tan-dark), 0.3);
-  border-radius: var(--radius-xs);
-  overflow: hidden;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background: var(--color-cinnabar);
-  border-radius: var(--radius-xs);
-  transition: width 0.3s ease;
-}
-
-.progress-text {
-  font-size: 13px;
-  color: rgba(var(--rgb-brown-muted), 1);
-  font-family: var(--font-ui);
-  text-align: center;
-}
-
-/* 功能说明区 */
-.features-section {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 0 24px;
-}
-
-.feature-cards {
-  display: flex;
-  gap: 24px;
-  justify-content: center;
-}
-
-.feature-card {
-  width: 360px;
-  height: 196px;
-  padding: 24px;
-  background-color: rgba(var(--rgb-cream), 1);
-  border: 0.7px solid rgba(var(--rgb-tan-dark), 1);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  transition: all 0.3s ease;
-}
-
-.feature-card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
-}
-
-.card-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-.card-icon .icon {
-  font-size: 24px;
-}
-
-/* 各卡片图标颜色 */
-.card-icon.accuracy {
-  background-color: rgba(var(--rgb-gold), 0.15);
-}
-
-.card-icon.accuracy .icon {
-  color: var(--color-gold-dark);
-}
-
-.card-icon.highlight {
-  background-color: rgba(var(--rgb-cloud-blue), 0.15);
-}
-
-.card-icon.highlight .icon {
-  color: var(--color-cloud-blue);
-}
-
-.card-icon.export {
-  background-color: rgba(var(--rgb-cinnabar), 0.1);
-}
-
-.card-icon.export .icon {
-  color: var(--color-cinnabar);
-}
-
-.card-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: rgba(var(--rgb-brown-dark), 1);
-  font-family: var(--font-ui);
-  margin: 0 0 12px 0;
-}
-
-.card-desc {
-  font-size: 14px;
-  color: rgba(var(--rgb-brown-muted), 1);
-  font-family: var(--font-ui);
-  margin: 0;
-  line-height: 1.2;
-}
-
-/* 使用说明区 */
-.instructions-section {
-  display: flex;
-  justify-content: center;
-}
-
-.instructions-content {
-  width: 1078px;
-  max-width: 100%;
-  padding: 24px;
-  background-color: rgba(var(--rgb-cream), 0.6);
-  border-radius: var(--radius-lg);
-  border: 0.7px solid rgba(var(--rgb-tan-dark), 0.5);
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.instructions-icon {
-  font-size: 36px;
-  color: rgba(var(--rgb-cinnabar), 1);
-  flex-shrink: 0;
-}
-
-.instructions-text {
-  flex: 1;
-}
-
-.instructions-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: rgba(var(--rgb-brown-dark), 1);
-  font-family: var(--font-ui);
-  margin: 0 0 12px 0;
-}
-
-.instruction-item {
-  font-size: 14px;
-  color: rgba(var(--rgb-brown-muted), 1);
-  font-family: var(--font-ui);
-  margin: 0 0 8px 0;
-  line-height: 1.6;
-}
-
-/* 最近对比记录 */
-.recent-records {
-  background-color: rgba(var(--rgb-cream), 0.9);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  padding: 20px;
-}
-
-.records-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-}
-
-.records-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: rgba(var(--rgb-brown-dark), 1);
-  font-family: var(--font-ui);
-}
-
-.view-all .clear-all-btn {
-  padding: 6px 16px;
-  background: var(--color-cinnabar);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: var(--shadow-cinnabar);
-}
-
-.view-all .clear-all-btn:hover {
-  box-shadow: var(--shadow-cinnabar);
-  transform: translateY(-1px);
-}
-
-.select-btn {
-  padding: 10px 20px;
-  background: var(--color-cinnabar);
-  color: white;
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-  box-shadow: var(--shadow-cinnabar);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.select-btn:hover {
-  box-shadow: var(--shadow-cinnabar);
-  transform: translateY(-2px);
-}
-
-.records-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.record-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: rgba(var(--rgb-parchment), 0.5);
-  border-radius: var(--radius-md);
-  padding: 12px 16px;
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.15);
-  transition: all 0.3s ease;
-}
-
-.record-item:hover {
-  background-color: rgba(var(--rgb-parchment), 0.8);
-  border-color: rgba(var(--rgb-brown-muted), 0.3);
-}
-
-.record-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.record-icon {
-  font-size: 16px;
-  color: rgba(var(--rgb-brown-muted), 1);
-}
-
-.record-details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.record-filename {
-  font-size: 14px;
-  color: rgba(var(--rgb-brown-dark), 1);
-  font-family: var(--font-ui);
-}
-
-.record-timestamp {
-  font-size: 12px;
-  color: rgba(var(--rgb-brown-muted), 1);
-  font-family: var(--font-ui);
-}
-
-.record-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.record-action-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.3);
-  border-radius: var(--radius-sm);
-  background-color: rgba(var(--rgb-cream), 0.9);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  color: rgba(var(--rgb-brown-muted), 1);
-  font-size: 14px;
-}
-
-.record-action-btn:hover {
-  background-color: rgba(var(--rgb-cinnabar), 1);
-  color: white;
-  border-color: rgba(var(--rgb-cinnabar), 1);
-}
-
-.error-message {
-  color: rgba(var(--rgb-cinnabar), 1);
-  font-size: 14px;
-  text-align: center;
-  margin: 16px 0;
-  padding: 12px;
-  background-color: rgba(var(--rgb-cinnabar), 0.05);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(var(--rgb-cinnabar), 0.2);
-  font-family: var(--font-ui);
-}
-
-/* 对比结果 */
-.results-section {
-  background-color: rgba(var(--rgb-cream), 0.9);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  box-shadow: var(--shadow-sm);
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  overflow-y: auto;
-}
-
-/* 文件信息栏 */
-.file-info-bar {
-  background: rgba(var(--rgb-parchment), 0.5);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  border-radius: var(--radius-md);
-  padding: 16px 20px;
-}
-
-.file-info-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: rgba(var(--rgb-brown-dark), 1);
-  font-family: var(--font-ui);
-  margin-bottom: 12px;
-}
-
-.file-paths {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.file-path-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(var(--rgb-cream), 0.9);
-  border-radius: var(--radius-sm);
-  padding: 10px 14px;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: rgba(var(--rgb-brown-dark), 1);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-}
-
-.file-icon {
-  color: rgba(var(--rgb-cinnabar), 1);
-  font-size: 16px;
-}
-
-.file-path-divider {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.divider-icon {
-  color: rgba(var(--rgb-brown-muted), 1);
-  font-size: 16px;
-}
-
-/* 结果统计 */
-.result-stats {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-/* 统计信息卡片 */
-.stat-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  background-color: rgba(var(--rgb-parchment), 0.5);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  flex: 1;
-  min-width: 200px;
-}
-
-.stat-icon-container {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.stat-icon-container.text-similarity {
-  background-color: rgba(var(--rgb-cinnabar), 0.1);
-}
-
-.stat-icon-container.image-similarity {
-  background-color: rgba(var(--rgb-brown-muted), 0.2);
-}
-
-.stat-icon-container.similar-segments {
-  background-color: rgba(var(--rgb-jade), 0.1);
-}
-
-.stat-icon {
-  font-size: 18px;
-}
-
-.stat-icon-container.text-similarity .stat-icon {
-  color: rgba(var(--rgb-cinnabar), 1);
-}
-
-.stat-icon-container.image-similarity .stat-icon {
-  color: rgba(var(--rgb-brown-muted), 1);
-}
-
-.stat-icon-container.similar-segments .stat-icon {
-  color: rgba(var(--rgb-jade), 1);
-}
-
-.stat-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: rgba(var(--rgb-brown-muted), 1);
-  font-family: var(--font-ui);
-}
-
-.stat-value {
-  font-size: 18px;
-  font-weight: 700;
-  font-family: var(--font-ui);
-}
-
-.text-similarity-value {
-  color: rgba(var(--rgb-cinnabar), 1);
-}
-
-.image-similarity-value {
-  color: rgba(var(--rgb-brown-muted), 1);
-}
-
-.similar-segments-value {
-  color: rgba(var(--rgb-jade), 1);
-}
-
-/* 操作按钮 */
-.action-buttons {
-  display: flex;
-  gap: 12px;
-}
-
-.action-btn.small {
-  padding: 8px 16px;
-  font-size: 13px;
-}
-
-.export-btn {
-  background-color: rgba(var(--rgb-cinnabar), 1);
-  color: white;
-}
-
-.export-btn .btn-icon {
-  color: white;
-  font-size: 16px;
-}
-
-.export-btn:hover {
-  background-color: var(--color-cinnabar-dark);
-  box-shadow: var(--shadow-cinnabar);
-}
-
-.issue-tracking-btn {
-  background-color: rgba(var(--rgb-brown-muted), 1);
-  color: white;
-}
-
-.issue-tracking-btn .btn-icon {
-  color: white;
-  font-size: 16px;
-}
-
-.issue-tracking-btn:hover {
-  background-color: rgba(var(--rgb-brown-muted), 0.65);
-  box-shadow: var(--shadow-md);
-}
-
-/* 雷同片段列表 */
-.segment-details-section {
-  background-color: rgba(var(--rgb-cream), 0.9);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  background-color: rgba(var(--rgb-parchment), 0.5);
-  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-}
-
-.segment-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: rgba(var(--rgb-brown-dark), 1);
-  font-family: var(--font-ui);
-  margin: 0;
-}
-
-.section-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* 表格容器 */
-.table-container {
-  padding: 0;
-  background-color: rgba(var(--rgb-cream), 0.9);
-  overflow-y: auto;
-  max-height: 500px;
-}
-
-/* 表格 */
-.similarity-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.table-header {
-  text-align: center;
-  padding: 12px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(var(--rgb-brown-dark), 1);
-  font-family: var(--font-ui);
-  border-bottom: 2px solid rgba(var(--rgb-brown-muted), 0.3);
-  background-color: rgba(var(--rgb-parchment), 0.8);
-}
-
-.table-header.sortable {
-  cursor: pointer;
-  user-select: none;
-  transition: background-color 0.2s;
-}
-
-.table-header.sortable:hover {
-  background-color: rgba(var(--rgb-parchment), 1);
-}
-
-.sort-icon {
-  display: inline-block;
-  margin-left: 4px;
-  font-size: 12px;
-  color: rgba(var(--rgb-brown-muted), 1);
-}
-
-.table-header.sortable:hover .sort-icon {
-  color: rgba(var(--rgb-cinnabar), 1);
-}
-
-.table-row {
-  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.15);
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.table-row:hover {
-  background-color: rgba(var(--rgb-parchment), 0.3);
-}
-
-.table-cell {
-  padding: 14px 16px;
-  font-size: 13px;
-  font-family: var(--font-ui);
-  color: rgba(var(--rgb-brown-dark), 1);
-  vertical-align: top;
-  line-height: 1.6;
-}
-
-.table-cell.index {
-  font-weight: 500;
-  color: rgba(var(--rgb-brown-muted), 1);
-  text-align: center;
-  background-color: rgba(var(--rgb-parchment), 0.5);
-  white-space: nowrap;
-  width: 60px;
-}
-
-.table-cell.file-content {
-  overflow: hidden;
-  background-color: rgba(var(--rgb-parchment), 0.3);
-}
-
-.file-content-inner {
-  max-height: none;
-  overflow: visible;
-  display: block;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  position: relative;
-  z-index: 1;
-  background-color: rgba(var(--rgb-cream), 0.9);
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.15);
-}
-
-.table-cell.page {
-  text-align: center;
-  background-color: rgba(var(--rgb-parchment), 0.5);
-  font-family: var(--font-ui);
-  white-space: nowrap;
-  color: rgba(var(--rgb-brown-muted), 1);
-}
-
-.page-number {
-  font-size: 12px;
-  font-family: var(--font-ui);
-}
-
-.table-cell.similarity {
-  text-align: center;
-  background-color: rgba(var(--rgb-parchment), 0.5);
-  white-space: nowrap;
-}
-
-/* 相似度标签 */
-.similarity-label {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: var(--radius-lg);
-  font-size: 12px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  white-space: nowrap;
-  min-width: 60px;
-  text-align: center;
-}
-
-.similarity-label.high {
-  background-color: rgba(var(--rgb-cinnabar), 0.1);
-  color: rgba(var(--rgb-cinnabar), 1);
-}
-
-.similarity-label.medium {
-  background-color: rgba(var(--rgb-brown-muted), 0.2);
-  color: rgba(var(--rgb-brown-muted), 1);
-}
-
-.similarity-label.low {
-  background-color: rgba(var(--rgb-jade), 0.1);
-  color: rgba(var(--rgb-jade), 1);
-}
-
-/* 分页控件 */
-.pagination-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  background-color: rgba(var(--rgb-parchment), 0.5);
-  border-top: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-}
-
-.pagination-info {
-  font-size: 13px;
-  color: rgba(var(--rgb-brown-muted), 1);
-  font-family: var(--font-ui);
-}
-
-.pagination-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pagination-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 14px;
-  background-color: rgba(var(--rgb-cream), 0.9);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.3);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  color: rgba(var(--rgb-brown-dark), 1);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: var(--font-ui);
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background-color: rgba(var(--rgb-cinnabar), 0.1);
-  border-color: rgba(var(--rgb-cinnabar), 1);
-  color: rgba(var(--rgb-cinnabar), 1);
-}
-
-.pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.page-numbers {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.page-btn {
-  min-width: 40px;
-  min-height: 40px;
-  padding: 0 8px;
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.3);
-  border-radius: var(--radius-sm);
-  background-color: rgba(var(--rgb-cream), 0.9);
-  color: rgba(var(--rgb-brown-dark), 1);
-  font-size: 14px;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.page-btn:hover:not(:disabled) {
-  background-color: rgba(var(--rgb-cinnabar), 0.1);
-  border-color: rgba(var(--rgb-cinnabar), 1);
-  color: rgba(var(--rgb-cinnabar), 1);
-}
-
-.page-btn.active {
-  background-color: rgba(var(--rgb-cinnabar), 1);
-  border-color: rgba(var(--rgb-cinnabar), 1);
-  color: rgba(var(--rgb-cream), 1);
-  font-weight: 600;
-}
-
-.page-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.page-ellipsis {
-  color: rgba(var(--rgb-brown-muted), 1);
-  font-size: 13px;
-  margin: 0 4px;
-}
-
-/* 全局高亮样式 - 国潮古风 */
-.highlighted-text {
-  background-color: rgba(255, 215, 0, 0.85) !important;
-  color: rgba(var(--rgb-cinnabar), 1) !important;
-  padding: 2px 4px !important;
-  border-radius: var(--radius-xs) !important;
-  font-weight: 700 !important;
-  display: inline !important;
-  line-height: inherit !important;
-  box-decoration-break: clone !important;
-  -webkit-box-decoration-break: clone !important;
-  box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.5) !important;
-}
-
-/* file-content-inner中的高亮文本 */
-.file-content-inner .highlighted-text {
-  background-color: rgba(255, 215, 0, 0.9) !important;
-  color: rgba(var(--rgb-cinnabar), 1) !important;
-  padding: 2px 4px !important;
-  border-radius: var(--radius-xs) !important;
-  font-weight: 700 !important;
-  display: inline !important;
-  line-height: inherit !important;
-  box-decoration-break: clone !important;
-  -webkit-box-decoration-break: clone !important;
-  box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.6) !important;
-}
-
-.file-content-inner {
-  color: rgba(var(--rgb-brown-dark), 1);
-}
-
-/* 匹配分隔符样式 */
-.match-separator {
-  text-align: center;
-  color: rgba(var(--rgb-brown-muted), 1);
-  font-style: italic;
-  margin: 8px 0;
-  font-size: 14px;
-}
-
-.content-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: rgba(var(--rgb-brown-dark), 1);
-  font-family: var(--font-ui);
-  margin: 0;
-}
-
-/* 辅助文本 */
-.auxiliary-text {
-  font-size: 12px;
-  color: rgba(var(--rgb-brown-muted), 1);
-  font-family: var(--font-ui);
-}
-
-/* 滚动条样式 */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: rgba(var(--rgb-brown-muted), 0.5);
-  border-radius: var(--radius-xs);
-}
-
-/* 历史记录弹窗 - 使用统一样式 */
-.help-modal-overlay,
-.history-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.help-modal,
-.history-modal {
-  background: white;
-  border-radius: var(--radius-xl);
-  width: 90%;
-  max-width: 560px;
-  max-height: 70vh;
-  overflow: hidden;
-  box-shadow: var(--shadow-xl);
-  animation: modalSlideIn 0.3s ease;
-}
-
-/* 图片上传区域 */
-.image-upload-section {
-  padding: 16px 20px;
-  background-color: rgba(var(--rgb-cream), 0.9);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  box-shadow: var(--shadow-sm);
-}
-
-.image-section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(var(--rgb-brown-dark), 1);
-  font-family: var(--font-ui);
-}
-
-.image-section-icon {
-  font-size: 18px;
-  color: rgba(var(--rgb-cloud-blue), 1);
-}
-
-.image-section-hint {
-  font-size: 12px;
-  font-weight: 400;
-  color: rgba(var(--rgb-brown), 0.6);
-}
-
-.image-upload-columns {
-  display: flex;
-  gap: 16px;
-}
-
-.image-column {
-  flex: 1;
-  min-width: 0;
-}
-
-.image-column-label {
-  font-size: 12px;
-  color: rgba(var(--rgb-brown), 0.8);
-  margin-bottom: 8px;
-}
-
-.image-upload-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1px dashed rgba(var(--rgb-brown-muted), 0.4);
-  border-radius: var(--radius-sm);
-  background: rgba(var(--rgb-parchment), 0.3);
-  cursor: pointer;
-  font-size: 13px;
-  color: rgba(var(--rgb-brown), 0.8);
-  transition: all 0.2s;
-}
-
-.image-upload-btn:hover {
-  border-color: rgba(var(--rgb-brown-muted), 0.7);
-  background: rgba(var(--rgb-parchment), 0.6);
-}
-
-.image-upload-btn input[type="file"] {
-  display: none;
-}
-
-.image-preview-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.image-preview-item {
-  position: relative;
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-}
-
-.image-preview-thumb {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.image-preview-remove {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 18px;
-  height: 18px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(var(--rgb-cinnabar), 0.85);
-  color: white;
-  font-size: 12px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.image-preview-item:hover .image-preview-remove {
-  opacity: 1;
-}
-
-/* ========== OCR 图片文字识别样式 ========== */
-.ocr-section {
-  padding: 16px 20px;
-  background-color: rgba(var(--rgb-cream), 0.9);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  box-shadow: var(--shadow-sm);
-}
-
-.ocr-section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(var(--rgb-brown-dark), 1);
-  font-family: var(--font-ui);
-}
-
-.ocr-section-icon {
-  font-size: 18px;
-  color: rgba(var(--rgb-cloud-blue), 1);
-}
-
-.ocr-section-hint {
-  font-size: 12px;
-  font-weight: 400;
-  color: rgba(var(--rgb-brown), 0.6);
-}
-
-.ocr-config {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.ocr-lang-label {
-  font-size: 13px;
-  color: rgba(var(--rgb-brown), 0.8);
-}
-
-.ocr-lang-select {
-  padding: 6px 12px;
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.3);
-  border-radius: var(--radius-sm);
-  background: white;
-  font-size: 13px;
-  color: rgba(var(--rgb-brown-dark), 1);
-  cursor: pointer;
-}
-
-.ocr-lang-select:focus {
-  outline: none;
-  border-color: rgba(var(--rgb-cloud-blue), 0.5);
-}
-
-.ocr-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.ocr-compare-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: var(--radius-md);
-  background: var(--color-cloud-blue);
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: var(--shadow-sm);
-}
-
-.ocr-compare-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.ocr-compare-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.ocr-btn-icon {
-  font-size: 16px;
-}
-
-.ocr-progress {
-  margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
 
 /* OCR 结果弹窗 */
@@ -2755,19 +1695,19 @@ const generateWordReport = () => {
 
 .ocr-similarity-label {
   font-size: 13px;
-  color: rgba(var(--rgb-brown), 0.8);
+  color: var(--color-brown);
   margin-bottom: 4px;
 }
 
 .ocr-similarity-value {
   font-size: 28px;
   font-weight: 700;
-  color: rgba(var(--rgb-brown-dark), 1);
+  color: var(--color-brown-dark);
   font-family: var(--font-ui);
 }
 
 .ocr-similarity-value.high {
-  color: rgba(var(--rgb-cinnabar), 1);
+  color: var(--color-cinnabar);
 }
 
 .ocr-text-compare {
@@ -2784,7 +1724,7 @@ const generateWordReport = () => {
 .ocr-column-header {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(var(--rgb-brown-dark), 1);
+  color: var(--color-brown-dark);
   margin-bottom: 8px;
   padding-bottom: 6px;
   border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
@@ -2797,7 +1737,7 @@ const generateWordReport = () => {
   border: 1px solid rgba(var(--rgb-brown-muted), 0.1);
   font-size: 13px;
   line-height: 1.6;
-  color: rgba(var(--rgb-brown-dark), 0.9);
+  color: var(--color-brown-dark);
   white-space: pre-wrap;
   word-break: break-all;
   max-height: 300px;
@@ -2813,7 +1753,7 @@ const generateWordReport = () => {
 .ocr-detail-header {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(var(--rgb-brown-dark), 1);
+  color: var(--color-brown-dark);
   margin-bottom: 12px;
 }
 
@@ -2833,569 +1773,106 @@ const generateWordReport = () => {
 .ocr-detail-name {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(var(--rgb-brown-dark), 1);
+  color: var(--color-brown-dark);
   margin-bottom: 4px;
 }
 
 .ocr-detail-confidence {
   font-size: 11px;
-  color: rgba(var(--rgb-brown), 0.7);
+  color: var(--color-brown);
   margin-bottom: 4px;
 }
 
 .ocr-detail-confidence .high {
-  color: rgba(var(--rgb-jade), 1);
+  color: var(--color-jade);
 }
 
 .ocr-detail-text {
   font-size: 12px;
-  color: rgba(var(--rgb-brown-dark), 0.8);
+  color: var(--color-brown-dark);
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-all;
 }
 
-.help-modal-header,
-.history-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  background-color: rgba(var(--rgb-cream), 0.9);
-}
-
-.help-modal-header h3,
-.history-modal-header h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: rgba(var(--rgb-brown-dark), 1);
-  margin: 0;
-  font-family: var(--font-ui);
-}
-
-.help-close-btn,
-.history-close-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: var(--radius-md);
-  background-color: transparent;
-  cursor: pointer;
-  font-size: 20px;
-  color: rgba(var(--rgb-brown-muted), 1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.help-close-btn:hover,
-.history-close-btn:hover {
-  background-color: rgba(var(--rgb-cinnabar), 0.1);
-  color: rgba(var(--rgb-cinnabar), 1);
-}
-
-.help-modal-body,
-.history-modal-body {
-  padding: 20px 24px;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.help-feature-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 24px;
-}
-
-.help-feature-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 32px 20px;
-  background-color: rgba(var(--rgb-parchment), 0.5);
-  border-radius: var(--radius-lg);
-  border: 0.7px solid rgba(var(--rgb-tan-dark), 0.3);
-  transition: all 0.3s ease;
-}
-
-.help-feature-card:hover {
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-2px);
-}
-
-.help-feature-card .card-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 12px;
-}
-
-.help-feature-card .card-icon .icon {
-  font-size: 24px;
-}
-
-.help-feature-card .card-icon.accuracy {
-  background-color: rgba(254, 243, 199, 1);
-}
-
-.help-feature-card .card-icon.accuracy .icon {
-  color: rgba(217, 119, 6, 1);
-}
-
-.help-feature-card .card-icon.highlight {
-  background-color: rgba(219, 234, 254, 1);
-}
-
-.help-feature-card .card-icon.highlight .icon {
-  color: rgba(37, 99, 235, 1);
-}
-
-.help-feature-card .card-icon.export {
-  background-color: rgba(252, 231, 243, 1);
-}
-
-.help-feature-card .card-icon.export .icon {
-  color: rgba(219, 39, 119, 1);
-}
-
-.help-feature-card .card-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: rgba(var(--rgb-brown-dark), 1);
-  font-family: var(--font-ui);
-  margin: 0 0 8px 0;
-}
-
-.help-feature-card .card-desc {
-  font-size: 13px;
-  color: rgba(var(--rgb-brown-muted), 1);
-  font-family: var(--font-ui);
-  margin: 0;
-  line-height: 1.4;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(var(--rgb-brown-muted), 0.8);
-}
-
-/* 处理中遮罩 */
-.upload-section.processing {
-  position: relative;
-}
-
-.processing-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(var(--rgb-parchment), 0.9);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  border-radius: var(--radius-lg);
-}
-
-.processing-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 32px;
-}
-
-.processing-spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid rgba(var(--rgb-tan-dark), 0.3);
-  border-top-color: rgba(var(--rgb-cinnabar), 1);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.processing-text {
-  font-size: 16px;
-  font-weight: 500;
-  color: rgba(var(--rgb-brown-dark), 1);
-  font-family: var(--font-ui);
-  margin: 0;
-}
-
-.processing-percent {
-  font-size: 14px;
-  color: rgba(var(--rgb-brown-muted), 1);
-  font-family: var(--font-ui);
-  margin: 0;
-}
-
-.cancel-btn-overlay {
-  padding: 8px 24px;
-  background-color: transparent;
-  border: 1px solid rgba(var(--rgb-cinnabar), 1);
-  color: rgba(var(--rgb-cinnabar), 1);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: var(--font-ui);
-  transition: all 0.2s;
-}
-
-.cancel-btn-overlay:hover {
-  background-color: rgba(var(--rgb-cinnabar), 0.1);
-}
-
-/* 进度条 */
-.progress-container {
-  width: 100%;
-  padding: 20px 32px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.progress-bar {
-  flex: 1;
-  height: 8px;
-  background-color: rgba(var(--rgb-cream-dark), 1);
-  border-radius: var(--radius-xs);
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--color-cinnabar);
-  border-radius: var(--radius-xs);
-  transition: width 0.3s ease;
-}
-
-.progress-text {
-  font-size: 14px;
-  color: rgba(var(--rgb-brown-muted), 1);
-  font-family: var(--font-ui);
-  white-space: nowrap;
-  min-width: 120px;
-}
-
-.cancel-btn {
-  padding: 8px 20px;
-  background-color: transparent;
-  border: 1px solid rgba(var(--rgb-cinnabar), 1);
-  color: rgba(var(--rgb-cinnabar), 1);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: var(--font-ui);
-  transition: all 0.2s;
-}
-
-.cancel-btn:hover {
-  background-color: rgba(var(--rgb-cinnabar), 0.1);
-}
-
-/* 移动端响应式优化 */
+/* 移动端响应式 */
 @media (max-width: 768px) {
+  .file-compare-page {
+    gap: 12px;
+  }
+
+  .file-info-bar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .file-info-name {
+    max-width: 120px;
+    font-size: 13px;
+  }
+
   .upload-section {
     flex-direction: column;
     gap: 12px;
-    padding: 0 12px;
   }
 
-  .compare-action-area {
-    padding: 0;
-    gap: 12px;
-    width: 100%;
-    max-width: none;
-    margin: 0;
+  .compare-action-section {
+    align-self: center;
   }
 
-  .compare-btn-wrapper {
-    order: 3;
-    width: 100%;
-    margin: 8px 0;
+  .history-btn {
+    align-self: center;
   }
 
-  .compare-main-btn {
-    width: 100%;
-    max-width: none;
-    height: 52px;
-    border-radius: var(--radius-md);
-    font-size: 15px;
-    box-sizing: border-box;
-  }
-
-  .compare-icon {
-    font-size: 22px;
-  }
-
-  .btn-text {
-    font-size: 15px;
-  }
-
-  .progress-display {
-    width: 100%;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .progress-bar-bg {
-    height: 16px;
-  }
-
-  .progress-text {
-    font-size: 12px;
-  }
-
-  .page-title {
-    font-size: 18px;
-  }
-
-  .page-subtitle {
-    font-size: 12px;
-  }
-
-  .title-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .header-actions {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .content-display {
-    flex-direction: column;
-  }
-
-  .content-box {
-    width: 100%;
-  }
-
-  .pagination {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .result-stats {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .stat-card {
-    width: 100%;
-  }
-
-  .table-container {
-    overflow-x: auto;
-  }
-
-  .feature-cards {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .feature-card {
-    width: 100%;
-    height: auto;
-  }
-
-  .action-buttons {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+  .help-modal-overlay {
     padding: 0;
   }
 
-  /* 雷同片段详情区域移动端优化 */
-  .segment-details-section {
-    margin: 0 -16px;
+  .history-modal,
+  .ocr-result-modal {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
     border-radius: 0;
-    border-left: none;
-    border-right: none;
   }
 
-  .section-header {
+  .help-modal-header {
     padding: 12px 16px;
-    flex-wrap: wrap;
   }
 
-  .segment-title {
-    font-size: 14px;
-  }
-
-  .section-actions {
-    width: 100%;
-    justify-content: flex-start;
-    margin-top: 8px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  /* 表格移动端优化 */
-  .table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    max-height: none;
-  }
-
-  .similarity-table {
-    min-width: 700px;
-    font-size: 12px;
-  }
-
-  .table-header {
-    padding: 10px 12px;
-    font-size: 12px;
-    white-space: nowrap;
-  }
-
-  .table-row {
-    font-size: 12px;
-  }
-
-  .table-cell {
-    padding: 10px 12px;
-  }
-
-  .table-cell.file-content {
-    min-width: 150px;
-  }
-
-  .file-content-inner {
-    padding: 8px;
-    font-size: 12px;
-  }
-
-  /* 分页容器移动端优化 */
-  .pagination-container {
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px 16px;
-    align-items: stretch;
-  }
-
-  .pagination-info {
-    text-align: center;
-    font-size: 12px;
-    order: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .pagination-controls {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px;
-    order: 2;
-  }
-
-  .pagination-btn {
-    padding: 6px 10px;
-    font-size: 12px;
-    min-height: 36px;
-  }
-
-  .page-numbers {
-    gap: 4px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .page-btn {
-    width: 44px;
-    height: 44px;
-    font-size: 14px;
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-  .page-ellipsis {
-    font-size: 14px;
-  }
-
-  /* 模态框移动端适配 */
-  .help-modal,
-  .history-modal {
-    width: calc(100% - 32px);
-    max-width: 600px;
-    max-height: 85vh;
-    margin: 16px;
-  }
-
-  .help-close-btn {
-    width: 44px;
-    height: 44px;
-    font-size: 24px;
-  }
-
-  /* 使用说明区移动端适配 */
-  .instructions-content {
-    flex-direction: column;
-    gap: 12px;
+  .history-modal-body {
     padding: 16px;
   }
 
-  .instructions-icon {
-    font-size: 28px;
+  .ocr-result-body {
+    padding: 12px 16px;
   }
 
-  .instructions-title {
-    font-size: 15px;
-  }
-
-  .instructions-text {
-    font-size: 13px;
+  .ocr-text-compare {
+    flex-direction: column;
   }
 }
 
-/* 超小屏幕手机优化 (320px-480px) */
+.app-footer {
+  margin-top: auto;
+  padding: 16px 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-brown-muted);
+}
+
+.footer-powered {
+  color: var(--color-tan-dark);
+}
+
 @media (max-width: 480px) {
-  .page-btn {
-    width: 44px;
-    height: 44px;
-    font-size: 13px;
-  }
-
-  .pagination-btn {
-    padding: 8px 12px;
-    font-size: 13px;
-    min-height: 44px;
-  }
-
-  .help-modal,
-  .history-modal {
-    width: calc(100% - 16px);
-    margin: 8px;
-  }
-
-  .similarity-table {
-    font-size: 11px;
-  }
-
-  .table-header,
-  .table-row {
-    font-size: 11px;
-  }
-
-  .table-cell {
-    padding: 8px 10px;
+  .file-info-name {
+    max-width: 80px;
+    font-size: 12px;
   }
 }
 </style>
