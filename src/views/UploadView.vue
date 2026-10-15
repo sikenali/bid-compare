@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import UploadCard from '../components/UploadCard.vue'
 import StepStrip from '../components/StepStrip.vue'
-import { RiFileTextLine, RiFileCheckLine } from '@remixicon/vue'
+import { RiArrowLeftRightLine, RiListSettingsLine } from '@remixicon/vue'
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useComparison } from '../composables/useComparison'
@@ -324,7 +324,7 @@ function handleReplace() {
           @click="switchMode('fileCompare')"
           title="文件对比"
         >
-          <RiFileTextLine class="toolbar-icon" />
+          <RiArrowLeftRightLine class="toolbar-icon" />
         </button>
         <button
           class="toolbar-nav-btn"
@@ -332,7 +332,7 @@ function handleReplace() {
           @click="switchMode('propertyCheck')"
           title="属性检查"
         >
-          <RiFileCheckLine class="toolbar-icon" />
+          <RiListSettingsLine class="toolbar-icon" />
         </button>
       </div>
     </div>
