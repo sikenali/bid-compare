@@ -79,8 +79,6 @@ const viewHistoricalRecord = async (record: any) => {
   }
   showHistory.value = false
 }
-
-const isActive = (path: string) => route.path.startsWith(path)
 </script>
 
 <template>

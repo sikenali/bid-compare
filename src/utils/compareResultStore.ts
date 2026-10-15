@@ -88,17 +88,4 @@ export function deletePropertyCheckResult(id: string): void {
   propertyCheckResultStore.delete(id)
 }
 
-/**
- * 清理所有存储的对比结果
- */
-export function clearAllResults(): void {
-  compareResultStore.clear()
-  propertyCheckResultStore.clear()
-}
 
-/**
- * 获取存储的结果数量
- */
-export function getStoreSize(): number {
-  return compareResultStore.size + propertyCheckResultStore.size
-}

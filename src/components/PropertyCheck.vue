@@ -8,7 +8,7 @@ import { useRecentRecords } from '../composables/useRecentRecords'
 import { useToast } from '../composables/useToast'
 import { calculateTextSimilarity } from '../utils/textAlgorithms'
 import { storePropertyCheckResult } from '../utils/compareResultStore'
-import { buildPropertyDetails, propsMapSource, recordSource } from '../utils/propertyFields'
+import { buildPropertyDetails, propsMapSource } from '../utils/propertyFields'
 import FileUpload from './FileUpload.vue'
 
 const router = useRouter()
@@ -37,62 +37,8 @@ const rightFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' }
 
 // 使用最近记录组合式函数 - 传入propertyCheck类型
 const {
-  recentRecords,
-  addRecentRecord,
-  clearAllRecords,
-  deleteRecord
+  addRecentRecord
 } = useRecentRecords('propertyCheck')
-
-// 查看历史对比记录
-const viewHistoricalRecord = (record: any) => {
-  // 恢复保存的属性详情数据
-  let propertyDetails = []
-  
-  if (record.propertyDetails && record.propertyDetails.length > 0) {
-    propertyDetails = record.propertyDetails
-  } else {
-    // 如果没有保存属性详情，生成默认数据(与 handleCheck 保持相同的 13 个字段)
-    const leftSrc = recordSource({
-      leftFileName: record.leftFileName,
-      rightFileName: record.rightFileName,
-      leftFileType: getFileType(record.leftFileName),
-      rightFileType: getFileType(record.rightFileName)
-    });
-    const rightSrc = recordSource({
-      leftFileName: record.rightFileName,
-      rightFileName: record.leftFileName,
-      leftFileType: getFileType(record.rightFileName),
-      rightFileType: getFileType(record.leftFileName)
-    });
-    propertyDetails = buildPropertyDetails(leftSrc, rightSrc, 'N/A');
-  }
-
-  // 统计属性状态
-  const matchingProperties = propertyDetails.filter((p: any) => p.status === 'match').length
-  const nonMatchingProperties = propertyDetails.filter((p: any) => p.status === 'mismatch').length
-  const warningProperties = propertyDetails.filter((p: any) => p.status === 'warning').length
-
-  // 将历史记录数据存储到模块级存储中
-  const checkResult = {
-    propertyDetails: propertyDetails,
-    leftFileName: record.leftFileName,
-    rightFileName: record.rightFileName,
-    totalProperties: propertyDetails.length,
-    matchingProperties: matchingProperties,
-    nonMatchingProperties: nonMatchingProperties,
-    warningProperties: warningProperties,
-    similarity: record.similarity,
-    leftFileProperties: {},
-    rightFileProperties: {},
-    similarityStatus: 'match'
-  }
-
-  // 存储到模块级存储
-  const resultId = storePropertyCheckResult(checkResult)
-
-  // 跳转到结果页面，传递存储 ID 和时间戳
-  router.push({ path: '/property-check-result', query: { resultId, t: Date.now() } })
-}
 
 // 解析结果
 const leftFileContent = ref('')
@@ -1652,21 +1598,6 @@ const generateWordReport = () => {
   .page-ellipsis {
     font-size: 14px;
   }
-
-  /* 模态框移动端适配 */
-  .help-modal,
-  .history-modal {
-    width: calc(100% - 32px);
-    max-width: 600px;
-    max-height: 85vh;
-    margin: 16px;
-  }
-
-  .help-close-btn {
-    width: 44px;
-    height: 44px;
-    font-size: 24px;
-  }
 }
 
 /* 超小屏幕手机优化 (320px-480px) */
@@ -1681,17 +1612,6 @@ const generateWordReport = () => {
     padding: 8px 12px;
     font-size: 13px;
     min-height: 44px;
-  }
-
-  .help-modal,
-  .history-modal {
-    width: calc(100% - 16px);
-    margin: 8px;
-  }
-
-  .table-header,
-  .table-row {
-    font-size: 11px;
   }
 
   .table-header-cell,

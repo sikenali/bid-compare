@@ -1,4 +1,4 @@
-import { ref, reactive, onMounted, onActivated, computed, type Ref, type ComputedRef } from 'vue'
+import { ref, reactive, onMounted, computed, type Ref, type ComputedRef } from 'vue'
 import type { SimilarSegment } from '../utils/textAlgorithms'
 
 // 属性对比详情类型
@@ -24,7 +24,6 @@ export interface RecentRecord {
 // 模块级存储 - 按类型区分，确保单例
 const recordStores = new Map<string, {
   recentRecords: RecentRecord[]
-  showRecentRecords: boolean
 }>()
 
 // 清理 HTML 标签，减少存储大小
@@ -37,7 +36,6 @@ const getStore = (recordType: string) => {
   if (!recordStores.has(recordType)) {
     recordStores.set(recordType, {
       recentRecords: reactive<RecentRecord[]>([]),
-      showRecentRecords: false
     })
   }
   return recordStores.get(recordType)!
@@ -54,14 +52,11 @@ const loadFromStorage = (recordType: string) => {
       const parsed = JSON.parse(savedRecords) as RecentRecord[]
       store.recentRecords.length = 0
       parsed.forEach(record => store.recentRecords.push(record))
-      store.showRecentRecords = parsed.length > 0
     } else {
       store.recentRecords.length = 0
-      store.showRecentRecords = false
     }
   } catch (error) {
     store.recentRecords.length = 0
-    store.showRecentRecords = false
   }
 }
 
@@ -86,7 +81,6 @@ const saveToStorage = (recordType: string) => {
 
     try {
       localStorage.setItem(storageKey, JSON.stringify(compressed))
-      store.showRecentRecords = store.recentRecords.length > 0
       return // 保存成功，退出
     } catch (e) {
       // 删除最旧的记录
@@ -96,7 +90,6 @@ const saveToStorage = (recordType: string) => {
       } else {
         // 如果只有一条记录还是失败，清空
         store.recentRecords.length = 0
-        store.showRecentRecords = false
         localStorage.removeItem(storageKey)
         return
       }
@@ -105,7 +98,6 @@ const saveToStorage = (recordType: string) => {
 
   // 超过最大重试次数，强制清空
   store.recentRecords.length = 0
-  store.showRecentRecords = false
   localStorage.removeItem(storageKey)
 }
 
@@ -115,7 +107,6 @@ export function useRecentRecords(recordType: 'fileCompare' | 'propertyCheck') {
 
   // 创建计算属性以确保响应式
   const recentRecords = computed(() => store.recentRecords) as ComputedRef<RecentRecord[]>
-  const showRecentRecords = computed(() => store.showRecentRecords) as ComputedRef<boolean>
 
   // 添加新记录
   const addRecentRecord = (record: Omit<RecentRecord, 'id'>) => {
@@ -140,13 +131,7 @@ export function useRecentRecords(recordType: 'fileCompare' | 'propertyCheck') {
   // 一键清除记录
   const clearAllRecords = () => {
     store.recentRecords.length = 0
-    store.showRecentRecords = false
     localStorage.removeItem(`${recordType}RecentRecords`)
-  }
-
-  // 手动触发加载（供外部调用）
-  const loadRecentRecords = () => {
-    loadFromStorage(recordType)
   }
 
   // 组件挂载时加载
@@ -154,17 +139,10 @@ export function useRecentRecords(recordType: 'fileCompare' | 'propertyCheck') {
     loadFromStorage(recordType)
   })
 
-  // keep-alive 激活时重新加载
-  onActivated(() => {
-    loadFromStorage(recordType)
-  })
-
   return {
     recentRecords,
-    showRecentRecords,
     addRecentRecord,
     deleteRecord,
-    clearAllRecords,
-    loadRecentRecords
+    clearAllRecords
   }
 }
