@@ -1,103 +1,239 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useSettings } from '../../composables/useSettings'
 import { useToast } from '../../composables/useToast'
+import { deleteApiKey, toggleApiKey, testApiKey, updateApiKey, addApiKey, getApiKeyList } from '../../api/settings'
+import { UiSelect, UiInput, UiSelectCard, UiTip, UiModal, UiSwitch, type UiSelectOption } from '../../components/ui'
 
 const { settings, saveSettings } = useSettings()
 const { show: showToast } = useToast()
 
 const configTab = ref<'provider' | 'custom'>('provider')
-const customProvider = ref('')
-const customModel = ref('')
-const apiKeyValue = ref('')
+const keyInput = ref('')
 const keyVisible = ref(false)
 
-interface ModelItem {
-  id: string
-  name: string
-  icon: string
-  provider: string
-  model: string
+const customApiFormat = ref<'openai' | 'anthropic'>('openai')
+const customEndpoint = ref('')
+const customModelId = ref('')
+
+const providerModelsMap: Record<string, string[]> = {
+  '阿里云': ['qwen-turbo', 'qwen-plus', 'qwen-max', 'qwen-long'],
+  '百度': ['ernie-4.0-turbo-8k', 'ernie-3.5-turbo-128k', 'ernie-speed-128k'],
+  '智谱': ['glm-4-flash', 'glm-4-air', 'glm-4-plus'],
+  'DeepSeek': ['deepseek-chat', 'deepseek-coder'],
+  'OpenAI': ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
+  'Anthropic': ['claude-3-5-sonnet', 'claude-3-5-haiku', 'claude-3-opus'],
 }
 
-const domesticModels: ModelItem[] = [
-  { id: 'qwen',   name: '通义千问',   icon: 'RiRobotLine',   provider: '阿里云', model: 'qwen-turbo' },
-  { id: 'wenxin', name: '文心一言',   icon: 'RiRobotLine',   provider: '百度',   model: 'ernie-4.0' },
-  { id: 'glm',    name: '智谱 GLM',   icon: 'RiRobotLine',   provider: '智谱',   model: 'glm-4' },
+const selectedProvider = ref('')
+const selectedModelName = ref('')
+const providerModels = computed(() => providerModelsMap[selectedProvider.value] || [])
+
+const providerOptions: UiSelectOption[] = [
+  { value: '阿里云', label: '阿里云', desc: '通义千问', group: '国内' },
+  { value: '百度', label: '百度', desc: '文心一言', group: '国内' },
+  { value: '智谱', label: '智谱', desc: 'GLM', group: '国内' },
+  { value: 'DeepSeek', label: 'DeepSeek', group: '国内' },
+  { value: 'OpenAI', label: 'OpenAI', desc: 'GPT', group: '国外' },
+  { value: 'Anthropic', label: 'Anthropic', desc: 'Claude', group: '国外' },
+]
+const modelOptions = computed<UiSelectOption[]>(() =>
+  providerModels.value.map(m => ({ value: m, label: m })),
+)
+const formatOptions: UiSelectOption[] = [
+  { value: 'openai', label: 'OpenAI Chat Completions 格式' },
+  { value: 'anthropic', label: 'Anthropic Messages 格式' },
 ]
 
-const foreignModels: ModelItem[] = [
-  { id: 'gpt4o',  name: 'GPT-4o',     icon: 'RiOpenaiFill',  provider: 'OpenAI', model: 'gpt-4o' },
-  { id: 'claude', name: 'Claude 3.5', icon: 'RiRobotLine',   provider: 'Anthropic', model: 'claude-3-5-sonnet' },
-]
+function onProviderChange() {
+  selectedModelName.value = ''
+}
 
 interface SavedKey {
   id: string
   provider: string
   model: string
-  key: string
+  maskedKey: string
+  enabled: boolean
+  baseUrl?: string
+  format?: string
 }
 
 const savedKeys = ref<SavedKey[]>([])
+const testingKey = ref<string | null>(null)
+const testSuccess = ref<Record<string, boolean>>({})
+const testFailed = ref<Record<string, boolean>>({})
+const testError = ref<Record<string, string>>({})
+const editingId = ref('')
+const showDeleteDialog = ref(false)
+const deletingId = ref('')
 
-onMounted(() => {
-  if (settings.apiKey) {
-    savedKeys.value.push({
-      id: 'default',
-      provider: '自定义',
-      model: settings.selectedModel || '',
-      key: settings.apiKey,
-    })
-  }
-})
-
-function addApiKey() {
-  const key = apiKeyValue.value.trim()
-  if (!key) { showToast('请输入 API Key', 'warning'); return }
-  if (configTab.value === 'custom') {
-    if (!customProvider.value.trim() || !customModel.value.trim()) {
-      showToast('请填写服务商和模型名称', 'warning'); return
-    }
-    savedKeys.value.push({
-      id: Date.now().toString(),
-      provider: customProvider.value.trim(),
-      model: customModel.value.trim(),
-      key,
-    })
-  } else {
-    const m = domesticModels.find(x => x.id === settings.selectedModel) || foreignModels.find(x => x.id === settings.selectedModel)
-    if (m) {
-      savedKeys.value.push({
-        id: Date.now().toString(),
-        provider: m.provider,
-        model: m.model,
-        key,
-      })
-    }
-  }
-  settings.apiKey = key
-  apiKeyValue.value = ''
-  customProvider.value = ''
-  customModel.value = ''
-  saveSettings()
-  showToast('API Key 已保存', 'success')
+async function loadKeys() {
+  try {
+    const keys = getApiKeyList()
+    savedKeys.value = (keys || []).map((k: any) => ({
+      id: k.id,
+      provider: k.provider,
+      model: k.model,
+      maskedKey: k.api_key || '••••',
+      enabled: k.enabled !== 0,
+      baseUrl: k.base_url || '',
+      format: k.format || 'openai',
+    }))
+  } catch {}
 }
 
-function removeApiKey(id: string) {
-  const removed = savedKeys.value.find(k => k.id === id)
-  savedKeys.value = savedKeys.value.filter(k => k.id !== id)
-  if (removed && removed.key === settings.apiKey) {
-    settings.apiKey = savedKeys.value.length > 0 ? savedKeys.value[savedKeys.value.length - 1].key : ''
+function syncToSettings(key: { provider: string; model: string; api_key?: string }) {
+  const providerMap: Record<string, string> = {
+    '阿里云': 'qwen', '百度': 'wenxin', '智谱': 'glm',
+    'DeepSeek': 'deepseek', 'OpenAI': 'openai', 'Anthropic': 'claude',
+  }
+  const providerKey = providerMap[key.provider] || key.provider
+  settings.selectedModel = providerKey
+  if (key.api_key) {
+    settings.apiKey = key.api_key
     saveSettings()
   }
 }
 
-function resetForm() {
-  apiKeyValue.value = ''
-  customProvider.value = ''
-  customModel.value = ''
-  keyVisible.value = false
+async function handleSave() {
+  const key = keyInput.value.trim()
+  if (configTab.value === 'custom') {
+    if (!customEndpoint.value.trim() || !customModelId.value.trim()) {
+      showToast('请填写自定义地址和模型 ID', 'warning')
+      return
+    }
+    const payload: any = {
+      provider: customApiFormat.value === 'anthropic' ? 'Anthropic (自定义)' : 'OpenAI (自定义)',
+      model: customModelId.value.trim(),
+      base_url: customEndpoint.value.trim(),
+      format: customApiFormat.value,
+    }
+    if (key) payload.api_key = key
+    try {
+      if (editingId.value) {
+        await updateApiKey(editingId.value, payload)
+        showToast('自定义配置已更新', 'success')
+      } else {
+        if (!key) { showToast('请输入 API Key', 'warning'); return }
+        await addApiKey(payload)
+        showToast('自定义配置已保存', 'success')
+      }
+      syncToSettings({ provider: payload.provider, model: payload.model, api_key: key || undefined })
+      resetForm()
+      await loadKeys()
+    } catch (err: any) {
+      showToast(err?.message || '保存失败', 'error')
+    }
+  } else {
+    if (!selectedProvider.value || !selectedModelName.value) {
+      showToast('请选择服务商和模型', 'warning')
+      return
+    }
+    const payload: any = {
+      provider: selectedProvider.value,
+      model: selectedModelName.value,
+      format: selectedProvider.value === 'Anthropic' ? 'anthropic' : 'openai',
+    }
+    if (key) payload.api_key = key
+    try {
+      if (editingId.value) {
+        await updateApiKey(editingId.value, payload)
+        showToast(`「${selectedProvider.value}」配置已更新`, 'success')
+      } else {
+        if (!key) { showToast('请输入 API Key', 'warning'); return }
+        await addApiKey(payload)
+        showToast(`「${selectedProvider.value}」API Key 已保存`, 'success')
+      }
+      syncToSettings({ provider: selectedProvider.value, model: selectedModelName.value, api_key: key || undefined })
+      resetForm()
+      await loadKeys()
+    } catch (err: any) {
+      showToast(err?.message || '保存失败', 'error')
+    }
+  }
 }
+
+function resetForm() {
+  keyInput.value = ''
+  keyVisible.value = false
+  selectedProvider.value = ''
+  selectedModelName.value = ''
+  customEndpoint.value = ''
+  customModelId.value = ''
+  editingId.value = ''
+}
+
+function openDelete(id: string) {
+  deletingId.value = id
+  showDeleteDialog.value = true
+}
+
+async function confirmDelete() {
+  if (!deletingId.value) return
+  try {
+    await deleteApiKey(deletingId.value)
+    showDeleteDialog.value = false
+    showToast('已删除', 'success')
+    if (editingId.value === deletingId.value) resetForm()
+    await loadKeys()
+  } catch { showToast('删除失败', 'error') }
+}
+
+async function handleToggle(key: SavedKey) {
+  try {
+    const result = await toggleApiKey(key.id)
+    key.enabled = result.enabled === 1
+    if (key.enabled) {
+      const storedKey = getApiKeyList().find(k => k.id === key.id)
+      if (storedKey) syncToSettings({ provider: storedKey.provider, model: storedKey.model, api_key: storedKey.api_key })
+    }
+  } catch { showToast('操作失败', 'error') }
+}
+
+async function handleTest(key: SavedKey) {
+  testingKey.value = key.id
+  testSuccess.value[key.id] = false
+  testFailed.value[key.id] = false
+  testError.value[key.id] = ''
+  try {
+    const result = await testApiKey({ id: key.id })
+    if (result.available) {
+      testSuccess.value[key.id] = true
+    } else {
+      testFailed.value[key.id] = true
+      testError.value[key.id] = result.error || '测试失败'
+    }
+  } catch (err: any) {
+    testFailed.value[key.id] = true
+    testError.value[key.id] = err?.message || '网络错误'
+  } finally {
+    testingKey.value = null
+  }
+}
+
+function startEdit(key: SavedKey) {
+  editingId.value = key.id
+  if (key.baseUrl) {
+    configTab.value = 'custom'
+    customApiFormat.value = (key.format as any) || 'openai'
+    customEndpoint.value = key.baseUrl
+    customModelId.value = key.model
+  } else {
+    configTab.value = 'provider'
+    selectedProvider.value = key.provider
+    selectedModelName.value = key.model
+  }
+  keyInput.value = ''
+}
+
+onMounted(async () => {
+  await loadKeys()
+  const activeKey = savedKeys.value.find(k => k.enabled)
+  if (activeKey && activeKey.provider) {
+    syncToSettings({ provider: activeKey.provider, model: activeKey.model })
+  }
+})
 </script>
 
 <template>
@@ -122,84 +258,116 @@ function resetForm() {
     </div>
 
     <div class="section-card">
-      <div class="card-title">模型选择</div>
-      <div class="model-list">
-        <span class="model-section">国内模型</span>
-        <div
-          v-for="m in domesticModels"
-          :key="m.id"
-          class="model-item"
-          :class="{ active: settings.selectedModel === m.id }"
-          @click="settings.selectedModel = m.id; saveSettings()"
-        >
-          <div class="model-icon-wrap" :class="{ active: settings.selectedModel === m.id }">
-            <component :is="m.icon" :size="16" />
-          </div>
-          <span class="model-name" :class="{ active: settings.selectedModel === m.id }">{{ m.name }}</span>
-        </div>
-        <div class="model-divider" />
-        <span class="model-section">国外模型</span>
-        <div
-          v-for="m in foreignModels"
-          :key="m.id"
-          class="model-item"
-          :class="{ active: settings.selectedModel === m.id }"
-          @click="settings.selectedModel = m.id; saveSettings()"
-        >
-          <div class="model-icon-wrap" :class="{ active: settings.selectedModel === m.id }">
-            <component :is="m.icon" :size="16" />
-          </div>
-          <span class="model-name" :class="{ active: settings.selectedModel === m.id }">{{ m.name }}</span>
-        </div>
+      <div class="card-title">API Key</div>
+      <div class="density-group">
+        <UiSelectCard
+          :selected="configTab === 'provider'"
+          title="模型制造商"
+          desc="从内置服务商列表选择模型并填写 API Key"
+          @select="configTab = 'provider'"
+        />
+        <UiSelectCard
+          :selected="configTab === 'custom'"
+          title="自定义配置"
+          desc="手动填写 API 格式、端点地址和模型 ID"
+          @select="configTab = 'custom'"
+        />
       </div>
 
-      <div class="config-panel">
-        <div class="config-tabs">
-          <button class="config-tab" :class="{ active: configTab === 'provider' }" @click="configTab = 'provider'">模型制造商</button>
-          <button class="config-tab" :class="{ active: configTab === 'custom' }" @click="configTab = 'custom'">自定义配置</button>
-        </div>
-
-        <div class="config-form">
+      <div class="config-form">
+        <template v-if="configTab === 'provider'">
           <div class="form-field">
             <label class="form-label">服务商</label>
-            <input v-if="configTab === 'custom'" v-model="customProvider" class="form-input" placeholder="例如: OpenAI" />
-            <div v-else class="form-input static">{{ domesticModels.find(m => m.id === settings.selectedModel)?.provider || foreignModels.find(m => m.id === settings.selectedModel)?.provider || '' }}</div>
+            <UiSelect v-model="selectedProvider" :options="providerOptions" placeholder="请选择服务商" @change="onProviderChange" />
           </div>
           <div class="form-field">
             <label class="form-label">模型</label>
-            <input v-if="configTab === 'custom'" v-model="customModel" class="form-input" placeholder="例如: gpt-4" />
-            <div v-else class="form-input static">{{ domesticModels.find(m => m.id === settings.selectedModel)?.model || foreignModels.find(m => m.id === settings.selectedModel)?.model || '' }}</div>
+            <UiSelect v-model="selectedModelName" :options="modelOptions" placeholder="请选择模型" />
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="form-field">
+            <label class="form-label">API格式</label>
+            <UiSelect v-model="customApiFormat" :options="formatOptions" />
           </div>
           <div class="form-field">
-            <label class="form-label">API Key</label>
-            <div class="form-input-row">
-              <input v-model="apiKeyValue" :type="keyVisible ? 'text' : 'password'" class="form-input" placeholder="sk-..." />
-              <button class="form-key-toggle" @click="keyVisible = !keyVisible">
-                <RiEyeOffLine v-if="!keyVisible" :size="16" />
-                <RiEyeLine v-else :size="16" />
-              </button>
-            </div>
+            <label class="form-label">自定义地址</label>
+            <UiInput v-model="customEndpoint" placeholder="https://api.example.com/v1" clearable />
           </div>
-          <div class="form-actions">
-            <button class="form-btn-cancel" @click="resetForm">取消</button>
-            <button class="form-btn-add" @click="addApiKey">添加</button>
+          <div class="form-field">
+            <label class="form-label">模型ID</label>
+            <UiInput v-model="customModelId" placeholder="例如: gpt-4" clearable />
           </div>
-        </div>
+        </template>
 
-        <div v-if="savedKeys.length > 0" class="saved-keys">
-          <span class="saved-keys-title">已保存的密钥</span>
-          <div v-for="k in savedKeys" :key="k.id" class="saved-key-item">
-            <div class="saved-key-info">
-              <span class="saved-key-provider">{{ k.provider }}</span>
-              <span class="saved-key-model">{{ k.model }}</span>
-            </div>
-            <button class="saved-key-delete" @click="removeApiKey(k.id)">
-              <RiDeleteBinLine :size="14" />
-            </button>
+        <div class="form-field">
+          <label class="form-label">API Key</label>
+          <div class="form-input-row">
+            <UiInput
+              v-model="keyInput"
+              :type="keyVisible ? 'text' : 'password'"
+              :placeholder="editingId ? '留空则保留原密钥，输入则更换' : 'sk-...'"
+            >
+              <template #suffix>
+                <button class="form-key-toggle" @click="keyVisible = !keyVisible">
+                  <RiEyeLine v-if="keyVisible" class="icon" /><RiEyeOffLine v-else class="icon" />
+                </button>
+              </template>
+            </UiInput>
           </div>
         </div>
       </div>
+
+      <div class="form-actions">
+        <button class="btn-save" @click="handleSave">{{ editingId ? '更新配置' : '保存配置' }}</button>
+      </div>
+
+      <div v-if="savedKeys.length > 0" class="saved-keys">
+        <span class="saved-keys-title">已保存的密钥</span>
+        <div v-for="key in savedKeys" :key="key.id" class="saved-key-item">
+          <div class="saved-key-info">
+            <span class="saved-key-provider">{{ key.provider }}</span>
+            <span class="saved-key-model">{{ key.model }}<span v-if="key.baseUrl" class="saved-key-endpoint"> · {{ key.baseUrl }}</span></span>
+          </div>
+          <div class="saved-key-actions">
+            <span class="saved-key-masked">{{ key.maskedKey }}</span>
+            <button class="saved-key-test" @click="handleTest(key)" :disabled="testingKey === key.id">
+              <RiLoader4Line v-if="testingKey === key.id" class="icon spinning" />
+              <RiCheckLine v-else-if="testSuccess[key.id]" class="icon success" />
+              <RiCloseCircleLine v-else-if="testFailed[key.id]" class="icon failed" />
+              <span v-else>{{ testSuccess[key.id] ? '连通性正常' : testFailed[key.id] ? '失败' : '测试' }}</span>
+            </button>
+            <UiTip text="编辑">
+              <button class="saved-key-edit" @click="startEdit(key)">
+                <RiEditLine class="icon" />
+              </button>
+            </UiTip>
+            <UiTip text="删除">
+              <button class="saved-key-delete" @click="openDelete(key.id)">
+                <RiDeleteBinLine class="icon" />
+              </button>
+            </UiTip>
+            <UiSwitch :model-value="key.enabled" size="sm" @click="handleToggle(key)" />
+          </div>
+        </div>
+        <div v-if="Object.values(testError).some(v => v)" class="test-error-msg">
+          {{ Object.values(testError).find(v => v) }}
+        </div>
+      </div>
     </div>
+
+    <UiModal
+      v-model="showDeleteDialog"
+      title="删除密钥"
+      subtitle="删除后使用该密钥的抽取将不可用"
+      icon="ri-delete-bin-line"
+      :width="480"
+      confirm-text="确认删除"
+      @confirm="confirmDelete"
+    >
+      <p class="confirm-text">确定删除该 API 密钥配置？</p>
+    </UiModal>
   </div>
 </template>
 
@@ -213,115 +381,115 @@ function resetForm() {
 }
 .header-content { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
 .header-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-.breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; font-family: "SourceHanSans-Regular", var(--font-family-cn); }
 .breadcrumb span { color: var(--color-text-faint, #A7A296); }
+.breadcrumb span.sep { color: var(--color-text-faint, #A7A296); }
 .breadcrumb span.current { color: var(--color-text-body, #3A3A3A); font-weight: 500; }
-.header-title h1 { font-size: 30px; font-weight: 700; color: var(--color-text-primary, #1F1D1A); margin: 12px 0 0; letter-spacing: -0.5px; line-height: 1.2; }
-.header-title p { font-size: 15px; color: var(--color-text-secondary, #6E6A60); margin: 8px 0 0; }
+.header-title h1 { font-size: 30px; font-weight: 700; color: var(--color-text-primary, #1F1D1A); margin: 12px 0 0 0; letter-spacing: -0.5px; font-family: "SourceHanSans-Bold", var(--font-family-cn); line-height: 1.2; }
+.header-title p { font-size: 15px; color: var(--color-text-secondary, #6E6A60); margin: 8px 0 0 0; font-family: "SourceHanSans-Regular", var(--font-family-cn); }
 .reset-button {
   display: inline-flex; align-items: center; gap: 8px; padding: 0 20px; height: 48px;
-  border: 0.7px solid var(--color-border, #E5DFD3); background: var(--color-bg-white, #FFFFFF);
-  border-radius: 12px; font-size: 15px; color: var(--color-text-body, #3A3A3A);
-  cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+  border: 0.7px solid var(--color-border, #E5DFD3); background-color: var(--color-bg-white, #FFFFFF); border-radius: 12px;
+  font-size: 15px; color: var(--color-text-body, #3A3A3A); cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+  font-family: "SourceHanSans-Regular", var(--font-family-cn);
 }
-.reset-button:hover { background: var(--color-bg-secondary, #F7F3EA); }
-.reset-button .icon { font-size: 18px; }
+.reset-button:hover { background-color: var(--color-bg-secondary, #F7F3EA); }
+.reset-button .icon { font-family: "remixicon", sans-serif; font-style: normal; font-size: 18px; }
 
 .section-card {
   background: var(--color-bg-white, #FFFFFF);
   border: 0.7px solid var(--color-border-soft, #EDE9E0);
-  border-radius: 16px; padding: 24px 28px;
+  border-radius: 16px; padding: 24px 40px;
 }
-.card-title { font-size: 17px; font-weight: 500; color: var(--color-text-primary, #1F1D1A); margin-bottom: 20px; }
-
-.model-list { display: flex; flex-direction: column; gap: 4px; }
-.model-section { font-size: 11px; font-weight: 600; color: var(--color-text-muted, #8A8578); text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 0 4px; }
-.model-item {
-  display: flex; align-items: center; gap: 12px; padding: 12px;
-  border-radius: 12px; cursor: pointer; transition: all 0.2s;
+.card-title {
+  font-size: 17px; font-weight: 500; color: var(--color-text-primary, #1F1D1A);
+  font-family: "SourceHanSans-Medium", var(--font-family-cn);
 }
-.model-item:hover { background: var(--color-bg-secondary, #F7F3EA); }
-.model-item.active { background: var(--color-primary, #C0392B); }
-.model-icon-wrap {
-  width: 32px; height: 32px; border-radius: 8px;
-  background: var(--color-bg-secondary, #F7F3EA);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; color: var(--color-text-secondary, #6E6A60);
-}
-.model-item.active .model-icon-wrap { background: rgba(255,255,255,0.2); color: #fff; }
-.model-name { font-size: 14px; color: var(--color-text-secondary, #6E6A60); font-weight: 500; }
-.model-name.active { color: #fff; font-weight: 600; }
-.model-divider { height: 1px; background: var(--color-border-soft, #EDE9E0); margin: 8px 0; }
-
-.config-panel { margin-top: 24px; display: flex; flex-direction: column; gap: 20px; }
-.config-tabs {
-  display: flex; gap: 4px; background: var(--color-bg-secondary, #F7F3EA);
-  border-radius: 12px; padding: 4px; width: fit-content;
-}
-.config-tab {
-  padding: 8px 20px; border: none; border-radius: 8px; background: transparent;
-  color: var(--color-text-muted, #8A8578); font-size: 13px; font-weight: 500;
-  cursor: pointer; transition: all 0.2s;
-}
-.config-tab.active { background: var(--color-primary, #C0392B); color: #fff; font-weight: 600; }
+.density-group { display: flex; gap: 24px; margin-top: 20px; }
+.density-group > * { flex: 1; min-width: 0; display: flex; }
+.density-group > * > * { flex: 1; }
 
 .config-form {
-  background: var(--color-bg-secondary, #F7F3EA);
-  border: 0.7px solid var(--color-border-soft, #EDE9E0);
-  border-radius: 16px; padding: 24px;
+  margin-top: 24px; background: var(--color-bg-card, #FCFBF8);
+  border: 0.7px solid var(--color-border-soft, #EDE9E0); border-radius: 16px; padding: 24px;
   display: flex; flex-direction: column; gap: 20px;
 }
 .form-field { display: flex; align-items: center; gap: 16px; }
-.form-label { width: 90px; font-size: 13px; font-weight: 500; color: var(--color-text-secondary, #6E6A60); flex-shrink: 0; }
-.form-input {
-  flex: 1; background: var(--color-bg-white, #FFFFFF);
-  border: 0.7px solid var(--color-border-soft, #EDE9E0);
-  border-radius: 10px; padding: 10px 12px; font-size: 13px;
-  color: var(--color-text-body, #3A3A3A); outline: none; transition: all 0.2s;
+.form-label {
+  width: 90px; font-size: 13px; font-weight: 500; color: var(--color-text-secondary, #6E6A60); flex-shrink: 0;
+  font-family: "SourceHanSans-Regular", var(--font-family-cn);
 }
-.form-input:focus { border-color: var(--color-primary, #C0392B); }
-.form-input.static { cursor: default; }
+.form-field > .ui-select,
+.form-field > .ui-input,
+.form-input-row > .ui-input { flex: 1; min-width: 0; }
 .form-input-row { display: flex; align-items: center; flex: 1; position: relative; }
-.form-input-row .form-input { padding-right: 40px; }
 .form-key-toggle {
   border: none; background: transparent; cursor: pointer; padding: 0;
-  display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; position: absolute; right: 8px; top: 50%;
-  transform: translateY(-50%); border-radius: 6px; color: var(--color-text-faint, #A7A296);
+  display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px;
 }
-.form-key-toggle:hover { color: var(--color-text-secondary, #6E6A60); }
-.form-actions { display: flex; justify-content: flex-end; gap: 12px; }
-.form-btn-cancel {
-  padding: 10px 24px; border: 0.7px solid var(--color-border, #E5DFD3);
-  border-radius: 10px; background: var(--color-bg-white, #FFFFFF);
-  color: var(--color-text-muted, #8A8578); font-size: 14px; font-weight: 500;
-  cursor: pointer; transition: all 0.2s;
-}
-.form-btn-cancel:hover { background: var(--color-bg-secondary, #F7F3EA); }
-.form-btn-add {
-  padding: 10px 24px; border: none; border-radius: 10px;
-  background: var(--color-primary, #C0392B); color: #fff;
-  font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-}
-.form-btn-add:hover { background: color-mix(in srgb, var(--color-primary, #C0392B) 88%, black); }
+.form-key-toggle .icon { font-family: "remixicon", sans-serif; font-style: normal; font-size: 18px; color: var(--color-text-faint, #A7A296); }
+.form-key-toggle:hover .icon { color: var(--color-text-secondary, #6E6A60); }
 
-.saved-keys { display: flex; flex-direction: column; gap: 8px; }
+.form-actions { margin-top: 20px; display: flex; justify-content: flex-end; }
+.btn-save {
+  height: 44px; padding: 0 28px; border: none; border-radius: 10px;
+  background: var(--color-primary, #C0392B); color: #fff; font-size: 15px; font-weight: 500;
+  cursor: pointer; font-family: "SourceHanSans-Medium", var(--font-family-cn);
+  transition: background 0.2s, transform 0.1s; white-space: nowrap;
+}
+.btn-save:hover { background: color-mix(in srgb, var(--color-primary, #C0392B) 88%, black); }
+.btn-save:active { transform: scale(0.97); }
+
+.saved-keys {
+  margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--color-border-soft, #EDE9E0);
+  display: flex; flex-direction: column; gap: 8px;
+}
 .saved-keys-title {
   font-size: 13px; font-weight: 600; color: var(--color-text-muted, #8A8578);
   text-transform: uppercase; letter-spacing: 0.5px; padding: 0 0 4px;
+  font-family: "SourceHanSans-Medium", var(--font-family-cn);
 }
 .saved-key-item {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 12px 16px; background: var(--color-bg-secondary, #F7F3EA);
+  padding: 12px 16px; background: var(--color-bg-card, #FCFBF8);
   border: 0.7px solid var(--color-border-soft, #EDE9E0); border-radius: 12px;
 }
-.saved-key-info { display: flex; flex-direction: column; gap: 2px; }
-.saved-key-provider { font-size: 14px; font-weight: 600; color: var(--color-text-primary, #1F1D1A); }
-.saved-key-model { font-size: 12px; color: var(--color-text-muted, #8A8578); }
+.saved-key-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.saved-key-provider { font-size: 14px; font-weight: 600; color: var(--color-text-primary, #1F1D1A); font-family: "SourceHanSans-Medium", var(--font-family-cn); }
+.saved-key-model { font-size: 12px; color: var(--color-text-muted, #8A8578); font-family: "SourceHanSans-Regular", var(--font-family-cn); }
+.saved-key-endpoint { font-size: 11px; color: var(--color-text-faint, #A7A296); font-family: monospace; }
+.saved-key-actions { display: flex; align-items: center; gap: 10px; }
+.saved-key-masked { font-size: 12px; color: var(--color-text-faint, #A7A296); font-family: monospace; padding: 0 8px; }
+
+.saved-key-test,
+.saved-key-edit,
 .saved-key-delete {
-  width: 30px; height: 30px; border: none; background: transparent; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; border-radius: 6px;
-  color: var(--color-text-faint, #A7A296); transition: all 0.2s;
+  height: 30px; padding: 0 10px; border: 0.7px solid var(--color-border-soft, #EDE9E0);
+  border-radius: 8px; background: var(--color-bg-white, #fff); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  font-size: 12px; color: var(--color-text-secondary, #6E6A60); transition: background 0.15s;
+  font-family: "SourceHanSans-Regular", var(--font-family-cn);
 }
-.saved-key-delete:hover { background: rgba(192,57,43,0.08); color: var(--color-primary, #C0392B); }
+.saved-key-test:hover { background: var(--color-bg-secondary, #F7F3EA); }
+.saved-key-edit:hover { background: var(--color-bg-secondary, #F7F3EA); }
+.saved-key-delete:hover { background: rgba(192, 57, 43, 0.08); color: var(--color-primary, #C0392B); }
+.saved-key-test:disabled { opacity: 0.4; cursor: not-allowed; }
+.saved-key-test .icon,
+.saved-key-edit .icon,
+.saved-key-delete .icon { font-family: "remixicon", sans-serif; font-style: normal; font-size: 14px; }
+.saved-key-test .icon.spinning { animation: spin 1s linear infinite; }
+.saved-key-test .icon.success { color: var(--color-success, #4E9B7A); }
+.saved-key-test .icon.failed { color: var(--color-error, #E74C3C); }
+
+.test-error-msg {
+  margin-top: 8px; font-size: 12px; color: var(--color-error, #E74C3C);
+  font-family: "SourceHanSans-Regular", var(--font-family-cn);
+}
+
+.confirm-text {
+  font-size: 15px; color: var(--color-text-body, #3A3A3A);
+  font-family: "SourceHanSans-Regular", var(--font-family-cn); margin: 0; line-height: 1.7;
+}
+
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 </style>

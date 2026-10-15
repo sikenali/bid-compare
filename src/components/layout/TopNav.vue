@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { RiExchangeLine, RiArrowLeftSLine, RiSettings3Line } from '@remixicon/vue'
+import { RiTargetLine, RiArrowLeftSLine, RiSettings3Line } from '@remixicon/vue'
 import SettingsModal from './SettingsModal.vue'
+import { BRAND_NAME } from '../../constants/brand'
 
 withDefaults(defineProps<{
   title?: string
@@ -20,11 +21,9 @@ const showSettingsModal = ref(false)
   <header class="top-nav">
     <div class="nav-left" @click="router.push('/')">
       <div class="tool-mark">
-        <RiExchangeLine class="tool-logo" />
+        <RiTargetLine class="tool-logo" />
       </div>
-      <span class="brand-cn">{{ brand || '文比猩' }}</span>
-      <span class="divider"></span>
-      <span class="page-title">{{ title || '' }}</span>
+      <span class="page-title">{{ title || BRAND_NAME }}</span>
     </div>
     <div class="nav-right">
       <button v-if="showBack" class="nav-btn" @click="router.back()" title="返回">
@@ -57,7 +56,7 @@ const showSettingsModal = ref(false)
   cursor: pointer;
 }
 
-.nav-left:hover .brand-cn {
+.nav-left:hover .page-title {
   color: var(--color-primary, var(--color-cinnabar, #C0392B));
 }
 
@@ -75,7 +74,7 @@ const showSettingsModal = ref(false)
   color: var(--color-primary, var(--color-cinnabar, #C0392B));
 }
 
-.brand-cn {
+.page-title {
   font-size: 20px;
   font-weight: 700;
   color: var(--color-text-primary, var(--color-brown-dark, #1F1D1A));
@@ -84,17 +83,8 @@ const showSettingsModal = ref(false)
   transition: color 0.25s ease;
 }
 
-.divider {
-  width: 2px;
-  height: 20px;
-  background-color: var(--color-border, var(--color-tan-border, #E5DFD3));
-}
-
-.page-title {
-  font-size: 16px;
-  color: var(--color-text-secondary, var(--color-brown-muted, #6E6A60));
-  font-family: var(--font-ui);
-  line-height: 1.2;
+.nav-left:hover .page-title {
+  color: var(--color-primary, var(--color-cinnabar, #C0392B));
 }
 
 .nav-right {
@@ -125,6 +115,8 @@ const showSettingsModal = ref(false)
 }
 
 .nav-btn .icon {
+  font-family: "remixicon", sans-serif;
+  font-style: normal;
   font-size: 14px;
   color: var(--color-text-secondary, var(--color-brown-muted, #6E6A60));
   transition: color 0.25s ease;
@@ -146,7 +138,7 @@ const showSettingsModal = ref(false)
     height: 56px;
   }
 
-  .brand-cn {
+  .page-title {
     font-size: 16px;
   }
 

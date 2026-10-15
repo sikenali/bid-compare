@@ -11,6 +11,7 @@ import {
   RiLayoutLine, RiLayoutGridLine, RiImageLine, RiEraserLine,
   RiCheckboxCircleLine, RiPercentLine, RiTableLine, RiArrowDownSLine,
   RiPaletteLine, RiCpuLine,
+  RiCloseCircleFill, RiLoader4Line, RiEditLine, RiFileEditLine,
 } from '@remixicon/vue'
 
 const allIcons = [
@@ -26,6 +27,7 @@ const allIcons = [
   RiLayoutLine, RiLayoutGridLine, RiImageLine, RiEraserLine,
   RiCheckboxCircleLine, RiPercentLine, RiTableLine, RiArrowDownSLine,
   RiPaletteLine, RiCpuLine,
+  RiCloseCircleFill, RiLoader4Line, RiEditLine, RiFileEditLine,
 ]
 
 export default {

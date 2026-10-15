@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { getApiKeyList } from '../api/settings'
 
 // 设置类型定义（与useSettings.ts保持一致）
 interface FileCompareSettings {
@@ -12,6 +13,28 @@ interface FileCompareSettings {
   selectedModel: string
   apiKey: string
   apiEndpoint: string
+}
+
+interface ActiveKey {
+  provider: string
+  model: string
+  api_key: string
+  base_url?: string
+}
+
+function getActiveKey(): ActiveKey | null {
+  try {
+    const keys = getApiKeyList()
+    const active = keys.find(k => k.enabled === 1 && k.api_key)
+    return active ? {
+      provider: active.provider,
+      model: active.model,
+      api_key: active.api_key,
+      base_url: active.base_url || '',
+    } : null
+  } catch {
+    return null
+  }
 }
 
 // AI分析结果类型
@@ -28,7 +51,9 @@ const ALLOWED_ENDPOINTS = [
   'api.deepseek.com',
   'dashscope.aliyuncs.com',
   'api.qwen.ai',
-  'ERNIE-Bot.api.baidubce.com'
+  'aip.baidubce.com',
+  'open.bigmodel.cn',
+  'api.anthropic.com',
 ]
 
 // 验证 endpoint 是否在白名单中
@@ -69,53 +94,51 @@ export function useAIModel() {
     suggestions: []
   })
 
-  // 根据模型类型获取API配置
+  // 根据模型类型获取API配置，优先使用已保存的活跃密钥
   const getAPIConfig = (settings: FileCompareSettings) => {
+    const activeKey = getActiveKey()
+
+    if (activeKey) {
+      return {
+        apiUrl: activeKey.base_url || settings.apiEndpoint || getDefaultEndpoint(settings.selectedModel),
+        model: activeKey.model,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${activeKey.api_key}`
+        }
+      }
+    }
+
     switch (settings.selectedModel) {
       case 'openai':
         return {
           apiUrl: settings.apiEndpoint || 'https://api.openai.com/v1/chat/completions',
           model: 'gpt-4o-mini',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${settings.apiKey}`
-          }
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` }
         }
       case 'deepseek':
         return {
           apiUrl: settings.apiEndpoint || 'https://api.deepseek.com/v1/chat/completions',
           model: 'deepseek-chat',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${settings.apiKey}`
-          }
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` }
         }
       case 'qwen':
         return {
           apiUrl: settings.apiEndpoint || 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
           model: 'qwen-turbo',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${settings.apiKey}`
-          }
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` }
         }
       case 'wenxin':
         return {
           apiUrl: settings.apiEndpoint || 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro',
           model: 'ernie-4.0-turbo-8k',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${settings.apiKey}`
-          }
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` }
         }
       case 'glm':
         return {
           apiUrl: settings.apiEndpoint || 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
           model: 'glm-4-flash',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${settings.apiKey}`
-          }
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` }
         }
       default:
         throw new Error('不支持的AI模型')
@@ -161,13 +184,14 @@ ${JSON.stringify(similarSegments.slice(0, 5), null, 2)}
     }
 
     try {
-      // 检查API密钥是否配置
-      if (!settings.apiKey) {
+      // 检查API密钥是否配置（优先检查已保存的活跃密钥）
+      const activeKey = getActiveKey()
+      if (!activeKey && !settings.apiKey) {
         throw new Error('未配置API密钥，请在系统设置中配置')
       }
 
       // 验证 endpoint 是否在白名单中，防止 API Key 泄露到恶意服务器
-      const endpointToUse = settings.apiEndpoint || getDefaultEndpoint(settings.selectedModel)
+      const endpointToUse = activeKey?.base_url || settings.apiEndpoint || getDefaultEndpoint(settings.selectedModel)
       if (!validateEndpoint(endpointToUse)) {
         throw new Error(`API 地址不在白名单中: ${endpointToUse}\n允许的域名: ${ALLOWED_ENDPOINTS.join(', ')}`)
       }

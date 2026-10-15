@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { RiUploadLine, RiFileWordLine, RiFileLine, RiExchangeLine, RiListCheck, RiCheckLine } from '@remixicon/vue'
+import UploadCard from '../components/UploadCard.vue'
+import StepStrip from '../components/StepStrip.vue'
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useComparison } from '../composables/useComparison'
 import { useToast } from '../composables/useToast'
 import { useRecentRecords } from '../composables/useRecentRecords'
 import { removeWatermarks } from '../utils/watermark'
-import { storeCompareResult } from '../utils/compareResultStore'
-import { storePropertyCheckResult } from '../utils/compareResultStore'
+import { storeCompareResult, storePropertyCheckResult } from '../utils/compareResultStore'
 import { calculateTextSimilarity } from '../utils/textAlgorithms'
 import { buildPropertyDetails, propsMapSource } from '../utils/propertyFields'
 import type { ComparisonSettings } from '../utils/textAlgorithms'
@@ -30,7 +30,8 @@ const {
 } = useComparison()
 
 // 模式切换
-const mode = ref<'fileCompare' | 'propertyCheck'>('fileCompare')
+type CompareMode = 'fileCompare' | 'propertyCheck' | 'imageCompare' | 'batchCompare'
+const mode = ref<CompareMode>('fileCompare')
 
 // 文件信息
 interface FileInfo {
@@ -48,107 +49,64 @@ const rightFileContent = ref('')
 const leftFileProperties = ref<any>({})
 const rightFileProperties = ref<any>({})
 
-// 处理状态
-const step = ref(0)
-const stepDone = ref([false, false, false])
-const isParsing = ref(false)
-const parseError = ref('')
-
 // 属性检查结果
 const matchingProperties = ref(0)
 const nonMatchingProperties = ref(0)
 const warningProperties = ref(0)
 const propertyDetails = ref<any[]>([])
 
-// 文件输入引用
-const leftFileInput = ref<HTMLInputElement | null>(null)
-const rightFileInput = ref<HTMLInputElement | null>(null)
-
-const formatTags = [
-  { label: 'W', color: '#2B579A' },
-  { label: 'X', color: '#217346' },
-  { label: 'P', color: '#C0392B' },
-  { label: 'PD', color: '#B03A2E' },
-  { label: 'MD', color: '#4A6FA5' },
-  { label: 'TX', color: '#5A5750' },
-]
+// 步骤配置
+const steps = computed(() => {
+  if (mode.value === 'fileCompare') {
+    return [
+      { key: 0, label: '解析文件' },
+      { key: 1, label: '提取文字' },
+      { key: 2, label: '比对识别' },
+    ]
+  } else {
+    return [
+      { key: 0, label: '解析文件' },
+      { key: 1, label: '提取文字' },
+      { key: 2, label: '属性提取' },
+    ]
+  }
+})
 
 const bothReady = computed(() => !!leftFileInfo.value.file && !!rightFileInfo.value.file)
 
-const progressText = computed(() => {
-  if (step.value === 0) return '解析文件中…'
-  if (step.value === 1) return '提取文字中…'
-  if (step.value === 2) return '比对识别中…'
-  return ''
+const btnLabel = computed(() => {
+  if (mode.value === 'fileCompare') {
+    return '一键对比'
+  } else {
+    return '属性检查'
+  }
 })
 
-// 格式化文件大小
-const formatFileSize = (size: number): string => {
-  if (size < 1024) return `${size} B`
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(2)} KB`
-  return `${(size / (1024 * 1024)).toFixed(2)} MB`
-}
+const isParsing = ref(false)
+const parseError = ref('')
 
-// 获取文件类型
-const getFileType = (name: string): string => {
-  const ext = name.split('.').pop()?.toLowerCase() || ''
-  const typeMap: Record<string, string> = {
-    'doc': 'Word文档', 'docx': 'Word文档',
-    'pdf': 'PDF文档', 'txt': '文本文件',
-    'ppt': 'PPT演示', 'pptx': 'PPT演示',
-    'xls': 'Excel表格', 'xlsx': 'Excel表格'
-  }
-  return typeMap[ext] || '未知类型'
-}
-
-function openFilePicker(side: 'left' | 'right') {
-  if (side === 'left') leftFileInput.value?.click()
-  else rightFileInput.value?.click()
-}
-
-function handleFileSelect(side: 'left' | 'right', e: Event) {
-  const input = e.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-
-  if (file.size > 100 * 1024 * 1024) {
-    showError('文件大小不能超过 100MB')
-    return
-  }
-
-  const ext = file.name.split('.').pop()?.toLowerCase() || ''
-  const sizeStr = formatFileSize(file.size)
-
-  if (side === 'left') {
-    leftFileInfo.value = { file, name: file.name, size: sizeStr, type: ext }
-  } else {
-    rightFileInfo.value = { file, name: file.name, size: sizeStr, type: ext }
-  }
-
-  input.value = ''
-}
-
-function handleDrop(side: 'left' | 'right', e: DragEvent) {
-  e.preventDefault()
-  e.stopPropagation()
-  const file = e.dataTransfer?.files?.[0]
-  if (!file) return
-  handleFileSelect(side, { target: { files: [file] } } as unknown as Event)
-}
-
-function handleDragOver(e: DragEvent) {
-  e.preventDefault()
-}
+// 处理状态
+const step = ref(0)
+const stepDone = ref([false, false, false])
 
 // 切换模式
-function switchMode(newMode: 'fileCompare' | 'propertyCheck') {
+function switchMode(newMode: CompareMode) {
   if (mode.value === newMode) return
   mode.value = newMode
-  // 清除之前的状态
   isParsing.value = false
   parseError.value = ''
   step.value = 0
   stepDone.value = [false, false, false]
+}
+
+// 处理图片对比模式切换
+function handleImageCompareMode() {
+  router.push('/image-compare')
+}
+
+// 处理批量对比模式切换
+function handleBatchCompareMode() {
+  router.push('/batch-compare')
 }
 
 // 文件对比
@@ -304,134 +262,42 @@ async function handleCheck() {
   }
 }
 
+// 统一处理按钮点击
+async function handleExtract() {
+  if (mode.value === 'fileCompare') {
+    await handleCompare()
+  } else {
+    await handleCheck()
+  }
+}
+
 function handleCancel() {
   if (canCancel.value) cancelComparison()
+}
+
+function handleReplace() {
+  showError('已清除文件，请重新选择')
 }
 </script>
 
 <template>
-  <div class="upload-page">
+  <div class="upload-view">
     <div class="upload-body">
       <div class="upload-area">
-        <div class="card-row">
-          <!-- 原始版本上传卡片 -->
-          <div
-            class="upload-card"
-            @click="openFilePicker('left')"
-            @drop="handleDrop('left', $event)"
-            @dragover="handleDragOver"
-          >
-            <input
-              ref="leftFileInput"
-              type="file"
-              accept=".doc,.docx,.xls,.xlsx,.pdf,.md,.txt,.ppt,.pptx"
-              style="display:none"
-              @change="handleFileSelect('left', $event)"
-            />
-            <div class="upload-icon-circle">
-              <RiUploadLine v-if="!leftFileInfo.file" :size="34" color="#8A8578" />
-              <RiFileWordLine v-else-if="leftFileInfo.type === 'doc' || leftFileInfo.type === 'docx'" :size="34" color="#2B579A" />
-              <RiFileLine v-else :size="34" color="#4E9B7A" />
-            </div>
-            <div class="upload-prompt">
-              {{ leftFileInfo.file ? leftFileInfo.name : '点击选择或拖拽目标文件' }}
-            </div>
-            <div class="upload-label" :style="{ color: leftFileInfo.file ? '#4E9B7A' : '#C0392B' }">
-              目标文件 · 原始版本{{ leftFileInfo.file ? ' · ' + leftFileInfo.size : '' }}
-            </div>
-            <div class="format-tags">
-              <div v-for="tag in formatTags" :key="tag.label" class="format-tag" :style="{ background: tag.color }">
-                {{ tag.label }}
-              </div>
-            </div>
-          </div>
+        <UploadCard
+          v-model:leftFileInfo="leftFileInfo"
+          v-model:rightFileInfo="rightFileInfo"
+          :disabled="isProcessing || isParsing"
+          @replace="handleReplace"
+        />
 
-          <!-- VS 标识 -->
-          <div class="vs-badge">
-            <span>VS</span>
-          </div>
-
-          <!-- 修订版本上传卡片 -->
-          <div
-            class="upload-card"
-            @click="openFilePicker('right')"
-            @drop="handleDrop('right', $event)"
-            @dragover="handleDragOver"
-          >
-            <input
-              ref="rightFileInput"
-              type="file"
-              accept=".doc,.docx,.xls,.xlsx,.pdf,.md,.txt,.ppt,.pptx"
-              style="display:none"
-              @change="handleFileSelect('right', $event)"
-            />
-            <div class="upload-icon-circle">
-              <RiUploadLine v-if="!rightFileInfo.file" :size="34" color="#8A8578" />
-              <RiFileWordLine v-else-if="rightFileInfo.type === 'doc' || rightFileInfo.type === 'docx'" :size="34" color="#2B579A" />
-              <RiFileLine v-else :size="34" color="#4E9B7A" />
-            </div>
-            <div class="upload-prompt">
-              {{ rightFileInfo.file ? rightFileInfo.name : '点击选择或拖拽目标文件' }}
-            </div>
-            <div class="upload-label" :style="{ color: rightFileInfo.file ? '#4E9B7A' : '#6E6A60' }">
-              目标文件 · 修订版本{{ rightFileInfo.file ? ' · ' + rightFileInfo.size : '' }}
-            </div>
-            <div class="format-tags">
-              <div v-for="tag in formatTags" :key="tag.label" class="format-tag" :style="{ background: tag.color }">
-                {{ tag.label }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 步骤条 -->
-        <div class="step-bar">
-          <div class="step-item" :class="{ done: stepDone[0], current: step === 0 && (isProcessing || isParsing) }">
-            <div class="step-number">1</div>
-            <span class="step-text">解析文件</span>
-          </div>
-          <div class="step-line"></div>
-          <div class="step-item" :class="{ done: stepDone[1], current: step === 1 && isProcessing }">
-            <div class="step-number">2</div>
-            <span class="step-text">提取文字</span>
-          </div>
-          <div class="step-line"></div>
-          <div class="step-item" :class="{ done: stepDone[2], current: step === 2 && isProcessing }">
-            <div class="step-number">3</div>
-            <span class="step-text">
-              {{ mode === 'fileCompare' ? '比对识别' : '属性提取' }}
-            </span>
-          </div>
-        </div>
-
-        <!-- 操作按钮 -->
-        <div class="action-area">
-          <button
-            v-if="mode === 'fileCompare'"
-            class="compare-btn"
-            :disabled="!bothReady || isProcessing"
-            @click="handleCompare"
-          >
-            <RiExchangeLine v-if="!isProcessing" :size="20" />
-            <span>{{ isProcessing ? progressText : '一键对比' }}</span>
-          </button>
-          <button
-            v-else
-            class="compare-btn"
-            :disabled="!bothReady || isParsing"
-            @click="handleCheck"
-          >
-            <RiListCheck v-if="!isParsing" :size="20" />
-            <span>{{ isParsing ? '检查中…' : '属性检查' }}</span>
-          </button>
-          <button
-            v-if="isProcessing && canCancel"
-            class="cancel-btn"
-            @click="handleCancel"
-          >
-            取消
-          </button>
-        </div>
+        <StepStrip
+          :steps="steps"
+          :loading="isProcessing || isParsing"
+          :button-label="btnLabel"
+          :disabled="!bothReady"
+          @extract="handleExtract"
+        />
 
         <!-- 解析错误显示 -->
         <div v-if="parseError" class="error-message">
@@ -447,7 +313,9 @@ function handleCancel() {
           @click="switchMode('fileCompare')"
           title="文件对比"
         >
-          <RiExchangeLine :size="22" />
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3L4 7l4 4M16 21l4-4-4-4M4 7h16M20 17H4"/>
+          </svg>
         </button>
         <button
           class="toolbar-nav-btn"
@@ -455,7 +323,9 @@ function handleCancel() {
           @click="switchMode('propertyCheck')"
           title="属性检查"
         >
-          <RiListCheck :size="22" />
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
         </button>
       </div>
     </div>
@@ -463,12 +333,11 @@ function handleCancel() {
 </template>
 
 <style scoped>
-.upload-page {
-  width: 100%;
-  height: 100%;
+.upload-view {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  background-color: var(--color-bg-main, var(--color-cream, #FAF7F2));
 }
 
 .upload-body {
@@ -477,234 +346,16 @@ function handleCancel() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 24px 40px;
-  gap: 40px;
+  padding: 40px 32px;
+  gap: 32px;
 }
 
 .upload-area {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 40px;
-}
-
-.card-row {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.upload-card {
-  width: 450px;
-  height: 370px;
-  background: #FFFFFF;
-  border: 0.7px solid rgba(229, 223, 211, 1);
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  overflow: hidden;
-}
-
-.upload-card:hover {
-  border-color: var(--color-cinnabar, #C0392B);
-  box-shadow: 0 4px 20px rgba(192, 57, 43, 0.08);
-}
-
-.upload-card:has(input) {
-  border-color: transparent;
-}
-
-.upload-icon-circle {
-  width: 82px;
-  height: 82px;
-  background: #F7F3EA;
-  border-radius: 9999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 28px;
-}
-
-.upload-prompt {
-  font-size: 18px;
-  font-family: var(--font-ui);
-  color: #1F1D1A;
-  text-align: center;
-  max-width: 198px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  line-height: 1.4;
-}
-
-.upload-label {
-  font-size: 15px;
-  font-family: var(--font-ui);
-  margin-top: 16px;
-  text-align: center;
-}
-
-.format-tags {
-  display: flex;
-  gap: 12px;
-  margin-top: 32px;
-}
-
-.format-tag {
-  width: 26px;
-  height: 26px;
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #FFFFFF;
-  font-size: 9px;
-  font-weight: 700;
-  font-family: var(--font-ui);
-}
-
-.vs-badge {
-  width: 72px;
-  height: 72px;
-  background: #FFFFFF;
-  border: 0.7px solid rgba(229, 223, 211, 1);
-  border-radius: 9999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.vs-badge span {
-  font-size: 15px;
-  color: #6E6A60;
-  font-family: var(--font-ui);
-}
-
-/* Step Bar */
-.step-bar {
-  display: flex;
-  align-items: center;
-  gap: 0;
-}
-
-.step-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  height: 50px;
-  padding: 0 20px;
-  border-radius: 9999px;
-  border: 0.7px solid #EDE9E0;
-  background: #FFFFFF;
-}
-
-.step-item.done {
-  background: #E4F0E6;
-  border-color: transparent;
-}
-
-.step-item.current {
-  border-color: #C0392B;
-}
-
-.step-number {
-  width: 26px;
-  height: 26px;
-  border-radius: 9999px;
-  background: #EFEFE5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #8A8578;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.step-item.done .step-number {
-  background: #4E9B7A;
-  color: #FFFFFF;
-}
-
-.step-item.current .step-number {
-  background: #C0392B;
-  color: #FFFFFF;
-}
-
-.step-text {
-  font-size: 17px;
-  color: #8A8578;
-  font-family: var(--font-ui);
-}
-
-.step-item.done .step-text {
-  color: #3E8C6E;
-}
-
-.step-item.current .step-text {
-  color: #C0392B;
-}
-
-.step-line {
-  width: 57px;
-  height: 1px;
-  background: #DDD7C9;
-  flex-shrink: 0;
-}
-
-/* Action Area */
-.action-area {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-
-.compare-btn {
-  width: 292px;
-  height: 60px;
-  background: #C0392B;
-  border: none;
-  border-radius: 10px;
-  color: #FFFFFF;
-  font-size: 18px;
-  font-weight: 500;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.compare-btn:hover:not(:disabled) {
-  background: #A83028;
-  box-shadow: 0 4px 16px rgba(192, 57, 43, 0.3);
-}
-
-.compare-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.cancel-btn {
-  height: 60px;
-  padding: 0 32px;
-  background: #FFFFFF;
-  border: 0.7px solid #E5DFD3;
-  border-radius: 10px;
-  color: #6E6A60;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.cancel-btn:hover {
-  background: #F7F3EA;
+  gap: 32px;
+  width: 100%;
 }
 
 /* Error Message */
@@ -788,31 +439,14 @@ function handleCancel() {
 }
 
 @media (max-width: 1024px) {
-  .card-row {
-    flex-direction: column;
-  }
-  .vs-badge {
-    transform: rotate(90deg);
-  }
-  .upload-card {
-    width: 100%;
-    max-width: 450px;
+  .floating-toolbar {
+    right: 12px;
   }
 }
 
 @media (max-width: 640px) {
-  .upload-card {
-    height: 300px;
-  }
-  .step-bar {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .step-line {
-    display: none;
-  }
-  .floating-toolbar {
-    right: 12px;
+  .upload-body {
+    padding: 24px 16px;
   }
 }
 </style>
