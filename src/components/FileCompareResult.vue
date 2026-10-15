@@ -158,14 +158,22 @@ const togglePreviewMode = () => {
   showPreviewModal.value = !showPreviewModal.value
 }
 
-// 创建文本 Blob 用于 OpenFileViewer
-const createTextBlob = (content: string): Blob => {
-  // 如果是 HTML，先转成纯文本
-  const text = content.includes('<') ? 
-    content.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&') 
-    : content
+// 创建文本 Blob 用于 OpenFileViewer (使用 computed 缓存)
+const leftPreviewBlob = computed(() => {
+  if (!leftFileContent.value) return null
+  const text = leftFileContent.value.includes('<') ? 
+    leftFileContent.value.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&') 
+    : leftFileContent.value
   return new Blob([text], { type: 'text/plain;charset=utf-8' })
-}
+})
+
+const rightPreviewBlob = computed(() => {
+  if (!rightFileContent.value) return null
+  const text = rightFileContent.value.includes('<') ? 
+    rightFileContent.value.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&') 
+    : rightFileContent.value
+  return new Blob([text], { type: 'text/plain;charset=utf-8' })
+})
 
 // 同步滚动状态
 const syncScroll = ref(true)
@@ -1129,8 +1137,8 @@ const handlePreviewRightScroll = () => {
         <div class="preview-modal-body">
           <div class="preview-panel" ref="previewLeftRef" @scroll="handlePreviewLeftScroll">
             <OpenFileViewer
-              v-if="leftFileContent"
-              :blob="createTextBlob(leftFileContent)"
+              v-if="leftPreviewBlob"
+              :blob="leftPreviewBlob"
               :filename="leftFileName || '文件A'"
               :plugins="viewerPlugins"
               class="preview-viewer"
@@ -1142,8 +1150,8 @@ const handlePreviewRightScroll = () => {
           <div class="preview-divider"></div>
           <div class="preview-panel" ref="previewRightRef" @scroll="handlePreviewRightScroll">
             <OpenFileViewer
-              v-if="rightFileContent"
-              :blob="createTextBlob(rightFileContent)"
+              v-if="rightPreviewBlob"
+              :blob="rightPreviewBlob"
               :filename="rightFileName || '文件B'"
               :plugins="viewerPlugins"
               class="preview-viewer"
