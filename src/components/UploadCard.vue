@@ -274,13 +274,13 @@ const formatTags = [
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 32px;
+  gap: 40px;
   width: 100%;
 }
 
 .upload-card {
-  width: 440px;
-  height: 360px;
+  width: 520px;
+  height: 420px;
   flex-shrink: 0;
   background-color: var(--color-bg-white, #FFFFFF);
   border: 0.7px solid var(--color-border, var(--color-tan-border, #E5DFD3));
@@ -292,8 +292,8 @@ const formatTags = [
   transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
   position: relative;
   overflow: hidden;
-  gap: 20px;
-  padding: 40px 32px;
+  gap: 24px;
+  padding: 48px 36px;
   cursor: pointer;
 }
 
@@ -312,8 +312,8 @@ const formatTags = [
 }
 
 .upload-icon-wrap {
-  width: 80px;
-  height: 80px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   background-color: var(--color-bg-secondary, var(--color-cream-dark, #F7F3EA));
   display: flex;
@@ -322,13 +322,13 @@ const formatTags = [
 }
 
 .upload-icon {
-  font-size: 34px;
+  font-size: 40px;
   color: var(--color-text-muted, #8A8578);
 }
 
 .upload-hint {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 500;
   color: var(--color-text-primary, #1F1D1A);
   font-family: var(--font-ui);
@@ -344,15 +344,15 @@ const formatTags = [
 }
 
 .fmt {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   color: #fff;
-  font-size: 9px;
+  font-size: 10px;
   font-family: var(--font-ui);
   line-height: 1;
 }
@@ -451,8 +451,8 @@ const formatTags = [
 
 /* VS badge */
 .vs-badge {
-  width: 72px;
-  height: 72px;
+  width: 80px;
+  height: 80px;
   background: var(--color-bg-white, #FFFFFF);
   border: 0.7px solid var(--color-border, var(--color-tan-border, #E5DFD3));
   border-radius: 9999px;
@@ -463,14 +463,14 @@ const formatTags = [
 }
 
 .vs-badge span {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--color-text-secondary, #6E6A60);
   font-family: var(--font-ui);
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
   .upload-card-row {
     flex-direction: column;
   }
@@ -479,13 +479,13 @@ const formatTags = [
   }
   .upload-card {
     width: 100%;
-    max-width: 480px;
+    max-width: 560px;
   }
 }
 
 @media (max-width: 640px) {
   .upload-card {
-    height: 300px;
+    height: 320px;
     width: 100%;
   }
 }
