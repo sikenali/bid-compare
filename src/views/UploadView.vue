@@ -1,24 +1,25 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
+import { RiUploadLine, RiFileWordLine, RiFileLine, RiExchangeLine, RiListCheck, RiCheckLine } from '@remixicon/vue'
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useComparison } from '../composables/useComparison'
 import { useToast } from '../composables/useToast'
 import { useRecentRecords } from '../composables/useRecentRecords'
-import { useAIModel } from '../composables/useAIModel'
-import { removeCommonClauses } from '../utils/textAlgorithms'
 import { removeWatermarks } from '../utils/watermark'
-import { htmlToMarkdown } from '../utils/sanitize'
-import { storeCompareResult, deleteCompareResult } from '../utils/compareResultStore'
-import type { ComparisonSettings, SimilarSegment } from '../utils/textAlgorithms'
+import { storeCompareResult } from '../utils/compareResultStore'
+import { storePropertyCheckResult } from '../utils/compareResultStore'
+import { calculateTextSimilarity } from '../utils/textAlgorithms'
+import { buildPropertyDetails, propsMapSource } from '../utils/propertyFields'
+import type { ComparisonSettings } from '../utils/textAlgorithms'
 
 const router = useRouter()
-const route = useRoute()
 const { parseFile } = useFileParser()
 const { settings } = useSettings()
-const { show: showToast } = useToast()
-const { addRecentRecord } = useRecentRecords('fileCompare')
+const { error: showError } = useToast()
+const { addRecentRecord: addFcRecord } = useRecentRecords('fileCompare')
+const { addRecentRecord: addPcRecord } = useRecentRecords('propertyCheck')
 const {
   isProcessing,
   progress,
@@ -28,6 +29,10 @@ const {
   cancelComparison,
 } = useComparison()
 
+// 模式切换
+const mode = ref<'fileCompare' | 'propertyCheck'>('fileCompare')
+
+// 文件信息
 interface FileInfo {
   file: File | null
   name: string
@@ -40,9 +45,22 @@ const rightFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' }
 
 const leftFileContent = ref('')
 const rightFileContent = ref('')
+const leftFileProperties = ref<any>({})
+const rightFileProperties = ref<any>({})
 
+// 处理状态
 const step = ref(0)
 const stepDone = ref([false, false, false])
+const isParsing = ref(false)
+const parseError = ref('')
+
+// 属性检查结果
+const matchingProperties = ref(0)
+const nonMatchingProperties = ref(0)
+const warningProperties = ref(0)
+const propertyDetails = ref<any[]>([])
+
+// 文件输入引用
 const leftFileInput = ref<HTMLInputElement | null>(null)
 const rightFileInput = ref<HTMLInputElement | null>(null)
 
@@ -64,6 +82,25 @@ const progressText = computed(() => {
   return ''
 })
 
+// 格式化文件大小
+const formatFileSize = (size: number): string => {
+  if (size < 1024) return `${size} B`
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(2)} KB`
+  return `${(size / (1024 * 1024)).toFixed(2)} MB`
+}
+
+// 获取文件类型
+const getFileType = (name: string): string => {
+  const ext = name.split('.').pop()?.toLowerCase() || ''
+  const typeMap: Record<string, string> = {
+    'doc': 'Word文档', 'docx': 'Word文档',
+    'pdf': 'PDF文档', 'txt': '文本文件',
+    'ppt': 'PPT演示', 'pptx': 'PPT演示',
+    'xls': 'Excel表格', 'xlsx': 'Excel表格'
+  }
+  return typeMap[ext] || '未知类型'
+}
+
 function openFilePicker(side: 'left' | 'right') {
   if (side === 'left') leftFileInput.value?.click()
   else rightFileInput.value?.click()
@@ -75,14 +112,12 @@ function handleFileSelect(side: 'left' | 'right', e: Event) {
   if (!file) return
 
   if (file.size > 100 * 1024 * 1024) {
-    showToast('文件大小不能超过 100MB', 'warning')
+    showError('文件大小不能超过 100MB')
     return
   }
 
   const ext = file.name.split('.').pop()?.toLowerCase() || ''
-  const sizeStr = file.size > 1024 * 1024
-    ? (file.size / 1024 / 1024).toFixed(1) + ' MB'
-    : (file.size / 1024).toFixed(1) + ' KB'
+  const sizeStr = formatFileSize(file.size)
 
   if (side === 'left') {
     leftFileInfo.value = { file, name: file.name, size: sizeStr, type: ext }
@@ -105,6 +140,18 @@ function handleDragOver(e: DragEvent) {
   e.preventDefault()
 }
 
+// 切换模式
+function switchMode(newMode: 'fileCompare' | 'propertyCheck') {
+  if (mode.value === newMode) return
+  mode.value = newMode
+  // 清除之前的状态
+  isParsing.value = false
+  parseError.value = ''
+  step.value = 0
+  stepDone.value = [false, false, false]
+}
+
+// 文件对比
 async function handleCompare() {
   if (!bothReady.value || isProcessing.value) return
 
@@ -112,8 +159,14 @@ async function handleCompare() {
     step.value = 0
     stepDone.value = [false, false, false]
 
-    let lText = await parseFile(leftFileInfo.value.file!)
-    let rText = await parseFile(rightFileInfo.value.file!)
+    const lResult = await parseFile(leftFileInfo.value.file!)
+    const rResult = await parseFile(rightFileInfo.value.file!)
+
+    if (lResult.error) throw new Error(lResult.error)
+    if (rResult.error) throw new Error(rResult.error)
+
+    let lText = lResult.content
+    let rText = rResult.content
     stepDone.value[0] = true
 
     if (settings.removeWatermark) {
@@ -142,12 +195,12 @@ async function handleCompare() {
     stepDone.value[2] = true
 
     if (!result) {
-      showToast('对比被取消', 'info')
+      showError('对比被取消')
       return
     }
 
     if (result.parseError) {
-      showToast(result.parseError, 'error')
+      showError(result.parseError)
       return
     }
 
@@ -167,28 +220,92 @@ async function handleCompare() {
 
     const resultId = storeCompareResult(comparisonResult)
 
-    addRecentRecord({
+    addFcRecord({
       leftFileName: leftFileInfo.value.name,
       rightFileName: rightFileInfo.value.name,
       similarity: textSimilarity,
       similarSegments: result.similarSegments,
     })
 
-    showToast('对比完成', 'success')
     router.push({ path: '/file-compare-result', query: { resultId, t: Date.now() } })
   } catch (error: any) {
     if (error.name === 'AbortError') {
-      showToast('对比已取消', 'info')
+      showError('对比已取消')
     } else {
-      showToast(`对比失败: ${error.message}`, 'error')
+      showError(`对比失败: ${error.message}`)
     }
   }
 }
 
-function handleCancel() {
-  if (canCancel.value) {
-    cancelComparison()
+// 属性检查
+async function handleCheck() {
+  if (!leftFileInfo.value.file || !rightFileInfo.value.file) return
+
+  isParsing.value = true
+  parseError.value = ''
+
+  try {
+    const leftResult = await parseFile(leftFileInfo.value.file)
+    if (leftResult.error) throw new Error(leftResult.error)
+    leftFileContent.value = leftResult.content
+    leftFileProperties.value = leftResult.properties
+
+    const rightResult = await parseFile(rightFileInfo.value.file)
+    if (rightResult.error) throw new Error(rightResult.error)
+    rightFileContent.value = rightResult.content
+    rightFileProperties.value = rightResult.properties
+
+    const similarity = calculateTextSimilarity(leftFileContent.value, rightFileContent.value, settings)
+    const similarityStatus = similarity >= settings.textSimilarityThreshold ? 'match' : similarity >= 50 ? 'warning' : 'mismatch'
+
+    const leftSrc = propsMapSource(leftFileProperties.value, leftFileInfo.value.name, leftFileInfo.value.size, leftFileInfo.value.type)
+    const rightSrc = propsMapSource(rightFileProperties.value, rightFileInfo.value.name, rightFileInfo.value.size, rightFileInfo.value.type)
+    propertyDetails.value = buildPropertyDetails(leftSrc, rightSrc)
+
+    if (leftFileInfo.value.file && rightFileInfo.value.file) {
+      const sizeIdx = propertyDetails.value.findIndex(p => p.name === '文件大小')
+      if (sizeIdx >= 0) {
+        const sameBytes = leftFileInfo.value.file.size === rightFileInfo.value.file.size
+        propertyDetails.value[sizeIdx] = { ...propertyDetails.value[sizeIdx], status: sameBytes ? 'match' : 'mismatch' }
+      }
+    }
+
+    matchingProperties.value = propertyDetails.value.filter(p => p.status === 'match').length
+    nonMatchingProperties.value = propertyDetails.value.filter(p => p.status === 'mismatch').length
+    warningProperties.value = propertyDetails.value.filter(p => p.status === 'warning').length
+
+    addPcRecord({
+      leftFileName: leftFileInfo.value.name,
+      rightFileName: rightFileInfo.value.name,
+      similarity: `${similarity}%`,
+      propertyDetails: propertyDetails.value,
+    })
+
+    const checkResult = {
+      propertyDetails: propertyDetails.value,
+      leftFileName: leftFileInfo.value.name,
+      rightFileName: rightFileInfo.value.name,
+      totalProperties: propertyDetails.value.length,
+      matchingProperties: matchingProperties.value,
+      nonMatchingProperties: nonMatchingProperties.value,
+      warningProperties: warningProperties.value,
+      similarity: `${similarity}%`,
+      leftFileProperties: leftFileProperties.value,
+      rightFileProperties: rightFileProperties.value,
+      similarityStatus: similarityStatus
+    }
+    const resultId = storePropertyCheckResult(checkResult)
+
+    router.push({ path: '/property-check-result', query: { resultId, t: Date.now() } })
+  } catch (error: any) {
+    parseError.value = error.message
+  } finally {
+    isParsing.value = false
   }
+}
+
+function handleCancel() {
+  if (canCancel.value) cancelComparison()
 }
 </script>
 
@@ -207,7 +324,7 @@ function handleCancel() {
             <input
               ref="leftFileInput"
               type="file"
-              accept=".doc,.docx,.xls,.xlsx,.pdf,.md,.txt"
+              accept=".doc,.docx,.xls,.xlsx,.pdf,.md,.txt,.ppt,.pptx"
               style="display:none"
               @change="handleFileSelect('left', $event)"
             />
@@ -244,7 +361,7 @@ function handleCancel() {
             <input
               ref="rightFileInput"
               type="file"
-              accept=".doc,.docx,.xls,.xlsx,.pdf,.md,.txt"
+              accept=".doc,.docx,.xls,.xlsx,.pdf,.md,.txt,.ppt,.pptx"
               style="display:none"
               @change="handleFileSelect('right', $event)"
             />
@@ -269,7 +386,7 @@ function handleCancel() {
 
         <!-- 步骤条 -->
         <div class="step-bar">
-          <div class="step-item" :class="{ done: stepDone[0], current: step === 0 && isProcessing }">
+          <div class="step-item" :class="{ done: stepDone[0], current: step === 0 && (isProcessing || isParsing) }">
             <div class="step-number">1</div>
             <span class="step-text">解析文件</span>
           </div>
@@ -281,19 +398,31 @@ function handleCancel() {
           <div class="step-line"></div>
           <div class="step-item" :class="{ done: stepDone[2], current: step === 2 && isProcessing }">
             <div class="step-number">3</div>
-            <span class="step-text">比对识别</span>
+            <span class="step-text">
+              {{ mode === 'fileCompare' ? '比对识别' : '属性提取' }}
+            </span>
           </div>
         </div>
 
         <!-- 操作按钮 -->
         <div class="action-area">
           <button
+            v-if="mode === 'fileCompare'"
             class="compare-btn"
             :disabled="!bothReady || isProcessing"
             @click="handleCompare"
           >
-            <span v-if="!isProcessing">一键对比</span>
-            <span v-else>{{ progressText }}</span>
+            <RiExchangeLine v-if="!isProcessing" :size="20" />
+            <span>{{ isProcessing ? progressText : '一键对比' }}</span>
+          </button>
+          <button
+            v-else
+            class="compare-btn"
+            :disabled="!bothReady || isParsing"
+            @click="handleCheck"
+          >
+            <RiListCheck v-if="!isParsing" :size="20" />
+            <span>{{ isParsing ? '检查中…' : '属性检查' }}</span>
           </button>
           <button
             v-if="isProcessing && canCancel"
@@ -303,17 +432,30 @@ function handleCancel() {
             取消
           </button>
         </div>
+
+        <!-- 解析错误显示 -->
+        <div v-if="parseError" class="error-message">
+          {{ parseError }}
+        </div>
       </div>
 
       <!-- 悬浮工具栏 -->
       <div class="floating-toolbar">
-        <button class="toolbar-nav-btn" :class="{ active: route.path === '/file-compare' }" @click="router.push('/file-compare')" title="文件对比">
+        <button
+          class="toolbar-nav-btn"
+          :class="{ active: mode === 'fileCompare' }"
+          @click="switchMode('fileCompare')"
+          title="文件对比"
+        >
           <RiExchangeLine :size="22" />
-          <span class="toolbar-nav-label">文件对比</span>
         </button>
-        <button class="toolbar-nav-btn" :class="{ active: route.path === '/property-check' }" @click="router.push('/property-check')" title="属性检查">
+        <button
+          class="toolbar-nav-btn"
+          :class="{ active: mode === 'propertyCheck' }"
+          @click="switchMode('propertyCheck')"
+          title="属性检查"
+        >
           <RiListCheck :size="22" />
-          <span class="toolbar-nav-label">属性检查</span>
         </button>
       </div>
     </div>
@@ -533,6 +675,10 @@ function handleCancel() {
   font-family: var(--font-ui);
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .compare-btn:hover:not(:disabled) {
@@ -561,13 +707,25 @@ function handleCancel() {
   background: #F7F3EA;
 }
 
+/* Error Message */
+.error-message {
+  padding: 12px 20px;
+  background: #FFF0ED;
+  border: 0.7px solid #FFD4CE;
+  border-radius: 8px;
+  color: #C0392B;
+  font-size: 14px;
+  font-family: var(--font-ui);
+  text-align: center;
+}
+
 /* Floating Toolbar */
 .floating-toolbar {
   position: fixed;
   right: 24px;
   top: 50%;
   transform: translateY(-50%);
-  width: 64px;
+  width: 56px;
   background: #FFFFFF;
   border: 0.7px solid #EFEFE5;
   border-radius: 16px;
@@ -575,56 +733,58 @@ function handleCancel() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   z-index: 100;
   box-shadow: 0 2px 12px rgba(0,0,0,0.08);
 }
 
 .toolbar-nav-btn {
-  width: 52px;
+  width: 44px;
   height: 44px;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   background: transparent;
   cursor: pointer;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  transition: all 0.2s;
-  color: #8A8578;
+  transition: all 0.25s ease;
+  color: var(--color-text-secondary, #6E6A60);
   position: relative;
 }
 
 .toolbar-nav-btn:hover {
-  background: #F7F3EA;
-  color: #3A3A3A;
+  background: var(--color-primary-soft, #FBE9E7);
+  color: var(--color-primary, #C0392B);
+  transform: scale(1.05);
 }
 
 .toolbar-nav-btn.active {
-  background: #FBE9E7;
-  color: #C0392B;
+  background: var(--color-primary, #C0392B);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(192, 57, 43, 0.3);
 }
 
-.toolbar-nav-btn.active::before {
-  content: '';
+.toolbar-nav-btn::after {
+  content: attr(title);
   position: absolute;
-  left: 0;
+  right: calc(100% + 8px);
   top: 50%;
   transform: translateY(-50%);
-  width: 3px;
-  height: 20px;
-  background: #C0392B;
-  border-radius: 0 2px 2px 0;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #FFFFFF;
+  font-size: 12px;
+  font-family: var(--font-ui);
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 
-.toolbar-nav-label {
-  font-size: 9px;
-  font-weight: 500;
-  font-family: var(--font-ui);
-  white-space: nowrap;
-  line-height: 1;
+.toolbar-nav-btn:hover::after {
+  opacity: 1;
 }
 
 @media (max-width: 1024px) {
@@ -650,6 +810,9 @@ function handleCancel() {
   }
   .step-line {
     display: none;
+  }
+  .floating-toolbar {
+    right: 12px;
   }
 }
 </style>
