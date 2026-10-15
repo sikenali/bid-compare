@@ -1,0 +1,496 @@
+<script setup lang="ts">
+import { ref, onMounted, onActivated, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import {
+  RiCheckboxCircleLine,
+  RiCloseCircleLine,
+  RiAlertLine,
+  RiEraserLine,
+  RiDownload2Line,
+  RiCheckLine,
+} from '@remixicon/vue'
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx'
+import { getPropertyCheckResult, deletePropertyCheckResult } from '../utils/compareResultStore'
+import { useToast } from '../composables/useToast'
+
+interface PropertyDetail {
+  name: string;
+  leftValue: string;
+  rightValue: string;
+  status: 'match' | 'mismatch' | 'warning';
+}
+
+const route = useRoute()
+const router = useRouter()
+const { error: showError } = useToast()
+
+const propertyDetails = ref<PropertyDetail[]>([])
+const matchCount = ref(0)
+const mismatchCount = ref(0)
+const warningCount = ref(0)
+const leftFileName = ref('')
+const rightFileName = ref('')
+
+// 加载数据函数
+const loadData = () => {
+  let data: any = null
+
+  // 1. 优先尝试从路由参数中的 resultId 读取模块级存储
+  const resultId = route.query.resultId as string
+  if (resultId) {
+    data = getPropertyCheckResult(resultId)
+    // 读取后删除，避免内存积累
+    if (data) {
+      deletePropertyCheckResult(resultId)
+    }
+  }
+
+  // 2. 如果模块级存储没有，尝试从 sessionStorage 读取（兼容旧数据）
+  if (!data) {
+    const result = sessionStorage.getItem('propertyCheckResult')
+    if (result) {
+      try {
+        data = JSON.parse(result)
+        sessionStorage.removeItem('propertyCheckResult')
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
+
+  if (!data) {
+    return
+  }
+
+  try {
+    propertyDetails.value = data.propertyDetails || []
+    matchCount.value = data.matchingProperties || 0
+    mismatchCount.value = data.nonMatchingProperties || 0
+    warningCount.value = data.warningProperties || 0
+    leftFileName.value = data.leftFileName || '文件 A'
+    rightFileName.value = data.rightFileName || '文件 B'
+  } catch (error) {
+    router.push('/property-check')
+  }
+}
+
+onMounted(() => {
+  loadData()
+})
+
+onActivated(() => {
+  loadData()
+})
+
+watch(() => route.query.t, () => {
+  loadData()
+})
+
+const handleBack = () => {
+  router.push('/property-check')
+}
+
+const handleExport = async () => {
+  if (propertyDetails.value.length === 0) {
+    showError('没有可导出的对比数据')
+    return
+  }
+
+  try {
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: '属性对比报告', bold: true, size: 24 })],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `匹配属性：${matchCount.value}项`, size: 16 })]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `不匹配属性：${mismatchCount.value}项`, size: 16 })]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `警告属性：${warningCount.value}项`, size: 16 })],
+            spacing: { after: 200 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `左侧文件：${leftFileName.value}`, size: 16 })]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `右侧文件：${rightFileName.value}`, size: 16 })],
+            spacing: { after: 200 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: '属性对比详情：', bold: true, size: 20 })],
+            spacing: { after: 100 }
+          }),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ text: '对比类型', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                  new TableCell({ children: [new Paragraph({ text: leftFileName.value, bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                  new TableCell({ children: [new Paragraph({ text: rightFileName.value, bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                  new TableCell({ children: [new Paragraph({ text: '是否匹配', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
+                ]
+              }),
+              ...propertyDetails.value.map(property => new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ text: property.name, alignment: AlignmentType.CENTER })] }),
+                  new TableCell({ children: [new Paragraph({ text: property.leftValue, alignment: AlignmentType.CENTER })] }),
+                  new TableCell({ children: [new Paragraph({ text: property.rightValue, alignment: AlignmentType.CENTER })] }),
+                  new TableCell({ children: [new Paragraph({
+                    text: property.status === 'match' ? '匹配' : property.status === 'mismatch' ? '不匹配' : '警告',
+                    alignment: AlignmentType.CENTER
+                  })] }),
+                ]
+              }))
+            ]
+          })
+        ]
+      }]
+    })
+
+    const blob = await Packer.toBlob(doc)
+    
+    // 生成文件名：file1vsfile2-属性对比报告.docx
+    const leftName = (leftFileName.value || 'file1').replace(/\.[^/.]+$/, '')
+    const rightName = (rightFileName.value || 'file2').replace(/\.[^/.]+$/, '')
+    const fileName = `${leftName}vs${rightName}-属性对比报告.docx`
+    
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (error) {
+    showError('导出报告失败，请重试')
+  }
+}
+
+const getStatusIcon = (status: string): any => {
+  if (status === 'match') return RiCheckLine
+  if (status === 'mismatch') return RiCloseCircleLine
+  return RiAlertLine
+}
+
+const getStatusColor = (status: string): string => {
+  if (status === 'match') return 'var(--color-jade)'
+  if (status === 'mismatch') return 'var(--color-cinnabar)'
+  return 'var(--color-gold-dark)'
+}
+</script>
+
+<template>
+  <div class="property-result-container">
+    <!-- 筛选行 -->
+    <div class="filter-row">
+      <div class="filter-left">
+        <div class="stat-badge stat-match">
+          <RiCheckboxCircleLine class="stat-icon" />
+          <span>相同 {{ matchCount }} 处</span>
+        </div>
+        <div class="stat-badge stat-mismatch">
+          <RiCloseCircleLine class="stat-icon" />
+          <span>不同 {{ mismatchCount }} 处</span>
+        </div>
+        <span class="stat-total">共：{{ matchCount + mismatchCount + warningCount }} 处</span>
+      </div>
+      <div class="filter-right">
+        <button class="filter-btn" @click="handleBack">
+          <RiEraserLine class="btn-icon" />
+          一键清除
+        </button>
+        <button class="filter-btn" @click="handleExport">
+          <RiDownload2Line class="btn-icon" />
+          导出
+        </button>
+      </div>
+    </div>
+
+    <!-- 内容区 -->
+    <div class="content-area">
+      <div class="property-table">
+        <!-- 表头 -->
+        <div class="table-header">
+          <div class="th th-index">序号</div>
+          <div class="th th-name">属性字段</div>
+          <div class="th th-value">原始版本</div>
+          <div class="th th-value">修订版本</div>
+          <div class="th th-result">对比结果</div>
+        </div>
+
+        <!-- 表体 -->
+        <div class="table-body">
+          <div
+            v-for="(property, index) in propertyDetails"
+            :key="index"
+            class="table-row"
+            :class="{ 'row-alternate': index % 2 === 1 }"
+          >
+            <div class="color-bar" :class="property.status === 'match' ? 'bar-match' : 'bar-mismatch'"></div>
+            <div class="td td-index">{{ index + 1 }}</div>
+            <div class="td td-name">{{ property.name }}</div>
+            <div class="td td-value" :class="property.status === 'mismatch' ? 'text-mismatch' : 'text-match'">
+              {{ property.leftValue }}
+            </div>
+            <div class="td td-value" :class="property.status === 'mismatch' ? 'text-mismatch' : 'text-match'">
+              {{ property.rightValue }}
+            </div>
+            <div class="td td-result">
+              <component :is="getStatusIcon(property.status)" class="result-icon" :style="{ color: getStatusColor(property.status) }" />
+            </div>
+          </div>
+
+          <!-- 空状态 -->
+          <div v-if="propertyDetails.length === 0" class="empty-state">
+            <p>暂无对比数据</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.property-result-container {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 24px;
+  font-family: var(--font-ui);
+}
+
+/* 筛选行 */
+.filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.filter-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-family: var(--font-ui);
+}
+
+.stat-match {
+  background: #F3F1EA;
+  color: #3A3A3A;
+}
+
+.stat-match .stat-icon {
+  color: #4E9B7A;
+  font-size: 17px;
+}
+
+.stat-mismatch {
+  background: #FBE9E7;
+  color: #3A3A3A;
+}
+
+.stat-mismatch .stat-icon {
+  color: #C0392B;
+  font-size: 17px;
+}
+
+.stat-total {
+  font-size: 15px;
+  color: #8A8578;
+}
+
+.filter-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 20px;
+  border: 0.7px solid #E5DFD3;
+  border-radius: 10px;
+  background: #FCFBF8;
+  color: #3A3A3A;
+  font-size: 15px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover {
+  background: #F7F3EA;
+}
+
+.btn-icon {
+  font-size: 17px;
+}
+
+/* 表格 */
+.content-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.property-table {
+  border: 0.7px solid #EDE9E0;
+  border-radius: 12px;
+  background: #FFFFFF;
+  overflow: hidden;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 100px 272px 1fr 1fr 136px;
+  height: 54px;
+  background: #F7F3EA;
+  border-radius: 8px 8px 0 0;
+  padding: 0 24px;
+  align-items: center;
+}
+
+.th {
+  font-size: 15px;
+  color: #6E6A60;
+  font-family: var(--font-ui);
+}
+
+.th-result {
+  text-align: center;
+}
+
+.table-body {
+  overflow: visible;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 100px 272px 1fr 1fr 136px;
+  height: 88px;
+  align-items: center;
+  padding: 0 24px;
+  border-top: 0.7px solid #EDE9E0;
+  position: relative;
+}
+
+.row-alternate {
+  background: #FDFCF9;
+}
+
+.color-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.bar-match {
+  background: #4E9B7A;
+}
+
+.bar-mismatch {
+  background: #C0392B;
+}
+
+.td {
+  font-size: 16px;
+  font-family: var(--font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.td-index {
+  color: #8A8578;
+  padding-left: 16px;
+}
+
+.td-name {
+  font-weight: 500;
+  color: #1F1D1A;
+}
+
+.text-mismatch {
+  color: #C0392B;
+}
+
+.text-match {
+  color: #6E6A60;
+}
+
+.td-result {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.result-icon {
+  font-size: 22px;
+}
+
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: #8A8578;
+  font-size: 16px;
+  font-family: var(--font-ui);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .property-result-container {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .filter-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .filter-right {
+    width: 100%;
+  }
+
+  .table-header {
+    grid-template-columns: 60px 140px 1fr 1fr 80px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  .table-row {
+    grid-template-columns: 60px 140px 1fr 1fr 80px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  .td {
+    font-size: 13px;
+  }
+}
+</style>
