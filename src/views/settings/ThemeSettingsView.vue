@@ -4,41 +4,50 @@ import { useSettings } from '../../composables/useSettings'
 
 const { settings, saveSettings } = useSettings()
 
-const selectedTheme = ref(settings.theme || 'light')
-const selectedAccent = ref(localStorage.getItem('bc_accent') || 'vermilion')
-const selectedLayout = ref(localStorage.getItem('bc_layout') || 'topbar')
+interface ThemeOption {
+  type: string
+  name: string
+  desc: string
+  skin: string
+  topbar: string
+  content: string
+  previewBg: string
+}
+
+const themes: ThemeOption[] = [
+  {
+    type: 'light',
+    name: '浅色主题 · 羊皮纸',
+    desc: '当前默认，长时间阅读标书不易疲劳',
+    skin: '#F7EED4',
+    topbar: '#FFFFFF',
+    content: '#E1DCD1',
+    previewBg: '#F7EED4',
+  },
+  {
+    type: 'dark',
+    name: '深色主题 · 墨夜',
+    desc: '夜间或暗光环境投标作业更护眼',
+    skin: '#333A45',
+    topbar: '#404955',
+    content: '#8E939A',
+    previewBg: '#333A45',
+  },
+]
 
 interface AccentOption {
   key: string
   name: string
   color: string
+  varName: string
 }
 
 const accents: AccentOption[] = [
-  { key: 'vermilion', name: '朱红 · 默认', color: '#BE3B2E' },
-  { key: 'gold',     name: '鎏金',         color: '#D3A93F' },
-  { key: 'jade',     name: '玉绿',         color: '#3E8C6E' },
-  { key: 'cloud',    name: '云蓝',         color: '#4A72A8' },
-  { key: 'ink',      name: '黛墨',         color: '#2F3640' },
-]
-
-const themes = [
-  {
-    id: 'light',
-    name: '浅色主题 · 羊皮纸',
-    desc: '当前默认，长时间阅读标书不易疲劳',
-    previewBg: '#F7EED4',
-    topbar: '#FFFFFF',
-    content: '#E1DCD1',
-  },
-  {
-    id: 'dark',
-    name: '深色主题 · 墨夜',
-    desc: '夜间或暗光环境投标作业更护眼',
-    previewBg: '#333A45',
-    topbar: '#404955',
-    content: '#8E939A',
-  },
+  { key: 'vermilion', name: '朱红 · 默认', color: '#BE3B2E', varName: '--color-primary' },
+  { key: 'gold', name: '鎏金', color: '#D3A93F', varName: '--color-accent-gold' },
+  { key: 'jade', name: '玉绿', color: '#3E8C6E', varName: '--color-accent-jade' },
+  { key: 'cloud', name: '云蓝', color: '#4A72A8', varName: '--color-accent-cloud' },
+  { key: 'ink', name: '黛墨', color: '#2F3640', varName: '--color-accent-ink' },
 ]
 
 const layouts = [
@@ -46,18 +55,24 @@ const layouts = [
   { key: 'sidebar', name: '侧边栏模式 · 左侧导航', desc: '功能模块在左侧竖列居中，顶栏不显示图标文字' },
 ]
 
+const selectedTheme = ref('light')
+const selectedAccent = ref('vermilion')
+const selectedLayout = ref('topbar')
+
 onMounted(() => {
-  const saved = localStorage.getItem('bc_theme')
-  if (saved && themes.some(t => t.id === saved)) selectedTheme.value = saved
+  const savedTheme = localStorage.getItem('bc_theme')
+  if (savedTheme && themes.some(t => t.type === savedTheme)) {
+    selectedTheme.value = savedTheme
+  }
   selectedAccent.value = localStorage.getItem('bc_accent') || 'vermilion'
   selectedLayout.value = localStorage.getItem('bc_layout') || 'topbar'
 })
 
-function selectTheme(id: string) {
-  selectedTheme.value = id
-  settings.theme = id
-  document.documentElement.dataset.theme = id
-  localStorage.setItem('bc_theme', id)
+function selectTheme(type: string) {
+  selectedTheme.value = type
+  settings.theme = type
+  document.documentElement.dataset.theme = type
+  localStorage.setItem('bc_theme', type)
   saveSettings()
 }
 
@@ -119,10 +134,10 @@ function resetAll() {
       <div class="theme-group">
         <div
           v-for="theme in themes"
-          :key="theme.id"
+          :key="theme.type"
           class="theme-preview-card"
-          :class="{ active: selectedTheme === theme.id }"
-          @click="selectTheme(theme.id)"
+          :class="{ active: selectedTheme === theme.type }"
+          @click="selectTheme(theme.type)"
         >
           <div class="preview-thumb" :style="{ backgroundColor: theme.previewBg }">
             <div class="thumb-topbar" :style="{ backgroundColor: theme.topbar }"></div>

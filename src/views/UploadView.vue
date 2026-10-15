@@ -165,11 +165,11 @@ async function handleCompare() {
     const textSimilarity = Math.round(result.textSimilarity * 100) + '%'
 
     const comparisonResult = {
-      segments: result.similarSegments,
+      segments: result.segments,
       leftFileName: leftFileInfo.value.name,
       rightFileName: rightFileInfo.value.name,
       textSimilarity: textSimilarity,
-      similarSegmentsCount: result.similarSegments.length,
+      similarSegmentsCount: result.segments.length,
       leftTotalPages: 1,
       rightTotalPages: 1,
       leftFileContent: lText,
@@ -182,7 +182,7 @@ async function handleCompare() {
       leftFileName: leftFileInfo.value.name,
       rightFileName: rightFileInfo.value.name,
       similarity: textSimilarity,
-      similarSegments: result.similarSegments,
+      similarSegments: result.segments,
     })
 
     router.push({ path: '/file-compare-result', query: { resultId, t: Date.now() } })
@@ -376,22 +376,22 @@ function handleReplace() {
   right: 24px;
   top: 50%;
   transform: translateY(-50%);
-  width: 56px;
+  width: 64px;
   background: #FFFFFF;
   border: 0.7px solid #EFEFE5;
   border-radius: 16px;
-  padding: 12px 0;
+  padding: 16px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   z-index: 100;
   box-shadow: 0 2px 12px rgba(0,0,0,0.08);
 }
 
 .toolbar-nav-btn {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border: none;
   border-radius: 12px;
   background: transparent;
@@ -400,42 +400,23 @@ function handleReplace() {
   align-items: center;
   justify-content: center;
   transition: all 0.25s ease;
-  color: var(--color-text-secondary, #6E6A60);
+  color: #3A3A3A;
   position: relative;
 }
 
+.toolbar-nav-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
 .toolbar-nav-btn:hover {
-  background: var(--color-primary-soft, #FBE9E7);
-  color: var(--color-primary, #C0392B);
-  transform: scale(1.05);
+  background: #FBE9E7;
+  color: #C0392B;
 }
 
 .toolbar-nav-btn.active {
-  background: var(--color-primary, #C0392B);
-  color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(192, 57, 43, 0.3);
-}
-
-.toolbar-nav-btn::after {
-  content: attr(title);
-  position: absolute;
-  right: calc(100% + 8px);
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 6px 12px;
-  background: rgba(0, 0, 0, 0.8);
-  color: #FFFFFF;
-  font-size: 12px;
-  font-family: var(--font-ui);
-  border-radius: 6px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-.toolbar-nav-btn:hover::after {
-  opacity: 1;
+  background: #FBE9E7;
+  color: #C0392B;
 }
 
 @media (max-width: 1024px) {

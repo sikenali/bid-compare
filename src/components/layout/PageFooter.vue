@@ -8,27 +8,64 @@
 
     <!-- 居中：2 个图标 -->
     <div class="footer-actions">
-      <div class="footer-icon-btn" title="企业信用" @click="$emit('credit-query')">
-        <RiShieldCheckLine class="footer-mark" />
+      <div class="footer-icon-wrap">
+        <div class="footer-icon-btn" @click="showCreditModal = true">
+          <RiShieldCheckLine class="footer-mark" />
+        </div>
+        <span class="footer-tip">企业信用</span>
       </div>
-      <div class="footer-icon-btn" title="招标网站" @click="$emit('bidding-sites')">
-        <RiLinksLine class="footer-mark" />
+      <div class="footer-icon-wrap">
+        <div class="footer-icon-btn" @click="showBiddingModal = true">
+          <RiLinksLine class="footer-mark" />
+        </div>
+        <span class="footer-tip">招标网站</span>
       </div>
     </div>
 
     <!-- 右侧：版权 -->
     <span class="footer-copy">© {{ year }} {{ BRAND_NAME }} Powered by <a href="https://lazycat.cloud" target="_blank" rel="noopener noreferrer" class="footer-link">LightOS</a></span>
+
+    <!-- 企业信用弹窗 -->
+    <div v-if="showCreditModal" class="modal-overlay" @click.self="showCreditModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>企业信用查询</h3>
+          <button class="modal-close" @click="showCreditModal = false">
+            <RiCloseLine />
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>企业信用信息查询功能即将上线，敬请期待。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 招标网站弹窗 -->
+    <div v-if="showBiddingModal" class="modal-overlay" @click.self="showBiddingModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>招标网站入口</h3>
+          <button class="modal-close" @click="showBiddingModal = false">
+            <RiCloseLine />
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>招标网站快捷入口即将上线，敬请期待。</p>
+        </div>
+      </div>
+    </div>
   </footer>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { RiTargetLine, RiShieldCheckLine, RiLinksLine } from '@remixicon/vue';
+import { RiTargetLine, RiShieldCheckLine, RiLinksLine, RiCloseLine } from '@remixicon/vue';
 import { BRAND_NAME } from '../../constants/brand';
 
-defineEmits(['credit-query', 'bidding-sites'])
-
 const year = ref(new Date().getFullYear())
+const showCreditModal = ref(false)
+const showBiddingModal = ref(false)
+
 onMounted(() => { year.value = new Date().getFullYear() })
 </script>
 
