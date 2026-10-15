@@ -1180,15 +1180,6 @@ const handlePreviewRightScroll = () => {
       </div>
     </div>
 
-    <!-- 悬浮工具栏 -->
-    <div class="floating-toolbar">
-      <div class="toolbar-tool-icon" title="对比工具">
-        <RiExchangeLine />
-      </div>
-      <div class="toolbar-tool-badge">
-        <RiSearchLine />
-      </div>
-    </div>
   </div>
 </template>
 
