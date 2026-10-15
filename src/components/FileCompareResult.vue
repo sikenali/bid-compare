@@ -960,7 +960,7 @@ const handlePreviewRightScroll = () => {
           <button class="toggle-btn active" :class="{ active: viewMode === 'list' }" @click="viewMode = 'list'">
             <RiLayoutLine class="toggle-icon" />
           </button>
-          <button class="toggle-btn" :class="{ active: viewMode === 'grid' }" @click="viewMode = 'grid'">
+          <button class="toggle-btn" :class="{ active: showPreviewModal }" @click="togglePreviewMode" title="双文档预览">
             <RiLayoutGridLine class="toggle-icon" />
           </button>
           <button class="toggle-btn" :class="{ active: viewMode === 'image' }" @click="viewMode = 'image'" :disabled="imageDuplicates.length === 0" title="无图片雷同数据">
@@ -968,18 +968,9 @@ const handlePreviewRightScroll = () => {
           </button>
         </div>
         <div class="similarity-filters">
-          <button class="sim-badge sim-100" :class="{ active: activeFilter === '100' }" @click="toggleFilter('100')">
-            <span class="sim-label">100%</span>
-            <span class="sim-count">{{ count100 }}</span>
-          </button>
-          <button class="sim-badge sim-90" :class="{ active: activeFilter === '90' }" @click="toggleFilter('90')">
-            <span class="sim-label">90%</span>
-            <span class="sim-count">{{ count90 }}</span>
-          </button>
-          <button class="sim-badge sim-80" :class="{ active: activeFilter === '80' }" @click="toggleFilter('80')">
-            <span class="sim-label">80%</span>
-            <span class="sim-count">{{ count80 }}</span>
-          </button>
+          <button class="sim-badge sim-100" :class="{ active: activeFilter === '100' }" @click="toggleFilter('100')">100% {{ count100 }} 处</button>
+          <button class="sim-badge sim-90" :class="{ active: activeFilter === '90' }" @click="toggleFilter('90')">90% {{ count90 }} 处</button>
+          <button class="sim-badge sim-80" :class="{ active: activeFilter === '80' }" @click="toggleFilter('80')">80% {{ count80 }} 处</button>
         </div>
         <span class="stat-total">共：{{ totalFoundCount }} 处</span>
       </div>
@@ -987,10 +978,6 @@ const handlePreviewRightScroll = () => {
         <button class="filter-btn" @click="togglePreviewMode">
           <RiEyeLine class="btn-icon" />
           预览
-        </button>
-        <button class="filter-btn" @click="handleBack">
-          <RiEraserLine class="btn-icon" />
-          一键清除
         </button>
         <button class="filter-btn filter-btn-primary" @click="handleExport">
           <RiDownload2Line class="btn-icon" />
@@ -1006,16 +993,10 @@ const handlePreviewRightScroll = () => {
         <div class="data-table">
           <div class="table-header">
             <div class="col col-index">序号</div>
-            <div class="col col-content" :title="leftFileName || '文件A'">
-              <span class="version-badge version-badge-left">v1</span>
-              <span class="version-label">原始版本</span>
-            </div>
-            <div class="col col-position">页招</div>
-            <div class="col col-position">页投</div>
-            <div class="col col-content" :title="rightFileName || '文件B'">
-              <span class="version-badge version-badge-right">v2</span>
-              <span class="version-label">修订版本</span>
-            </div>
+            <div class="col col-content">原始版本</div>
+            <div class="col col-position">所在页面</div>
+            <div class="col col-position">所在页面</div>
+            <div class="col col-content">修订版本</div>
             <div class="col col-action">操作</div>
           </div>
           <div class="table-body" v-highlight-tooltip>
@@ -1102,7 +1083,7 @@ const handlePreviewRightScroll = () => {
       </template>
 
       <div v-if="viewMode !== 'image'" class="pagination-container">
-        <span class="pagination-summary">共 {{ totalRecords }} 条 · 每页 {{ pageSize }} 条 · 第 {{ currentPage }} / {{ totalPages }} 页</span>
+        <span class="pagination-summary">共 {{ totalRecords }} 条数据</span>
         <div class="pagination">
           <button class="page-btn" :disabled="currentPage <= 1" @click="prevPage">
             <RiArrowLeftSLine />
@@ -1185,7 +1166,8 @@ const handlePreviewRightScroll = () => {
 .result-page {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
+  padding: 20px 24px;
   font-family: var(--font-ui);
   color: var(--color-brown-dark);
 }
@@ -1195,7 +1177,7 @@ const handlePreviewRightScroll = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  height: 42px;
 }
 
 .filter-left {
@@ -1209,7 +1191,8 @@ const handlePreviewRightScroll = () => {
   align-items: center;
   gap: 4px;
   padding: 4px;
-  background: #F7F3EA;
+  background: var(--color-bg-white, #FFFFFF);
+  border: 0.7px solid var(--color-border, #E5DFD3);
   border-radius: 10px;
 }
 
@@ -1217,19 +1200,19 @@ const handlePreviewRightScroll = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 34px;
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #8A8578;
+  color: #A7A296;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .toggle-btn.active {
-  background: #FFFFFF;
-  color: #3A3A3A;
+  background: var(--color-bg-white, #FFFFFF);
+  color: var(--color-text-body, #3A3A3A);
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 
@@ -1246,15 +1229,15 @@ const handlePreviewRightScroll = () => {
 .similarity-filters {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .sim-badge {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 40px;
-  padding: 0 14px;
+  height: 42px;
+  padding: 0 16px;
   border: none;
   border-radius: 10px;
   font-size: 15px;
@@ -1264,43 +1247,23 @@ const handlePreviewRightScroll = () => {
 }
 
 .sim-100 {
-  background: #E8F5E9;
-  color: #3A3A3A;
-}
-
-.sim-100 .sim-label {
-  color: #4E9B7A;
-  font-weight: 600;
+  background: var(--color-diff-added, #E4F0EA);
+  color: #3E8A6B;
 }
 
 .sim-90 {
-  background: #FFF8E1;
-  color: #3A3A3A;
-}
-
-.sim-90 .sim-label {
-  color: #D4A030;
-  font-weight: 600;
+  background: var(--color-diff-modified, #FDF6E3);
+  color: #B08D3A;
 }
 
 .sim-80 {
-  background: #FBE9E7;
-  color: #3A3A3A;
-}
-
-.sim-80 .sim-label {
+  background: var(--color-diff-deleted, #FBE9E7);
   color: #C0392B;
-  font-weight: 600;
-}
-
-.sim-count {
-  font-size: 13px;
-  color: #8A8578;
 }
 
 .stat-total {
   font-size: 15px;
-  color: #8A8578;
+  color: var(--color-text-muted, #8A8578);
 }
 
 .filter-right {
@@ -1315,9 +1278,9 @@ const handlePreviewRightScroll = () => {
   gap: 8px;
   height: 42px;
   padding: 0 20px;
-  border: 0.7px solid #E5DFD3;
+  border: 0.7px solid rgba(229, 223, 211, 1);
   border-radius: 10px;
-  background: #FCFBF8;
+  background: rgba(252, 251, 248, 1);
   color: #3A3A3A;
   font-size: 15px;
   font-family: var(--font-ui);
@@ -1326,7 +1289,7 @@ const handlePreviewRightScroll = () => {
 }
 
 .filter-btn:hover {
-  background: #F7F3EA;
+  background: var(--color-bg-secondary, #F7F3EA);
 }
 
 .filter-btn-primary {
@@ -1347,6 +1310,7 @@ const handlePreviewRightScroll = () => {
   display: flex;
   flex-direction: column;
   flex: 1;
+  padding-top: 20px;
 }
 
 .stats-right {
@@ -1521,19 +1485,23 @@ const handlePreviewRightScroll = () => {
 
 /* 数据表格 */
 .data-table {
-  background: #FFFFFF;
-  border: 0.7px solid #EDE9E0;
+  background: rgba(255, 255, 255, 1);
+  border: 0.7px solid rgba(237, 233, 224, 1);
   border-radius: 12px;
   overflow: hidden;
+  padding: 0 16px;
 }
 
 .table-header {
   display: flex;
-  background: #F7F3EA;
-  border-bottom: 0.7px solid #EDE9E0;
+  background: rgba(247, 243, 234, 1);
+  border-radius: 8px;
+  padding: 0 24px;
+  height: 54px;
+  align-items: center;
   font-size: 15px;
   font-weight: 500;
-  color: #6E6A60;
+  color: rgba(110, 106, 96, 1);
 }
 
 .table-body {
@@ -1560,18 +1528,20 @@ const handlePreviewRightScroll = () => {
 
 .table-row {
   display: flex;
-  border-bottom: 0.7px solid #EDE9E0;
-  font-size: 14px;
-  line-height: 1.5;
+  border-bottom: 0.7px solid rgba(237, 233, 224, 1);
+  height: 88px;
+  align-items: center;
+  font-size: 16px;
+  line-height: 1.2;
   position: relative;
+}
+
+.table-row:nth-child(even) {
+  background: rgba(253, 252, 249, 1);
 }
 
 .table-row:last-child {
   border-bottom: none;
-}
-
-.table-row:hover {
-  background: #FDFCF9;
 }
 
 .color-bar {
@@ -1583,32 +1553,39 @@ const handlePreviewRightScroll = () => {
 }
 
 .bar-match {
-  background: #4E9B7A;
+  background: var(--color-jade, #4E9B7A);
 }
 
 .bar-mismatch {
-  background: #C0392B;
+  background: var(--color-cinnabar, #C0392B);
 }
 
 .col {
-  padding: 10px 12px;
+  padding: 0 12px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
 }
 
 .col-index {
-  width: 60px;
+  width: 96px;
   flex-shrink: 0;
-  justify-content: center;
-  color: var(--color-brown-muted);
-  font-weight: 500;
+  justify-content: flex-start;
+  padding-left: 0;
+  color: rgba(138, 133, 120, 1);
+  font-size: 16px;
+}
+
+.table-row .col-index {
+  width: 93px;
+  padding-left: 16px;
 }
 
 .col-content {
-  flex: 1;
-  min-width: 0;
+  width: 580px;
+  flex-shrink: 0;
   word-break: break-all;
-  color: var(--color-brown);
+  color: rgba(31, 29, 26, 1);
+  font-size: 16px;
 }
 
 .col-content.clickable {
@@ -1620,53 +1597,18 @@ const handlePreviewRightScroll = () => {
   color: var(--color-cinnabar);
 }
 
-/* 版本标签 */
-.col-content {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.version-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 10px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.2;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.version-badge-left {
-  background: var(--color-accent-red);
-}
-
-.version-badge-right {
-  background: var(--color-blue-accent);
-}
-
-.version-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-brown-dark);
-  white-space: nowrap;
-}
-
 .col-position {
-  width: 80px;
+  width: 160px;
   flex-shrink: 0;
-  justify-content: center;
-  color: var(--color-brown-muted);
-  font-size: 12px;
+  justify-content: flex-start;
+  color: rgba(110, 106, 96, 1);
+  font-size: 16px;
 }
 
 .col-action {
-  width: 56px;
+  width: 134px;
   flex-shrink: 0;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
 }
 
@@ -1675,19 +1617,19 @@ const handlePreviewRightScroll = () => {
   height: 32px;
   border: none;
   border-radius: 8px;
-  background: var(--color-icon-bg);
-  color: var(--color-brown-muted);
+  background: transparent;
+  color: rgba(58, 58, 58, 1);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 20px;
   transition: all 0.15s;
 }
 
 .action-btn:hover {
-  background: var(--color-tan-light);
-  color: var(--color-brown-dark);
+  background: rgba(229, 223, 211, 0.5);
+  color: rgba(58, 58, 58, 1);
 }
 
 /* 高亮样式 */
@@ -1833,17 +1775,14 @@ const handlePreviewRightScroll = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
-  background: #FFFFFF;
-  border: 0.7px solid #EDE9E0;
-  border-radius: 12px;
+  padding: 12px 0;
   margin-top: 8px;
   gap: 16px;
 }
 
 .pagination-summary {
-  font-size: 14px;
-  color: var(--color-brown-muted);
+  font-size: 15px;
+  color: rgba(138, 133, 120, 1);
 }
 
 .pagination {
@@ -1853,23 +1792,22 @@ const handlePreviewRightScroll = () => {
 }
 
 .pagination .page-btn {
-  width: 32px;
-  height: 32px;
-  border: 0.7px solid var(--color-tan-border);
-  border-radius: 50%;
-  background: var(--color-cream-dark);
-  color: var(--color-brown-muted);
+  width: 36px;
+  height: 36px;
+  border: 0.7px solid rgba(229, 223, 211, 1);
+  border-radius: 9999px;
+  background: rgba(252, 251, 248, 1);
+  color: #3A3A3A;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 15px;
   transition: all 0.15s;
 }
 
 .pagination .page-btn:hover:not(:disabled) {
-  background: var(--color-tan-light);
-  color: var(--color-brown-dark);
+  background: rgba(247, 243, 234, 1);
 }
 
 .pagination .page-btn:disabled {
@@ -1878,29 +1816,30 @@ const handlePreviewRightScroll = () => {
 }
 
 .page-num {
-  width: 32px;
-  height: 32px;
-  border: 0.7px solid var(--color-tan-border);
-  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  border: 0.7px solid rgba(229, 223, 211, 1);
+  border-radius: 9999px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
-  background: var(--color-cream-dark);
-  color: var(--color-brown-muted);
+  background: rgba(252, 251, 248, 1);
+  color: #3A3A3A;
   transition: all 0.15s;
 }
 
 .page-num:hover {
-  background: var(--color-tan-light);
+  background: rgba(247, 243, 234, 1);
 }
 
 .page-num.active {
-  background: var(--color-jade);
-  border-color: var(--color-jade);
-  color: var(--color-white);
+  background: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  color: #3A3A3A;
 }
 
 .modal-overlay {
@@ -1921,37 +1860,46 @@ const handlePreviewRightScroll = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--color-tan-border);
-  background: var(--color-cream);
+  padding: 0 0 20px 0;
+  border-bottom: 1px solid var(--color-border-soft, #EDE9E0);
+  background: transparent;
+  flex-shrink: 0;
 }
 
 .modal-header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .modal-header h3 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-brown-dark);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-primary, #1F1D1A);
   font-family: var(--font-ui);
 }
 
 .modal-header-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--color-primary-soft, #FBE9E7);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 22px;
-  color: var(--color-cinnabar);
+  color: var(--color-primary, #C0392B);
+  flex-shrink: 0;
 }
 
 .modal-close {
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   border: none;
-  border-radius: var(--radius-sm);
-  background: rgba(var(--rgb-parchment), 0.8);
-  color: var(--color-brown);
+  border-radius: 50%;
+  background: var(--color-bg-card, #FCFBF8);
+  color: var(--color-text-secondary, #6E6A60);
   cursor: pointer;
   font-size: 20px;
   display: flex;
@@ -1961,8 +1909,8 @@ const handlePreviewRightScroll = () => {
 }
 
 .modal-close:hover {
-  background: rgba(var(--rgb-cinnabar), 0.1);
-  color: var(--color-cinnabar);
+  background: var(--color-border-soft, #EDE9E0);
+  color: var(--color-text-primary, #1F1D1A);
 }
 
 .modal-body {
@@ -2038,20 +1986,27 @@ const handlePreviewRightScroll = () => {
 }
 
 .preview-modal {
-  background: var(--color-cream);
-  border-radius: var(--radius-md);
-  width: calc(100% - 32px);
-  max-width: 1100px;
-  max-height: 90vh;
+  background: var(--color-bg-secondary, #F7F3EA);
+  border-radius: 16px;
+  width: 1320px;
+  max-width: 94vw;
+  height: 86vh;
+  max-height: 900px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  border: 1px solid var(--color-tan-border);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.1);
+  border: 0.7px solid var(--color-border-soft, #EDE9E0);
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
 }
 
 .preview-panel-headers {
   display: flex;
-  border-bottom: 1px solid var(--color-tan-border);
-  background: rgba(var(--rgb-cream-dark), 0.5);
+  border-bottom: 1px solid var(--color-border-soft, #EDE9E0);
+  background: var(--color-bg-card, #FCFBF8);
+  border-radius: 12px 12px 0 0;
+  padding: 0;
+  flex-shrink: 0;
 }
 
 .preview-panel-header {
@@ -2059,14 +2014,14 @@ const handlePreviewRightScroll = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
-  font-size: 13px;
+  padding: 12px 20px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--color-brown-dark);
+  color: var(--color-text-primary, #1F1D1A);
 }
 
 .preview-panel-header:first-child {
-  border-right: 1px solid var(--color-tan-border);
+  border-right: 1px solid var(--color-border-soft, #EDE9E0);
 }
 
 .preview-panel-header.right {
@@ -2074,9 +2029,9 @@ const handlePreviewRightScroll = () => {
 }
 
 .preview-file-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--color-brown-dark);
+  color: var(--color-text-primary, #1F1D1A);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2085,16 +2040,18 @@ const handlePreviewRightScroll = () => {
 .preview-page-info {
   font-size: 12px;
   font-weight: 500;
-  color: rgba(var(--rgb-cinnabar), 0.85);
-  background: rgba(var(--rgb-cinnabar), 0.06);
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
+  color: var(--color-primary, #C0392B);
+  background: var(--color-primary-soft, #FBE9E7);
+  padding: 4px 10px;
+  border-radius: 8px;
   flex-shrink: 0;
 }
 
 .preview-modal-body {
   display: flex;
-  height: calc(90vh - 100px);
+  flex: 1;
+  overflow: hidden;
+  border-radius: 0 0 12px 12px;
   overflow: hidden;
 }
 
@@ -2108,12 +2065,12 @@ const handlePreviewRightScroll = () => {
   max-width: 640px;
   margin: 0 auto;
   padding: 40px 48px;
-  background: var(--color-white);
+  background: var(--color-bg-white, #FFFFFF);
   box-shadow: var(--shadow-md);
   min-height: 100%;
   font-size: 14px;
   line-height: 1.8;
-  color: var(--color-brown-dark);
+  color: var(--color-text-body, #3A3A3A);
   font-family: var(--font-body);
 }
 
@@ -2262,8 +2219,8 @@ const handlePreviewRightScroll = () => {
 }
 
 .grid-card {
-  background: #FFFFFF;
-  border: 0.7px solid #EDE9E0;
+  background: var(--color-bg-white, #FFFFFF);
+  border: 0.7px solid var(--color-border-soft, #EDE9E0);
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
@@ -2281,8 +2238,8 @@ const handlePreviewRightScroll = () => {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: #F7F3EA;
-  border-bottom: 0.7px solid #EDE9E0;
+  background: var(--color-bg-secondary, #F7F3EA);
+  border-bottom: 0.7px solid var(--color-border-soft, #EDE9E0);
 }
 
 .grid-card-index {
@@ -2304,18 +2261,18 @@ const handlePreviewRightScroll = () => {
 }
 
 .grid-card-similarity.badge-high {
-  background: #FFF8E1;
-  color: #D4A030;
+  background: var(--color-diff-modified, #FFF8E1);
+  color: var(--color-gold-dark, #D4A030);
 }
 
 .grid-card-similarity.badge-mid {
-  background: #FBE9E7;
-  color: #C0392B;
+  background: var(--color-diff-deleted, #FBE9E7);
+  color: var(--color-cinnabar, #C0392B);
 }
 
 .grid-card-similarity.badge-low {
-  background: #F0F0F0;
-  color: #8A8578;
+  background: var(--color-bg-secondary, #F0F0F0);
+  color: var(--color-text-muted, #8A8578);
 }
 
 .grid-card-content {
@@ -2359,8 +2316,8 @@ const handlePreviewRightScroll = () => {
   display: flex;
   justify-content: space-between;
   padding: 8px 14px;
-  background: #FDFCF9;
-  border-top: 0.7px solid #EDE9E0;
+  background: var(--color-bg-card, #FDFCF9);
+  border-top: 0.7px solid var(--color-border-soft, #EDE9E0);
 }
 
 .grid-card-page {
@@ -2375,8 +2332,8 @@ const handlePreviewRightScroll = () => {
   align-items: center;
   justify-content: center;
   padding: 80px 20px;
-  background: #FFFFFF;
-  border: 0.7px solid #EDE9E0;
+  background: var(--color-bg-white, #FFFFFF);
+  border: 0.7px solid var(--color-border-soft, #EDE9E0);
   border-radius: 12px;
 }
 
@@ -2413,7 +2370,7 @@ const handlePreviewRightScroll = () => {
 
 .toolbar-tool-icon {
   font-size: 22px;
-  color: #3A3A3A;
+  color: var(--color-text-body, #3A3A3A);
 }
 
 .toolbar-tool-badge {
