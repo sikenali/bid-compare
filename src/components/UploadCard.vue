@@ -274,13 +274,13 @@ const formatTags = [
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 32px;
   width: 100%;
 }
 
 .upload-card {
-  width: 380px;
-  height: 320px;
+  width: 440px;
+  height: 360px;
   flex-shrink: 0;
   background-color: var(--color-bg-white, #FFFFFF);
   border: 0.7px solid var(--color-border, var(--color-tan-border, #E5DFD3));
@@ -292,8 +292,8 @@ const formatTags = [
   transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
   position: relative;
   overflow: hidden;
-  gap: 16px;
-  padding: 32px 24px;
+  gap: 20px;
+  padding: 40px 32px;
   cursor: pointer;
 }
 
@@ -328,7 +328,7 @@ const formatTags = [
 
 .upload-hint {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 500;
   color: var(--color-text-primary, #1F1D1A);
   font-family: var(--font-ui);
@@ -339,13 +339,13 @@ const formatTags = [
 .format-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-top: 8px;
 }
 
 .fmt {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 5px;
   display: flex;
   align-items: center;
@@ -419,7 +419,7 @@ const formatTags = [
 
 .file-name {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--color-text-primary, #1F1D1A);
   font-family: var(--font-ui);
@@ -431,7 +431,7 @@ const formatTags = [
 
 .file-size {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-muted, #8A8578);
   font-family: var(--font-ui);
 }
@@ -451,8 +451,8 @@ const formatTags = [
 
 /* VS badge */
 .vs-badge {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   background: var(--color-bg-white, #FFFFFF);
   border: 0.7px solid var(--color-border, var(--color-tan-border, #E5DFD3));
   border-radius: 9999px;
@@ -463,7 +463,7 @@ const formatTags = [
 }
 
 .vs-badge span {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--color-text-secondary, #6E6A60);
   font-family: var(--font-ui);
@@ -479,13 +479,13 @@ const formatTags = [
   }
   .upload-card {
     width: 100%;
-    max-width: 400px;
+    max-width: 480px;
   }
 }
 
 @media (max-width: 640px) {
   .upload-card {
-    height: 280px;
+    height: 300px;
     width: 100%;
   }
 }
