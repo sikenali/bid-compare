@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import UploadCard from '../components/UploadCard.vue'
 import StepStrip from '../components/StepStrip.vue'
-import { RiFileSearchLine, RiFileCheckLine, RiImageLine, RiFileList2Line } from '@remixicon/vue'
+import { RiFileTextLine, RiFileCheckLine } from '@remixicon/vue'
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useComparison } from '../composables/useComparison'
@@ -150,7 +150,7 @@ async function handleCompare() {
       clauseRemovalGranularity: settings.clauseRemovalGranularity,
     }
 
-    const result = await runComparison(lText, rText, compareSettings, cancelComparison)
+    const result = await runComparison(lText, rText, compareSettings)
     stepDone.value[2] = true
 
     if (!result) {
@@ -163,7 +163,12 @@ async function handleCompare() {
       return
     }
 
-    const textSimilarity = Math.round(result.textSimilarity * 100) + '%'
+    if (!result.segments || !Array.isArray(result.segments)) {
+      showError('对比结果异常，请重试')
+      return
+    }
+
+    const textSimilarity = Math.round(result.similarity * 100) + '%'
 
     const comparisonResult = {
       segments: result.segments,
@@ -186,7 +191,7 @@ async function handleCompare() {
       similarSegments: result.segments,
     })
 
-    router.push({ path: '/file-compare-result', query: { resultId, t: Date.now() } })
+    router.push({ path: '/file-compare-result', query: { resultId } })
   } catch (error: any) {
     if (error.name === 'AbortError') {
       showError('对比已取消')
@@ -220,6 +225,11 @@ async function handleCheck() {
     const leftSrc = propsMapSource(leftFileProperties.value, leftFileInfo.value.name, leftFileInfo.value.size, leftFileInfo.value.type)
     const rightSrc = propsMapSource(rightFileProperties.value, rightFileInfo.value.name, rightFileInfo.value.size, rightFileInfo.value.type)
     propertyDetails.value = buildPropertyDetails(leftSrc, rightSrc)
+
+    if (!propertyDetails.value || !Array.isArray(propertyDetails.value)) {
+      showError('属性检查结果异常，请重试')
+      return
+    }
 
     if (leftFileInfo.value.file && rightFileInfo.value.file) {
       const sizeIdx = propertyDetails.value.findIndex(p => p.name === '文件大小')
@@ -255,7 +265,7 @@ async function handleCheck() {
     }
     const resultId = storePropertyCheckResult(checkResult)
 
-    router.push({ path: '/property-check-result', query: { resultId, t: Date.now() } })
+    router.push({ path: '/property-check-result', query: { resultId } })
   } catch (error: any) {
     parseError.value = error.message
   } finally {
@@ -314,7 +324,7 @@ function handleReplace() {
           @click="switchMode('fileCompare')"
           title="文件对比"
         >
-          <RiFileSearchLine class="toolbar-icon" />
+          <RiFileTextLine class="toolbar-icon" />
         </button>
         <button
           class="toolbar-nav-btn"
@@ -323,22 +333,6 @@ function handleReplace() {
           title="属性检查"
         >
           <RiFileCheckLine class="toolbar-icon" />
-        </button>
-        <button
-          v-if="settings.enableImageCompare"
-          class="toolbar-nav-btn"
-          @click="handleImageCompareMode"
-          title="图片对比"
-        >
-          <RiImageLine class="toolbar-icon" />
-        </button>
-        <button
-          v-if="settings.enableMultiFileCompare"
-          class="toolbar-nav-btn"
-          @click="handleBatchCompareMode"
-          title="批量对比"
-        >
-          <RiFileList2Line class="toolbar-icon" />
         </button>
       </div>
     </div>
