@@ -311,7 +311,6 @@ function handleReplace() {
           class="toolbar-nav-btn"
           :class="{ active: mode === 'fileCompare' }"
           @click="switchMode('fileCompare')"
-          title="文件对比"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M8 3L4 7l4 4M16 21l4-4-4-4M4 7h16M20 17H4"/>
@@ -321,7 +320,6 @@ function handleReplace() {
           class="toolbar-nav-btn"
           :class="{ active: mode === 'propertyCheck' }"
           @click="switchMode('propertyCheck')"
-          title="属性检查"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
@@ -405,8 +403,8 @@ function handleReplace() {
 }
 
 .toolbar-nav-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 
 .toolbar-nav-btn:hover {
@@ -414,9 +412,19 @@ function handleReplace() {
   color: #C0392B;
 }
 
+.toolbar-nav-btn:hover svg {
+  width: 20px;
+  height: 20px;
+}
+
 .toolbar-nav-btn.active {
   background: #FBE9E7;
   color: #C0392B;
+}
+
+.toolbar-nav-btn.active svg {
+  width: 20px;
+  height: 20px;
 }
 
 @media (max-width: 1024px) {

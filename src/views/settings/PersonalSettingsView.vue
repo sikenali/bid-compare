@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useSettings } from '../../composables/useSettings'
 import { useToast } from '../../composables/useToast'
 import { riToCompName } from '../../utils/icon'
+import { UiSwitch } from '../../components/ui'
 
 const { settings, saveSettings } = useSettings()
 const { show: showToast } = useToast()
@@ -20,6 +21,11 @@ const clampNumber = (value: string | number, min: number, max: number): number =
   if (isNaN(num)) return min
   return Math.max(min, Math.min(max, num))
 }
+
+watch(
+  () => [settings.enableImageCompare, settings.enableMultiFileCompare, settings.enableOCRCompare, settings.removeWatermark, settings.clauseRemovalEnabled],
+  () => { saveSettings() }
+)
 
 function save() {
   saveSettings()
@@ -132,36 +138,28 @@ function reset() {
             <div class="setting-name">忽略大小写</div>
             <div class="setting-desc">对比时是否忽略英文字母大小写差异</div>
           </div>
-          <div class="toggle" :class="{ on: settings.ignoreCase }" @click="settings.ignoreCase = !settings.ignoreCase">
-            <div class="toggle-knob" />
-          </div>
+          <UiSwitch v-model="settings.ignoreCase" />
         </div>
         <div class="setting-item">
           <div class="setting-info">
             <div class="setting-name">忽略标点符号</div>
             <div class="setting-desc">对比时是否忽略标点符号差异</div>
           </div>
-          <div class="toggle" :class="{ on: settings.ignorePunctuation }" @click="settings.ignorePunctuation = !settings.ignorePunctuation">
-            <div class="toggle-knob" />
-          </div>
+          <UiSwitch v-model="settings.ignorePunctuation" />
         </div>
         <div class="setting-item">
           <div class="setting-info">
             <div class="setting-name">忽略空白字符</div>
             <div class="setting-desc">对比时是否忽略空格、制表符等空白字符</div>
           </div>
-          <div class="toggle" :class="{ on: settings.ignoreWhitespace }" @click="settings.ignoreWhitespace = !settings.ignoreWhitespace">
-            <div class="toggle-knob" />
-          </div>
+          <UiSwitch v-model="settings.ignoreWhitespace" />
         </div>
         <div class="setting-item">
           <div class="setting-info">
             <div class="setting-name">忽略不可见字符</div>
             <div class="setting-desc">对比时是否忽略零宽字符等不可见字符</div>
           </div>
-          <div class="toggle" :class="{ on: settings.ignoreInvisibleChars }" @click="settings.ignoreInvisibleChars = !settings.ignoreInvisibleChars">
-            <div class="toggle-knob" />
-          </div>
+          <UiSwitch v-model="settings.ignoreInvisibleChars" />
         </div>
       </div>
     </template>
@@ -175,18 +173,14 @@ function reset() {
             <div class="setting-name">水印文字剔除</div>
             <div class="setting-desc">解析时自动过滤常见水印文字</div>
           </div>
-          <div class="toggle" :class="{ on: settings.removeWatermark }" @click="settings.removeWatermark = !settings.removeWatermark">
-            <div class="toggle-knob" />
-          </div>
+          <UiSwitch v-model="settings.removeWatermark" />
         </div>
         <div class="setting-item">
           <div class="setting-info">
             <div class="setting-name">相同条款剔除</div>
             <div class="setting-desc">启用后自动剔除招标文件中完全相同的条款</div>
           </div>
-          <div class="toggle" :class="{ on: settings.clauseRemovalEnabled }" @click="settings.clauseRemovalEnabled = !settings.clauseRemovalEnabled">
-            <div class="toggle-knob" />
-          </div>
+          <UiSwitch v-model="settings.clauseRemovalEnabled" />
         </div>
         <div v-if="settings.clauseRemovalEnabled" class="setting-item">
           <div class="setting-info">
@@ -202,20 +196,16 @@ function reset() {
         <div class="setting-item">
           <div class="setting-info">
             <div class="setting-name">图片查重</div>
-            <div class="setting-desc">开启后只对比上传图片中的雷同文字</div>
+            <div class="setting-desc">开启后可使用图片对比功能</div>
           </div>
-          <div class="toggle" :class="{ on: settings.enableImageCompare }" @click="settings.enableImageCompare = !settings.enableImageCompare">
-            <div class="toggle-knob" />
-          </div>
+          <UiSwitch v-model="settings.enableImageCompare" />
         </div>
         <div class="setting-item">
           <div class="setting-info">
             <div class="setting-name">OCR 文字识别</div>
             <div class="setting-desc">开启后对 Word/PDF 中的图片进行文字识别对比</div>
           </div>
-          <div class="toggle" :class="{ on: settings.enableOCRCompare }" @click="settings.enableOCRCompare = !settings.enableOCRCompare">
-            <div class="toggle-knob" />
-          </div>
+          <UiSwitch v-model="settings.enableOCRCompare" />
         </div>
         <div v-if="settings.enableOCRCompare" class="setting-item">
           <div class="setting-info">
@@ -234,9 +224,7 @@ function reset() {
             <div class="setting-name">多文件对比</div>
             <div class="setting-desc">开启后可同时对比多个文件（3个以上）</div>
           </div>
-          <div class="toggle" :class="{ on: settings.enableMultiFileCompare }" @click="settings.enableMultiFileCompare = !settings.enableMultiFileCompare">
-            <div class="toggle-knob" />
-          </div>
+          <UiSwitch v-model="settings.enableMultiFileCompare" />
         </div>
         <div v-if="settings.enableMultiFileCompare" class="setting-item">
           <div class="setting-info">
@@ -285,11 +273,7 @@ function reset() {
 .stepper-input { width:48px; height:28px; border:none; background:transparent; text-align:center; font-size:14px; font-weight:500; color:var(--color-text-primary,#1F1D1A); }
 .stepper-input:focus { outline:none; }
 
-/* Toggle */
-.toggle { width:48px; height:26px; border-radius:999px; background:var(--color-border,#E5DFD3); cursor:pointer; transition:background 0.2s; flex-shrink:0; position:relative; }
-.toggle-knob { position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.15); }
-.toggle.on { background:var(--color-primary,#C0392B); }
-.toggle.on .toggle-knob { transform:translateX(22px); }
+
 
 /* Select input */
 .select-input { width:200px; height:36px; padding:0 12px; border:0.7px solid var(--color-border-soft,#EDE9E0); border-radius:10px; font-size:13px; background:var(--color-bg-white,#FFFFFF); color:var(--color-text-body,#3A3A3A); cursor:pointer; outline:none; }
