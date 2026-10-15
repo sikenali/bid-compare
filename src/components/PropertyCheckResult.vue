@@ -202,10 +202,6 @@ const getStatusColor = (status: string): string => {
         <span class="stat-total">共：{{ matchCount + mismatchCount + warningCount }} 处</span>
       </div>
       <div class="filter-right">
-        <button class="filter-btn" @click="handleBack">
-          <RiEraserLine class="btn-icon" />
-          一键清除
-        </button>
         <button class="filter-btn" @click="handleExport">
           <RiDownload2Line class="btn-icon" />
           导出
@@ -295,28 +291,28 @@ const getStatusColor = (status: string): string => {
 }
 
 .stat-match {
-  background: #F3F1EA;
-  color: #3A3A3A;
+  background: var(--color-bg-secondary, #F3F1EA);
+  color: var(--color-text-body, #3A3A3A);
 }
 
 .stat-match .stat-icon {
-  color: #4E9B7A;
+  color: var(--color-jade, #4E9B7A);
   font-size: 17px;
 }
 
 .stat-mismatch {
-  background: #FBE9E7;
-  color: #3A3A3A;
+  background: var(--color-diff-deleted, #FBE9E7);
+  color: var(--color-text-body, #3A3A3A);
 }
 
 .stat-mismatch .stat-icon {
-  color: #C0392B;
+  color: var(--color-cinnabar, #C0392B);
   font-size: 17px;
 }
 
 .stat-total {
   font-size: 15px;
-  color: #8A8578;
+  color: var(--color-text-muted, #8A8578);
 }
 
 .filter-right {
@@ -331,10 +327,10 @@ const getStatusColor = (status: string): string => {
   gap: 8px;
   height: 42px;
   padding: 0 20px;
-  border: 0.7px solid #E5DFD3;
+  border: 0.7px solid var(--color-border, #E5DFD3);
   border-radius: 10px;
-  background: #FCFBF8;
-  color: #3A3A3A;
+  background: var(--color-bg-card, #FCFBF8);
+  color: var(--color-text-body, #3A3A3A);
   font-size: 15px;
   font-family: var(--font-ui);
   cursor: pointer;
@@ -342,7 +338,7 @@ const getStatusColor = (status: string): string => {
 }
 
 .filter-btn:hover {
-  background: #F7F3EA;
+  background: var(--color-bg-secondary, #F7F3EA);
 }
 
 .btn-icon {
@@ -356,9 +352,9 @@ const getStatusColor = (status: string): string => {
 }
 
 .property-table {
-  border: 0.7px solid #EDE9E0;
+  border: 0.7px solid var(--color-border-soft, #EDE9E0);
   border-radius: 12px;
-  background: #FFFFFF;
+  background: var(--color-bg-white, #FFFFFF);
   overflow: hidden;
 }
 
@@ -366,7 +362,7 @@ const getStatusColor = (status: string): string => {
   display: grid;
   grid-template-columns: 100px 272px 1fr 1fr 136px;
   height: 54px;
-  background: #F7F3EA;
+  background: var(--color-bg-secondary, #F7F3EA);
   border-radius: 8px 8px 0 0;
   padding: 0 24px;
   align-items: center;
@@ -374,7 +370,7 @@ const getStatusColor = (status: string): string => {
 
 .th {
   font-size: 15px;
-  color: #6E6A60;
+  color: var(--color-text-secondary, #6E6A60);
   font-family: var(--font-ui);
 }
 
@@ -389,15 +385,15 @@ const getStatusColor = (status: string): string => {
 .table-row {
   display: grid;
   grid-template-columns: 100px 272px 1fr 1fr 136px;
-  height: 88px;
+  height: 48px;
   align-items: center;
   padding: 0 24px;
-  border-top: 0.7px solid #EDE9E0;
+  border-top: 0.7px solid var(--color-border-soft, #EDE9E0);
   position: relative;
 }
 
 .row-alternate {
-  background: #FDFCF9;
+  background: var(--color-bg-card, #FDFCF9);
 }
 
 .color-bar {
@@ -409,11 +405,11 @@ const getStatusColor = (status: string): string => {
 }
 
 .bar-match {
-  background: #4E9B7A;
+  background: var(--color-jade, #4E9B7A);
 }
 
 .bar-mismatch {
-  background: #C0392B;
+  background: var(--color-cinnabar, #C0392B);
 }
 
 .td {
@@ -425,21 +421,21 @@ const getStatusColor = (status: string): string => {
 }
 
 .td-index {
-  color: #8A8578;
+  color: var(--color-text-muted, #8A8578);
   padding-left: 16px;
 }
 
 .td-name {
   font-weight: 500;
-  color: #1F1D1A;
+  color: var(--color-text-primary, #1F1D1A);
 }
 
 .text-mismatch {
-  color: #C0392B;
+  color: var(--color-cinnabar, #C0392B);
 }
 
 .text-match {
-  color: #6E6A60;
+  color: var(--color-text-secondary, #6E6A60);
 }
 
 .td-result {
@@ -455,7 +451,7 @@ const getStatusColor = (status: string): string => {
 .empty-state {
   padding: 60px 20px;
   text-align: center;
-  color: #8A8578;
+  color: var(--color-text-muted, #8A8578);
   font-size: 16px;
   font-family: var(--font-ui);
 }

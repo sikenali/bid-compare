@@ -297,11 +297,6 @@ const formatTags = [
   cursor: pointer;
 }
 
-.upload-card:hover {
-  border-color: var(--color-primary, var(--color-cinnabar, #C0392B));
-  box-shadow: 0 4px 20px rgba(192, 57, 43, 0.08);
-}
-
 .upload-card.dragging {
   border-color: var(--color-primary, var(--color-cinnabar, #C0392B));
   background-color: var(--color-primary-soft, #FBE9E7);
@@ -380,6 +375,10 @@ const formatTags = [
   color: var(--color-primary, var(--color-cinnabar, #C0392B));
   border-color: var(--color-primary, var(--color-cinnabar, #C0392B));
   background-color: var(--color-primary-soft, #FBE9E7);
+}
+[data-theme="dark"] .replace-icon:hover {
+  color: #FFFFFF;
+  border-color: #FFFFFF;
 }
 
 .replace-icon-inner {

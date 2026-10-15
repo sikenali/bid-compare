@@ -339,17 +339,23 @@ function handleReplace() {
           class="toolbar-nav-btn"
           :class="{ active: mode === 'fileCompare' }"
           @click="switchMode('fileCompare')"
-          title="文件对比"
         >
           <RiArrowLeftRightLine class="toolbar-icon" />
+          <div class="toolbar-tip">
+            <RiArrowLeftRightLine class="tip-icon" />
+            文件对比
+          </div>
         </button>
         <button
           class="toolbar-nav-btn"
           :class="{ active: mode === 'propertyCheck' }"
           @click="switchMode('propertyCheck')"
-          title="属性检查"
         >
           <RiListSettingsLine class="toolbar-icon" />
+          <div class="toolbar-tip">
+            <RiListSettingsLine class="tip-icon" />
+            属性检查
+          </div>
         </button>
       </div>
     </div>
@@ -424,21 +430,24 @@ function handleReplace() {
   align-items: center;
   justify-content: center;
   transition: all 0.25s ease;
-  color: var(--color-text-body, #3A3A3A);
+  color: var(--color-text-secondary, #6E6A60);
   position: relative;
 }
 
 .toolbar-icon {
   font-size: 22px;
+  transition: all 0.25s ease;
 }
 
 .toolbar-nav-btn:hover {
-  background: var(--color-primary-soft, #FBE9E7);
-  color: var(--color-primary, #C0392B);
+  background-color: var(--color-primary, #C0392B);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(192, 57, 43, 0.3);
 }
 
 .toolbar-nav-btn:hover .toolbar-icon {
-  font-size: 20px;
+  color: #fff;
 }
 
 .toolbar-nav-btn.active {
@@ -447,7 +456,56 @@ function handleReplace() {
 }
 
 .toolbar-nav-btn.active .toolbar-icon {
-  font-size: 20px;
+  color: var(--color-primary, #C0392B);
+}
+
+.toolbar-tip {
+  position: absolute;
+  right: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%) scale(0.96);
+  padding: 7px 12px;
+  border-radius: 9px;
+  background-color: var(--color-bg-white, #FFFFFF);
+  border: 0.7px solid var(--color-border, #E5DFD3);
+  color: var(--color-text-body, #3A3A3A);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.12));
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-tip .tip-icon {
+  font-size: 14px;
+  color: var(--color-primary, #C0392B);
+}
+
+.toolbar-nav-btn:hover .toolbar-tip {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+.toolbar-nav-btn.active {
+  background: var(--color-primary-soft, #FBE9E7);
+  color: var(--color-primary, #C0392B);
+}
+
+.toolbar-nav-btn.active .toolbar-icon {
+  color: var(--color-primary, #C0392B);
+}
+
+[data-theme="dark"] .toolbar-nav-btn:hover,
+[data-theme="dark"] .toolbar-nav-btn.active {
+  color: #FFFFFF;
 }
 
 @media (max-width: 1024px) {

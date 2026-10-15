@@ -55,7 +55,7 @@ const currentPageTitle = computed(() => {
 <style scoped>
 .app-container {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: var(--color-bg-main, var(--color-cream, #FBF7F0));

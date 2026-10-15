@@ -253,6 +253,7 @@ function reset() {
 .tab-btn { display:inline-flex; align-items:center; gap:7px; padding:9px 20px; border:none; border-radius:8px; background:transparent; font-size:14px; font-weight:500; color:var(--color-text-secondary,#6E6A60); cursor:pointer; font-family:var(--font-ui); transition:all .2s; }
 .tab-btn:hover { background:var(--color-bg-secondary,#F7F3EA); }
 .tab-btn.active { background:var(--color-primary-soft,#FBE9E7); color:var(--color-primary,#C0392B); }
+[data-theme="dark"] .tab-btn.active { color:#FFFFFF; }
 .tab-btn .icon { font-size:16px; }
 
 /* Section card */

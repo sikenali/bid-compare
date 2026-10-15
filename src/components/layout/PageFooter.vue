@@ -26,34 +26,10 @@
     <span class="footer-copy">© {{ year }} {{ BRAND_NAME }} Powered by <a href="https://lazycat.cloud" target="_blank" rel="noopener noreferrer" class="footer-link">LightOS</a></span>
 
     <!-- 企业信用弹窗 -->
-    <div v-if="showCreditModal" class="modal-overlay" @click.self="showCreditModal = false">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>企业信用查询</h3>
-          <button class="modal-close" @click="showCreditModal = false">
-            <RiCloseLine />
-          </button>
-        </div>
-        <div class="modal-body">
-          <p>企业信用信息查询功能即将上线，敬请期待。</p>
-        </div>
-      </div>
-    </div>
+    <CreditQualificationModal v-model:visible="showCreditModal" />
 
     <!-- 招标网站弹窗 -->
-    <div v-if="showBiddingModal" class="modal-overlay" @click.self="showBiddingModal = false">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>招标网站入口</h3>
-          <button class="modal-close" @click="showBiddingModal = false">
-            <RiCloseLine />
-          </button>
-        </div>
-        <div class="modal-body">
-          <p>招标网站快捷入口即将上线，敬请期待。</p>
-        </div>
-      </div>
-    </div>
+    <BiddingSitesModal v-model:visible="showBiddingModal" />
   </footer>
 </template>
 
@@ -61,6 +37,8 @@
 import { ref, onMounted } from 'vue';
 import { RiTargetLine, RiShieldCheckLine, RiLinksLine, RiCloseLine } from '@remixicon/vue';
 import { BRAND_NAME } from '../../constants/brand';
+import CreditQualificationModal from './CreditQualificationModal.vue';
+import BiddingSitesModal from './BiddingSitesModal.vue';
 
 const year = ref(new Date().getFullYear())
 const showCreditModal = ref(false)
@@ -117,8 +95,8 @@ onMounted(() => { year.value = new Date().getFullYear() })
   align-items: center;
 }
 .footer-icon-btn {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background-color: var(--color-bg-white, #FFFFFF);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -133,12 +111,12 @@ onMounted(() => { year.value = new Date().getFullYear() })
   background-color: var(--color-primary, var(--color-cinnabar, #C0392B));
   color: #fff;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary, var(--color-cinnabar, #C0392B)) 30%, transparent);
+  box-shadow: 0 4px 12px rgba(192, 57, 43, 0.3);
 }
 .footer-mark {
   font-family: "remixicon", sans-serif;
   font-style: normal;
-  font-size: 10px;
+  font-size: 14px;
   color: inherit;
   transition: transform 0.25s ease;
 }

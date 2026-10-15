@@ -66,6 +66,7 @@ const appVersion = 'V1.0.0'
   display: flex; align-items: center; justify-content: center;
 }
 .badge-logo { font-size: 52px; color: #BE3B2E; }
+[data-theme="dark"] .badge-logo { color: #FFFFFF; }
 .about-name {
   margin-top: 32px; font-size: 24px; font-weight: 700;
   color: var(--color-text-primary, #1F1D1A); line-height: 1.2;

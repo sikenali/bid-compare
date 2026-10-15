@@ -122,6 +122,7 @@ function selectTab(key: string) {
   font-size: 26px; color: var(--color-primary, #C0392B);
   flex-shrink: 0;
 }
+[data-theme="dark"] .header-icon { color: #FFFFFF; }
 
 .header-text { display: flex; flex-direction: column; gap: 2px; }
 
@@ -188,6 +189,10 @@ function selectTab(key: string) {
 .nav-item.active .nav-label {
   color: var(--color-primary, #C0392B);
   font-weight: 500;
+}
+[data-theme="dark"] .nav-item.active .nav-icon,
+[data-theme="dark"] .nav-item.active .nav-label {
+  color: #FFFFFF;
 }
 
 .panel-content {

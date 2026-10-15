@@ -180,6 +180,7 @@ onUnmounted(() => {
   text-overflow: ellipsis;
 }
 .ui-select-item.is-selected .ui-select-item-label { color: var(--color-primary, #C0392B); font-weight: 500; }
+[data-theme="dark"] .ui-select-item.is-selected .ui-select-item-label { color: #FFFFFF; }
 .ui-select-item-desc { font-size: 12px; color: var(--color-text-muted, #8A8578); }
 .ui-select-check { color: var(--color-primary, #C0392B); flex-shrink: 0; }
 .ui-select-item.is-disabled { opacity: 0.45; cursor: not-allowed; }

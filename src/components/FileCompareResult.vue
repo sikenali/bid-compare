@@ -21,6 +21,11 @@ import { getCompareResult, deleteCompareResult } from '../utils/compareResultSto
 import { sanitizeHTML, sanitizeWithHighlight, htmlToMarkdown } from '../utils/sanitize'
 import MarkdownIt from 'markdown-it'
 import type { SimilarSegment } from '../utils/textAlgorithms'
+import { OpenFileViewer } from '@open-file-viewer/vue'
+import { pdfPlugin, officePlugin, textPlugin, imagePlugin } from '@open-file-viewer/core'
+import '@open-file-viewer/core/style.css'
+
+const viewerPlugins = [pdfPlugin(), officePlugin(), imagePlugin(), textPlugin()]
 
 // 创建 Markdown 解析器实例
 const md = new MarkdownIt({
@@ -151,6 +156,15 @@ watch(showPreviewModal, (val) => {
 
 const togglePreviewMode = () => {
   showPreviewModal.value = !showPreviewModal.value
+}
+
+// 创建文本 Blob 用于 OpenFileViewer
+const createTextBlob = (content: string): Blob => {
+  // 如果是 HTML，先转成纯文本
+  const text = content.includes('<') ? 
+    content.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&') 
+    : content
+  return new Blob([text], { type: 'text/plain;charset=utf-8' })
 }
 
 // 同步滚动状态
@@ -1114,18 +1128,26 @@ const handlePreviewRightScroll = () => {
         </div>
         <div class="preview-modal-body">
           <div class="preview-panel" ref="previewLeftRef" @scroll="handlePreviewLeftScroll">
-            <div class="preview-panel-inner" v-if="leftFileContent">
-              <div v-html="sanitizeWithHighlight(previewLeftHtml)"></div>
-            </div>
+            <OpenFileViewer
+              v-if="leftFileContent"
+              :blob="createTextBlob(leftFileContent)"
+              :filename="leftFileName || '文件A'"
+              :plugins="viewerPlugins"
+              class="preview-viewer"
+            />
             <div class="preview-empty" v-else>
               <span class="preview-empty-text">左侧文件无内容预览</span>
             </div>
           </div>
           <div class="preview-divider"></div>
           <div class="preview-panel" ref="previewRightRef" @scroll="handlePreviewRightScroll">
-            <div class="preview-panel-inner" v-if="rightFileContent">
-              <div v-html="sanitizeWithHighlight(previewRightHtml)"></div>
-            </div>
+            <OpenFileViewer
+              v-if="rightFileContent"
+              :blob="createTextBlob(rightFileContent)"
+              :filename="rightFileName || '文件B'"
+              :plugins="viewerPlugins"
+              class="preview-viewer"
+            />
             <div class="preview-empty" v-else>
               <span class="preview-empty-text">右侧文件无内容预览</span>
             </div>
@@ -2055,10 +2077,16 @@ const handlePreviewRightScroll = () => {
   overflow: hidden;
 }
 
+.preview-viewer {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
 .preview-panel {
   flex: 1;
   overflow-y: auto;
-  background: var(--color-warm-gray);
+  background: var(--color-warm-gray, #FAF7F2);
 }
 
 .preview-panel-inner {

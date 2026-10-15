@@ -165,10 +165,10 @@
   --color-tan-dark: #4A4A4A;
   --color-tan-light: #3D3D3D;
 
-  --color-ink-black: #E8DCC8;
-  --color-brown-dark: #E8DCC8;
-  --color-brown: #D8C8B0;
-  --color-brown-muted: #C0B098;
+  --color-ink-black: #FFFFFF;
+  --color-brown-dark: #FFFFFF;
+  --color-brown: #F0F0F0;
+  --color-brown-muted: #CCCCCC;
 
   --rgb-parchment: 18, 18, 18;
   --rgb-cream: 26, 26, 26;
@@ -178,10 +178,10 @@
   --rgb-tan-border: 61, 61, 61;
   --rgb-tan-light: 74, 74, 74;
   --rgb-tan-dark: 74, 74, 74;
-  --rgb-ink-black: 232, 220, 200;
-  --rgb-brown-dark: 232, 220, 200;
-  --rgb-brown: 216, 200, 176;
-  --rgb-brown-muted: 192, 176, 152;
+  --rgb-ink-black: 255, 255, 255;
+  --rgb-brown-dark: 255, 255, 255;
+  --rgb-brown: 240, 240, 240;
+  --rgb-brown-muted: 204, 204, 204;
   --color-blue-accent: #1E4D73;
 
   --color-upload-bg: #1A1A1A;
@@ -203,11 +203,29 @@
   --color-diff-added-border: #2D7A3A;
   --color-diff-modified-border: #B07000;
   --color-diff-deleted-border: #B03030;
+  --color-diff-red-bg: #3A1A1A;
+  --color-diff-green-bg: #1A3A1A;
 
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
   --shadow-lg: 0 4px 20px rgba(0,0,0,0.5);
   --shadow-xl: 0 20px 60px rgba(0,0,0,0.6);
+
+  /* Component-specific variables for dark theme */
+  --color-bg-main: #1A1A1A;
+  --color-bg-secondary: #242424;
+  --color-bg-card: #2E2E2E;
+  --color-bg-white: #333333;
+  --color-border: #3D3D3D;
+  --color-border-soft: #4A4A4A;
+  --color-border-hover: #5A5A5A;
+  --color-text-primary: #FFFFFF;
+  --color-text-body: #F0F0F0;
+  --color-text-secondary: #CCCCCC;
+  --color-text-muted: #AAAAAA;
+  --color-text-faint: #888888;
+  --color-primary: #C0392B;
+  --color-primary-soft: #8B4438;
 }
 
 /* ========== Paper Theme ========== */
