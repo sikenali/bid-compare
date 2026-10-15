@@ -30,6 +30,20 @@ const {
   cancelComparison,
 } = useComparison()
 
+// StepStrip 动画完成回调
+let stepStripResolve: (() => void) | null = null
+function onStepStripFinished() {
+  if (stepStripResolve) {
+    stepStripResolve()
+    stepStripResolve = null
+  }
+}
+function waitStepStrip(): Promise<void> {
+  return new Promise<void>(resolve => {
+    stepStripResolve = resolve
+  })
+}
+
 // 模式切换
 type CompareMode = 'fileCompare' | 'propertyCheck' | 'imageCompare' | 'batchCompare'
 const mode = ref<CompareMode>('fileCompare')
@@ -191,6 +205,7 @@ async function handleCompare() {
       similarSegments: result.segments,
     })
 
+    await waitStepStrip()
     router.push({ path: '/file-compare-result', query: { resultId } })
   } catch (error: any) {
     if (error.name === 'AbortError') {
@@ -265,6 +280,7 @@ async function handleCheck() {
     }
     const resultId = storePropertyCheckResult(checkResult)
 
+    await waitStepStrip()
     router.push({ path: '/property-check-result', query: { resultId } })
   } catch (error: any) {
     parseError.value = error.message
@@ -308,6 +324,7 @@ function handleReplace() {
           :button-label="btnLabel"
           :disabled="!bothReady"
           @extract="handleExtract"
+          @finished="onStepStripFinished"
         />
 
         <!-- 解析错误显示 -->
@@ -384,8 +401,8 @@ function handleReplace() {
   top: 50%;
   transform: translateY(-50%);
   width: 64px;
-  background: #FFFFFF;
-  border: 0.7px solid #EFEFE5;
+  background: var(--color-bg-white, #FFFFFF);
+  border: 0.7px solid var(--color-border-soft, #EFEFE5);
   border-radius: 16px;
   padding: 16px 0;
   display: flex;
@@ -407,7 +424,7 @@ function handleReplace() {
   align-items: center;
   justify-content: center;
   transition: all 0.25s ease;
-  color: #3A3A3A;
+  color: var(--color-text-body, #3A3A3A);
   position: relative;
 }
 
@@ -416,8 +433,8 @@ function handleReplace() {
 }
 
 .toolbar-nav-btn:hover {
-  background: #FBE9E7;
-  color: #C0392B;
+  background: var(--color-primary-soft, #FBE9E7);
+  color: var(--color-primary, #C0392B);
 }
 
 .toolbar-nav-btn:hover .toolbar-icon {
@@ -425,8 +442,8 @@ function handleReplace() {
 }
 
 .toolbar-nav-btn.active {
-  background: #FBE9E7;
-  color: #C0392B;
+  background: var(--color-primary-soft, #FBE9E7);
+  color: var(--color-primary, #C0392B);
 }
 
 .toolbar-nav-btn.active .toolbar-icon {

@@ -74,6 +74,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (e: 'extract'): void;
+  (e: 'finished'): void;
 }>();
 
 function onExtract() {
@@ -87,24 +88,25 @@ watch(() => props.loading, (val) => {
   if (val) {
     done.value = false;
     loadingProgress.value = 0;
-  } else {
-    if (animTimer) { clearTimeout(animTimer); animTimer = null; }
-    if (loadingProgress.value >= 0) {
-      done.value = loadingProgress.value >= props.steps.length;
-      loadingProgress.value = -1;
-    }
   }
 });
 
 let animTimer: ReturnType<typeof setTimeout> | null = null;
+let finished = false;
 
 watch(loadingProgress, (val) => {
   if (val < 0 || val >= props.steps.length) return;
   animTimer = setTimeout(() => {
-    if (!props.loading) return;
     loadingProgress.value = val + 1;
     if (loadingProgress.value >= props.steps.length) {
       done.value = true;
+      if (!finished) {
+        finished = true;
+        setTimeout(() => {
+          emit('finished');
+          finished = false;
+        }, 400);
+      }
     }
   }, 650);
 });
