@@ -139,7 +139,7 @@
   --color-blue-accent: #2D6A9F;
 
   /* ========== Layout ========== */
-  --navbar-height: 64px;
+  --navbar-height: 72px;
   --sidebar-width: 240px;
   --section-gap: var(--spacing-8);
   --card-padding: var(--spacing-6);

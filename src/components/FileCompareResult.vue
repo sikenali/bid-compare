@@ -11,7 +11,8 @@ import {
   RiCheckLine,
   RiArrowLeftSLine,
   RiArrowRightSLine,
-  RiSearchLine
+  RiSearchLine,
+  RiExchangeLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx'
 import { useSettings } from '../composables/useSettings'
@@ -202,6 +203,17 @@ const pageNumbers = computed(() => {
   }
   return pages
 })
+
+// 格式化页码显示：将 "第1/10页" 转为 "P1"，"第3-5/10页" 转为 "P3-5"
+const formatPageDisplay = (pageStr: string): string => {
+  if (!pageStr) return ''
+  // 匹配 "第X/Y页" 或 "第X-Y/Z页"
+  const match = pageStr.match(/第(\d+)(?:-(\d+))?\//)
+  if (match) {
+    return match[2] ? `P${match[1]}-${match[2]}` : `P${match[1]}`
+  }
+  return pageStr
+}
 
 // 初始化数据
 const initData = () => {
@@ -1011,8 +1023,8 @@ const handlePreviewRightScroll = () => {
               <div class="color-bar" :class="segment.similarityValue >= 95 ? 'bar-match' : 'bar-mismatch'"></div>
               <div class="col col-index">{{ segment.id }}</div>
               <div class="col col-content clickable" @click="openPreviewForSegment(segment, 'left')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.leftContent)"></div>
-              <div class="col col-position">{{ segment.leftPage }}</div>
-              <div class="col col-position">{{ segment.rightPage }}</div>
+              <div class="col col-position">{{ formatPageDisplay(segment.leftPage) }}</div>
+              <div class="col col-position">{{ formatPageDisplay(segment.rightPage) }}</div>
               <div class="col col-content clickable" @click="openPreviewForSegment(segment, 'right')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.rightContent)"></div>
               <div class="col col-action">
                 <button class="action-btn" @click.stop="viewContext(segment, 'left')" title="查看上下文">
@@ -1046,8 +1058,8 @@ const handlePreviewRightScroll = () => {
               </div>
             </div>
             <div class="grid-card-footer">
-              <span class="grid-card-page">左侧: {{ segment.leftPage }}</span>
-              <span class="grid-card-page">右侧: {{ segment.rightPage }}</span>
+              <span class="grid-card-page">左侧: {{ formatPageDisplay(segment.leftPage) }}</span>
+              <span class="grid-card-page">右侧: {{ formatPageDisplay(segment.rightPage) }}</span>
             </div>
           </div>
         </div>
@@ -1090,6 +1102,7 @@ const handlePreviewRightScroll = () => {
       </template>
 
       <div v-if="viewMode !== 'image'" class="pagination-container">
+        <span class="pagination-summary">共 {{ totalRecords }} 条 · 每页 {{ pageSize }} 条 · 第 {{ currentPage }} / {{ totalPages }} 页</span>
         <div class="pagination">
           <button class="page-btn" :disabled="currentPage <= 1" @click="prevPage">
             <RiArrowLeftSLine />
@@ -1158,38 +1171,11 @@ const handlePreviewRightScroll = () => {
 
     <!-- 悬浮工具栏 -->
     <div class="floating-toolbar">
-      <div class="toolbar-section">
-        <div class="toolbar-row">
-          <span class="toolbar-label">匹配</span>
-          <span class="toolbar-value">{{ count100 + count90 + count80 }}</span>
-        </div>
-        <div class="toolbar-row">
-          <span class="toolbar-label">相似度</span>
-          <span class="toolbar-value">{{ filteredSegments.length > 0 ? Math.round((segments.reduce((sum, s) => sum + s.similarityValue, 0) / segments.length) * 10) / 10 : 0 }}%</span>
-        </div>
+      <div class="toolbar-tool-icon" title="对比工具">
+        <RiExchangeLine />
       </div>
-      <div class="toolbar-section">
-        <div class="toolbar-row">
-          <span class="toolbar-label">已筛选</span>
-          <span class="toolbar-value">{{ filteredSegments.length }}/{{ segments.length }}</span>
-        </div>
-      </div>
-      <div class="toolbar-progress">
-        <div class="toolbar-progress-bar" :style="{ width: (filteredSegments.length > 0 ? (filteredSegments.length / segments.length) * 100 : 0) + '%' }"></div>
-      </div>
-      <div class="toolbar-stats">
-        <div class="toolbar-stat-item" :class="{ active: activeFilter === '100' }">
-          <span class="toolbar-dot dot-green"></span>
-          <span class="toolbar-stat-count">{{ count100 }}</span>
-        </div>
-        <div class="toolbar-stat-item" :class="{ active: activeFilter === '90' }">
-          <span class="toolbar-dot dot-orange"></span>
-          <span class="toolbar-stat-count">{{ count90 }}</span>
-        </div>
-        <div class="toolbar-stat-item" :class="{ active: activeFilter === '80' }">
-          <span class="toolbar-dot dot-red"></span>
-          <span class="toolbar-stat-count">{{ count80 }}</span>
-        </div>
+      <div class="toolbar-tool-badge">
+        <RiSearchLine />
       </div>
     </div>
   </div>
@@ -1846,12 +1832,18 @@ const handlePreviewRightScroll = () => {
 .pagination-container {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 12px 0;
+  justify-content: space-between;
+  padding: 12px 20px;
   background: #FFFFFF;
   border: 0.7px solid #EDE9E0;
   border-radius: 12px;
   margin-top: 8px;
+  gap: 16px;
+}
+
+.pagination-summary {
+  font-size: 14px;
+  color: var(--color-brown-muted);
 }
 
 .pagination {
@@ -1863,15 +1855,15 @@ const handlePreviewRightScroll = () => {
 .pagination .page-btn {
   width: 32px;
   height: 32px;
-  border: none;
-  border-radius: 8px;
-  background: var(--color-icon-bg);
+  border: 0.7px solid var(--color-tan-border);
+  border-radius: 50%;
+  background: var(--color-cream-dark);
   color: var(--color-brown-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 14px;
   transition: all 0.15s;
 }
 
@@ -1888,25 +1880,26 @@ const handlePreviewRightScroll = () => {
 .page-num {
   width: 32px;
   height: 32px;
-  border: none;
-  border-radius: 8px;
+  border: 0.7px solid var(--color-tan-border);
+  border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
   font-weight: 500;
-  background: transparent;
+  background: var(--color-cream-dark);
   color: var(--color-brown-muted);
   transition: all 0.15s;
 }
 
 .page-num:hover {
-  background: var(--color-icon-bg);
+  background: var(--color-tan-light);
 }
 
 .page-num.active {
-  background: var(--color-accent-red);
+  background: var(--color-jade);
+  border-color: var(--color-jade);
   color: var(--color-white);
 }
 
@@ -2405,11 +2398,11 @@ const handlePreviewRightScroll = () => {
   right: 16px;
   top: 50%;
   transform: translateY(-50%);
-  width: 56px;
+  width: 64px;
   background: #FFFFFF;
-  border: 0.7px solid #EDE9E0;
-  border-radius: 12px;
-  padding: 12px 8px;
+  border: 0.7px solid #EFEAEE;
+  border-radius: 16px;
+  padding: 16px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2418,97 +2411,23 @@ const handlePreviewRightScroll = () => {
   z-index: 100;
 }
 
-.toolbar-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+.toolbar-tool-icon {
+  font-size: 22px;
+  color: #3A3A3A;
 }
 
-.toolbar-row {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-}
-
-.toolbar-label {
-  font-size: 10px;
-  color: var(--color-brown-muted);
-}
-
-.toolbar-value {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--color-brown-dark);
-}
-
-.toolbar-progress {
-  width: 8px;
-  height: 100px;
-  background: var(--color-icon-bg);
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-}
-
-.toolbar-progress-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(180deg, #4CAF50, #2E7D32);
-  border-radius: 4px;
-  transition: height 0.3s ease;
-}
-
-.toolbar-stats {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.toolbar-stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 4px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.toolbar-stat-item:hover {
-  background: var(--color-icon-bg);
-}
-
-.toolbar-stat-item.active {
+.toolbar-tool-badge {
+  width: 40px;
+  height: 40px;
   background: rgba(var(--rgb-cinnabar), 0.1);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.toolbar-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.dot-green {
-  background: #4CAF50;
-}
-
-.dot-orange {
-  background: #FF9800;
-}
-
-.dot-red {
-  background: #F44336;
-}
-
-.toolbar-stat-count {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--color-brown-muted);
+.toolbar-tool-badge svg {
+  font-size: 20px;
+  color: var(--color-cinnabar);
 }
 </style>

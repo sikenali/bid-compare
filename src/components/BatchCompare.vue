@@ -165,6 +165,10 @@ const handleBatchCompare = async () => {
     isProcessing.value = false
   }
 }
+
+const handleCancel = () => {
+  cancelComparison()
+}
 </script>
 
 <template>
@@ -230,6 +234,9 @@ const handleBatchCompare = async () => {
         </div>
         <span class="progress-text">{{ progressMessage }} {{ Math.round(progress * 100) }}%</span>
       </div>
+      <button v-if="isProcessing" class="batch-cancel-btn" @click="handleCancel">
+        取消
+      </button>
     </div>
 
     <div v-if="parseError" class="error-message">{{ parseError }}</div>
@@ -484,6 +491,24 @@ const handleBatchCompare = async () => {
   font-size: var(--text-caption);
   color: var(--color-brown);
   white-space: nowrap;
+}
+
+.batch-cancel-btn {
+  padding: 10px 20px;
+  background: var(--color-cream-darker);
+  color: var(--color-brown);
+  border: 1px solid var(--color-tan-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  font-family: var(--font-ui);
+  transition: all var(--transition-normal);
+}
+
+.batch-cancel-btn:hover {
+  background: var(--color-tan-light);
+  color: var(--color-brown-dark);
 }
 
 .error-message {

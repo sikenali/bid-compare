@@ -74,8 +74,8 @@ function handleFileSelect(side: 'left' | 'right', e: Event) {
   const file = input.files?.[0]
   if (!file) return
 
-  if (file.size > 50 * 1024 * 1024) {
-    showToast('文件大小不能超过 50MB', 'warning')
+  if (file.size > 100 * 1024 * 1024) {
+    showToast('文件大小不能超过 100MB', 'warning')
     return
   }
 

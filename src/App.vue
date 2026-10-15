@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { RiExchangeLine, RiListCheck, RiHistoryLine, RiSettings3Line } from '@remixicon/vue'
+import { RiExchangeLine, RiListCheck, RiHistoryLine, RiSettings3Line, RiImageLine, RiFileListLine } from '@remixicon/vue'
 import { useRecentRecords } from './composables/useRecentRecords'
 import { useSettings } from './composables/useSettings'
 import { storeCompareResult, storePropertyCheckResult } from './utils/compareResultStore'
@@ -12,6 +12,7 @@ const router = useRouter()
 const route = useRoute()
 
 const { settings } = useSettings()
+const layout = ref(localStorage.getItem('bc_layout') || 'topbar')
 
 watch(() => settings.theme, (val) => {
   document.documentElement.dataset.theme = val
@@ -26,11 +27,15 @@ const showHistory = ref(false)
 const navItems = [
   { key: 'file-compare', icon: RiExchangeLine, route: '/file-compare', label: '文件对比' },
   { key: 'property-check', icon: RiListCheck, route: '/property-check', label: '属性检查' },
+  { key: 'image-compare', icon: RiImageLine, route: '/image-compare', label: '图片对比' },
+  { key: 'batch-compare', icon: RiFileListLine, route: '/batch-compare', label: '批量对比' },
 ]
 
 const activeNav = computed(() => {
   if (route.path.startsWith('/file-compare')) return 'file-compare'
   if (route.path.startsWith('/property-check')) return 'property-check'
+  if (route.path.startsWith('/image-compare')) return 'image-compare'
+  if (route.path.startsWith('/batch-compare')) return 'batch-compare'
   return null
 })
 
@@ -80,17 +85,17 @@ const isActive = (path: string) => route.path.startsWith(path)
 
 <template>
   <div class="app-container">
-    <header class="top-nav">
+    <header class="top-nav" :class="{ 'top-nav-compact': layout === 'sidebar' }">
       <div class="nav-left" @click="router.push('/')" style="cursor: pointer">
         <div class="logo-icon">
           <RiExchangeLine class="logo-svg" />
         </div>
-        <div class="brand-group">
+        <div v-if="layout === 'topbar'" class="brand-group">
           <span class="brand-name">文比猩</span>
           <span class="brand-sub">文档智能对比平台</span>
         </div>
       </div>
-      <nav class="nav-tabs">
+      <nav v-if="layout === 'topbar'" class="nav-tabs">
         <button
           v-for="item in navItems"
           :key="item.key"
@@ -106,21 +111,36 @@ const isActive = (path: string) => route.path.startsWith(path)
         <button class="nav-btn" title="历史记录" @click="toggleHistory">
           <span class="nav-btn-content">
             <RiHistoryLine size="20" />
-            <span class="nav-btn-label">历史</span>
+            <span v-if="layout === 'topbar'" class="nav-btn-label">历史</span>
           </span>
         </button>
         <button class="nav-btn" title="设置" @click="router.push('/settings')">
           <span class="nav-btn-content">
             <RiSettings3Line size="20" />
-            <span class="nav-btn-label">设置</span>
+            <span v-if="layout === 'topbar'" class="nav-btn-label">设置</span>
           </span>
         </button>
       </div>
     </header>
-
-    <main class="main-content">
-      <router-view />
-    </main>
+    <div class="app-body">
+      <aside v-if="layout === 'sidebar'" class="sidebar-nav">
+        <nav class="sidebar-tabs">
+          <button
+            v-for="item in navItems"
+            :key="item.key"
+            class="sidebar-tab-item"
+            :class="{ active: activeNav === item.key }"
+            @click="navigateTo(item)"
+          >
+            <component :is="item.icon" size="24" />
+            <span class="sidebar-tab-label">{{ item.label }}</span>
+          </button>
+        </nav>
+      </aside>
+      <main class="main-content">
+        <router-view />
+      </main>
+    </div>
 
     <!-- 历史记录弹窗 -->
     <div v-if="showHistory" class="ba-modal-overlay" @click="toggleHistory">
@@ -174,9 +194,15 @@ const isActive = (path: string) => route.path.startsWith(path)
   overflow: hidden;
 }
 
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
 .top-nav {
-  height: 64px;
-  min-height: 64px;
+  height: 72px;
+  min-height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -340,6 +366,58 @@ const isActive = (path: string) => route.path.startsWith(path)
   overflow: auto;
   padding: 24px;
   background: var(--color-nav-bg);
+}
+
+.top-nav-compact {
+  justify-content: flex-start;
+}
+
+.sidebar-nav {
+  width: 240px;
+  min-height: 0;
+  background: var(--color-cream-dark);
+  border-right: 1px solid var(--color-tan-light);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  flex-shrink: 0;
+}
+
+.sidebar-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-tab-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--color-cream);
+  border: 0.7px solid var(--color-tan-border);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--color-brown);
+  text-align: left;
+}
+
+.sidebar-tab-item:hover {
+  background: var(--color-cinnabar);
+  border-color: transparent;
+  color: #fff;
+}
+
+.sidebar-tab-item.active {
+  background: var(--color-cinnabar);
+  border-color: transparent;
+  color: #fff;
+}
+
+.sidebar-tab-label {
+  font-size: 14px;
+  font-weight: 500;
 }
 
 /* 历史记录弹窗 */
