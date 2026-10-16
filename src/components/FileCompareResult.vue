@@ -108,11 +108,13 @@ const showPreviewModal = ref(false)
 const previewTargetId = ref<number | null>(null)
 const previewLeftRef = ref<HTMLElement | null>(null)
 const previewRightRef = ref<HTMLElement | null>(null)
+const previewKey = ref(0)
 let previewIsScrolling = false
 
 const openPreviewForSegment = (segment: SimilarSegment, side: 'left' | 'right' = 'left') => {
   previewTargetId.value = segment.id
   previewTargetSide.value = side
+  previewKey.value++
   showPreviewModal.value = true
   nextTick(() => {
     scrollToPreviewSegment(segment.id, side)
@@ -155,6 +157,7 @@ watch(showPreviewModal, (val) => {
 })
 
 const togglePreviewMode = () => {
+  previewKey.value++
   showPreviewModal.value = !showPreviewModal.value
 }
 
@@ -1138,9 +1141,13 @@ const handlePreviewRightScroll = () => {
           <div class="preview-panel" ref="previewLeftRef" @scroll="handlePreviewLeftScroll">
             <OpenFileViewer
               v-if="leftPreviewBlob"
-              :blob="leftPreviewBlob"
-              :filename="leftFileName || '文件A'"
+              :key="previewKey + 'left'"
+              :file="leftPreviewBlob"
+              :file-name="leftFileName || '文件A'"
+              :mime-type="'text/plain'"
               :plugins="viewerPlugins"
+              :toolbar="true"
+              height="100%"
               class="preview-viewer"
             />
             <div class="preview-empty" v-else>
@@ -1151,9 +1158,13 @@ const handlePreviewRightScroll = () => {
           <div class="preview-panel" ref="previewRightRef" @scroll="handlePreviewRightScroll">
             <OpenFileViewer
               v-if="rightPreviewBlob"
-              :blob="rightPreviewBlob"
-              :filename="rightFileName || '文件B'"
+              :key="previewKey + 'right'"
+              :file="rightPreviewBlob"
+              :file-name="rightFileName || '文件B'"
+              :mime-type="'text/plain'"
               :plugins="viewerPlugins"
+              :toolbar="true"
+              height="100%"
               class="preview-viewer"
             />
             <div class="preview-empty" v-else>
