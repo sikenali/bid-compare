@@ -12,6 +12,7 @@ import {
   RiArrowLeftSLine,
   RiArrowRightSLine,
   RiSearchLine,
+  RiFlagLine,
   RiExchangeLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx'
@@ -98,6 +99,19 @@ const totalFoundCount = computed(() => filteredSegments.value.length)
 
 // 图片雷同结果
 const imageDuplicates = ref<any[]>([])
+
+// 忽略的片段 ID 集合
+const ignoredSegments = ref<Set<number>>(new Set())
+
+const toggleIgnoreSegment = (segmentId: number) => {
+  if (ignoredSegments.value.has(segmentId)) {
+    ignoredSegments.value.delete(segmentId)
+  } else {
+    ignoredSegments.value.add(segmentId)
+  }
+  // 触发响应式更新
+  ignoredSegments.value = new Set(ignoredSegments.value)
+}
 
 // 上下文查看
 const showContextModal = ref(false)
@@ -1036,16 +1050,19 @@ const handlePreviewRightScroll = () => {
             <div class="col col-action">操作</div>
           </div>
           <div class="table-body" v-highlight-tooltip>
-            <div v-for="segment in pageSegments" :key="segment.id" class="table-row">
+            <div v-for="segment in pageSegments" :key="segment.id" class="table-row" :class="{ 'row-ignored': ignoredSegments.has(segment.id) }">
               <div class="color-bar" :class="segment.similarityValue >= 95 ? 'bar-match' : 'bar-mismatch'"></div>
-              <div class="col col-index">{{ segment.id }}</div>
+              <div class="col col-index">
+                {{ segment.id }}
+                <span v-if="ignoredSegments.has(segment.id)" class="ignored-badge" title="已忽略">🚩</span>
+              </div>
               <div class="col col-content clickable" @click="openPreviewForSegment(segment, 'left')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.leftContent)"></div>
               <div class="col col-position">{{ formatPageDisplay(segment.leftPage) }}</div>
               <div class="col col-position">{{ formatPageDisplay(segment.rightPage) }}</div>
               <div class="col col-content clickable" @click="openPreviewForSegment(segment, 'right')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.rightContent)"></div>
               <div class="col col-action">
-                <button class="action-btn" @click.stop="viewContext(segment, 'left')" title="查看上下文">
-                  <RiSearchLine />
+                <button class="action-btn" :class="{ 'action-ignored': ignoredSegments.has(segment.id) }" @click.stop="toggleIgnoreSegment(segment.id)" :title="ignoredSegments.has(segment.id) ? '取消忽略' : '忽略此条'">
+                  <RiFlagLine />
                 </button>
               </div>
             </div>
@@ -1655,6 +1672,29 @@ const handlePreviewRightScroll = () => {
 .action-btn:hover {
   background: rgba(229, 223, 211, 0.5);
   color: rgba(58, 58, 58, 1);
+}
+
+.action-btn.action-ignored {
+  color: #C0392B;
+}
+
+.action-btn.action-ignored:hover {
+  background: rgba(192, 57, 43, 0.1);
+}
+
+.row-ignored {
+  opacity: 0.6;
+}
+
+.row-ignored .col-content {
+  text-decoration: line-through;
+}
+
+.ignored-badge {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 12px;
+  vertical-align: middle;
 }
 
 /* 高亮样式 */
