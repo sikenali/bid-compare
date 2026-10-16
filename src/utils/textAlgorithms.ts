@@ -368,17 +368,21 @@ export function buildHighlightedHtml(
  * 通过字符索引查找对应页码（二分查找）
  */
 /**
- * 移除两个文档中的相同条款（标准模板条款）
- * @param text1 文档1内容
- * @param text2 文档2内容
- * @param minChars 最小匹配字符数（低于此长度的不视为条款）
- * @returns [处理后的text1, 处理后的text2]
- */
+  * 移除两个文档中的相同条款（标准模板条款）
+  * @param text1 文档1内容
+  * @param text2 文档2内容
+  * @param minChars 最小匹配字符数（低于此长度的不视为条款）
+  * @param fuzzyMatch 是否启用模糊匹配（默认 false，只匹配完全相同）
+  * @param fuzzyThreshold 模糊匹配阈值（0-1，默认 0.9）
+  * @returns { text1, text2, removedClauses, removedCount }
+  */
 export function removeCommonClauses(
   text1: string,
   text2: string,
-  minChars: number = 5
-): [string, string] {
+  minChars: number = 12,
+  fuzzyMatch: boolean = false,
+  fuzzyThreshold: number = 0.9
+): { text1: string; text2: string; removedClauses: string[]; removedCount: number } {
   // 扩展中文标点支持：。；！？：，、……？
   const clausePunctuation = /[。！？：，、…；]/u;
   
@@ -405,7 +409,7 @@ export function removeCommonClauses(
   const clauses2 = splitClauses(text2);
 
   if (clauses1.length === 0 || clauses2.length === 0) {
-    return [text1, text2];
+    return { text1, text2, removedClauses: [], removedCount: 0 };
   }
 
   // 归一化后构建集合（保留原文用于返回）
@@ -416,13 +420,86 @@ export function removeCommonClauses(
     return normalized.toLowerCase(); // 忽略大小写
   };
 
+  // 计算两个字符串的相似度（Jaccard 相似度）
+  const calculateSimilarity = (s1: string, s2: string): number => {
+    if (s1 === s2) return 1;
+    const words1 = new Set(s1.split(/\s+/));
+    const words2 = new Set(s2.split(/\s+/));
+    const intersection = new Set([...words1].filter(w => words2.has(w)));
+    const union = new Set([...words1, ...words2]);
+    return union.size === 0 ? 0 : intersection.size / union.size;
+  };
+
   const set2 = new Set(clauses2.map(c => normalizeForMatch(c)));
   const set1 = new Set(clauses1.map(c => normalizeForMatch(c)));
 
-  const filtered1 = clauses1.filter(c => !set2.has(normalizeForMatch(c)));
-  const filtered2 = clauses2.filter(c => !set1.has(normalizeForMatch(c)));
+  const removedClauses: string[] = [];
 
-  return [filtered1.join('\n'), filtered2.join('\n')];
+  // 完全匹配剔除
+  const filtered1 = clauses1.filter(c => {
+    const normalized = normalizeForMatch(c);
+    if (set2.has(normalized)) {
+      removedClauses.push(c);
+      return false;
+    }
+    return true;
+  });
+
+  const filtered2 = clauses2.filter(c => {
+    const normalized = normalizeForMatch(c);
+    if (set1.has(normalized)) {
+      // 避免重复记录
+      if (!removedClauses.includes(c)) {
+        removedClauses.push(c);
+      }
+      return false;
+    }
+    return true;
+  });
+
+  // 模糊匹配剔除（可选）
+  if (fuzzyMatch) {
+    const fuzzyFiltered1 = filtered1.filter(c1 => {
+      const norm1 = normalizeForMatch(c1);
+      for (const c2 of filtered2) {
+        const norm2 = normalizeForMatch(c2);
+        if (calculateSimilarity(norm1, norm2) >= fuzzyThreshold) {
+          removedClauses.push(c1);
+          return false;
+        }
+      }
+      return true;
+    });
+
+    const fuzzyFiltered2 = filtered2.filter(c2 => {
+      const norm2 = normalizeForMatch(c2);
+      for (const c1 of fuzzyFiltered1) {
+        const norm1 = normalizeForMatch(c1);
+        if (calculateSimilarity(norm1, norm2) >= fuzzyThreshold) {
+          // 避免重复记录
+          if (!removedClauses.includes(c2)) {
+            removedClauses.push(c2);
+          }
+          return false;
+        }
+      }
+      return true;
+    });
+
+    return {
+      text1: fuzzyFiltered1.join('\n'),
+      text2: fuzzyFiltered2.join('\n'),
+      removedClauses,
+      removedCount: removedClauses.length
+    };
+  }
+
+  return {
+    text1: filtered1.join('\n'),
+    text2: filtered2.join('\n'),
+    removedClauses,
+    removedCount: removedClauses.length
+  };
 }
 
 export function findPageByIndex(pageMap: PageMap, charIndex: number): number {
@@ -463,6 +540,19 @@ export function formatPageRange(
   }
 }
 
+/** NFKC 归一：全半角、中文标点、金额千分位统一，避免“１，０００ vs 1000”误判 */
+export function normalizeCompareText(text: string): string {
+  if (!text) return ''
+  let s = text.normalize('NFKC')
+  // 中文标点 → 统一英文标点（预处理忽略标点时仍可对齐）
+  s = s
+    .replace(/[，。！？；：、]/g, (c) => ({ '，': ',', '。': '.', '！': '!', '？': '?', '；': ';', '：': ':', '、': ',' }[c] || c))
+    .replace(/[（）【】『』「」]/g, (c) => ({ '（': '(', '）': ')', '【': '[', '】': ']', '『': '"', '』': '"', '「': '"', '」': '"' }[c] || c))
+  // 金额千分位去掉：1,000 → 1000（仅数字间的逗号）
+  s = s.replace(/(\d),(\d)/g, '$1$2')
+  return s
+}
+
 // 预处理文本，同时返回预处理后的文本和索引映射表
 // indexMap[preprocessedIndex] = originalIndex，用于在截取时定位到原文本位置
 export function preprocessText(
@@ -473,7 +563,13 @@ export function preprocessText(
   let processed = ''
 
   for (let i = 0; i < text.length; i++) {
-    const char = text[i]
+    // 逐字 NFKC，保证 indexMap 回指原文位置准确
+    const rawChar = text[i]
+    const char = rawChar.normalize('NFKC')
+    // 数字间千分位逗号直接跳过：1,000 → 1000
+    const prev = i > 0 ? text[i - 1] : ''
+    const next = i < text.length - 1 ? text[i + 1] : ''
+    if ((char === ',' || char === '，') && /\d/.test(prev) && /\d/.test(next)) continue
     let skip = false
 
     if (settings.ignorePunctuation && /[\p{P}\p{S}]/u.test(char)) {
@@ -581,7 +677,7 @@ export function findSimilarSegments(
     }
   }
 
-  return segments
+  return fuseNearbySegments(segments, text1, text2)
 }
 
 function escapeRegExp(str: string): string {
@@ -617,9 +713,88 @@ export function calculateTextSimilarity(
     ;[prevRow, currRow] = [currRow, new Array(n + 1).fill(0)]
   }
 
-  const minLength = Math.min(m, n)
-  if (minLength === 0) return 0
-  return Math.round((maxLength / minLength) * 100)
+  // F1 式：2*LCS/(m+n)，模板套话多时不再虚高；短文本退化为 min 口径
+  const totalLen = m + n
+  if (totalLen === 0) return 0
+  const f1 = (2 * maxLength) / totalLen
+  // 数字差异加权：金额/日期改动是投标核心差异，相似度打折
+  const nums1 = (p1.match(/\d+/g) || []).join('|')
+  const nums2 = (p2.match(/\d+/g) || []).join('|')
+  const numPenalty = nums1 && nums2 && nums1 !== nums2 ? 0.95 : 1
+  return Math.round(f1 * 100 * numPenalty)
+}
+
+/** 编辑相似度（Levenshtein ratio），用于融合后模糊片段；超长截断防 O(n*m) 爆炸 */
+export function calcEditSimilarity(a: string, b: string, cap = 500): number {
+  const s1 = a.slice(0, cap)
+  const s2 = b.slice(0, cap)
+  const m = s1.length
+  const n = s2.length
+  if (m === 0 && n === 0) return 100
+  if (m === 0 || n === 0) return 0
+  if (s1 === s2) return 100
+  let prev = new Array(n + 1).fill(0)
+  for (let j = 0; j <= n; j++) prev[j] = j
+  for (let i = 1; i <= m; i++) {
+    let cur0 = i
+    let prevDiag = prev[0]
+    prev[0] = i
+    for (let j = 1; j <= n; j++) {
+      const tmp = prev[j]
+      const cost = s1[i - 1] === s2[j - 1] ? 0 : 1
+      prev[j] = Math.min(prev[j] + 1, cur0 + 1, prevDiag + cost)
+      prevDiag = tmp
+      cur0 = prev[j]
+    }
+  }
+  const dist = prev[n]
+  return Math.round(((Math.max(m, n) - dist) / Math.max(m, n)) * 100)
+}
+
+export function levelOf(similarity: number): 'high' | 'medium' | 'low' {
+  if (similarity >= 95) return 'high'
+  if (similarity >= 80) return 'medium'
+  return 'low'
+}
+
+/**
+ * 融合邻近精确片段 → 模糊片段（改写句子的 80-99% 档）
+ * 间隔 maxGap 内且双侧都邻近才合，并用编辑相似度重算
+ */
+export function fuseNearbySegments(
+  segments: SimilarSegment[],
+  text1: string,
+  text2: string,
+  maxGap = 30
+): SimilarSegment[] {
+  if (segments.length < 2) return segments
+  const sorted = [...segments].sort((a, b) => (a.leftStartIndex ?? 0) - (b.leftStartIndex ?? 0))
+  const out: SimilarSegment[] = []
+  let cur = { ...sorted[0] }
+  for (let k = 1; k < sorted.length; k++) {
+    const nxt = sorted[k]
+    const lGap = (nxt.leftStartIndex ?? 0) - (cur.leftEndIndex ?? 0)
+    const rGap = (nxt.rightStartIndex ?? 0) - (cur.rightEndIndex ?? 0)
+    if (lGap >= 0 && lGap <= maxGap && rGap >= 0 && rGap <= maxGap) {
+      const lStart = cur.leftStartIndex ?? 0
+      const lEnd = nxt.leftEndIndex ?? 0
+      const rStart = cur.rightStartIndex ?? 0
+      const rEnd = nxt.rightEndIndex ?? 0
+      const sim = calcEditSimilarity(text1.slice(lStart, lEnd), text2.slice(rStart, rEnd))
+      cur.leftEndIndex = lEnd
+      cur.rightEndIndex = rEnd
+      cur.similarityValue = sim
+      cur.similarity = `${sim}%`
+      cur.level = levelOf(sim)
+      cur.leftContent = buildHighlightedHtml(text1, lStart, lEnd, 10)
+      cur.rightContent = buildHighlightedHtml(text2, rStart, rEnd, 10)
+    } else {
+      out.push(cur)
+      cur = { ...nxt }
+    }
+  }
+  out.push(cur)
+  return out
 }
 
 // Rabin-Karp 双哈希——用于减少哈希冲突
@@ -781,7 +956,7 @@ export function findSimilarSegmentsRabinKarp(
     }
   }
 
-  return segments
+  return fuseNearbySegments(segments, text1, text2)
 }
 
 // 分块匹配——按段落切分后匹配
@@ -837,10 +1012,12 @@ export function findSimilarSegmentsWithClauseFilter(
   // 步骤1: 条款过滤（如启用）
   if (settings.clauseRemovalEnabled) {
     onProgress?.(0.1);
-    [filtered1, filtered2] = removeCommonClauses(
+    const result = removeCommonClauses(
       text1, text2,
       settings.clauseRemovalGranularity || 5
     );
+    filtered1 = result.text1;
+    filtered2 = result.text2;
     onProgress?.(0.2);
   }
 
@@ -1508,7 +1685,7 @@ export function findSimilarSegmentsMyers(
     }
   }
 
-  return segments
+  return fuseNearbySegments(segments, text1, text2)
 }
 
 /**

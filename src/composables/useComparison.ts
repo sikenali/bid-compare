@@ -65,12 +65,12 @@ export function useComparison() {
         let effectiveText2 = text2
 
         if (settings.clauseRemovalEnabled) {
-          const [filtered1, filtered2] = removeCommonClauses(
+          const result = removeCommonClauses(
             text1, text2,
             settings.clauseRemovalGranularity || 5
           )
-          effectiveText1 = filtered1
-          effectiveText2 = filtered2
+          effectiveText1 = result.text1
+          effectiveText2 = result.text2
         }
 
         const segments = strategy === 'lcs'
@@ -82,7 +82,8 @@ export function useComparison() {
               undefined, onCancel
             )
 
-        const similarity = calculateTextSimilarity(text1, text2, settings)
+        // 口径统一：Worker 用过滤后文本算覆盖率，主线程同样用过滤后文本算相似度
+        const similarity = calculateTextSimilarity(effectiveText1, effectiveText2, settings)
         // 限制最大结果数
         const maxResults = settings.maxResults || 500
         if (segments.length > maxResults) {

@@ -80,10 +80,12 @@ function handleComparison(data: ComparisonMessage) {
 
     // 步骤1: 条款过滤（如启用）— 所有策略统一使用过滤后的文本
     if (settings.clauseRemovalEnabled) {
-      [filtered1, filtered2] = removeCommonClauses(
+      const result = removeCommonClauses(
         text1, text2,
         settings.clauseRemovalGranularity || 5
       )
+      filtered1 = result.text1
+      filtered2 = result.text2
     }
 
     let segments: SimilarSegment[] = []

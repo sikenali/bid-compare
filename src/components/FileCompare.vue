@@ -4,14 +4,12 @@ import { useRouter } from 'vue-router'
 import {
   RiExchangeLine,
   RiAddLine,
-  RiArrowRightLine,
-  RiRobot2Line
+  RiArrowRightLine
 } from '@remixicon/vue'
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx'
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
-import { useAIModel } from '../composables/useAIModel'
 import { useComparison } from '../composables/useComparison'
 import { useToast } from '../composables/useToast'
 import type { ComparisonSettings, SimilarSegment } from '../utils/textAlgorithms'
@@ -92,48 +90,6 @@ watch(showMultiResult, (val) => {
     })
   }
 })
-
-// AI分析相关
-const showAIAnalysis = ref(false)
-const aiModelResponse = ref('')
-const { isLoading, analysisResult, analyzeFileComparison } = useAIModel()
-
-// AI分析处理函数
-const handleAIAnalysis = async () => {
-  if (!leftFileContent.value || !rightFileContent.value) return
-  
-  try {
-    const result = await analyzeFileComparison(
-      settings,
-      leftFileContent.value,
-      rightFileContent.value,
-      textSimilarity.value,
-      similarSegmentsList.value
-    )
-    
-    // 格式化AI响应
-    if (result.error) {
-      aiModelResponse.value = `AI分析失败: ${result.error}`
-    } else {
-      let response = `## AI分析总结\n${result.summary}\n`
-      
-      if (result.insights.length > 0) {
-        response += `\n## 关键发现\n${result.insights.map(insight => `- ${insight}`).join('\n')}\n`
-      }
-      
-      if (result.suggestions.length > 0) {
-        response += `\n## 改进建议\n${result.suggestions.map(suggestion => `- ${suggestion}`).join('\n')}\n`
-      }
-      
-      aiModelResponse.value = response
-    }
-    
-    showAIAnalysis.value = true
-  } catch (error) {
-    aiModelResponse.value = `AI分析失败: ${(error as Error).message}`
-    showAIAnalysis.value = true
-  }
-}
 
 // 当前显示内容
 interface HighlightedContent {
@@ -437,7 +393,10 @@ const handleCompare = async () => {
     // 应用相同条款剔除
     if (settings.clauseRemovalEnabled) {
       progressMessage.value = '正在剔除相同条款...'
-      ;[leftContent, rightContent] = removeCommonClauses(leftContent, rightContent, settings.clauseRemovalGranularity)
+      const result = removeCommonClauses(leftContent, rightContent, settings.clauseRemovalGranularity)
+      leftContent = result.text1
+      rightContent = result.text2
+      clauseRemovedCount.value = result.removedCount
     }
 
     // 如果开启 OCR，将识别的文字追加到对比内容中
@@ -542,7 +501,6 @@ const handleKeyboardShortcut = (e: KeyboardEvent) => {
   // Esc 关闭弹窗
   if (e.key === 'Escape') {
     if (showOCRResult.value) showOCRResult.value = false
-    if (showAIAnalysis.value) showAIAnalysis.value = false
   }
 }
 
@@ -643,7 +601,7 @@ const ocrConfig = computed<OCRConfig>(() => ({
 const ocrProgress = ref(0)
 const ocrProgressMessage = ref('')
 const isOCRProcessing = ref(false)
-const ocrResults = ref<Array<{ name: string; result: OCRResult }>>([])
+const clauseRemovedCount = ref(0)
 const showOCRResult = ref(false)
 const ocrCompareResult = ref<{
   leftText: string
@@ -1153,14 +1111,6 @@ const generateWordReport = () => {
       >
         <RiExchangeLine class="compare-btn-icon" :class="{ rotating: isProcessing }" />
         <span>{{ isProcessing ? '对比中...' : '开始对比' }}</span>
-      </button>
-      <button
-        class="compare-btn"
-        :disabled="!leftFileInfo.file || !rightFileInfo.file || isProcessing || !settings.apiKey"
-        @click="handleAIAnalysis"
-      >
-        <RiRobot2Line class="compare-btn-icon" />
-        <span>AI对比</span>
       </button>
     </div>
 
