@@ -1807,21 +1807,21 @@ const handlePreviewRightScroll = () => {
 
 .pagination-summary {
   font-size: 15px;
-  color: rgba(138, 133, 120, 1);
+  color: #8A8578;
 }
 
 .pagination {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
 }
 
 .pagination .page-btn {
   width: 36px;
   height: 36px;
-  border: 0.7px solid rgba(229, 223, 211, 1);
+  border: 0.7px solid #E5DFD3;
   border-radius: 9999px;
-  background: rgba(252, 251, 248, 1);
+  background: #FCFBF8;
   color: #3A3A3A;
   cursor: pointer;
   display: flex;
@@ -1832,7 +1832,7 @@ const handlePreviewRightScroll = () => {
 }
 
 .pagination .page-btn:hover:not(:disabled) {
-  background: rgba(247, 243, 234, 1);
+  background: #F7F3EA;
 }
 
 .pagination .page-btn:disabled {
@@ -1843,7 +1843,7 @@ const handlePreviewRightScroll = () => {
 .page-num {
   width: 36px;
   height: 36px;
-  border: 0.7px solid rgba(229, 223, 211, 1);
+  border: 0.7px solid #E5DFD3;
   border-radius: 9999px;
   cursor: pointer;
   display: flex;
@@ -1851,20 +1851,19 @@ const handlePreviewRightScroll = () => {
   justify-content: center;
   font-size: 15px;
   font-weight: 500;
-  background: rgba(252, 251, 248, 1);
+  background: #FCFBF8;
   color: #3A3A3A;
   transition: all 0.15s;
 }
 
 .page-num:hover {
-  background: rgba(247, 243, 234, 1);
+  background: #F7F3EA;
 }
 
 .page-num.active {
-  background: #FFFFFF;
+  background: #4E9B7A;
   border-color: transparent;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  color: #3A3A3A;
+  color: #FFFFFF;
 }
 
 .modal-overlay {
