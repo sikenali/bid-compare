@@ -674,8 +674,8 @@ const buildLinePreview = (fullText: string, segments: SimilarSegment[], side: 'l
   if (!fullText) return ''
   const lines = fullText.split('\n')
   let html = '<div class="preview-lines">'
-  lines.forEach((line, i) => {
-    const lineStart = lines.slice(0, i).join('\n').length
+  let lineStart = 0
+  lines.forEach((line) => {
     const lineEnd = lineStart + line.length
     const hasHighlight = segments.some(seg => {
       const s = side === 'left' ? (seg.leftStartIndex ?? -1) : (seg.rightStartIndex ?? -1)
@@ -712,6 +712,7 @@ const buildLinePreview = (fullText: string, segments: SimilarSegment[], side: 'l
       if (pos < escapedLine.length) innerHtml += escapedLine.substring(pos)
     }
     html += `<div class="preview-line ${hasHighlight ? 'has-highlight' : ''}" data-line="${i}">${innerHtml}</div>`
+    lineStart = lineEnd + 1  // 累加器：更新下一行的起始位置（+1 是换行符）
   })
   html += '</div>'
   return html
@@ -778,8 +779,16 @@ const handlePreviewRightScroll = () => {
 
     <!-- 内容区 -->
     <div class="content-area">
+      <!-- 空状态 -->
+      <div v-if="segments.length === 0" class="empty-state">
+        <RiImageLine class="empty-state-icon" />
+        <p class="empty-state-title">暂无对比结果</p>
+        <p class="empty-state-desc">两个文件之间没有发现相似片段</p>
+        <button class="empty-state-btn" @click="goBack">返回对比</button>
+      </div>
+      
       <!-- List 视图 -->
-      <template v-if="viewMode === 'list'">
+      <template v-else-if="viewMode === 'list'">
         <div class="data-table">
           <div class="table-header">
             <div class="col col-index">序号</div>
@@ -820,7 +829,7 @@ const handlePreviewRightScroll = () => {
       <!-- Grid 视图 -->
       <template v-else-if="viewMode === 'grid'">
         <div class="grid-container">
-          <div v-for="segment in visibleSegments" :key="segment.id" class="grid-card" @click="openPreviewForSegment(segment, 'left')">
+          <div v-for="segment in pageSegments" :key="segment.id" class="grid-card" @click="openPreviewForSegment(segment, 'left')">
             <div class="grid-card-header">
               <span class="grid-card-index">#{{ segment.id }}</span>
               <span class="grid-card-similarity" :class="getSimilarityBadgeClass(segment.similarityValue)">{{ segment.similarityValue }}%</span>
@@ -2253,6 +2262,53 @@ const handlePreviewRightScroll = () => {
   font-size: 15px;
   color: var(--color-brown-muted);
   margin: 0;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  background: var(--color-bg-white, #FFFFFF);
+  border: 1px solid var(--color-border-soft, #EDE9E0);
+  border-radius: 12px;
+}
+
+.empty-state-icon {
+  font-size: 56px;
+  color: var(--color-tan-light);
+  margin-bottom: 20px;
+}
+
+.empty-state-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 8px 0;
+}
+
+.empty-state-desc {
+  font-size: 14px;
+  color: var(--color-brown-muted);
+  margin: 0 0 24px 0;
+}
+
+.empty-state-btn {
+  padding: 10px 24px;
+  background: #C75B3A;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.empty-state-btn:hover {
+  background: #B04E30;
 }
 
 /* Floating Toolbar */

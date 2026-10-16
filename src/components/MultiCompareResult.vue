@@ -134,9 +134,9 @@
           <div class="table-body">
             <div v-for="(dup, dIdx) in group.items" :key="dIdx" class="table-row" :data-similarity="`${dup.similarity}%`">
               <div class="col col-index">{{ dIdx + 1 }}</div>
-              <div class="col col-content" v-html="dup.leftContent"
+              <div class="col col-content" v-html="safeHtml(dup.leftContent)"
                    @click.stop="openContentModal(dup)"></div>
-              <div class="col col-content" v-html="dup.rightContent"
+              <div class="col col-content" v-html="safeHtml(dup.rightContent)"
                    @click.stop="openContentModal(dup)"></div>
               <div class="col col-similarity" :class="getSimilarityClass(dup.similarity)">
                 {{ dup.similarity }}%
@@ -169,14 +169,14 @@
           <div class="content-modal-body">
             <div class="content-side">
               <div class="content-side-label" :title="contentModal.leftFileName">{{ truncateName(contentModal.leftFileName) }}</div>
-              <div class="content-side-text" v-html="contentModal.leftContent"></div>
+              <div class="content-side-text" v-html="safeHtml(contentModal.leftContent)"></div>
             </div>
             <div class="content-divider">
               <RiArrowRightLine />
             </div>
             <div class="content-side">
               <div class="content-side-label" :title="contentModal.rightFileName">{{ truncateName(contentModal.rightFileName) }}</div>
-              <div class="content-side-text" v-html="contentModal.rightContent"></div>
+              <div class="content-side-text" v-html="safeHtml(contentModal.rightContent)"></div>
             </div>
           </div>
         </div>
@@ -198,13 +198,16 @@ import {
   RiArrowRightLine, RiArrowDownSLine, RiCloseLine
 } from '@remixicon/vue'
 import { BorderBeam } from 'vue3-border-beam'
-import { htmlToMarkdown } from '../utils/sanitize'
+import { htmlToMarkdown, sanitizeHTML } from '../utils/sanitize'
 import { useSettings } from '../composables/useSettings'
 import { useToast } from '../composables/useToast'
 import { Packer } from 'docx'
 import { generateWordReport, generateMarkdownReport, generatePdfReport, downloadBlob } from '../utils/exportReport'
 
 const { error: showError } = useToast()
+
+// 安全渲染 HTML（消毒）
+const safeHtml = (html: string) => sanitizeHTML(html || '')
 
 interface DuplicatePair {
   leftFileName: string

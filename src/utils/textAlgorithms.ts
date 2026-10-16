@@ -140,9 +140,18 @@ export function simHashFilter(
   const chunks1 = chunkTextForSimHash(text1, windowSize, overlap)
   const chunks2 = chunkTextForSimHash(text2, windowSize, overlap)
 
-  // 限制最大块数，避免性能问题
-  const limitedChunks1 = chunks1.slice(0, maxChunks)
-  const limitedChunks2 = chunks2.slice(0, maxChunks)
+  // 均匀采样，确保整个文档都被覆盖
+  const sampleChunks = (chunks: string[], max: number): string[] => {
+    if (chunks.length <= max) return chunks
+    const step = chunks.length / max
+    const result: string[] = []
+    for (let i = 0; i < max; i++) {
+      result.push(chunks[Math.floor(i * step)])
+    }
+    return result
+  }
+  const limitedChunks1 = sampleChunks(chunks1, maxChunks)
+  const limitedChunks2 = sampleChunks(chunks2, maxChunks)
 
   // 计算每个块的 SimHash
   const hashes1 = limitedChunks1.map(chunk => computeSimHash(chunk))
@@ -277,8 +286,8 @@ export function findSimilarSegmentsSimHash(
     const chunk1 = text1.substring(start1, end1)
     const chunk2 = text2.substring(start2, end2)
 
-    // 使用 Rabin-Karp 进行精比（用较小窗口4，因为SimHash粗筛已确保语义相似）
-    const refineSettings = { ...settings, minDuplicateWords: Math.min(settings.minDuplicateWords, 4) }
+    // 使用 Rabin-Karp 进行精比（使用用户设置的窗口，设置合理下限避免过度匹配）
+    const refineSettings = { ...settings, minDuplicateWords: Math.max(6, Math.min(settings.minDuplicateWords, 20)) }
     const chunkSegments = findSimilarSegmentsRabinKarp(
       chunk1,
       chunk2,
