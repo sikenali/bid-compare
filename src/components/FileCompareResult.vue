@@ -15,11 +15,12 @@ import {
   RiFlagLine,
   RiExchangeLine
 } from '@remixicon/vue'
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx'
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle } from 'docx'
 import { useSettings } from '../composables/useSettings'
 import { useToast } from '../composables/useToast'
 import { getCompareResult, deleteCompareResult } from '../utils/compareResultStore'
 import { sanitizeHTML, sanitizeWithHighlight, htmlToMarkdown } from '../utils/sanitize'
+import { generateWordReport, generateMarkdownReport, downloadBlob } from '../utils/exportReport'
 import MarkdownIt from 'markdown-it'
 import type { SimilarSegment } from '../utils/textAlgorithms'
 import { OpenFileViewer } from '@open-file-viewer/vue'
@@ -75,12 +76,17 @@ const hasPreviewContent = computed(() => {
   return leftFileContent.value.length > 0 || rightFileContent.value.length > 0
 })
 
-// 根据设置过滤结果
-const filteredSegments = computed(() => {
+// 阈值初筛（不受 activeFilter 影响，供徽章计数使用）
+const thresholdSegments = computed(() => {
   const threshold = settings.textSimilarityThreshold || 75
-  let filtered = segments.value
+  return segments.value
     .filter(s => s.similarityValue >= threshold)
     .sort((a, b) => b.similarityValue - a.similarityValue)
+})
+
+// 根据设置过滤结果
+const filteredSegments = computed(() => {
+  let filtered = [...thresholdSegments.value]
 
   // 应用相似度筛选器
   if (activeFilter.value === '100') {
@@ -94,14 +100,29 @@ const filteredSegments = computed(() => {
   return filtered
 })
 
-// 实际找到的总数量（用于显示）
-const totalFoundCount = computed(() => filteredSegments.value.length)
+// 有效片段（剔除已忽略）：计数与导出统一使用
+const visibleSegments = computed(() => filteredSegments.value.filter(s => !ignoredSegments.value.has(s.id)))
+
+// 实际找到的总数量（用于显示，已剔除忽略）
+const totalFoundCount = computed(() => visibleSegments.value.length)
 
 // 图片雷同结果
 const imageDuplicates = ref<any[]>([])
 
 // 忽略的片段 ID 集合
 const ignoredSegments = ref<Set<number>>(new Set())
+
+// 展开/收起：长片段默认钳制 3 行，点击展开看全文
+const expandedIds = ref<Set<number>>(new Set())
+const toggleExpandSegment = (segmentId: number) => {
+  if (expandedIds.value.has(segmentId)) {
+    expandedIds.value.delete(segmentId)
+  } else {
+    expandedIds.value.add(segmentId)
+  }
+  expandedIds.value = new Set(expandedIds.value)
+}
+const isExpanded = (segmentId: number) => expandedIds.value.has(segmentId)
 
 const toggleIgnoreSegment = (segmentId: number) => {
   if (ignoredSegments.value.has(segmentId)) {
@@ -111,6 +132,10 @@ const toggleIgnoreSegment = (segmentId: number) => {
   }
   // 触发响应式更新
   ignoredSegments.value = new Set(ignoredSegments.value)
+  // 忽略后页数收缩，钳制当前页
+  if (currentPage.value > totalPages.value) {
+    currentPage.value = Math.max(1, totalPages.value)
+  }
 }
 
 // 上下文查看
@@ -221,17 +246,17 @@ const rightPageIndicatorTop = ref(12)
 // Scroll synchronization flag
 let isScrolling = false
 
-// 计算属性
-const totalPages = computed(() => Math.ceil(filteredSegments.value.length / pageSize.value))
+// 计算属性（忽略片段不计入分页与总数）
+const totalPages = computed(() => Math.ceil(visibleSegments.value.length / pageSize.value))
 const startRecord = computed(() => (currentPage.value - 1) * pageSize.value + 1)
-const endRecord = computed(() => Math.min(currentPage.value * pageSize.value, filteredSegments.value.length))
-const totalRecords = computed(() => filteredSegments.value.length)
+const endRecord = computed(() => Math.min(currentPage.value * pageSize.value, visibleSegments.value.length))
+const totalRecords = computed(() => visibleSegments.value.length)
 
 // 当前页数据
 const pageSegments = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   const end = start + pageSize.value
-  return filteredSegments.value.slice(start, end)
+  return visibleSegments.value.slice(start, end)
 })
 
 // 页码列表
@@ -392,32 +417,31 @@ const handleExport = async () => {
     const leftName = (leftFileName.value || 'file1').replace(/\.[^/.]+$/, '')
     const rightName = (rightFileName.value || 'file2').replace(/\.[^/.]+$/, '')
     
+    const exportData = {
+      leftFileName: leftFileName.value || 'file1',
+      rightFileName: rightFileName.value || 'file2',
+      textSimilarity: textSimilarity.value,
+      similarSegmentsCount: similarSegmentsCount.value,
+      segments: segments.value,
+      visibleSegments: visibleSegments.value,
+      clauseRemovedCount: clauseRemovedCount.value
+    }
+
     if (settings.exportFormat === 'md') {
       // 导出 Markdown 格式
-      const mdContent = generateMarkdownReport()
+      const mdContent = generateMarkdownReport(exportData, { includeHighlight: settings.includeHighlight, includeCharts: settings.includeCharts })
       const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8' })
-      const fileName = `${leftName}vs${rightName}-文件对比报告.md`
-      
-      const link = document.createElement('a')
-      link.href = URL.createObjectURL(blob)
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      downloadBlob(blob, `${leftName}vs${rightName}-文件对比报告.md`)
     } else {
       // 导出 Word 格式
-      const doc = generateWordReport()
+      const doc = generateWordReport(exportData, { includeHighlight: settings.includeHighlight, includeCharts: settings.includeCharts })
       const blob = await Packer.toBlob(doc)
-      const fileName = `${leftName}vs${rightName}-文件对比报告.docx`
-      
-      const link = document.createElement('a')
-      link.href = URL.createObjectURL(blob)
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      downloadBlob(blob, `${leftName}vs${rightName}-文件对比报告.docx`)
     }
+    
+    showToast('导出成功')
   } catch (error) {
+    console.error('导出失败:', error)
     showError('导出报告失败，请重试')
   }
 }
@@ -506,7 +530,7 @@ function parseHighlightedContent(htmlContent: string): any[] {
 
 // 生成 Markdown 报告
 function generateMarkdownReport(): string {
-  const segmentsData = filteredSegments.value
+  const segmentsData = visibleSegments.value
   let md = ''
 
   // 报告标题
@@ -711,8 +735,8 @@ function generateWordReport(): Document {
     })
   ]
 
-  // 添加数据行
-  filteredSegments.value.forEach(segment => {
+  // 添加数据行（已忽略的不导出）
+  visibleSegments.value.forEach(segment => {
     const leftRuns = includeHighlight ? parseHighlightedContent(segment.leftContent) : [new TextRun({ text: segment.leftContent.replace(/<[^>]*>/g, ''), size: 20, font: 'Microsoft YaHei' })]
     const rightRuns = includeHighlight ? parseHighlightedContent(segment.rightContent) : [new TextRun({ text: segment.rightContent.replace(/<[^>]*>/g, ''), size: 20, font: 'Microsoft YaHei' })]
 
@@ -791,28 +815,22 @@ const nextPage = () => {
 
 // 滚动到指定页码对应的内容位置
 const scrollToPage = (page: number) => {
-  // 片段模式下滚动定位
+  // 翻页后回到表格顶部，避免停留在上一页的滚动位置
+  void page
+  nextTick(() => {
+    document.querySelector('.result-page .table-body')?.scrollTo({ top: 0 })
+  })
 }
-
-// 是否有上一处差异
-const hasPrevDiff = computed(() => {
-  return filteredSegments.value.length > 0
-})
-
-// 是否有下一处差异
-const hasNextDiff = computed(() => {
-  return filteredSegments.value.length > 0
-})
 
 // 计算100%相似度的片段数量
 const count100Similarity = computed(() => {
-  return filteredSegments.value.filter(s => s.similarityValue >= 100).length
+  return visibleSegments.value.filter(s => s.similarityValue >= 100).length
 })
 
 // 计算达到相似度阈值的片段数量
 const countThresholdSimilarity = computed(() => {
   const threshold = settings.textSimilarityThreshold || 75
-  return filteredSegments.value.filter(s => s.similarityValue >= threshold).length
+  return visibleSegments.value.filter(s => s.similarityValue >= threshold).length
 })
 
 // 滚动同步处理
@@ -961,17 +979,13 @@ const buildFullTextHtml = (
   return html
 }
 
-const countAdded = computed(() => filteredSegments.value.filter(s => s.similarityValue >= 100).length)
-const countModified = computed(() => filteredSegments.value.filter(s => s.similarityValue >= 80 && s.similarityValue < 100).length)
-const countDeleted = computed(() => filteredSegments.value.filter(s => s.similarityValue < 80).length)
-
 // 筛选行状态
 const viewMode = ref<'list' | 'grid' | 'image'>('list')
 const activeFilter = ref<string | null>(null)
 
-const count100 = computed(() => filteredSegments.value.filter(s => s.similarityValue >= 100).length)
-const count90 = computed(() => filteredSegments.value.filter(s => s.similarityValue >= 90 && s.similarityValue < 100).length)
-const count80 = computed(() => filteredSegments.value.filter(s => s.similarityValue >= 80 && s.similarityValue < 90).length)
+const count100 = computed(() => thresholdSegments.value.filter(s => s.similarityValue >= 100).length)
+const count90 = computed(() => thresholdSegments.value.filter(s => s.similarityValue >= 90 && s.similarityValue < 100).length)
+const count80 = computed(() => thresholdSegments.value.filter(s => s.similarityValue >= 80 && s.similarityValue < 90).length)
 
 const toggleFilter = (level: string) => {
   activeFilter.value = activeFilter.value === level ? null : level
@@ -991,11 +1005,11 @@ const getSimilarityBadgeClass = (similarity: number): string => {
 }
 
 const previewLeftHtml = computed(() => {
-  return buildFullTextHtml(leftFileContent.value, filteredSegments.value, 'left')
+  return buildFullTextHtml(leftFileContent.value, visibleSegments.value, 'left')
 })
 
 const previewRightHtml = computed(() => {
-  return buildFullTextHtml(rightFileContent.value, filteredSegments.value, 'right')
+  return buildFullTextHtml(rightFileContent.value, visibleSegments.value, 'right')
 })
 
 const handlePreviewLeftScroll = () => {
@@ -1062,23 +1076,30 @@ const handlePreviewRightScroll = () => {
           <div class="table-header">
             <div class="col col-index">序号</div>
             <div class="col col-content">原始版本</div>
-            <div class="col col-position">所在页面</div>
-            <div class="col col-position">所在页面</div>
+            <div class="col col-position">左侧页面</div>
+            <div class="col col-sim">相似度</div>
+            <div class="col col-position">右侧页面</div>
             <div class="col col-content">修订版本</div>
             <div class="col col-action">操作</div>
           </div>
           <div class="table-body" v-highlight-tooltip>
-            <div v-for="segment in pageSegments" :key="segment.id" class="table-row" :class="{ 'row-ignored': ignoredSegments.has(segment.id) }">
+            <div v-for="segment in pageSegments" :key="segment.id" class="table-row" :class="{ 'row-ignored': ignoredSegments.has(segment.id), 'row-expanded': isExpanded(segment.id) }">
               <div class="color-bar" :class="segment.similarityValue >= 95 ? 'bar-match' : 'bar-mismatch'"></div>
               <div class="col col-index">
                 {{ segment.id }}
                 <span v-if="ignoredSegments.has(segment.id)" class="ignored-badge" title="已忽略">🚩</span>
               </div>
-              <div class="col col-content clickable" @click="openPreviewForSegment(segment, 'left')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.leftContent)"></div>
+              <div class="col col-content clickable" :class="{ clamped: !isExpanded(segment.id) }" @click="openPreviewForSegment(segment, 'left')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.leftContent)"></div>
               <div class="col col-position">{{ formatPageDisplay(segment.leftPage, leftTotalPages) }}</div>
+              <div class="col col-sim">
+                <span class="cell-sim-badge" :class="getSimilarityBadgeClass(segment.similarityValue)">{{ segment.similarityValue }}%</span>
+              </div>
               <div class="col col-position">{{ formatPageDisplay(segment.rightPage, rightTotalPages) }}</div>
-              <div class="col col-content clickable" @click="openPreviewForSegment(segment, 'right')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.rightContent)"></div>
+              <div class="col col-content clickable" :class="{ clamped: !isExpanded(segment.id) }" @click="openPreviewForSegment(segment, 'right')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.rightContent)"></div>
               <div class="col col-action">
+                <button class="action-btn" @click.stop="toggleExpandSegment(segment.id)" :title="isExpanded(segment.id) ? '收起' : '展开全文'">
+                  <span class="expand-label">{{ isExpanded(segment.id) ? '收起' : '展开' }}</span>
+                </button>
                 <button class="action-btn" :class="{ 'action-ignored': ignoredSegments.has(segment.id) }" @click.stop="toggleIgnoreSegment(segment.id)" :title="ignoredSegments.has(segment.id) ? '取消忽略' : '忽略此条'">
                   <RiFlagLine />
                 </button>
@@ -1091,7 +1112,7 @@ const handlePreviewRightScroll = () => {
       <!-- Grid 视图 -->
       <template v-else-if="viewMode === 'grid'">
         <div class="grid-container">
-          <div v-for="segment in filteredSegments" :key="segment.id" class="grid-card" @click="openPreviewForSegment(segment, 'left')">
+          <div v-for="segment in visibleSegments" :key="segment.id" class="grid-card" @click="openPreviewForSegment(segment, 'left')">
             <div class="grid-card-header">
               <span class="grid-card-index">#{{ segment.id }}</span>
               <span class="grid-card-similarity" :class="getSimilarityBadgeClass(segment.similarityValue)">{{ segment.similarityValue }}%</span>
@@ -1589,10 +1610,12 @@ const handlePreviewRightScroll = () => {
 .table-row {
   display: flex;
   border-bottom: 0.7px solid rgba(237, 233, 224, 1);
-  height: 56px;
-  align-items: center;
+  min-height: 56px;
+  height: auto;
+  align-items: flex-start;
+  padding: 10px 0;
   font-size: 14px;
-  line-height: 1.2;
+  line-height: 1.6;
   position: relative;
 }
 
@@ -1641,11 +1664,21 @@ const handlePreviewRightScroll = () => {
 }
 
 .col-content {
-  width: 580px;
-  flex-shrink: 0;
-  word-break: break-all;
+  flex: 1 1 0;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   color: rgba(31, 29, 26, 1);
-  font-size: 16px;
+  font-size: 14px;
+  align-items: flex-start;
+}
+
+/* 长片段默认钳制 3 行，展开后看全文 */
+.col-content.clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .col-content.clickable {
@@ -1658,18 +1691,41 @@ const handlePreviewRightScroll = () => {
 }
 
 .col-position {
-  width: 160px;
+  width: 84px;
   flex-shrink: 0;
   justify-content: flex-start;
   color: rgba(110, 106, 96, 1);
-  font-size: 16px;
+  font-size: 13px;
+  align-items: flex-start;
+}
+
+.col-sim {
+  width: 76px;
+  flex-shrink: 0;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.cell-sim-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .col-action {
-  width: 134px;
+  width: 120px;
   flex-shrink: 0;
   justify-content: flex-end;
-  align-items: center;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.expand-label {
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .action-btn {
@@ -2343,21 +2399,31 @@ const handlePreviewRightScroll = () => {
   border-radius: 6px;
 }
 
+.cell-sim-badge.badge-perfect,
 .grid-card-similarity.badge-perfect {
   background: #E8F5E9;
   color: #4E9B7A;
 }
 
+.cell-sim-badge.badge-high,
+.cell-sim-badge.badge-mid,
+.cell-sim-badge.badge-low {
+  font-size: 12px;
+}
+
+.cell-sim-badge.badge-high,
 .grid-card-similarity.badge-high {
   background: var(--color-diff-modified, #FFF8E1);
   color: var(--color-gold-dark, #D4A030);
 }
 
+.cell-sim-badge.badge-mid,
 .grid-card-similarity.badge-mid {
   background: var(--color-diff-deleted, #FBE9E7);
   color: var(--color-cinnabar, #C0392B);
 }
 
+.cell-sim-badge.badge-low,
 .grid-card-similarity.badge-low {
   background: var(--color-bg-secondary, #F0F0F0);
   color: var(--color-text-muted, #8A8578);

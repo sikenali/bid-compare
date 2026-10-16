@@ -13,13 +13,13 @@ import { useRecentRecords } from '../composables/useRecentRecords'
 import { useComparison } from '../composables/useComparison'
 import { useToast } from '../composables/useToast'
 import type { ComparisonSettings, SimilarSegment } from '../utils/textAlgorithms'
-import { removeCommonClauses } from '../utils/textAlgorithms'
 import { htmlToMarkdown } from '../utils/sanitize'
 import { storeCompareResult, deleteCompareResult } from '../utils/compareResultStore'
 import { removeWatermarks } from '../utils/watermark'
-import { computeImageHash, hammingDistance, calculateImageSimilarity, loadImageAsDataUrl } from '../utils/imageCompare'
+import { computeImageHash, calculateImageSimilarity, loadImageAsDataUrl } from '../utils/imageCompare'
 import type { ImageDuplicate } from '../utils/imageCompare'
-import { recognizeImages, extractTextFromImage, isOCRAvailable, getSupportedLanguages, calculateEditDistanceSimilarity } from '../utils/ocr'
+import { recognizeImages, isOCRAvailable, getSupportedLanguages, calculateEditDistanceSimilarity } from '../utils/ocr'
+import { formatFileSize, getFileType, type FileInfo } from '../utils/helpers'
 import type { OCRResult, OCRConfig } from '../utils/ocr'
 import FileUpload from './FileUpload.vue'
 import MultiFileUpload from './MultiFileUpload.vue'
@@ -30,14 +30,6 @@ const router = useRouter()
 
 // 使用 Toast
 const { error: showError, success: showSuccess } = useToast()
-
-// 文件信息类型定义
-interface FileInfo {
-  file: File | null;
-  name: string;
-  size: string;
-  type: string;
-}
 
 // 使用文件解析组合式函数
 const { parseFile } = useFileParser()
@@ -220,33 +212,6 @@ const {
   addRecentRecord,
 } = useRecentRecords('fileCompare')
 
-// 格式化文件大小
-const formatFileSize = (size: number): string => {
-  if (size < 1024) {
-    return `${size} B`;
-  } else if (size < 1024 * 1024) {
-    return `${(size / 1024).toFixed(2)} KB`;
-  } else {
-    return `${(size / (1024 * 1024)).toFixed(2)} MB`;
-  }
-};
-
-// 获取文件类型
-const getFileType = (name: string): string => {
-  const ext = name.split('.').pop()?.toLowerCase() || '';
-  const typeMap: Record<string, string> = {
-    'doc': 'Word文档',
-    'docx': 'Word文档',
-    'pdf': 'PDF文档',
-    'txt': '文本文件',
-    'ppt': 'PPT演示',
-    'pptx': 'PPT演示',
-    'xls': 'Excel表格',
-    'xlsx': 'Excel表格'
-  };
-  return typeMap[ext] || '未知类型';
-};
-
 // 文件上传处理
 const handleFileUpload = (event: Event, side: 'left' | 'right') => {
   const input = event.target as HTMLInputElement
@@ -388,15 +353,6 @@ const handleCompare = async () => {
     if (settings.removeWatermark) {
       leftContent = removeWatermarks(leftContent)
       rightContent = removeWatermarks(rightContent)
-    }
-
-    // 应用相同条款剔除
-    if (settings.clauseRemovalEnabled) {
-      progressMessage.value = '正在剔除相同条款...'
-      const result = removeCommonClauses(leftContent, rightContent, settings.clauseRemovalGranularity)
-      leftContent = result.text1
-      rightContent = result.text2
-      clauseRemovedCount.value = result.removedCount
     }
 
     // 如果开启 OCR，将识别的文字追加到对比内容中
@@ -601,7 +557,6 @@ const ocrConfig = computed<OCRConfig>(() => ({
 const ocrProgress = ref(0)
 const ocrProgressMessage = ref('')
 const isOCRProcessing = ref(false)
-const clauseRemovedCount = ref(0)
 const showOCRResult = ref(false)
 const ocrCompareResult = ref<{
   leftText: string

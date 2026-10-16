@@ -1,26 +1,20 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { RiExchangeLine, RiAddLine, RiArrowRightLine } from '@remixicon/vue'
+import { RiExchangeLine, RiAddLine, RiArrowRightLine, RiDownload2Line } from '@remixicon/vue'
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
 import { useToast } from '../composables/useToast'
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx'
 import { calculateTextSimilarity } from '../utils/textAlgorithms'
 import { storePropertyCheckResult } from '../utils/compareResultStore'
 import { buildPropertyDetails, propsMapSource } from '../utils/propertyFields'
+import { formatFileSize, getFileType, type FileInfo } from '../utils/helpers'
 import FileUpload from './FileUpload.vue'
 
 const router = useRouter()
 const { error: showError } = useToast()
-
-// 文件信息类型定义
-interface FileInfo {
-  file: File | null;
-  name: string;
-  size: string;
-  type: string;
-}
 
 // 使用文件解析组合式函数
 const { parseFile } = useFileParser()
@@ -58,33 +52,6 @@ const propertyDetails = ref<any[]>([])
 
 // 组件挂载时不恢复结果，总是显示主界面
 // 刷新页面后返回检查界面，不恢复之前的检查结果
-
-// 格式化文件大小
-const formatFileSize = (size: number): string => {
-  if (size < 1024) {
-    return `${size} B`;
-  } else if (size < 1024 * 1024) {
-    return `${(size / 1024).toFixed(2)} KB`;
-  } else {
-    return `${(size / (1024 * 1024)).toFixed(2)} MB`;
-  }
-};
-
-// 获取文件类型
-const getFileType = (name: string): string => {
-  const ext = name.split('.').pop()?.toLowerCase() || '';
-  const typeMap: Record<string, string> = {
-    'doc': 'Word文档',
-    'docx': 'Word文档',
-    'pdf': 'PDF文档',
-    'txt': '文本文件',
-    'ppt': 'PPT演示',
-    'pptx': 'PPT演示',
-    'xls': 'Excel表格',
-    'xlsx': 'Excel表格'
-  };
-  return typeMap[ext] || '未知类型';
-};
 
 // 文件上传处理
 const handleFileUpload = (event: Event, side: 'left' | 'right') => {
@@ -168,24 +135,31 @@ const handleClearFile = (side: 'left' | 'right') => {
   }
 }
 
-// 执行属性检查
+// 执行属性检查（支持取消）
+let checkAbort: AbortController | null = null
+const handleCancelCheck = () => {
+  checkAbort?.abort()
+}
+
 const handleCheck = async () => {
   if (!leftFileInfo.value.file || !rightFileInfo.value.file) return;
-  
+
   isParsing.value = true;
   parseError.value = '';
-  
+  checkAbort = new AbortController();
+  const signal = checkAbort.signal;
+
   try {
     // 解析左侧文件
-    const leftResult = await parseFile(leftFileInfo.value.file);
+    const leftResult = await parseFile(leftFileInfo.value.file, signal);
     if (leftResult.error) {
       throw new Error(leftResult.error);
     }
     leftFileContent.value = leftResult.content;
     leftFileProperties.value = leftResult.properties;
-    
+
     // 解析右侧文件
-    const rightResult = await parseFile(rightFileInfo.value.file);
+    const rightResult = await parseFile(rightFileInfo.value.file, signal);
     if (rightResult.error) {
       throw new Error(rightResult.error);
     }
@@ -257,9 +231,14 @@ const handleCheck = async () => {
     // 跳转到结果页面，传递存储 ID
     router.push({ path: `/property-check-result/${resultId}` })
   } catch (error) {
-    parseError.value = (error as Error).message;
+    if ((error as Error).name === 'AbortError' || (error as DOMException)?.name === 'AbortError') {
+      parseError.value = '已取消检查';
+    } else {
+      parseError.value = (error as Error).message;
+    }
   } finally {
     isParsing.value = false;
+    checkAbort = null;
   }
 }
 
@@ -549,6 +528,23 @@ const generateWordReport = () => {
       <button class="compare-btn" @click="handleCheck" :disabled="!leftFileInfo.file || !rightFileInfo.file || isParsing" :class="{ 'processing': isParsing }">
         <RiExchangeLine class="compare-btn-icon" :class="{ 'rotating': isParsing }" />
         <span>{{ isParsing ? '检查中...' : '属性检查' }}</span>
+      </button>
+      <button
+        v-if="isParsing"
+        class="compare-btn"
+        style="background:var(--color-brown-muted)"
+        @click="handleCancelCheck"
+      >
+        <span>取消</span>
+      </button>
+      <button
+        v-if="propertyDetails.length > 0"
+        class="compare-btn"
+        style="background:var(--color-brown-muted)"
+        @click="handleExportReport"
+      >
+        <RiDownload2Line class="compare-btn-icon" />
+        <span>导出报告</span>
       </button>
     </div>
 
@@ -878,566 +874,6 @@ const generateWordReport = () => {
   border-radius: var(--radius-md);
   border: 1px solid rgba(var(--rgb-cinnabar), 0.2);
   font-family: var(--font-ui);
-}
-
-.upload-box {
-  flex: 1;
-  min-width: 300px;
-  height: 180px;
-  border: 2px dashed rgba(var(--rgb-brown-muted), 0.4);
-  border-radius: var(--radius-md);
-  background-color: rgba(var(--rgb-parchment), 0.5);
-  cursor: pointer;
-  transition: all 0.3s;
-  position: relative;
-  overflow: hidden;
-  padding: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.upload-box:hover {
-  border-color: var(--color-cinnabar);
-  background-color: rgba(var(--rgb-cinnabar), 0.05);
-  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.15);
-}
-
-.upload-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.upload-icon {
-  font-size: 36px;
-  color: var(--color-brown-muted);
-  transition: all 0.3s;
-}
-
-.upload-box:hover .upload-icon {
-  color: var(--color-cinnabar);
-}
-
-.upload-text {
-  font-size: 14px;
-  color: var(--color-brown-muted);
-  font-family: var(--font-ui);
-}
-
-.file-input {
-  display: none;
-}
-
-.select-btn {
-  padding: 10px 20px;
-  background: var(--color-cinnabar);
-  color: white;
-  border-radius: var(--radius-lg);
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.select-btn:hover {
-  box-shadow: 0 6px 16px rgba(var(--rgb-cinnabar), 0.4);
-  transform: translateY(-2px);
-}
-
-/* 已上传文件信息 */
-.file-info-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 20px;
-  text-align: center;
-  width: 100%;
-}
-
-.file-name {
-  font-size: 14px;
-  color: var(--color-brown-dark);
-  font-weight: 500;
-  background-color: var(--color-cream);
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 2px 6px rgba(var(--rgb-brown-dark), 0.08);
-  font-family: var(--font-ui);
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-}
-
-.file-meta {
-  display: flex;
-  gap: 12px;
-  font-size: 12px;
-  color: var(--color-brown-muted);
-  font-family: var(--font-ui);
-}
-
-.file-type, .file-size {
-  background-color: var(--color-cream);
-  padding: 4px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-}
-
-/* 更换文件按钮 */
-.replace-btn {
-  position: absolute;
-  bottom: 16px;
-  opacity: 0;
-  visibility: hidden;
-  padding: 8px 16px;
-  background-color: rgba(var(--rgb-cinnabar), 0.9);
-  color: white;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.3s;
-  border: none;
-  font-family: var(--font-ui);
-  z-index: 10;
-}
-
-.upload-box:hover .replace-btn {
-  opacity: 1;
-  visibility: visible;
-}
-
-.replace-btn:hover {
-  background-color: var(--color-cinnabar-dark);
-}
-
-/* 错误信息样式 */
-.error-message {
-  color: var(--color-cinnabar);
-  font-size: 14px;
-  text-align: center;
-  margin: 16px 0;
-  padding: 12px;
-  background-color: rgba(var(--rgb-cinnabar), 0.05);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(var(--rgb-cinnabar), 0.2);
-  font-family: var(--font-ui);
-}
-
-/* 最近对比记录 */
-.recent-records {
-  background-color: var(--color-cream);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  border-radius: var(--radius-md);
-  box-shadow: 0 2px 8px rgba(var(--rgb-brown-dark), 0.08);
-  padding: 20px;
-}
-
-.records-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-}
-
-.records-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-brown-dark);
-  font-family: var(--font-ui);
-}
-
-.view-all {
-  font-size: 13px;
-  color: var(--color-cinnabar);
-  font-family: var(--font-ui);
-  cursor: pointer;
-}
-
-.records-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.record-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: rgba(var(--rgb-parchment), 0.5);
-  border-radius: var(--radius-md);
-  padding: 12px 16px;
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.15);
-  transition: all 0.3s ease;
-}
-
-.record-item:hover {
-  background-color: rgba(var(--rgb-parchment), 0.8);
-  border-color: rgba(var(--rgb-brown-muted), 0.3);
-}
-
-.record-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.record-icon {
-  font-size: 16px;
-  color: var(--color-brown-muted);
-}
-
-.record-details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.record-filename {
-  font-size: 14px;
-  color: var(--color-brown-dark);
-  font-family: var(--font-ui);
-}
-
-.record-timestamp {
-  font-size: 12px;
-  color: var(--color-brown-muted);
-  font-family: var(--font-ui);
-}
-
-.record-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.record-action-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.3);
-  border-radius: var(--radius-sm);
-  background-color: var(--color-cream);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  color: var(--color-brown-muted);
-  font-size: 14px;
-}
-
-.record-action-btn:hover {
-  background-color: var(--color-cinnabar);
-  color: white;
-  border-color: var(--color-cinnabar);
-}
-
-/* 属性检查结果 */
-.results-section {
-  background-color: var(--color-cream);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  box-shadow: 0 2px 8px rgba(var(--rgb-brown-dark), 0.08);
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* 属性统计 */
-.property-stats {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  background-color: rgba(var(--rgb-parchment), 0.5);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* 统计图标容器 */
-.stat-icon-container {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.stat-icon-container.match {
-  background-color: rgba(var(--rgb-jade), 0.1);
-}
-
-.stat-icon-container.mismatch {
-  background-color: rgba(var(--rgb-cinnabar), 0.1);
-}
-
-.stat-icon-container.warning {
-  background-color: rgba(255, 165, 0, 0.1);
-}
-
-.stat-icon {
-  font-size: 18px;
-}
-
-.stat-icon-container.match .stat-icon {
-  color: var(--color-jade-light);
-}
-
-.stat-icon-container.mismatch .stat-icon {
-  color: var(--color-cinnabar);
-}
-
-.stat-icon-container.warning .stat-icon {
-  color: rgba(255, 165, 0, 1);
-}
-
-.stat-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: var(--color-brown-muted);
-  font-family: var(--font-ui);
-}
-
-.stat-value {
-  font-size: 18px;
-  font-weight: 700;
-  font-family: var(--font-ui);
-}
-
-.stat-value.match {
-  color: var(--color-jade-light);
-}
-
-.stat-value.mismatch {
-  color: var(--color-cinnabar);
-}
-
-.stat-value.warning {
-  color: rgba(255, 165, 0, 1);
-}
-
-.export-section {
-  display: flex;
-  gap: 12px;
-}
-
-.export-btn {
-  background-color: var(--color-cinnabar);
-  color: white;
-}
-
-.export-btn:hover {
-  background-color: var(--color-cinnabar-dark);
-  box-shadow: 0 4px 12px rgba(var(--rgb-cinnabar), 0.3);
-}
-
-.issue-tracking-btn {
-  background-color: var(--color-brown-muted);
-  color: white;
-}
-
-.issue-tracking-btn:hover {
-  background-color: var(--color-brown-muted);
-  box-shadow: 0 4px 12px rgba(var(--rgb-brown-muted), 0.3);
-}
-
-/* 属性差异详情 */
-.property-details-section {
-  background-color: var(--color-cream);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-  box-shadow: 0 2px 8px rgba(var(--rgb-brown-dark), 0.08);
-  overflow: hidden;
-}
-
-/* 区域标题 */
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  background-color: rgba(var(--rgb-parchment), 0.5);
-  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.2);
-}
-
-.section-icon-container {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(var(--rgb-cinnabar), 0.1);
-  flex-shrink: 0;
-}
-
-.section-icon {
-  font-size: 18px;
-  color: var(--color-cinnabar);
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-brown-dark);
-  font-family: var(--font-ui);
-  margin: 0;
-}
-
-.view-options {
-  display: flex;
-  gap: 8px;
-}
-
-.view-btn {
-  padding: 6px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(var(--rgb-brown-muted), 0.3);
-  background-color: var(--color-cream);
-  color: var(--color-brown-muted);
-  font-size: 13px;
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.view-btn.active {
-  background-color: var(--color-cinnabar);
-  color: white;
-  border-color: var(--color-cinnabar);
-}
-
-/* 属性表格 */
-.property-table {
-  background-color: var(--color-cream);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.table-header {
-  display: grid;
-  grid-template-columns: 150px 1fr 1fr 120px;
-  padding: 12px 16px;
-  background-color: rgba(var(--rgb-parchment), 0.8);
-  border-bottom: 2px solid rgba(var(--rgb-brown-muted), 0.3);
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: var(--color-brown-dark);
-}
-
-.table-body {
-  display: flex;
-  flex-direction: column;
-}
-
-.table-row {
-  display: grid;
-  grid-template-columns: 150px 1fr 1fr 120px;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(var(--rgb-brown-muted), 0.15);
-  transition: background-color 0.2s;
-  align-items: center;
-}
-
-.table-row:hover {
-  background-color: rgba(var(--rgb-parchment), 0.3);
-}
-
-.table-row.status-mismatch {
-  background-color: rgba(var(--rgb-cinnabar), 0.05);
-}
-
-.table-row.status-mismatch:hover {
-  background-color: rgba(var(--rgb-cinnabar), 0.1);
-}
-
-.table-col {
-  font-size: 13px;
-  font-family: var(--font-ui);
-  color: var(--color-brown-dark);
-}
-
-.prop-name {
-  color: var(--color-brown-dark);
-  font-weight: 500;
-}
-
-.prop-value-left,
-.prop-value-right {
-  color: var(--color-brown-muted);
-}
-
-/* 状态标签 */
-.status-tag {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: var(--radius-lg);
-  font-size: 12px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  white-space: nowrap;
-}
-
-.status-match {
-  background-color: rgba(var(--rgb-jade), 0.1);
-  color: var(--color-jade-light);
-}
-
-.status-mismatch {
-  background-color: rgba(var(--rgb-cinnabar), 0.1);
-  color: var(--color-cinnabar);
-}
-
-.status-warning {
-  background-color: rgba(255, 165, 0, 0.1);
-  color: rgba(255, 165, 0, 1);
-}
-
-/* 滚动条样式 */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: rgba(var(--rgb-brown-muted), 0.5);
-  border-radius: var(--radius-xs);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(var(--rgb-brown-muted), 0.8);
 }
 
 /* 移动端响应式优化 */

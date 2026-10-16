@@ -23,6 +23,8 @@
     "docx": "^9.5.1",
     "docx-preview": "^0.4.1",
     "dompurify": "^3.3.3",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "jszip": "^3.10.1",
     "markdown-it": "^14.1.1",
     "officeparser": "^8.0.0",
