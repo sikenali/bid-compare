@@ -4,6 +4,7 @@ import { useSettings } from '../../composables/useSettings'
 import { useToast } from '../../composables/useToast'
 import { riToCompName } from '../../utils/icon'
 import { UiSwitch } from '../../components/ui'
+import { RiRestartLine } from '@remixicon/vue'
 
 const { settings, saveSettings } = useSettings()
 const { show: showToast } = useToast()
@@ -61,6 +62,25 @@ function reset() {
 
 <template>
   <div class="personal-view">
+    <div class="page-header-card">
+      <div class="header-content">
+        <div class="header-info">
+          <div class="breadcrumb">
+            <span>首页</span><span class="sep">/</span>
+            <span>设置中心</span><span class="sep">/</span>
+            <span class="current">个性设置</span>
+          </div>
+          <div class="header-title">
+            <h1>个性设置</h1>
+            <p>配置对比算法、文本处理与功能开关</p>
+          </div>
+        </div>
+        <button class="reset-button" @click="reset">
+          <RiRestartLine class="icon" />恢复默认
+        </button>
+      </div>
+    </div>
+
     <!-- 标签导航 -->
     <div class="tab-nav">
       <button v-for="t in subTabs" :key="t.key" class="tab-btn" :class="{active: subTab===t.key}" @click="subTab=t.key">
@@ -248,6 +268,30 @@ function reset() {
 
 <style scoped>
 .personal-view { display:flex; flex-direction:column; gap:20px; max-width:900px; }
+
+/* Page header card */
+.page-header-card {
+  background-color: var(--color-bg-white, #FFFFFF);
+  border: 0.7px solid var(--color-border-soft, #EDE9E0);
+  border-radius: 16px;
+  padding: 20px 24px;
+}
+.header-content { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; }
+.header-info { flex:1; display:flex; flex-direction:column; gap:4px; }
+.breadcrumb { display:flex; align-items:center; gap:8px; font-size:14px; }
+.breadcrumb span { color:var(--color-text-faint,#A7A296); }
+.breadcrumb span.sep { color:var(--color-text-faint,#A7A296); }
+.breadcrumb span.current { color:var(--color-text-body,#3A3A3A); font-weight:500; }
+.header-title h1 { font-size:30px; font-weight:700; color:var(--color-text-primary,#1F1D1A); margin:12px 0 0 0; letter-spacing:-0.5px; line-height:1.2; }
+.header-title p { font-size:15px; color:var(--color-text-secondary,#6E6A60); margin:8px 0 0 0; }
+.reset-button {
+  display:inline-flex; align-items:center; gap:8px; padding:0 20px; height:48px;
+  border:0.7px solid var(--color-border,#E5DFD3); background:var(--color-bg-white,#FFFFFF);
+  border-radius:12px; font-size:15px; color:var(--color-text-body,#3A3A3A);
+  cursor:pointer; transition:all .2s; flex-shrink:0;
+}
+.reset-button:hover { background:var(--color-bg-secondary,#F7F3EA); }
+.reset-button .icon { font-size:18px; }
 
 /* Tab nav */
 .tab-nav { display:flex; gap:8px; background:var(--color-bg-white,#fff); border:0.7px solid var(--color-border-soft,#EDE9E0); border-radius:12px; padding:6px; width:fit-content; }

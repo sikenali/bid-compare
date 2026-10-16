@@ -15,8 +15,8 @@ import {
   RiFlagLine,
   RiExchangeLine,
   RiLoaderLine,
-  RiExpandLine,
-  RiCollapseLine
+  RiArrowDownLine,
+  RiArrowUpLine
 } from '@remixicon/vue'
 import { Packer } from 'docx'
 import { useSettings } from '../composables/useSettings'
@@ -818,8 +818,8 @@ const handlePreviewRightScroll = () => {
               <div class="col col-content clickable" :class="{ clamped: !isExpanded(segment.id) }" @click="openPreviewForSegment(segment, 'right')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.rightContent)"></div>
               <div class="col col-action">
                 <button class="action-btn action-expand" @click.stop="toggleExpandSegment(segment.id)" :title="isExpanded(segment.id) ? '收起' : '展开全文'">
-                  <RiExpandLine v-if="!isExpanded(segment.id)" />
-                  <RiCollapseLine v-else />
+                  <RiArrowDownLine v-if="!isExpanded(segment.id)" />
+                  <RiArrowUpLine v-else />
                 </button>
                 <button class="action-btn" :class="{ 'action-ignored': ignoredSegments.has(segment.id) }" @click.stop="toggleIgnoreSegment(segment.id)" :title="ignoredSegments.has(segment.id) ? '取消忽略' : '忽略此条'">
                   <RiFlagLine />
