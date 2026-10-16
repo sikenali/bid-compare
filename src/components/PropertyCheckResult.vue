@@ -202,7 +202,7 @@ const getStatusColor = (status: string): string => {
         <span class="stat-total">共：{{ matchCount + mismatchCount + warningCount }} 处</span>
       </div>
       <div class="filter-right">
-        <button class="filter-btn" @click="handleExport">
+        <button class="filter-btn filter-btn-primary" @click="handleExport">
           <RiDownload2Line class="btn-icon" />
           导出
         </button>
@@ -339,6 +339,16 @@ const getStatusColor = (status: string): string => {
 
 .filter-btn:hover {
   background: var(--color-bg-secondary, #F7F3EA);
+}
+
+.filter-btn-primary {
+  border: none;
+  background: var(--color-accent-red, #C0392B);
+  color: var(--color-white, #FFFFFF);
+}
+
+.filter-btn-primary:hover {
+  background: var(--color-accent-red-dark, #A93226);
 }
 
 .btn-icon {

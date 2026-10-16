@@ -344,7 +344,6 @@ function handleReplace() {
         >
           <RiArrowLeftRightLine class="toolbar-icon" />
           <div class="toolbar-tip">
-            <RiArrowLeftRightLine class="tip-icon" />
             文件对比
           </div>
         </button>
@@ -355,7 +354,6 @@ function handleReplace() {
         >
           <RiListSettingsLine class="toolbar-icon" />
           <div class="toolbar-tip">
-            <RiListSettingsLine class="tip-icon" />
             属性检查
           </div>
         </button>
@@ -481,14 +479,6 @@ function handleReplace() {
   transition: opacity 0.16s ease, transform 0.16s ease;
   box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.12));
   z-index: 100;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.toolbar-tip .tip-icon {
-  font-size: 14px;
-  color: var(--color-primary, #C0392B);
 }
 
 .toolbar-nav-btn:hover .toolbar-tip {
