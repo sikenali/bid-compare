@@ -194,6 +194,8 @@ async function handleCompare() {
       rightTotalPages: 1,
       leftFileContent: lText,
       rightFileContent: rText,
+      leftFileBlob: leftFileInfo.value.file,
+      rightFileBlob: rightFileInfo.value.file,
     }
 
     const resultId = storeCompareResult(comparisonResult)

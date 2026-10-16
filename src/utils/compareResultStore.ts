@@ -13,6 +13,8 @@ interface CompareResultData {
   rightTotalPages?: number
   leftFileContent?: string
   rightFileContent?: string
+  leftFileBlob?: Blob
+  rightFileBlob?: Blob
   imageDuplicates?: any[]
 }
 

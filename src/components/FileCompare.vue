@@ -493,6 +493,8 @@ const handleCompare = async () => {
       rightTotalPages: rightResult.pageMap?.totalPages || 1,
       leftFileContent: leftContent,
       rightFileContent: rightContent,
+      leftFileBlob: leftFileInfo.value.file,
+      rightFileBlob: rightFileInfo.value.file,
       imageDuplicates
     }
 

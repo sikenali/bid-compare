@@ -48,6 +48,8 @@ const textSimilarity = ref('0%')
 const similarSegmentsCount = ref(0)
 const leftFileContent = ref('')
 const rightFileContent = ref('')
+const leftFileBlob = ref<Blob | null>(null)
+const rightFileBlob = ref<Blob | null>(null)
 const leftTotalPages = ref(1)
 const rightTotalPages = ref(1)
 
@@ -161,22 +163,29 @@ const togglePreviewMode = () => {
   showPreviewModal.value = !showPreviewModal.value
 }
 
-// 创建文本 Blob 用于 OpenFileViewer (使用 computed 缓存)
-const leftPreviewBlob = computed(() => {
-  if (!leftFileContent.value) return null
-  const text = leftFileContent.value.includes('<') ? 
-    leftFileContent.value.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&') 
-    : leftFileContent.value
-  return new Blob([text], { type: 'text/plain;charset=utf-8' })
-})
+// 创建预览 Blob 用于 OpenFileViewer
+const getMimeType = (filename: string): string => {
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  switch (ext) {
+    case 'pdf': return 'application/pdf'
+    case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    case 'doc': return 'application/msword'
+    case 'xlsx': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    case 'xls': return 'application/vnd.ms-excel'
+    case 'pptx': return 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    case 'ppt': return 'application/vnd.ms-powerpoint'
+    case 'txt': return 'text/plain'
+    case 'md': return 'text/markdown'
+    case 'html': return 'text/html'
+    default: return 'application/octet-stream'
+  }
+}
 
-const rightPreviewBlob = computed(() => {
-  if (!rightFileContent.value) return null
-  const text = rightFileContent.value.includes('<') ? 
-    rightFileContent.value.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&') 
-    : rightFileContent.value
-  return new Blob([text], { type: 'text/plain;charset=utf-8' })
-})
+const leftPreviewBlob = computed(() => leftFileBlob.value)
+const rightPreviewBlob = computed(() => rightFileBlob.value)
+
+const leftMimeType = computed(() => getMimeType(leftFileName.value || 'file.docx'))
+const rightMimeType = computed(() => getMimeType(rightFileName.value || 'file.docx'))
 
 // 同步滚动状态
 const syncScroll = ref(true)
@@ -288,6 +297,8 @@ const initData = () => {
 
     leftFileContent.value = resultData.leftFileContent || ''
     rightFileContent.value = resultData.rightFileContent || ''
+    leftFileBlob.value = resultData.leftFileBlob || null
+    rightFileBlob.value = resultData.rightFileBlob || null
 
     imageDuplicates.value = resultData.imageDuplicates || []
   }
@@ -1144,7 +1155,7 @@ const handlePreviewRightScroll = () => {
               :key="previewKey + 'left'"
               :file="leftPreviewBlob"
               :file-name="leftFileName || '文件A'"
-              :mime-type="'text/plain'"
+              :mime-type="leftMimeType"
               :plugins="viewerPlugins"
               :toolbar="true"
               height="100%"
@@ -1161,7 +1172,7 @@ const handlePreviewRightScroll = () => {
               :key="previewKey + 'right'"
               :file="rightPreviewBlob"
               :file-name="rightFileName || '文件B'"
-              :mime-type="'text/plain'"
+              :mime-type="rightMimeType"
               :plugins="viewerPlugins"
               :toolbar="true"
               height="100%"
