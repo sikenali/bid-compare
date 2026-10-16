@@ -36,7 +36,7 @@ const loadData = () => {
   let data: any = null
 
   // 1. 优先尝试从路由参数中的 resultId 读取模块级存储
-  const resultId = route.query.resultId as string
+  const resultId = route.params.resultId as string
   if (resultId) {
     data = getPropertyCheckResult(resultId)
     // 读取后删除，避免内存积累

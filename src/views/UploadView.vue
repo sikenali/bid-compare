@@ -208,7 +208,7 @@ async function handleCompare() {
     })
 
     await waitStepStrip()
-    router.push({ path: '/file-compare-result', query: { resultId } })
+    router.push({ path: `/file-compare-result/${resultId}` })
   } catch (error: any) {
     if (error.name === 'AbortError') {
       showError('对比已取消')
@@ -283,7 +283,7 @@ async function handleCheck() {
     const resultId = storePropertyCheckResult(checkResult)
 
     await waitStepStrip()
-    router.push({ path: '/property-check-result', query: { resultId } })
+    router.push({ path: `/property-check-result/${resultId}` })
   } catch (error: any) {
     parseError.value = error.message
   } finally {

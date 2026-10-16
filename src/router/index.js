@@ -33,7 +33,7 @@ const routes = [
     meta: { title: '文比猩 - 属性检查' }
   },
   {
-    path: '/property-check-result',
+    path: '/property-check-result/:resultId',
     name: 'PropertyCheckResult',
     component: PropertyCheckResult,
     meta: { title: '文比猩 - 属性检查结果' }

@@ -511,8 +511,8 @@ const handleCompare = async () => {
       similarSegments: result.segments
     })
 
-    // 跳转到结果页面，传递存储 ID 和时间戳
-    router.push({ path: '/file-compare-result', query: { resultId, t: Date.now() } })
+    // 跳转到结果页面，传递存储 ID
+    router.push({ path: `/file-compare-result/${resultId}` })
   } catch (error) {
     isProcessing.value = false
     comparisonParseError.value = (error as Error).message

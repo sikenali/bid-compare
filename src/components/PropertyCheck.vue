@@ -255,7 +255,7 @@ const handleCheck = async () => {
     const resultId = storePropertyCheckResult(checkResult)
 
     // 跳转到结果页面，传递存储 ID
-    router.push({ path: '/property-check-result', query: { resultId, t: Date.now() } })
+    router.push({ path: `/property-check-result/${resultId}` })
   } catch (error) {
     parseError.value = (error as Error).message;
   } finally {
