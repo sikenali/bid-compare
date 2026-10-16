@@ -268,7 +268,7 @@ async function resetAll() {
 .export-view { display: flex; flex-direction: column; gap: 20px; }
 
 .page-header-card {
-  background: var(--color-bg-white, #FFFFFF);
+  background-color: var(--color-bg-white, #FFFFFF);
   border: 0.7px solid var(--color-border-soft, #EDE9E0);
   border-radius: 16px; padding: 20px 24px;
 }
@@ -291,7 +291,7 @@ async function resetAll() {
 .reset-button .icon { font-family: "remixicon", sans-serif; font-style: normal; font-size: 18px; }
 
 .section-card {
-  background: var(--color-bg-white, #FFFFFF);
+  background-color: var(--color-bg-white, #FFFFFF);
   border: 0.7px solid var(--color-border-soft, #EDE9E0);
   border-radius: 16px; padding: 24px 40px;
 }

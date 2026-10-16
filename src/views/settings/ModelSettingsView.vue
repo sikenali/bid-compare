@@ -375,7 +375,7 @@ onMounted(async () => {
 .model-view { display: flex; flex-direction: column; gap: 20px; }
 
 .page-header-card {
-  background: var(--color-bg-white, #FFFFFF);
+  background-color: var(--color-bg-white, #FFFFFF);
   border: 0.7px solid var(--color-border-soft, #EDE9E0);
   border-radius: 16px; padding: 20px 24px;
 }
@@ -397,7 +397,7 @@ onMounted(async () => {
 .reset-button .icon { font-family: "remixicon", sans-serif; font-style: normal; font-size: 18px; }
 
 .section-card {
-  background: var(--color-bg-white, #FFFFFF);
+  background-color: var(--color-bg-white, #FFFFFF);
   border: 0.7px solid var(--color-border-soft, #EDE9E0);
   border-radius: 16px; padding: 24px 40px;
 }
@@ -410,7 +410,7 @@ onMounted(async () => {
 .density-group > * > * { flex: 1; }
 
 .config-form {
-  margin-top: 24px; background: var(--color-bg-card, #FCFBF8);
+  margin-top: 24px; background-color: var(--color-bg-card, #FCFBF8);
   border: 0.7px solid var(--color-border-soft, #EDE9E0); border-radius: 16px; padding: 24px;
   display: flex; flex-direction: column; gap: 20px;
 }
@@ -424,7 +424,7 @@ onMounted(async () => {
 .form-input-row > .ui-input { flex: 1; min-width: 0; }
 .form-input-row { display: flex; align-items: center; flex: 1; position: relative; }
 .form-key-toggle {
-  border: none; background: transparent; cursor: pointer; padding: 0;
+  border: none; background-color: transparent; cursor: pointer; padding: 0;
   display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px;
 }
 .form-key-toggle .icon { font-family: "remixicon", sans-serif; font-style: normal; font-size: 18px; color: var(--color-text-faint, #A7A296); }
@@ -433,11 +433,11 @@ onMounted(async () => {
 .form-actions { margin-top: 20px; display: flex; justify-content: flex-end; }
 .btn-save {
   height: 44px; padding: 0 28px; border: none; border-radius: 10px;
-  background: var(--color-primary, #C0392B); color: #fff; font-size: 15px; font-weight: 500;
+  background-color: var(--color-primary, #C0392B); color: #fff; font-size: 15px; font-weight: 500;
   cursor: pointer; font-family: "SourceHanSans-Medium", var(--font-family-cn);
-  transition: background 0.2s, transform 0.1s; white-space: nowrap;
+  transition: background-color 0.2s, transform 0.1s; white-space: nowrap;
 }
-.btn-save:hover { background: color-mix(in srgb, var(--color-primary, #C0392B) 88%, black); }
+.btn-save:hover { background-color: color-mix(in srgb, var(--color-primary, #C0392B) 88%, black); }
 .btn-save:active { transform: scale(0.97); }
 
 .saved-keys {
@@ -451,7 +451,7 @@ onMounted(async () => {
 }
 .saved-key-item {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 12px 16px; background: var(--color-bg-card, #FCFBF8);
+  padding: 12px 16px; background-color: var(--color-bg-card, #FCFBF8);
   border: 0.7px solid var(--color-border-soft, #EDE9E0); border-radius: 12px;
 }
 .saved-key-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -465,14 +465,14 @@ onMounted(async () => {
 .saved-key-edit,
 .saved-key-delete {
   height: 30px; padding: 0 10px; border: 0.7px solid var(--color-border-soft, #EDE9E0);
-  border-radius: 8px; background: var(--color-bg-white, #fff); cursor: pointer;
+  border-radius: 8px; background-color: var(--color-bg-white, #fff); cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 4px;
-  font-size: 12px; color: var(--color-text-secondary, #6E6A60); transition: background 0.15s;
+  font-size: 12px; color: var(--color-text-secondary, #6E6A60); transition: background-color 0.15s;
   font-family: "SourceHanSans-Regular", var(--font-family-cn);
 }
-.saved-key-test:hover { background: var(--color-bg-secondary, #F7F3EA); }
-.saved-key-edit:hover { background: var(--color-bg-secondary, #F7F3EA); }
-.saved-key-delete:hover { background: rgba(192, 57, 43, 0.08); color: var(--color-primary, #C0392B); }
+.saved-key-test:hover { background-color: var(--color-bg-secondary, #F7F3EA); }
+.saved-key-edit:hover { background-color: var(--color-bg-secondary, #F7F3EA); }
+.saved-key-delete:hover { background-color: rgba(192, 57, 43, 0.08); color: var(--color-primary, #C0392B); }
 .saved-key-test:disabled { opacity: 0.4; cursor: not-allowed; }
 .saved-key-test .icon,
 .saved-key-edit .icon,
