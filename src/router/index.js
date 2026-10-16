@@ -21,7 +21,7 @@ const routes = [
     meta: { title: '文比猩 - 文件对比' }
   },
   {
-    path: '/file-compare-result',
+    path: '/file-compare-result/:resultId',
     name: 'FileCompareResult',
     component: FileCompareResult,
     meta: { title: '文比猩 - 对比结果' }

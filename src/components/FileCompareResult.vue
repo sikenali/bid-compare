@@ -1521,49 +1521,31 @@ const handlePreviewRightScroll = () => {
   border: 0.7px solid rgba(237, 233, 224, 1);
   border-radius: 12px;
   overflow: hidden;
-  padding: 0 16px;
+  padding: 0 12px;
 }
 
 .table-header {
   display: flex;
   background: rgba(247, 243, 234, 1);
   border-radius: 8px;
-  padding: 0 24px;
-  height: 54px;
+  padding: 0 20px;
+  height: 48px;
   align-items: center;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   color: rgba(110, 106, 96, 1);
 }
 
 .table-body {
-  max-height: 500px;
-  overflow-y: auto;
-}
-
-.table-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.table-body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.table-body::-webkit-scrollbar-thumb {
-  background: var(--color-tan-dark);
-  border-radius: 3px;
-}
-
-.table-body::-webkit-scrollbar-thumb:hover {
-  background: var(--color-brown-muted);
+  overflow: visible;
 }
 
 .table-row {
   display: flex;
   border-bottom: 0.7px solid rgba(237, 233, 224, 1);
-  height: 88px;
+  height: 56px;
   align-items: center;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.2;
   position: relative;
 }
@@ -1593,18 +1575,18 @@ const handlePreviewRightScroll = () => {
 }
 
 .col {
-  padding: 0 12px;
+  padding: 0 10px;
   display: flex;
   align-items: center;
 }
 
 .col-index {
-  width: 96px;
+  width: 60px;
   flex-shrink: 0;
   justify-content: flex-start;
   padding-left: 0;
   color: rgba(138, 133, 120, 1);
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .table-row .col-index {
@@ -1807,8 +1789,8 @@ const handlePreviewRightScroll = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  margin-top: 8px;
+  padding: 16px 0;
+  margin-top: auto;
   gap: 16px;
 }
 
