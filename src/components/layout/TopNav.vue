@@ -26,12 +26,18 @@ const showSettingsModal = ref(false)
       <span class="page-title">{{ title || BRAND_NAME }}</span>
     </div>
     <div class="nav-right">
-      <button v-if="showBack" class="nav-btn" @click="router.back()" title="返回">
-        <RiArrowLeftSLine class="icon" />
-      </button>
-      <button class="nav-btn" @click="showSettingsModal = true" title="设置">
-        <RiSettings3Line class="icon" />
-      </button>
+      <div class="nav-btn-wrap" v-if="showBack">
+        <button class="nav-btn" @click="router.back()">
+          <RiArrowLeftSLine class="icon" />
+        </button>
+        <span class="nav-tip">返回</span>
+      </div>
+      <div class="nav-btn-wrap">
+        <button class="nav-btn" @click="showSettingsModal = true">
+          <RiSettings3Line class="icon" />
+        </button>
+        <span class="nav-tip">设置</span>
+      </div>
     </div>
     <SettingsModal v-model:visible="showSettingsModal" />
   </header>
@@ -124,6 +130,51 @@ const showSettingsModal = ref(false)
 
 .nav-btn:hover .icon {
   color: #fff;
+}
+
+.nav-btn-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-tip {
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.96);
+  padding: 7px 12px;
+  border-radius: 9px;
+  background-color: var(--color-bg-white, #FFFFFF);
+  border: 0.7px solid var(--color-border, #E5DFD3);
+  color: var(--color-text-body, #3A3A3A);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.12));
+  z-index: 100;
+}
+
+.nav-tip::after {
+  content: '';
+  position: absolute;
+  top: calc(100% - 4px);
+  left: calc(50% - 3.5px);
+  width: 7px;
+  height: 7px;
+  background-color: inherit;
+  transform: rotate(45deg);
+}
+
+.nav-btn-wrap:hover .nav-tip {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
 }
 
 @media (max-width: 768px) {
