@@ -40,7 +40,7 @@ export interface FileCompareSettings {
   theme: string
 }
 
-const SETTINGS_VERSION = 2
+const SETTINGS_VERSION = 3
 
 // 定义默认设置
 export const defaultSettings: FileCompareSettings = {
@@ -57,7 +57,7 @@ export const defaultSettings: FileCompareSettings = {
   paragraphCount: 5,
   minDupChars: 8,
   clauseRemovalEnabled: false,
-  clauseRemovalGranularity: 5,
+  clauseRemovalGranularity: 12,
   removeWatermark: true,
   enableImageCompare: false,
   ocrLanguage: 'chi_sim+eng',

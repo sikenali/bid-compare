@@ -106,17 +106,28 @@ export async function deleteApiKey(id: string): Promise<void> {
   setSetting('apikeys', keys.filter(k => k.id !== id));
 }
 
+const DEFAULT_ENDPOINTS: Record<string, string> = {
+  openai: 'https://api.openai.com/v1/chat/completions',
+  deepseek: 'https://api.deepseek.com/v1/chat/completions',
+  qwen: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+  wenxin: 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro',
+  glm: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+  anthropic: 'https://api.anthropic.com/v1/messages',
+  claude: 'https://api.anthropic.com/v1/messages',
+};
+
 export async function testApiKey(data: { id?: string; provider?: string; model?: string; key?: string; endpoint?: string; format?: string }): Promise<{ available: boolean; error?: string }> {
   const keys = getSetting<ApiKeyData[]>('apikeys', []);
   const key = data.id ? keys.find(k => k.id === data.id) : null;
   const apiKey = data.key || key?.api_key || '';
   const provider = data.provider || key?.provider || '';
   const format = data.format || (key as any)?.format || 'openai';
-  
+
   if (!apiKey) return { available: false, error: '未配置 API Key' };
-  
+
   try {
-    const endpoint = data.endpoint || key?.base_url || '';
+    // 快捷服务商无 base_url 时回落默认端点，不再必失败
+    const endpoint = data.endpoint || key?.base_url || DEFAULT_ENDPOINTS[provider] || '';
     if (endpoint) {
       const resp = await fetch(endpoint, {
         method: 'POST',

@@ -35,7 +35,10 @@ export function sanitizeHTML(html: string): string {
  * @param html 包含 highlighted-text class 的 HTML
  * @returns 添加了 data-full-text 属性的 HTML
  */
-export function addHighlightTooltip(html: string): string {
+/** tooltip 全文上限：超长片段不再把几千字塞进 DOM 属性 */
+export const HIGHLIGHT_TOOLTIP_MAX = 200
+
+export function addHighlightTooltip(html: string, maxChars = HIGHLIGHT_TOOLTIP_MAX): string {
   if (!html) return ''
   
   // 使用正则表达式为 highlighted-text 添加 data-full-text 属性和 tooltip 类
@@ -51,8 +54,10 @@ export function addHighlightTooltip(html: string): string {
         .replace(/&#039;/g, "'")
         .replace(/<[^>]*>/g, '')
       
+      // 超长截断，避免巨型片段撑爆 DOM 属性
+      const truncated = plainText.length > maxChars ? plainText.slice(0, maxChars) + '…' : plainText
       // 转义用于 data 属性
-      const escapedText = plainText
+      const escapedText = truncated
         .replace(/&/g, '&amp;')
         .replace(/"/g, '&quot;')
         .replace(/</g, '&lt;')

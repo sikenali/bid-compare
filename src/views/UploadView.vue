@@ -201,6 +201,8 @@ async function handleCompare() {
     const resultId = storeCompareResult(comparisonResult)
 
     addFcRecord({
+      filename: `${leftFileInfo.value.name} vs ${rightFileInfo.value.name}`,
+      timestamp: new Date().toLocaleString(),
       leftFileName: leftFileInfo.value.name,
       rightFileName: rightFileInfo.value.name,
       similarity: textSimilarity,
@@ -261,6 +263,8 @@ async function handleCheck() {
     warningProperties.value = propertyDetails.value.filter(p => p.status === 'warning').length
 
     addPcRecord({
+      filename: `${leftFileInfo.value.name} vs ${rightFileInfo.value.name}`,
+      timestamp: new Date().toLocaleString(),
       leftFileName: leftFileInfo.value.name,
       rightFileName: rightFileInfo.value.name,
       similarity: `${similarity}%`,

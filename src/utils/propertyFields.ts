@@ -27,6 +27,24 @@ export interface PropertyFieldDef {
   fallback: string;
   /** 不匹配时是否使用 warning 状态(用于文件类型等差异容忍字段) */
   fallbackMismatchToWarning?: boolean;
+  /**
+   * 元数据字段为 true(默认): 任一边为兜底值即判 warning("无法判断"而非"不一致")。
+   * 文件名称/大小/类型/页码/字数等硬指标设为 false, 保持精确比对。
+   */
+  unknownIsWarning?: boolean;
+}
+
+/**
+ * 元数据归一化: NFKC + 去首尾空格 + 压缩空白 + 忽略大小写 + 去 ®™© 等装饰符。
+ * 只用于比较, 展示仍用原文。如 "Microsoft® Word" vs "microsoft word" 判一致。
+ */
+export function normalizeMetaValue(v: string): string {
+  return v
+    .normalize('NFKC')
+    .replace(/[®™©○●]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
 }
 
 /**
@@ -34,19 +52,19 @@ export interface PropertyFieldDef {
  * key 与 useFileParser 解析出的 properties 字段一致
  */
 export const PROPERTY_FIELDS: PropertyFieldDef[] = [
-  { name: '文件名称',     keys: ['文件名', '文件名称'],           fallback: '' },
-  { name: '文件大小',     keys: ['文件大小'],                   fallback: '未知' },
-  { name: '文件类型',     keys: ['文件类型'],                   fallback: '未知', fallbackMismatchToWarning: true },
+  { name: '文件名称',     keys: ['文件名', '文件名称'],           fallback: '', unknownIsWarning: false },
+  { name: '文件大小',     keys: ['文件大小'],                   fallback: '未知', unknownIsWarning: false },
+  { name: '文件类型',     keys: ['文件类型'],                   fallback: '未知', fallbackMismatchToWarning: true, unknownIsWarning: false },
   { name: '作者',         keys: ['作者'],                       fallback: '未知' },
   { name: '最后一次保存者', keys: ['最后一次保存者'],              fallback: '未知' },
   { name: '修订号',       keys: ['修订号'],                     fallback: '未知' },
-  { name: '页码范围',     keys: ['页码范围'],                   fallback: '未知' },
+  { name: '页码范围',     keys: ['页码范围'],                   fallback: '未知', unknownIsWarning: false },
   { name: '程序名称',     keys: ['程序名称'],                   fallback: '未知', fallbackMismatchToWarning: true },
   { name: '公司',         keys: ['公司'],                       fallback: '未知' },
   { name: '创建时间',     keys: ['创建时间'],                   fallback: '未知' },
   { name: '修改时间',     keys: ['修改时间'],                   fallback: '未知' },
-  { name: '页数',         keys: ['页数', '页码范围'],             fallback: '未知' },
-  { name: '文件字数',     keys: ['文本内容长度', '文件字数'],      fallback: '0' }
+  { name: '页数',         keys: ['页数', '页码范围'],             fallback: '未知', unknownIsWarning: false },
+  { name: '文件字数',     keys: ['文本内容长度', '文件字数'],      fallback: '0', unknownIsWarning: false }
 ];
 
 /**
@@ -127,16 +145,29 @@ function pickValue(
 /**
  * 比较两个取值源的字段值,产出 status
  */
+/**
+ * 未知值集合: 解析层各处占位写法不统一(未知/未知作者/未知用户/N/A/空),
+ * 一律视为"未提取到", 避免"未知用户 vs 未知"这种假不一致。
+ */
+const UNKNOWN_VALUES = new Set(['', '未知', '未知作者', '未知用户', '未知公司', 'N/A', 'n/a', '-', '--']);
+function isUnknown(v: string, fb: string): boolean {
+  return v === fb || UNKNOWN_VALUES.has(v.trim());
+}
+
 function compareValues(
   left: string,
   right: string,
   field: PropertyFieldDef,
   fallbackOverride: string | null
 ): PropertyStatus {
-  if (left === right) return 'match';
-  // 都退化到兜底视为"无法判断"
   const fb = fallbackOverride ?? field.fallback;
-  if (left === fb && right === fb) return 'warning';
+  // 双方都未知: 之前会命中相等判绿, 现改为存疑("都没提出来"不等于"一致")
+  if (isUnknown(left, fb) && isUnknown(right, fb)) return 'warning';
+  // 归一化后比较, 大小写/首尾空格/®™ 等装饰符差异不算不一致
+  if (normalizeMetaValue(left) === normalizeMetaValue(right)) return 'match';
+  // 元数据字段: 任一边未知即"无法判断", 不判红
+  const unknownIsWarning = field.unknownIsWarning ?? true;
+  if (unknownIsWarning && (isUnknown(left, fb) || isUnknown(right, fb))) return 'warning';
   return field.fallbackMismatchToWarning ? 'warning' : 'mismatch';
 }
 

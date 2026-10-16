@@ -199,6 +199,10 @@ const getStatusColor = (status: string): string => {
           <RiCloseCircleLine class="stat-icon" />
           <span>不同 {{ mismatchCount }} 处</span>
         </div>
+        <div v-if="warningCount > 0" class="stat-badge stat-warning">
+          <RiAlertLine class="stat-icon" />
+          <span>存疑 {{ warningCount }} 处</span>
+        </div>
         <span class="stat-total">共：{{ matchCount + mismatchCount + warningCount }} 处</span>
       </div>
       <div class="filter-right">
@@ -229,13 +233,13 @@ const getStatusColor = (status: string): string => {
             class="table-row"
             :class="{ 'row-alternate': index % 2 === 1 }"
           >
-            <div class="color-bar" :class="property.status === 'match' ? 'bar-match' : 'bar-mismatch'"></div>
+            <div class="color-bar" :class="property.status === 'match' ? 'bar-match' : property.status === 'warning' ? 'bar-warning' : 'bar-mismatch'"></div>
             <div class="td td-index">{{ index + 1 }}</div>
             <div class="td td-name">{{ property.name }}</div>
-            <div class="td td-value" :class="property.status === 'mismatch' ? 'text-mismatch' : 'text-match'">
+            <div class="td td-value" :class="property.status === 'mismatch' ? 'text-mismatch' : property.status === 'warning' ? 'text-warning' : 'text-match'">
               {{ property.leftValue }}
             </div>
-            <div class="td td-value" :class="property.status === 'mismatch' ? 'text-mismatch' : 'text-match'">
+            <div class="td td-value" :class="property.status === 'mismatch' ? 'text-mismatch' : property.status === 'warning' ? 'text-warning' : 'text-match'">
               {{ property.rightValue }}
             </div>
             <div class="td td-result">
@@ -307,6 +311,16 @@ const getStatusColor = (status: string): string => {
 
 .stat-mismatch .stat-icon {
   color: var(--color-cinnabar, #C0392B);
+  font-size: 17px;
+}
+
+.stat-warning {
+  background: var(--color-diff-modified, #FFF8E1);
+  color: var(--color-text-body, #3A3A3A);
+}
+
+.stat-warning .stat-icon {
+  color: var(--color-gold-dark, #D4A030);
   font-size: 17px;
 }
 
@@ -422,6 +436,10 @@ const getStatusColor = (status: string): string => {
   background: var(--color-cinnabar, #C0392B);
 }
 
+.bar-warning {
+  background: var(--color-gold-dark, #D4A030);
+}
+
 .td {
   font-size: 16px;
   font-family: var(--font-ui);
@@ -442,6 +460,10 @@ const getStatusColor = (status: string): string => {
 
 .text-mismatch {
   color: var(--color-cinnabar, #C0392B);
+}
+
+.text-warning {
+  color: var(--color-text-muted, #8A8578);
 }
 
 .text-match {

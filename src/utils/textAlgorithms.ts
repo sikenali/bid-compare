@@ -759,13 +759,15 @@ export function levelOf(similarity: number): 'high' | 'medium' | 'low' {
 
 /**
  * 融合邻近精确片段 → 模糊片段（改写句子的 80-99% 档）
- * 间隔 maxGap 内且双侧都邻近才合，并用编辑相似度重算
+ * 间隔 maxGap 内且双侧都邻近才合，并用编辑相似度重算；
+ * maxSpan 封顶合并后跨度，防止整篇连成 9000 字巨型片段撑爆表格
  */
 export function fuseNearbySegments(
   segments: SimilarSegment[],
   text1: string,
   text2: string,
-  maxGap = 30
+  maxGap = 30,
+  maxSpan = 600
 ): SimilarSegment[] {
   if (segments.length < 2) return segments
   const sorted = [...segments].sort((a, b) => (a.leftStartIndex ?? 0) - (b.leftStartIndex ?? 0))
@@ -775,7 +777,9 @@ export function fuseNearbySegments(
     const nxt = sorted[k]
     const lGap = (nxt.leftStartIndex ?? 0) - (cur.leftEndIndex ?? 0)
     const rGap = (nxt.rightStartIndex ?? 0) - (cur.rightEndIndex ?? 0)
-    if (lGap >= 0 && lGap <= maxGap && rGap >= 0 && rGap <= maxGap) {
+    const lSpan = (nxt.leftEndIndex ?? 0) - (cur.leftStartIndex ?? 0)
+    const rSpan = (nxt.rightEndIndex ?? 0) - (cur.rightStartIndex ?? 0)
+    if (lGap >= 0 && lGap <= maxGap && rGap >= 0 && rGap <= maxGap && lSpan <= maxSpan && rSpan <= maxSpan) {
       const lStart = cur.leftStartIndex ?? 0
       const lEnd = nxt.leftEndIndex ?? 0
       const rStart = cur.rightStartIndex ?? 0

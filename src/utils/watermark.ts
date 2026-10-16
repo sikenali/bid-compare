@@ -12,15 +12,16 @@ const WATERMARK_PATTERNS: RegExp[] = [
   /免[责\s]*?[声\s]*?[明\s]*?/gi,
   /[仅\s]*?[供\s]*?[内\s]*?[部\s]*?[交\s]*?[流\s]*?/gi,
   /[参\s]*?[考\s]*?[资\s]*?[料\s]*?/gi,
-  /[草\s]*?[稿\s]*?/gi,
-  /[讨\s]*?[论\s]*?[稿\s]*?/gi,
-  /[审\s]*?[议\s]*?[稿\s]*?/gi,
-  /[征\s]*?[求\s]*?[意\s]*?[见\s]*?[稿\s]*?/gi,
-  /[送\s]*?[审\s]*?[稿\s]*?/gi,
-  /[修\s]*?[改\s]*?[稿\s]*?/gi,
-  /[初\s]*?[稿\s]*?/gi,
-  /[终\s]*?[稿\s]*?/gi,
-  /[定\s]*?[稿\s]*?/gi,
+  // 稿件类水印：必须“XX稿”完整成词才删，避免杀掉正文单个“草/稿”字
+  /^\s*[（(【\[]?.{0,6}草稿.{0,6}[）)】\]]?\s*$/gim,
+  /^\s*[（(【\[]?.{0,6}讨论稿.{0,6}[）)】\]]?\s*$/gim,
+  /^\s*[（(【\[]?.{0,6}审议稿.{0,6}[）)】\]]?\s*$/gim,
+  /^\s*[（(【\[]?.{0,6}征求意见稿.{0,6}[）)】\]]?\s*$/gim,
+  /^\s*[（(【\[]?.{0,6}送审稿.{0,6}[）)】\]]?\s*$/gim,
+  /^\s*[（(【\[]?.{0,6}修改稿.{0,6}[）)】\]]?\s*$/gim,
+  /^\s*[（(【\[]?.{0,6}初稿.{0,6}[）)】\]]?\s*$/gim,
+  /^\s*[（(【\[]?.{0,6}终稿.{0,6}[）)】\]]?\s*$/gim,
+  /^\s*[（(【\[]?.{0,6}定稿.{0,6}[）)】\]]?\s*$/gim,
   /[版\s]*?[本\s]*?[：:]\s*V?\d+[\.\d]*/gi,
   /第[一二三四五六七八九十\d]+\s*版/gi,
   /[更\s]*?[新\s]*?[日\s]*?[期\s]*?[：:]\s*\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日]?/gi,
@@ -48,7 +49,13 @@ export function removeWatermarks(text: string): string {
   if (!text) return ''
   let result = text
   for (const pattern of WATERMARK_PATTERNS) {
-    result = result.replace(pattern, '')
+    // 误杀兜底：单次匹配长度 <4 的不删（符号行类白名单除外）
+    const isSymbolLine = pattern.source.startsWith('^\\s*[') || pattern.source.startsWith('^[');
+    if (isSymbolLine) {
+      result = result.replace(pattern, '')
+    } else {
+      result = result.replace(pattern, (m) => (m && m.trim().length >= 4 ? '' : m))
+    }
   }
   result = result.replace(/\n{3,}/g, '\n\n')
   result = result.trim()

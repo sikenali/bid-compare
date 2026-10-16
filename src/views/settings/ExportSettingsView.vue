@@ -47,12 +47,14 @@ const num = (v: boolean) => (v ? 1 : 0)
 
 function mapFormatToSettings(fmt: string): string {
   if (fmt === 'docx') return 'word'
+  if (fmt === 'pdf') return 'pdf'
   if (fmt === 'markdown') return 'md'
   return 'word'
 }
 
 function mapSettingsToFormat(f: string): string {
   if (f === 'word') return 'docx'
+  if (f === 'pdf') return 'pdf'
   if (f === 'md') return 'markdown'
   return 'docx'
 }

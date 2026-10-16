@@ -407,19 +407,20 @@ const handleExport = () => {
     return
   }
 
-  if (settings.exportFormat === 'word') {
-    generateWordReport()
+  // 口径统一：'md' 走 Markdown，其余（含 word/pdf）走 Word（暂无 PDF 生成器，pdf 回落 word）
+  if (settings.exportFormat === 'md') {
+    const md = generateMarkdownReport()
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `多文件对比报告-${new Date().getTime()}.md`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
     return
   }
 
-  const md = generateMarkdownReport()
-  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
-  link.download = `多文件对比报告-${new Date().getTime()}.md`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  generateWordReport()
 }
 
 const generateMarkdownReport = (): string => {

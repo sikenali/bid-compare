@@ -80,6 +80,9 @@ const getDefaultEndpoint = (model: string): string => {
       return 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro'
     case 'glm':
       return 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
+    case 'anthropic':
+    case 'claude':
+      return 'https://api.anthropic.com/v1/messages'
     default:
       throw new Error('不支持的AI模型')
   }
@@ -140,6 +143,13 @@ export function useAIModel() {
           model: 'glm-4-flash',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` }
         }
+      case 'anthropic':
+      case 'claude':
+        return {
+          apiUrl: settings.apiEndpoint || 'https://api.anthropic.com/v1/messages',
+          model: 'claude-3-5-sonnet-20241022',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` }
+        }
       default:
         throw new Error('不支持的AI模型')
     }
@@ -190,9 +200,16 @@ ${JSON.stringify(similarSegments.slice(0, 5), null, 2)}
         throw new Error('未配置API密钥，请在系统设置中配置')
       }
 
-      // 验证 endpoint 是否在白名单中，防止 API Key 泄露到恶意服务器
-      const endpointToUse = activeKey?.base_url || settings.apiEndpoint || getDefaultEndpoint(settings.selectedModel)
-      if (!validateEndpoint(endpointToUse)) {
+      // 用户已在本地主动保存的自定义地址视为可信（https 才放行），仅对非自定义地址做白名单校验
+      const customEndpoint = activeKey?.base_url || settings.apiEndpoint || ''
+      const endpointToUse = customEndpoint || getDefaultEndpoint(settings.selectedModel)
+      if (customEndpoint) {
+        let protocol = ''
+        try { protocol = new URL(endpointToUse).protocol } catch { /* ignore */ }
+        if (protocol !== 'https:') {
+          throw new Error(`自定义 API 地址必须使用 HTTPS: ${endpointToUse}`)
+        }
+      } else if (!validateEndpoint(endpointToUse)) {
         throw new Error(`API 地址不在白名单中: ${endpointToUse}\n允许的域名: ${ALLOWED_ENDPOINTS.join(', ')}`)
       }
 
