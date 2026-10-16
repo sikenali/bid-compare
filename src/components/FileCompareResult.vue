@@ -13,7 +13,10 @@ import {
   RiArrowRightSLine,
   RiSearchLine,
   RiFlagLine,
-  RiExchangeLine
+  RiExchangeLine,
+  RiLoaderLine,
+  RiExpandLine,
+  RiCollapseLine
 } from '@remixicon/vue'
 import { Packer } from 'docx'
 import { useSettings } from '../composables/useSettings'
@@ -800,10 +803,10 @@ const handlePreviewRightScroll = () => {
             <div class="col col-action">操作</div>
           </div>
           <div class="table-body" v-highlight-tooltip>
-            <div v-for="segment in pageSegments" :key="segment.id" class="table-row" :class="{ 'row-ignored': ignoredSegments.has(segment.id), 'row-expanded': isExpanded(segment.id) }">
+            <div v-for="(segment, index) in pageSegments" :key="segment.id" class="table-row" :class="{ 'row-ignored': ignoredSegments.has(segment.id), 'row-expanded': isExpanded(segment.id) }">
               <div class="color-bar" :class="segment.similarityValue >= 95 ? 'bar-match' : 'bar-mismatch'"></div>
               <div class="col col-index">
-                {{ segment.id }}
+                {{ index + 1 }}
                 <span v-if="ignoredSegments.has(segment.id)" class="ignored-badge" title="已忽略">🚩</span>
               </div>
               <div class="col col-content clickable" :class="{ clamped: !isExpanded(segment.id) }" @click="openPreviewForSegment(segment, 'left')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.leftContent)"></div>
@@ -814,8 +817,9 @@ const handlePreviewRightScroll = () => {
               <div class="col col-position">{{ formatPageDisplay(segment.rightPage, rightTotalPages) }}</div>
               <div class="col col-content clickable" :class="{ clamped: !isExpanded(segment.id) }" @click="openPreviewForSegment(segment, 'right')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.rightContent)"></div>
               <div class="col col-action">
-                <button class="action-btn" @click.stop="toggleExpandSegment(segment.id)" :title="isExpanded(segment.id) ? '收起' : '展开全文'">
-                  <span class="expand-label">{{ isExpanded(segment.id) ? '收起' : '展开' }}</span>
+                <button class="action-btn action-expand" @click.stop="toggleExpandSegment(segment.id)" :title="isExpanded(segment.id) ? '收起' : '展开全文'">
+                  <RiExpandLine v-if="!isExpanded(segment.id)" />
+                  <RiCollapseLine v-else />
                 </button>
                 <button class="action-btn" :class="{ 'action-ignored': ignoredSegments.has(segment.id) }" @click.stop="toggleIgnoreSegment(segment.id)" :title="ignoredSegments.has(segment.id) ? '取消忽略' : '忽略此条'">
                   <RiFlagLine />
@@ -829,9 +833,9 @@ const handlePreviewRightScroll = () => {
       <!-- Grid 视图 -->
       <template v-else-if="viewMode === 'grid'">
         <div class="grid-container">
-          <div v-for="segment in pageSegments" :key="segment.id" class="grid-card" @click="openPreviewForSegment(segment, 'left')">
+          <div v-for="(segment, index) in pageSegments" :key="segment.id" class="grid-card" @click="openPreviewForSegment(segment, 'left')">
             <div class="grid-card-header">
-              <span class="grid-card-index">#{{ segment.id }}</span>
+              <span class="grid-card-index">#{{ index + 1 }}</span>
               <span class="grid-card-similarity" :class="getSimilarityBadgeClass(segment.similarityValue)">{{ segment.similarityValue }}%</span>
             </div>
             <div class="grid-card-content">
@@ -1420,11 +1424,6 @@ const handlePreviewRightScroll = () => {
   gap: 4px;
 }
 
-.expand-label {
-  font-size: 12px;
-  white-space: nowrap;
-}
-
 .action-btn {
   width: 32px;
   height: 32px;
@@ -1451,6 +1450,23 @@ const handlePreviewRightScroll = () => {
 
 .action-btn.action-ignored:hover {
   background: rgba(192, 57, 43, 0.1);
+}
+
+.action-btn.action-expand {
+  color: rgba(58, 58, 58, 0.7);
+}
+
+.action-btn.action-expand:hover {
+  color: rgba(58, 58, 58, 1);
+}
+
+.row-expanded .action-expand {
+  color: #1890ff;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .row-ignored {

@@ -40,7 +40,7 @@ export interface FileCompareSettings {
   theme: string
 }
 
-const SETTINGS_VERSION = 3
+const SETTINGS_VERSION = 4
 
 // 定义默认设置
 export const defaultSettings: FileCompareSettings = {
@@ -55,7 +55,7 @@ export const defaultSettings: FileCompareSettings = {
   ignoreCase: false,
   ignoreInvisibleChars: true,
   paragraphCount: 5,
-  minDupChars: 8,
+  minDupChars: 6,
   clauseRemovalEnabled: false,
   clauseRemovalGranularity: 12,
   removeWatermark: true,
@@ -88,7 +88,12 @@ export function useSettings() {
 
         // 设置版本迁移
         if (!parsed.settingsVersion || parsed.settingsVersion < SETTINGS_VERSION) {
+          const oldVersion = parsed.settingsVersion
           parsed.settingsVersion = SETTINGS_VERSION
+          // v4: 降低默认最小重复字符数 8→6，避免漏检短段落
+          if (oldVersion === 3) {
+            parsed.minDupChars = 6
+          }
           const migrated = { ...defaultSettings, ...parsed }
           localStorage.setItem('fileCompareSettings', JSON.stringify(migrated))
           Object.assign(settings, migrated)
