@@ -141,7 +141,7 @@ const showSettingsModal = ref(false)
 
 .nav-tip {
   position: absolute;
-  bottom: calc(100% + 9px);
+  top: calc(100% + 9px);
   left: 50%;
   transform: translateX(-50%) scale(0.96);
   padding: 7px 12px;
@@ -164,7 +164,7 @@ const showSettingsModal = ref(false)
 .nav-tip::after {
   content: '';
   position: absolute;
-  top: calc(100% - 4px);
+  bottom: calc(100% - 4px);
   left: calc(50% - 3.5px);
   width: 7px;
   height: 7px;
