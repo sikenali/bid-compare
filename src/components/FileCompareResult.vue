@@ -252,26 +252,31 @@ const pageNumbers = computed(() => {
   return pages
 })
 
-// 格式化页码显示：将 "第1/10页" 转为 "P1"，"第3-5/10页" 转为 "P3-5"
-const formatPageDisplay = (pageStr: string): string => {
+// 格式化页码显示：将 "第1/10页" 转为 "P1/10"，"第3-5/10页" 转为 "P3-5/10"
+const formatPageDisplay = (pageStr: string, totalPages?: number): string => {
   if (!pageStr) return ''
+  const total = totalPages || 1
   // 匹配 "第X/Y页" 或 "第X-Y/Z页"
   const match = pageStr.match(/第(\d+)(?:-(\d+))?\//)
   if (match) {
-    return match[2] ? `P${match[1]}-${match[2]}` : `P${match[1]}`
+    return match[2] ? `P${match[1]}-${match[2]}/${total}` : `P${match[1]}/${total}`
   }
-  // 如果已经是 "P1" 或 "P1-2" 格式，直接返回
-  if (/^P\d+(-\d+)?$/.test(pageStr)) {
+  // 如果已经是 "P1/10" 或 "P1-2/10" 格式，直接返回
+  if (/^P\d+(-\d+)?\/\d+$/.test(pageStr)) {
     return pageStr
   }
-  // 如果是纯数字，加上 P 前缀
+  // 如果已经是 "P1" 或 "P1-2" 格式，加上总页码
+  if (/^P\d+(-\d+)?$/.test(pageStr)) {
+    return `${pageStr}/${total}`
+  }
+  // 如果是纯数字，加上 P 前缀和总页码
   if (/^\d+$/.test(pageStr)) {
-    return `P${pageStr}`
+    return `P${pageStr}/${total}`
   }
   // 其他格式，尝试提取数字
   const numMatch = pageStr.match(/(\d+)/)
   if (numMatch) {
-    return `P${numMatch[1]}`
+    return `P${numMatch[1]}/${total}`
   }
   return pageStr
 }
@@ -1070,8 +1075,8 @@ const handlePreviewRightScroll = () => {
                 <span v-if="ignoredSegments.has(segment.id)" class="ignored-badge" title="已忽略">🚩</span>
               </div>
               <div class="col col-content clickable" @click="openPreviewForSegment(segment, 'left')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.leftContent)"></div>
-              <div class="col col-position">{{ formatPageDisplay(segment.leftPage) }}</div>
-              <div class="col col-position">{{ formatPageDisplay(segment.rightPage) }}</div>
+              <div class="col col-position">{{ formatPageDisplay(segment.leftPage, leftTotalPages) }}</div>
+              <div class="col col-position">{{ formatPageDisplay(segment.rightPage, rightTotalPages) }}</div>
               <div class="col col-content clickable" @click="openPreviewForSegment(segment, 'right')" :title="'点击预览上下文'" v-html="sanitizeWithHighlight(segment.rightContent)"></div>
               <div class="col col-action">
                 <button class="action-btn" :class="{ 'action-ignored': ignoredSegments.has(segment.id) }" @click.stop="toggleIgnoreSegment(segment.id)" :title="ignoredSegments.has(segment.id) ? '取消忽略' : '忽略此条'">
@@ -1105,8 +1110,8 @@ const handlePreviewRightScroll = () => {
               </div>
             </div>
             <div class="grid-card-footer">
-              <span class="grid-card-page">左侧: {{ formatPageDisplay(segment.leftPage) }}</span>
-              <span class="grid-card-page">右侧: {{ formatPageDisplay(segment.rightPage) }}</span>
+              <span class="grid-card-page">左侧: {{ formatPageDisplay(segment.leftPage, leftTotalPages) }}</span>
+              <span class="grid-card-page">右侧: {{ formatPageDisplay(segment.rightPage, rightTotalPages) }}</span>
             </div>
           </div>
         </div>
