@@ -1012,6 +1012,57 @@ const previewRightHtml = computed(() => {
   return buildFullTextHtml(rightFileContent.value, visibleSegments.value, 'right')
 })
 
+// 构建带行号的预览内容
+const buildLinePreview = (fullText: string, segments: SimilarSegment[], side: 'left' | 'right') => {
+  if (!fullText) return ''
+  const lines = fullText.split('\n')
+  let html = '<div class="preview-lines">'
+  lines.forEach((line, i) => {
+    const lineStart = lines.slice(0, i).join('\n').length
+    const lineEnd = lineStart + line.length
+    const hasHighlight = segments.some(seg => {
+      const s = side === 'left' ? (seg.leftStartIndex ?? -1) : (seg.rightStartIndex ?? -1)
+      const e = side === 'left' ? (seg.leftEndIndex ?? -1) : (seg.rightEndIndex ?? -1)
+      return s < lineEnd && e > lineStart
+    })
+    const escapedLine = escapeHtml(line)
+    // 在同行内高亮片段
+    const overlappingSegments = segments.filter(seg => {
+      const s = side === 'left' ? (seg.leftStartIndex ?? -1) : (seg.rightStartIndex ?? -1)
+      const e = side === 'left' ? (seg.leftEndIndex ?? -1) : (seg.rightEndIndex ?? -1)
+      return s < lineEnd && e > lineStart
+    })
+    let innerHtml = escapedLine
+    if (overlappingSegments.length > 0) {
+      overlappingSegments.sort((a, b) => {
+        const as = side === 'left' ? (a.leftStartIndex ?? 0) : (a.rightStartIndex ?? 0)
+        const bs = side === 'left' ? (b.leftStartIndex ?? 0) : (b.rightStartIndex ?? 0)
+        return as - bs
+      })
+      innerHtml = ''
+      let pos = 0
+      for (const seg of overlappingSegments) {
+        const s = side === 'left' ? (seg.leftStartIndex ?? -1) : (seg.rightStartIndex ?? -1)
+        const e = side === 'left' ? (seg.leftEndIndex ?? -1) : (seg.rightEndIndex ?? -1)
+        const localStart = Math.max(s, lineStart) - lineStart
+        const localEnd = Math.min(e, lineEnd) - lineStart
+        if (localStart > pos) innerHtml += escapedLine.substring(pos, localStart)
+        if (localStart < localEnd) {
+          innerHtml += `<span class="text-highlight" data-segment-id="${seg.id}" data-similarity="${seg.similarityValue}">${escapedLine.substring(localStart, localEnd)}</span>`
+          pos = localEnd
+        }
+      }
+      if (pos < escapedLine.length) innerHtml += escapedLine.substring(pos)
+    }
+    html += `<div class="preview-line ${hasHighlight ? 'has-highlight' : ''}" data-line="${i}">${innerHtml}</div>`
+  })
+  html += '</div>'
+  return html
+}
+
+const previewLeftLines = computed(() => buildLinePreview(leftFileContent.value, visibleSegments.value, 'left'))
+const previewRightLines = computed(() => buildLinePreview(rightFileContent.value, visibleSegments.value, 'right'))
+
 const handlePreviewLeftScroll = () => {
   if (previewIsScrolling) return
   if (!previewLeftRef.value || !previewRightRef.value) return
@@ -1206,34 +1257,14 @@ const handlePreviewRightScroll = () => {
         </div>
         <div class="preview-modal-body">
           <div class="preview-panel" ref="previewLeftRef" @scroll="handlePreviewLeftScroll">
-            <OpenFileViewer
-              v-if="leftPreviewBlob"
-              :key="previewKey + 'left'"
-              :file="leftPreviewBlob"
-              :file-name="leftFileName || '文件A'"
-              :mime-type="leftMimeType"
-              :plugins="viewerPlugins"
-              :toolbar="true"
-              height="100%"
-              class="preview-viewer"
-            />
+            <div v-if="previewLeftLines" class="preview-panel-inner" v-html="previewLeftLines"></div>
             <div class="preview-empty" v-else>
               <span class="preview-empty-text">左侧文件无内容预览</span>
             </div>
           </div>
           <div class="preview-divider"></div>
           <div class="preview-panel" ref="previewRightRef" @scroll="handlePreviewRightScroll">
-            <OpenFileViewer
-              v-if="rightPreviewBlob"
-              :key="previewKey + 'right'"
-              :file="rightPreviewBlob"
-              :file-name="rightFileName || '文件B'"
-              :mime-type="rightMimeType"
-              :plugins="viewerPlugins"
-              :toolbar="true"
-              height="100%"
-              class="preview-viewer"
-            />
+            <div v-if="previewRightLines" class="preview-panel-inner" v-html="previewRightLines"></div>
             <div class="preview-empty" v-else>
               <span class="preview-empty-text">右侧文件无内容预览</span>
             </div>
@@ -2203,28 +2234,81 @@ const handlePreviewRightScroll = () => {
   flex: 1;
   overflow-y: auto;
   background: var(--color-warm-gray, #FAF7F2);
+  display: flex;
+  justify-content: center;
 }
 
 .preview-panel-inner {
+  width: 100%;
   max-width: 640px;
-  margin: 0 auto;
-  padding: 40px 48px;
+  padding: 32px 48px;
   background: var(--color-bg-white, #FFFFFF);
   box-shadow: var(--shadow-md);
   min-height: 100%;
-  font-size: 14px;
-  line-height: 1.8;
+  font-size: 16px;
+  line-height: 1.9;
   color: var(--color-text-body, #3A3A3A);
   font-family: var(--font-body);
 }
 
-.preview-panel-inner :deep(.text-highlight) {
-  background: linear-gradient(135deg, rgba(var(--rgb-gold), 0.5), rgba(var(--rgb-gold), 0.4)) !important;
-  color: var(--color-cinnabar) !important;
-  padding: 1px 3px;
+.preview-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.preview-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  padding: 1px 0;
   border-radius: 2px;
+  transition: background 0.15s;
+  line-height: 1.9;
+}
+
+.preview-line.has-highlight {
+  background: rgba(var(--rgb-gold), 0.08);
+}
+
+.preview-line:hover {
+  background: rgba(var(--rgb-brown-muted), 0.04);
+}
+
+.preview-line-num {
+  flex-shrink: 0;
+  width: 44px;
+  text-align: right;
+  padding-right: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-tan-dark, #B8A99A);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  user-select: none;
+  border-right: 1px solid var(--color-border-soft, #EDE9E0);
+  margin-right: 14px;
+  line-height: 1.9;
+}
+
+.preview-line-text {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-all;
+  padding: 0 4px;
+  font-size: 16px;
+  line-height: 1.9;
+  color: var(--color-text-body, #3A3A3A);
+}
+
+.preview-panel-inner :deep(.text-highlight) {
+  background: linear-gradient(135deg, rgba(var(--rgb-gold), 0.45), rgba(var(--rgb-gold), 0.35)) !important;
+  color: var(--color-cinnabar, #C0392B) !important;
+  padding: 1px 4px;
+  border-radius: 3px;
   font-weight: 600;
   cursor: pointer;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 .preview-panel-inner :deep(.doc-paragraph.has-highlight) {
@@ -2328,7 +2412,18 @@ const handlePreviewRightScroll = () => {
   }
 
   .preview-panel-inner {
-    padding: 24px 20px !important;
+    padding: 20px 16px !important;
+  }
+
+  .preview-line-num {
+    width: 32px;
+    padding-right: 8px;
+    margin-right: 8px;
+    font-size: 11px;
+  }
+
+  .preview-line-text {
+    font-size: 14px;
   }
 
   .file-info-bar {

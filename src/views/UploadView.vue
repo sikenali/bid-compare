@@ -14,6 +14,7 @@ import { storeCompareResult, storePropertyCheckResult } from '../utils/compareRe
 import { calculateTextSimilarity } from '../utils/textAlgorithms'
 import { buildPropertyDetails, propsMapSource } from '../utils/propertyFields'
 import type { ComparisonSettings } from '../utils/textAlgorithms'
+import type { FileInfo } from '../utils/helpers'
 
 const router = useRouter()
 const { parseFile } = useFileParser()
@@ -49,13 +50,6 @@ type CompareMode = 'fileCompare' | 'propertyCheck' | 'imageCompare' | 'batchComp
 const mode = ref<CompareMode>('fileCompare')
 
 // 文件信息
-interface FileInfo {
-  file: File | null
-  name: string
-  size: string
-  type: string
-}
-
 const leftFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' })
 const rightFileInfo = ref<FileInfo>({ file: null, name: '', size: '', type: '' })
 
@@ -308,9 +302,7 @@ function handleCancel() {
   if (canCancel.value) cancelComparison()
 }
 
-function handleReplace() {
-  showError('已清除文件，请重新选择')
-}
+function handleReplace() {}
 </script>
 
 <template>

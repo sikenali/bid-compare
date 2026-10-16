@@ -104,24 +104,10 @@ const sortAscending = ref(false)
 // 分页相关
 const currentPage = ref(1)
 const pageSize = ref(10)
-const totalPages = ref(1)
-
-// 更新总页数
-const updateTotalPages = () => {
-  totalPages.value = Math.ceil(similarSegmentsList.value.length / pageSize.value)
-  if (currentPage.value > totalPages.value) {
-    currentPage.value = totalPages.value || 1
-  }
-}
-
-// 计算总页数
-const getTotalPages = () => {
-  return Math.ceil(similarSegmentsList.value.length / pageSize.value)
-}
 
 // 切换到指定页码
 const goToPage = (page: number) => {
-  const total = getTotalPages()
+  const total = Math.ceil(similarSegmentsList.value.length / pageSize.value)
   if (page >= 1 && page <= total) {
     currentPage.value = page
   }
@@ -190,17 +176,16 @@ const toggleSort = () => {
     return sortAscending.value ? matchLength1 - matchLength2 : matchLength2 - matchLength1
   })
   
-  // 排序后回到第一页并更新总页数
+  // 排序后回到第一页
   currentPage.value = 1
-  updateTotalPages()
 }
 
 // 监听雷同片段列表和页面大小变化，自动重置分页
 watch(
   [similarSegmentsList, pageSize],
   () => {
-    updateTotalPages()
-    if (currentPage.value > getTotalPages()) {
+    const total = Math.ceil(similarSegmentsList.value.length / pageSize.value)
+    if (currentPage.value > total) {
       currentPage.value = 1
     }
   }

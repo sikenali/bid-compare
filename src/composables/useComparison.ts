@@ -1,6 +1,5 @@
 import { ref, onUnmounted } from 'vue'
 import {
-  selectStrategy,
   selectSmartStrategy,
   findSimilarSegments,
   findSimilarSegmentsMyers,

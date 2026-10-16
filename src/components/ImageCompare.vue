@@ -7,7 +7,7 @@ import {
 } from '@remixicon/vue'
 import { useSettings } from '../composables/useSettings'
 import { useToast } from '../composables/useToast'
-import { computeImageHash, hammingDistance, calculateImageSimilarity, loadImageAsDataUrl } from '../utils/imageCompare'
+import { computeImageHash, calculateImageSimilarity, loadImageAsDataUrl } from '../utils/imageCompare'
 import { recognizeImages, isOCRAvailable } from '../utils/ocr'
 import type { OCRResult } from '../utils/ocr'
 import { UiSwitch } from '../components/ui'

@@ -15,6 +15,7 @@ import { useToast } from '../composables/useToast'
 import type { ComparisonSettings } from '../utils/textAlgorithms'
 import { removeWatermarks } from '../utils/watermark'
 import { UiSwitch } from '../components/ui'
+import { formatFileSize } from '../utils/helpers'
 
 const router = useRouter()
 const { settings, saveSettings } = useSettings()
@@ -37,7 +38,7 @@ interface BatchFile {
   content: string
 }
 
-const maxFiles = computed(() => Math.max(3, settings.maxMultiFileCount))
+const maxFiles = computed(() => settings.maxMultiFileCount)
 
 const files = ref<BatchFile[]>([
   { file: null, name: '', size: '', content: '' },
@@ -70,13 +71,6 @@ const handleFileSelect = (idx: number, event: Event) => {
     content: '',
   }
 }
-
-const formatFileSize = (size: number): string => {
-  if (size < 1024) return `${size} B`
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(2)} KB`
-  return `${(size / (1024 * 1024)).toFixed(2)} MB`
-}
-
 interface BatchResult {
   leftName: string
   rightName: string

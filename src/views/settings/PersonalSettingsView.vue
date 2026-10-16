@@ -17,6 +17,7 @@ const subTabs = [
 ]
 
 const clampNumber = (value: string | number, min: number, max: number): number => {
+  if (value === '' || value === null || value === undefined) return min
   const num = parseInt(String(value).replace(/\D/g, ''), 10)
   if (isNaN(num)) return min
   return Math.max(min, Math.min(max, num))
