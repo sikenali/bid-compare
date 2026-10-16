@@ -260,6 +260,19 @@ const formatPageDisplay = (pageStr: string): string => {
   if (match) {
     return match[2] ? `P${match[1]}-${match[2]}` : `P${match[1]}`
   }
+  // 如果已经是 "P1" 或 "P1-2" 格式，直接返回
+  if (/^P\d+(-\d+)?$/.test(pageStr)) {
+    return pageStr
+  }
+  // 如果是纯数字，加上 P 前缀
+  if (/^\d+$/.test(pageStr)) {
+    return `P${pageStr}`
+  }
+  // 其他格式，尝试提取数字
+  const numMatch = pageStr.match(/(\d+)/)
+  if (numMatch) {
+    return `P${numMatch[1]}`
+  }
   return pageStr
 }
 
