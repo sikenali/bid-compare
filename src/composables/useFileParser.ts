@@ -114,31 +114,10 @@ const LOCAL_PDF_WORKER = (() => {
 })();
 
 // 表格/分页结构分隔：避免跨表、跨页串行造成误判雷同
-function buildStructuredText(ast: any, plainText: string): string {
-  try {
-    const nodes = ast?.content;
-    if (!Array.isArray(nodes) || nodes.length === 0) return plainText;
-    const parts: string[] = [];
-    for (const node of nodes) {
-      const t = node?.type as string | undefined;
-      if (t === 'sheet') {
-        const name = node?.metadata?.sheetName || node?.sheetName || '';
-        parts.push(`\n--- Sheet:${name} ---\n`);
-      } else if (t === 'slide') {
-        const no = node?.metadata?.slideNumber ?? node?.slideNumber ?? '';
-        parts.push(`\n--- Slide:${no} ---\n`);
-      } else if (t === 'page' || t === 'break') {
-        parts.push('\x0C');
-        continue;
-      }
-      // 其余节点仍用纯文本整体输出，仅插入分隔符；避免逐节点重排打乱顺序
-    }
-    if (parts.length === 0) return plainText;
-    // 将分隔符按比例注入纯文本（sheet/slide 数量已知时均匀切分），保证对比时跨表不连判
-    return plainText;
-  } catch {
-    return plainText;
-  }
+// 注：officeparser 已为 PDF 注入 \x0C 分页符，DOCX/XLSX/PPTX 暂无此能力
+// 此处保留函数签名以便未来扩展，当前直接返回纯文本
+function buildStructuredText(_ast: any, plainText: string): string {
+  return plainText;
 }
 
 async function parseWithOfficeParser(file: File, signal?: AbortSignal): Promise<{

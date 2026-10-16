@@ -741,7 +741,13 @@ export function calcEditSimilarity(a: string, b: string, cap = 500): number {
   const n = s2.length
   if (m === 0 && n === 0) return 100
   if (m === 0 || n === 0) return 0
-  if (s1 === s2) return 100
+  if (s1 === s2 && a.length === b.length) return 100
+  // 超长字符串截断后相同但总长不同，按长度差异惩罚
+  if (s1 === s2 && a.length !== b.length) {
+    const lenDiff = Math.abs(a.length - b.length)
+    const maxLen = Math.max(a.length, b.length)
+    return Math.round((1 - lenDiff / maxLen) * 1000) / 10
+  }
   let prev = new Array(n + 1).fill(0)
   for (let j = 0; j <= n; j++) prev[j] = j
   for (let i = 1; i <= m; i++) {
@@ -757,7 +763,7 @@ export function calcEditSimilarity(a: string, b: string, cap = 500): number {
     }
   }
   const dist = prev[n]
-  return Math.round(((Math.max(m, n) - dist) / Math.max(m, n)) * 100)
+  return Math.round(((Math.max(m, n) - dist) / Math.max(m, n)) * 1000) / 10
 }
 
 export function levelOf(similarity: number): 'high' | 'medium' | 'low' {
