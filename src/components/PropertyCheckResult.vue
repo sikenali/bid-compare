@@ -9,9 +9,10 @@ import {
   RiDownload2Line,
   RiCheckLine,
 } from '@remixicon/vue'
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx'
+import { Packer } from 'docx'
 import { getPropertyCheckResult, deletePropertyCheckResult } from '../utils/compareResultStore'
 import { useToast } from '../composables/useToast'
+import { generatePropertyWordReport, generatePropertyPdfReport, downloadBlob } from '../utils/exportReport'
 
 interface PropertyDetail {
   name: string;
@@ -97,78 +98,28 @@ const handleExport = async () => {
   }
 
   try {
-    const doc = new Document({
-      sections: [{
-        properties: {},
-        children: [
-          new Paragraph({
-            children: [new TextRun({ text: '属性对比报告', bold: true, size: 24 })],
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 200 }
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `匹配属性：${matchCount.value}项`, size: 16 })]
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `不匹配属性：${mismatchCount.value}项`, size: 16 })]
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `警告属性：${warningCount.value}项`, size: 16 })],
-            spacing: { after: 200 }
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `左侧文件：${leftFileName.value}`, size: 16 })]
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: `右侧文件：${rightFileName.value}`, size: 16 })],
-            spacing: { after: 200 }
-          }),
-          new Paragraph({
-            children: [new TextRun({ text: '属性对比详情：', bold: true, size: 20 })],
-            spacing: { after: 100 }
-          }),
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: '对比类型', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-                  new TableCell({ children: [new Paragraph({ text: leftFileName.value, bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-                  new TableCell({ children: [new Paragraph({ text: rightFileName.value, bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-                  new TableCell({ children: [new Paragraph({ text: '是否匹配', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-                ]
-              }),
-              ...propertyDetails.value.map(property => new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: property.name, alignment: AlignmentType.CENTER })] }),
-                  new TableCell({ children: [new Paragraph({ text: property.leftValue, alignment: AlignmentType.CENTER })] }),
-                  new TableCell({ children: [new Paragraph({ text: property.rightValue, alignment: AlignmentType.CENTER })] }),
-                  new TableCell({ children: [new Paragraph({
-                    text: property.status === 'match' ? '匹配' : property.status === 'mismatch' ? '不匹配' : '警告',
-                    alignment: AlignmentType.CENTER
-                  })] }),
-                ]
-              }))
-            ]
-          })
-        ]
-      }]
-    })
+    const exportData = {
+      leftFileName: leftFileName.value || '文件A',
+      rightFileName: rightFileName.value || '文件B',
+      matchCount: matchCount.value,
+      mismatchCount: mismatchCount.value,
+      warningCount: warningCount.value,
+      propertyDetails: propertyDetails.value,
+      similarity: '—',
+    }
 
-    const blob = await Packer.toBlob(doc)
-    
-    // 生成文件名：file1vsfile2-属性对比报告.docx
     const leftName = (leftFileName.value || 'file1').replace(/\.[^/.]+$/, '')
     const rightName = (rightFileName.value || 'file2').replace(/\.[^/.]+$/, '')
-    const fileName = `${leftName}vs${rightName}-属性对比报告.docx`
-    
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = fileName
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    const baseName = `${leftName}vs${rightName}`
+
+    // 默认导出 Word，同时提供 PDF 选项
+    const doc = generatePropertyWordReport(exportData)
+    const blob = await Packer.toBlob(doc)
+    downloadBlob(blob, `${baseName}-属性对比报告.docx`)
+
+    showToast('导出成功')
   } catch (error) {
+    console.error('导出失败:', error)
     showError('导出报告失败，请重试')
   }
 }

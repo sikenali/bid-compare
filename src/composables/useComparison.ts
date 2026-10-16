@@ -4,6 +4,7 @@ import {
   findSimilarSegments,
   findSimilarSegmentsMyers,
   calculateTextSimilarity,
+  removeCommonClauses,
   type SimilarSegment,
   type ComparisonSettings,
   type ComparisonStrategy,

@@ -6,7 +6,8 @@ import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
 import { useToast } from '../composables/useToast'
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx'
+import { Packer } from 'docx'
+import { generatePropertyWordReport, downloadBlob } from '../utils/exportReport'
 import { calculateTextSimilarity } from '../utils/textAlgorithms'
 import { storePropertyCheckResult } from '../utils/compareResultStore'
 import { buildPropertyDetails, propsMapSource } from '../utils/propertyFields'
@@ -250,21 +251,19 @@ const handleExportReport = async () => {
     const rightName = rightFileInfo.value.name.replace(/\.[^/.]+$/, '') || '文件B';
     const fileName = `${leftName}_vs_${rightName}_属性检查报告`;
 
-    // 生成Word文档
-    const doc = generateWordReport()
+    const exportData = {
+      leftFileName: leftFileInfo.value.name,
+      rightFileName: rightFileInfo.value.name,
+      matchCount: matchingProperties.value,
+      mismatchCount: nonMatchingProperties.value,
+      warningCount: warningProperties.value,
+      propertyDetails: propertyDetails.value,
+      similarity: settings.textSimilarityThreshold ? `${settings.textSimilarityThreshold}%` : undefined,
+    }
 
-    // 生成Blob对象
+    const doc = generatePropertyWordReport(exportData)
     const blob = await Packer.toBlob(doc)
-
-    // 创建下载链接
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `${fileName}.docx`
-
-    // 触发下载
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    downloadBlob(blob, `${fileName}.docx`)
   } catch (error) {
     showError('导出报告失败，请重试')
   }
@@ -287,190 +286,7 @@ const handleBack = () => {
   // 用户可以重新点击检查或上传新文件
 }
 
-// 生成Word报告内容
-const generateWordReport = () => {
-  // 确保只有当有属性数据时才生成报告
-  if (propertyDetails.value.length === 0) {
-    showError('没有可导出的属性对比数据')
-    return new Document()
-  }
-  
-  // 创建文档
-  const doc = new Document({
-    sections: [
-      {
-        properties: {},
-        children: [
-          // 添加标题
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '属性对比报告',
-                bold: true,
-                size: 24,
-              })
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: {
-              after: 200,
-            }
-          }),
-          
-          // 添加属性统计
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '属性统计：',
-                bold: true,
-                size: 20,
-              })
-            ],
-            spacing: {
-              after: 100,
-            }
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `匹配属性：${matchingProperties.value}项`,
-                size: 16,
-              })
-            ]
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `不匹配属性：${nonMatchingProperties.value}项`,
-                size: 16,
-              })
-            ]
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `警告属性：${warningProperties.value}项`,
-                size: 16,
-              })
-            ],
-            spacing: {
-              after: 200,
-            }
-          }),
-          
-          // 添加文件信息
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '文件信息：',
-                bold: true,
-                size: 20,
-              })
-            ],
-            spacing: {
-              after: 100,
-            }
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `左侧文件：${leftFileInfo.value.name}`,
-                size: 16,
-              })
-            ]
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `右侧文件：${rightFileInfo.value.name}`,
-                size: 16,
-              })
-            ],
-            spacing: {
-              after: 200,
-            }
-          }),
-          
-          // 添加属性详情表格
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: '属性差异详情：',
-                bold: true,
-                size: 20,
-              })
-            ],
-            spacing: {
-              after: 100,
-            }
-          }),
-          
-          // 创建表格
-          new Table({
-            width: {
-              size: 100,
-              type: WidthType.PERCENTAGE,
-            },
-            rows: [
-              // 表格标题行
-              new TableRow({
-                children: [
-                  new TableCell({
-                    children: [new Paragraph({ text: '对比类型', bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: leftFileInfo.value.name, bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: rightFileInfo.value.name, bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                  new TableCell({
-                    children: [new Paragraph({ text: '是否匹配', bold: true, alignment: AlignmentType.CENTER })],
-                    shading: {
-                      fill: '#f0f0f0',
-                    }
-                  }),
-                ],
-              }),
-              // 表格数据行
-              ...propertyDetails.value.map((property) => {
-                return new TableRow({
-                  children: [
-                    new TableCell({
-                      children: [new Paragraph({ text: property.name, alignment: AlignmentType.CENTER })]
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: property.leftValue, alignment: AlignmentType.CENTER })]
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: property.rightValue, alignment: AlignmentType.CENTER })]
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ 
-                        text: property.status === 'match' ? '匹配' : property.status === 'mismatch' ? '不匹配' : '警告', 
-                        alignment: AlignmentType.CENTER 
-                      })]
-                    }),
-                  ],
-                });
-              }),
-            ],
-          }),
-        ],
-      }
-    ],
-  });
-  
-  return doc
-}
+
 </script>
 
 <template>

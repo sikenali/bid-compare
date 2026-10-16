@@ -6,11 +6,12 @@ import {
   RiAddLine,
   RiArrowRightLine
 } from '@remixicon/vue'
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } from 'docx'
+import { Packer } from 'docx'
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
 import { useComparison } from '../composables/useComparison'
+import { generateWordReport, generateMarkdownReport, generatePdfReport, downloadBlob } from '../utils/exportReport'
 import { useToast } from '../composables/useToast'
 import type { ComparisonSettings, SimilarSegment } from '../utils/textAlgorithms'
 import { htmlToMarkdown } from '../utils/sanitize'
@@ -73,6 +74,9 @@ const multiSimilarityMatrix = ref<number[][]>([])
 const multiDuplicateGroups = ref<any[]>([])
 const multiFileUploadRef = ref<InstanceType<typeof MultiFileUpload> | null>(null)
 const currentYear = computed(() => new Date().getFullYear())
+
+// OCR 结果
+const ocrResults = ref<OCRResult[]>([])
 
 watch(showMultiResult, (val) => {
   if (val) {
@@ -723,273 +727,27 @@ const handleExportReport = async () => {
   const rightName = rightFileInfo.value.name.replace(/\.[^/.]+$/, '') || '文件B';
   const fileName = `${leftName}_vs_${rightName}_文件对比报告`;
 
+  const exportData = {
+    leftFileName: leftFileInfo.value.name,
+    rightFileName: rightFileInfo.value.name,
+    textSimilarity: textSimilarity.value,
+    similarSegmentsCount: similarSegments.value.length,
+    segments: similarSegments.value,
+    visibleSegments: similarSegments.value,
+  }
+
   if (settings.exportFormat === 'md') {
-    // 导出 Markdown 格式
-    const markdown = generateMarkdownReport();
-    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${fileName}.md`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const mdContent = generateMarkdownReport(exportData, { includeHighlight: settings.includeHighlight, includeCharts: settings.includeCharts })
+    downloadBlob(new Blob([mdContent], { type: 'text/markdown;charset=utf-8' }), `${fileName}.md`)
+  } else if (settings.exportFormat === 'pdf') {
+    const blob = await generatePdfReport(exportData, { includeHighlight: settings.includeHighlight, includeCharts: settings.includeCharts })
+    downloadBlob(blob, `${fileName}.pdf`)
   } else {
-    // 导出 Word 格式
-    const doc = generateWordReport();
-    const blob = await Packer.toBlob(doc);
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${fileName}.docx`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const doc = generateWordReport(exportData, { includeHighlight: settings.includeHighlight, includeCharts: settings.includeCharts })
+    downloadBlob(await Packer.toBlob(doc), `${fileName}.docx`)
   }
 };
 
-// 解析高亮 HTML，返回带高亮标记的 TextRun 数组
-function parseHighlightedContent(htmlContent: string): any[] {
-  let content = htmlContent.replace(/^…/, '').replace(/…$/, '')
-  const runs: any[] = []
-  const highlightRegex = /<span class="highlighted-text">([\s\S]*?)<\/span>/g
-  let lastIndex = 0
-  let match
-
-  while ((match = highlightRegex.exec(content)) !== null) {
-    if (match.index > lastIndex) {
-      const plainText = content.substring(lastIndex, match.index)
-      const decodedText = plainText
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#039;/g, "'")
-        .replace(/<[^>]*>/g, '')
-      runs.push(new TextRun({
-        text: decodedText,
-        size: 20,
-        font: 'Microsoft YaHei'
-      }))
-    }
-
-    const highlightedHtml = match[1]
-    const decodedHighlight = highlightedHtml
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#039;/g, "'")
-    runs.push(new TextRun({
-      text: decodedHighlight,
-      size: 20,
-      font: 'Microsoft YaHei',
-      bold: true,
-      color: '8B0000',
-      highlight: 'FFD700'
-    }))
-
-    lastIndex = match.index + match[0].length
-  }
-
-  if (lastIndex < content.length) {
-    const plainText = content.substring(lastIndex)
-    const decodedText = plainText
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#039;/g, "'")
-      .replace(/<[^>]*>/g, '')
-    runs.push(new TextRun({
-      text: decodedText,
-      size: 20,
-      font: 'Microsoft YaHei'
-    }))
-  }
-
-  return runs.length > 0 ? runs : [new TextRun({ text: content.replace(/<[^>]*>/g, ''), size: 20, font: 'Microsoft YaHei' })]
-}
-
-// 生成 Markdown 报告
-const generateMarkdownReport = (): string => {
-  let md = '# 文件对比报告\n\n';
-
-  // 元数据
-  md += `> **生成时间**：${new Date().toLocaleString()}  \n`;
-  md += `> **左侧文件**：${leftFileInfo.value.name}  \n`;
-  md += `> **右侧文件**：${rightFileInfo.value.name}  \n\n`;
-
-  md += '---\n\n';
-
-  // 相似度统计
-  md += '## 一、相似度统计\n\n';
-  md += '| 指标 | 数值 |\n';
-  md += '|------|------|\n';
-  md += `| 文本重复率 | ${textSimilarity.value} |\n`;
-  md += `| 雷同片段数 | ${similarSegmentsList.value.length}处 |\n\n`;
-
-  if (settings.includeCharts) {
-    md += '### 文件信息\n\n';
-    md += '| 项目 | 左侧文件 | 右侧文件 |\n';
-    md += '|------|----------|----------|\n';
-    md += `| 文件名 | ${leftFileInfo.value.name} | ${rightFileInfo.value.name} |\n`;
-    md += `| 文件大小 | ${leftFileInfo.value.size || '-'} | ${rightFileInfo.value.size || '-'} |\n`;
-    md += `| 文件类型 | ${leftFileInfo.value.type || '-'} | ${rightFileInfo.value.type || '-'} |\n\n`;
-  }
-
-  md += '---\n\n';
-  
-  // 详细对比结果
-  md += '## 二、雷同片段详情\n\n';
-
-  similarSegmentsList.value.forEach((segment, index) => {
-    const leftContent = segment.leftContent || '';
-    const rightContent = segment.rightContent || '';
-
-    let leftClean: string, rightClean: string
-    if (settings.includeHighlight) {
-      leftClean = leftContent.replace(/<span class="highlighted-text">/g, '**').replace(/<\/span>/g, '**')
-      rightClean = rightContent.replace(/<span class="highlighted-text">/g, '**').replace(/<\/span>/g, '**')
-    } else {
-      leftClean = htmlToMarkdown(leftContent)
-      rightClean = htmlToMarkdown(rightContent)
-    }
-
-    md += `### 第 ${index + 1} 段\n\n`;
-    md += `| 项目 | 内容 |\n`;
-    md += `|------|------|\n`;
-    md += `| 相似度 | ${segment.similarity} |\n`;
-    md += `| 左侧位置 | ${segment.leftPage || '-'} |\n`;
-    md += `| 右侧位置 | ${segment.rightPage || '-'} |\n\n`;
-    md += `**左侧内容：**\n\n`;
-    md += leftClean.split('\n').map(l => `> ${l}`).join('\n') + '\n\n';
-    md += `**右侧内容：**\n\n`;
-    md += rightClean.split('\n').map(l => `> ${l}`).join('\n') + '\n\n';
-    md += '---\n\n';
-  });
-  
-  md += `*报告由 Bid Assistant 生成于 ${new Date().toLocaleString()}*\n`;
-  
-  return md;
-};
-
-// 生成Word报告内容
-const generateWordReport = () => {
-  const includeHighlight = settings.includeHighlight
-  const includeCharts = settings.includeCharts
-
-  const children: any[] = [
-    // 报告标题
-    new Paragraph({
-      children: [new TextRun({ text: '文件对比报告', bold: true, size: 28 })],
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 300 }
-    }),
-
-    // 相似度统计
-    new Paragraph({
-      children: [new TextRun({ text: '一、相似度统计', bold: true, size: 20 })],
-      spacing: { after: 200 }
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: `文本重复率：${textSimilarity.value}`, size: 16 })],
-      spacing: { after: 100 }
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: `雷同片段：${similarSegments.value}处`, size: 16 })],
-      spacing: { after: 200 }
-    }),
-  ]
-
-  if (includeCharts) {
-    children.push(
-      new Paragraph({
-        children: [new TextRun({ text: '二、文件信息', bold: true, size: 20 })],
-        spacing: { after: 200 }
-      }),
-      new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        rows: [
-          new TableRow({
-            children: [
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '项目', bold: true, size: 16 })], alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '左侧文件', bold: true, size: 16 })], alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '右侧文件', bold: true, size: 16 })], alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-            ]
-          }),
-          new TableRow({
-            children: [
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '文件名', size: 16 })], alignment: AlignmentType.CENTER })] }),
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: leftFileInfo.value.name, size: 16 })], alignment: AlignmentType.CENTER })] }),
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: rightFileInfo.value.name, size: 16 })], alignment: AlignmentType.CENTER })] }),
-            ]
-          }),
-          new TableRow({
-            children: [
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '文件大小', size: 16 })], alignment: AlignmentType.CENTER })] }),
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: leftFileInfo.value.size || '-', size: 16 })], alignment: AlignmentType.CENTER })] }),
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: rightFileInfo.value.size || '-', size: 16 })], alignment: AlignmentType.CENTER })] }),
-            ]
-          }),
-          new TableRow({
-            children: [
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '文件类型', size: 16 })], alignment: AlignmentType.CENTER })] }),
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: leftFileInfo.value.type || '-', size: 16 })], alignment: AlignmentType.CENTER })] }),
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: rightFileInfo.value.type || '-', size: 16 })], alignment: AlignmentType.CENTER })] }),
-            ]
-          }),
-        ]
-      }),
-      new Paragraph({ spacing: { after: 200 } }),
-    )
-  }
-
-  const segmentTitle = includeCharts ? '三、雷同片段详情' : '二、雷同片段详情'
-  children.push(
-    new Paragraph({
-      children: [new TextRun({ text: segmentTitle, bold: true, size: 20 })],
-      spacing: { after: 200 }
-    }),
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({ children: [new Paragraph({ text: '序号', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-            new TableCell({ children: [new Paragraph({ text: '左侧文件内容', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-            new TableCell({ children: [new Paragraph({ text: '页码', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-            new TableCell({ children: [new Paragraph({ text: '相似度', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-            new TableCell({ children: [new Paragraph({ text: '页码', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-            new TableCell({ children: [new Paragraph({ text: '右侧文件内容', bold: true, alignment: AlignmentType.CENTER })], shading: { fill: '#f0f0f0' } }),
-          ]
-        }),
-        ...similarSegmentsList.value.map((segment, index) => {
-          const leftRuns = includeHighlight
-            ? parseHighlightedContent(segment.leftContent || '')
-            : [new TextRun({ text: (segment.leftContent || '').replace(/<[^>]*>/g, ''), size: 16 })]
-          const rightRuns = includeHighlight
-            ? parseHighlightedContent(segment.rightContent || '')
-            : [new TextRun({ text: (segment.rightContent || '').replace(/<[^>]*>/g, ''), size: 16 })]
-          return new TableRow({
-            children: [
-              new TableCell({ children: [new Paragraph({ text: (index + 1).toString(), alignment: AlignmentType.CENTER })] }),
-              new TableCell({ children: [new Paragraph({ children: leftRuns })] }),
-              new TableCell({ children: [new Paragraph({ text: segment.leftPage, alignment: AlignmentType.CENTER })] }),
-              new TableCell({ children: [new Paragraph({ text: segment.similarity, alignment: AlignmentType.CENTER })] }),
-              new TableCell({ children: [new Paragraph({ text: segment.rightPage, alignment: AlignmentType.CENTER })] }),
-              new TableCell({ children: [new Paragraph({ children: rightRuns })] }),
-            ]
-          })
-        }),
-      ]
-    })
-  )
-
-  const doc = new Document({
-    sections: [{ properties: {}, children }]
-  })
-
-  return doc
-}
 </script>
 
 <template>

@@ -201,7 +201,8 @@ import { BorderBeam } from 'vue3-border-beam'
 import { htmlToMarkdown } from '../utils/sanitize'
 import { useSettings } from '../composables/useSettings'
 import { useToast } from '../composables/useToast'
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, ShadingType } from 'docx'
+import { Packer } from 'docx'
+import { generateWordReport, generateMarkdownReport, generatePdfReport, downloadBlob } from '../utils/exportReport'
 
 const { error: showError } = useToast()
 
@@ -401,128 +402,33 @@ const handleMatrixCellClick = (rowIdx: number, colIdx: number) => {
 }
 
 // 导出功能
-const handleExport = () => {
+const handleExport = async () => {
   if (totalDuplicates.value === 0) {
     showError('没有可导出的对比数据')
     return
   }
 
-  // 口径统一：'md' 走 Markdown，其余（含 word/pdf）走 Word（暂无 PDF 生成器，pdf 回落 word）
-  if (settings.exportFormat === 'md') {
-    const md = generateMarkdownReport()
-    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `多文件对比报告-${new Date().getTime()}.md`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    return
+  const exportData = {
+    leftFileName: fileNames.value[0] || '文件A',
+    rightFileName: fileNames.value[1] || '文件B',
+    textSimilarity: `${Math.round(avgSimilarity.value)}%`,
+    similarSegmentsCount: totalDuplicates.value,
+    segments: duplicateGroups.value.flatMap(g => g.items),
+    visibleSegments: duplicateGroups.value.flatMap(g => g.items),
   }
 
-  generateWordReport()
+  if (settings.exportFormat === 'md') {
+    const mdContent = generateMarkdownReport(exportData, { includeHighlight: settings.includeHighlight, includeCharts: settings.includeCharts })
+    downloadBlob(new Blob([mdContent], { type: 'text/markdown;charset=utf-8' }), `多文件对比报告-${Date.now()}.md`)
+  } else if (settings.exportFormat === 'pdf') {
+    const blob = await generatePdfReport(exportData, { includeHighlight: settings.includeHighlight, includeCharts: settings.includeCharts })
+    downloadBlob(blob, `多文件对比报告-${Date.now()}.pdf`)
+  } else {
+    const doc = generateWordReport(exportData, { includeHighlight: settings.includeHighlight, includeCharts: settings.includeCharts })
+    downloadBlob(await Packer.toBlob(doc), `多文件对比报告-${Date.now()}.docx`)
+  }
 }
 
-const generateMarkdownReport = (): string => {
-  let md = '# 多文件对比报告\n\n'
-
-  md += '> **统计信息**\n\n'
-  md += `- **文件数量**：${fileCount.value}\n`
-  md += `- **重复片段**：${totalDuplicates.value} 处\n`
-  md += `- **平均相似度**：${averageSimilarity.value}%\n\n`
-
-  // 相似度矩阵
-  md += '## 相似度矩阵\n\n'
-  md += '| 文件 |'
-  props.fileNames.forEach(name => { md += ` ${truncateName(name)} |` })
-  md += '\n|------|'
-  props.fileNames.forEach(() => { md += '------|' })
-  md += '\n'
-  props.fileNames.forEach((name, rowIdx) => {
-    md += `| ${truncateName(name)} |`
-    props.fileNames.forEach((_, colIdx) => {
-      if (rowIdx === colIdx) {
-        md += ' - |'
-      } else {
-        md += ` ${props.similarityMatrix[rowIdx]?.[colIdx] || '-'}% |`
-      }
-    })
-    md += '\n'
-  })
-  md += '\n'
-
-  // 每个文件对独立板块
-  md += '## 重复片段详情\n\n'
-  props.duplicateGroups.forEach((group, gIdx) => {
-    const pairSim = getPairSimilarity(group.leftFileName, group.rightFileName)
-    md += `### ${gIdx + 1}. ${truncateName(group.leftFileName)} ↔ ${truncateName(group.rightFileName)}\n\n`
-    md += `相似度：**${pairSim}%**\n\n`
-    md += '| 序号 | 内容 | 内容 | 相似度 |\n'
-    md += '|------|------|------|--------|\n'
-    group.items.forEach((dup, dIdx) => {
-      const leftContent = stripHighlightAndConvert(dup.leftContent || '').substring(0, 60)
-      const rightContent = stripHighlightAndConvert(dup.rightContent || '').substring(0, 60)
-      md += `| ${dIdx + 1} | ${leftContent} | ${rightContent} | ${dup.similarity}% |\n`
-    })
-    md += '\n'
-  })
-
-  md += '---\n\n'
-  md += `*报告生成时间：${new Date().toLocaleString()}*\n`
-  return md
-}
-
-const generateWordReport = async () => {
-  const children: (Paragraph | Table)[] = []
-  children.push(new Paragraph({ children: [new TextRun({ text: '多文件对比报告', bold: true, size: 32 })], alignment: AlignmentType.CENTER }))
-  children.push(new Paragraph({ children: [new TextRun({ text: `文件数量：${fileCount.value}  重复片段：${totalDuplicates.value}  平均相似度：${averageSimilarity.value}%`, size: 20 })] }))
-  children.push(new Paragraph({ children: [new TextRun({ text: '' })] }))
-
-  props.duplicateGroups.forEach((group, gIdx) => {
-    const pairSim = getPairSimilarity(group.leftFileName, group.rightFileName)
-
-    children.push(new Paragraph({ children: [new TextRun({ text: `${gIdx + 1}. ${truncateName(group.leftFileName)} ↔ ${truncateName(group.rightFileName)}`, bold: true, size: 24 })] }))
-    children.push(new Paragraph({ children: [new TextRun({ text: `相似度：${pairSim}%`, size: 20 })] }))
-    children.push(new Paragraph({ children: [new TextRun({ text: '' })] }))
-
-    const rows: TableRow[] = [
-      new TableRow({
-        tableHeader: true,
-        children: [
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '序号', bold: true })] })], width: { size: 500, type: WidthType.DXA } }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: truncateName(group.leftFileName), bold: true })] })], width: { size: 3000, type: WidthType.DXA } }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: truncateName(group.rightFileName), bold: true })] })], width: { size: 3000, type: WidthType.DXA } }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '相似度', bold: true })] })], width: { size: 1000, type: WidthType.DXA } }),
-        ]
-      })
-    ]
-
-    group.items.forEach((dup, dIdx) => {
-      rows.push(new TableRow({
-        children: [
-          new TableCell({ children: [new Paragraph({ children: [new TextRun(String(dIdx + 1))] })] }),
-          new TableCell({ children: [new Paragraph({ children: htmlToHighlightedRuns(dup.leftContent || '') })] }),
-          new TableCell({ children: [new Paragraph({ children: htmlToHighlightedRuns(dup.rightContent || '') })] }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${dup.similarity}%`, bold: true, color: dup.similarity >= 75 ? 'C41E3A' : dup.similarity >= 50 ? 'FF9800' : '4CAF50' })] })] }),
-        ]
-      }))
-    })
-
-    children.push(new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } }))
-    children.push(new Paragraph({ children: [new TextRun({ text: '' })] }))
-  })
-
-  children.push(new Paragraph({ children: [new TextRun({ text: `报告生成时间：${new Date().toLocaleString()}`, size: 16, italics: true })] }))
-
-  const doc = new Document({ sections: [{ children }] })
-  const blob = await Packer.toBlob(doc)
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
-  link.download = `多文件对比报告-${new Date().getTime()}.docx`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
 </script>
 
 <style scoped>

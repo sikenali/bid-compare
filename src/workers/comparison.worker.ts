@@ -5,6 +5,7 @@ import {
   findSimilarSegmentsSimHash,
   findSimilarSegmentsMyers,
   findSimilarSegmentsSmart,
+  removeCommonClauses,
   type ComparisonSettings,
   type SimilarSegment,
   type PageMap

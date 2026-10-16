@@ -15,12 +15,12 @@ import {
   RiFlagLine,
   RiExchangeLine
 } from '@remixicon/vue'
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle } from 'docx'
+import { Packer } from 'docx'
 import { useSettings } from '../composables/useSettings'
 import { useToast } from '../composables/useToast'
 import { getCompareResult, deleteCompareResult } from '../utils/compareResultStore'
 import { sanitizeHTML, sanitizeWithHighlight, htmlToMarkdown } from '../utils/sanitize'
-import { generateWordReport, generateMarkdownReport, downloadBlob } from '../utils/exportReport'
+import { generateWordReport, generateMarkdownReport, generatePdfReport, downloadBlob } from '../utils/exportReport'
 import MarkdownIt from 'markdown-it'
 import type { SimilarSegment } from '../utils/textAlgorithms'
 import { OpenFileViewer } from '@open-file-viewer/vue'
@@ -40,7 +40,7 @@ const md = new MarkdownIt({
 const route = useRoute()
 const router = useRouter()
 const { settings } = useSettings()
-const { error: showError } = useToast()
+const { error: showError, success: showToast } = useToast()
 
 // 数据
 const segments = ref<SimilarSegment[]>([])
@@ -48,6 +48,7 @@ const leftFileName = ref('')
 const rightFileName = ref('')
 const textSimilarity = ref('0%')
 const similarSegmentsCount = ref(0)
+const clauseRemovedCount = ref(0)
 const leftFileContent = ref('')
 const rightFileContent = ref('')
 const leftFileBlob = ref<Blob | null>(null)
@@ -428,12 +429,13 @@ const handleExport = async () => {
     }
 
     if (settings.exportFormat === 'md') {
-      // 导出 Markdown 格式
       const mdContent = generateMarkdownReport(exportData, { includeHighlight: settings.includeHighlight, includeCharts: settings.includeCharts })
       const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8' })
       downloadBlob(blob, `${leftName}vs${rightName}-文件对比报告.md`)
+    } else if (settings.exportFormat === 'pdf') {
+      const blob = await generatePdfReport(exportData, { includeHighlight: settings.includeHighlight, includeCharts: settings.includeCharts })
+      downloadBlob(blob, `${leftName}vs${rightName}-文件对比报告.pdf`)
     } else {
-      // 导出 Word 格式
       const doc = generateWordReport(exportData, { includeHighlight: settings.includeHighlight, includeCharts: settings.includeCharts })
       const blob = await Packer.toBlob(doc)
       downloadBlob(blob, `${leftName}vs${rightName}-文件对比报告.docx`)
@@ -444,351 +446,6 @@ const handleExport = async () => {
     console.error('导出失败:', error)
     showError('导出报告失败，请重试')
   }
-}
-
-// 解析高亮 HTML，返回带高亮标记的 TextRun 数组
-function parseHighlightedContent(htmlContent: string): any[] {
-  // 移除首尾的省略号
-  let content = htmlContent.replace(/^…/, '').replace(/…$/, '')
-
-  const runs: any[] = []
-
-  // 使用正则表达式拆分高亮和普通文本
-  const highlightRegex = /<span class="highlighted-text">([\s\S]*?)<\/span>/g
-  let lastIndex = 0
-  let match
-
-  while ((match = highlightRegex.exec(content)) !== null) {
-    // 添加高亮前的普通文本
-    if (match.index > lastIndex) {
-      const plainText = content.substring(lastIndex, match.index)
-      // 解码 HTML 实体
-      const decodedText = plainText
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#039;/g, "'")
-        .replace(/<[^>]*>/g, '')
-      runs.push(new TextRun({
-        text: decodedText,
-        size: 20,
-        font: 'Microsoft YaHei'
-      }))
-    }
-
-    // 添加高亮文本（带背景色）
-    const highlightedHtml = match[1]
-    // 解码 HTML 实体
-    const decodedHighlight = highlightedHtml
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#039;/g, "'")
-    runs.push(new TextRun({
-      text: decodedHighlight,
-      size: 20,
-      font: 'Microsoft YaHei',
-      bold: true,
-      color: '8B0000',
-      highlight: 'FFD700'  // 金色高亮背景
-    }))
-
-    lastIndex = match.index + match[0].length
-  }
-
-  // 添加剩余的普通文本
-  if (lastIndex < content.length) {
-    const plainText = content.substring(lastIndex)
-    const decodedText = plainText
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#039;/g, "'")
-      .replace(/<[^>]*>/g, '')
-    runs.push(new TextRun({
-      text: decodedText,
-      size: 20,
-      font: 'Microsoft YaHei'
-    }))
-  }
-
-  return runs.length > 0 ? runs : [new TextRun({
-    text: content
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#039;/g, "'")
-      .replace(/<[^>]*>/g, ''),
-    size: 20,
-    font: 'Microsoft YaHei'
-  })]
-}
-
-// 生成 Markdown 报告
-function generateMarkdownReport(): string {
-  const segmentsData = visibleSegments.value
-  let md = ''
-
-  // 报告标题
-  md += '# 文件对比报告\n\n'
-
-  // 元数据
-  md += `> **生成时间**：${new Date().toLocaleString()}  \n`
-  md += `> **左侧文件**：${leftFileName.value || '-'}  \n`
-  md += `> **右侧文件**：${rightFileName.value || '-'}  \n\n`
-
-  md += '---\n\n'
-
-  // 统计信息
-  md += '## 一、相似度统计\n\n'
-  md += '| 指标 | 数值 |\n'
-  md += '|------|------|\n'
-  md += `| 文本重复率 | ${textSimilarity.value} |\n`
-  md += `| 雷同片段 | ${similarSegmentsCount.value}处 |\n\n`
-
-  md += '---\n\n'
-
-  // 雷同片段详情 - 表格总览
-  md += '## 二、雷同片段总览\n\n'
-  md += '| 序号 | 左侧内容（摘要） | 位置 | 右侧内容（摘要） | 位置 |\n'
-  md += '|------|------------------|------|------------------|------|\n'
-
-  for (const segment of segmentsData) {
-    const leftBrief = htmlToMarkdown(segment.leftContent || '').replace(/…/g, '').substring(0, 60).replace(/\s+/g, ' ').trim()
-    const rightBrief = htmlToMarkdown(segment.rightContent || '').replace(/…/g, '').substring(0, 60).replace(/\s+/g, ' ').trim()
-
-    md += `| ${segment.id} | ${leftBrief || '-'} | ${segment.leftPage || '-'} | ${rightBrief || '-'} | ${segment.rightPage || '-'} |\n`
-  }
-
-  md += '\n---\n\n'
-
-  // 详细对比
-  md += '## 三、雷同片段详情\n\n'
-
-  for (const segment of segmentsData) {
-    const leftClean = htmlToMarkdown(segment.leftContent || '')
-    const rightClean = htmlToMarkdown(segment.rightContent || '')
-
-    md += `### 第 ${segment.id} 段\n\n`
-    md += `| 项目 | 内容 |\n`
-    md += `|------|------|\n`
-    md += `| 左侧位置 | ${segment.leftPage || '-'} |\n`
-    md += `| 右侧位置 | ${segment.rightPage || '-'} |\n\n`
-    md += `**左侧文件：**\n\n`
-    md += leftClean.split('\n').map(l => `> ${l}`).join('\n') + '\n\n'
-    md += `**右侧文件：**\n\n`
-    md += rightClean.split('\n').map(l => `> ${l}`).join('\n') + '\n\n'
-    md += '---\n\n'
-  }
-
-  md += `*报告由 Bid Assistant 生成于 ${new Date().toLocaleString()}*\n`
-
-  return md
-}
-
-// 生成Word报告
-function generateWordReport(): Document {
-  const includeHighlight = settings.includeHighlight
-  const includeCharts = settings.includeCharts
-
-  const children: any[] = [
-    // 报告标题
-    new Paragraph({
-      children: [new TextRun({ text: '文件对比报告', bold: true, size: 32, font: 'Microsoft YaHei' })],
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 300 }
-    })
-  ]
-
-  // 统计信息
-  children.push(
-    new Paragraph({
-      children: [new TextRun({ text: '一、相似度统计', bold: true, size: 24, font: 'Microsoft YaHei' })],
-      spacing: { after: 200 }
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: `文本重复率：${textSimilarity.value}`, size: 20, font: 'Microsoft YaHei' })],
-      spacing: { after: 100 }
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: `雷同片段：${similarSegmentsCount.value}处`, size: 20, font: 'Microsoft YaHei' })],
-      spacing: { after: 200 }
-    })
-  )
-
-  // 统计图表（如果开启）
-  if (includeCharts) {
-    children.push(
-      new Paragraph({
-        children: [new TextRun({ text: '二、文件信息', bold: true, size: 24, font: 'Microsoft YaHei' })],
-        spacing: { after: 200 }
-      }),
-      new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: {
-          top: { style: BorderStyle.SINGLE, size: 1, color: 'D8BF9C' },
-          bottom: { style: BorderStyle.SINGLE, size: 1, color: 'D8BF9C' },
-          left: { style: BorderStyle.SINGLE, size: 1, color: 'D8BF9C' },
-          right: { style: BorderStyle.SINGLE, size: 1, color: 'D8BF9C' },
-          insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: 'D8BF9C' },
-          insideVertical: { style: BorderStyle.SINGLE, size: 1, color: 'D8BF9C' }
-        },
-        rows: [
-          new TableRow({
-            children: [
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: '项目', bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-                shading: { fill: 'F5EEE2' },
-                width: { size: 30, type: WidthType.PERCENTAGE }
-              }),
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: leftFileName.value, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-                shading: { fill: 'F5EEE2' },
-                width: { size: 35, type: WidthType.PERCENTAGE }
-              }),
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: rightFileName.value, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-                shading: { fill: 'F5EEE2' },
-                width: { size: 35, type: WidthType.PERCENTAGE }
-              })
-            ]
-          }),
-          new TableRow({
-            children: [
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: '文本重复率', bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-                width: { size: 30, type: WidthType.PERCENTAGE }
-              }),
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: textSimilarity.value, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-                width: { size: 35, type: WidthType.PERCENTAGE }
-              }),
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: textSimilarity.value, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-                width: { size: 35, type: WidthType.PERCENTAGE }
-              })
-            ]
-          }),
-          new TableRow({
-            children: [
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: '雷同片段数', bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-                width: { size: 30, type: WidthType.PERCENTAGE }
-              }),
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: similarSegmentsCount.value.toString(), size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-                width: { size: 35, type: WidthType.PERCENTAGE }
-              }),
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: similarSegmentsCount.value.toString(), size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-                width: { size: 35, type: WidthType.PERCENTAGE }
-              })
-            ]
-          })
-        ]
-      })
-    )
-  }
-
-  // 雷同片段详情
-  children.push(
-    new Paragraph({
-      children: [new TextRun({ text: includeCharts ? '三、雷同片段详情' : '二、雷同片段详情', bold: true, size: 24, font: 'Microsoft YaHei' })],
-      spacing: { after: 200, before: 200 }
-    })
-  )
-
-  // 构建详情表格
-  const detailRows: any[] = [
-    new TableRow({
-      children: [
-        new TableCell({
-          children: [new Paragraph({ children: [new TextRun({ text: '序号', bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-          shading: { fill: 'F5EEE2' },
-          width: { size: 8, type: WidthType.PERCENTAGE }
-        }),
-        new TableCell({
-          children: [new Paragraph({ children: [new TextRun({ text: leftFileName.value, bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-          shading: { fill: 'F5EEE2' },
-          width: { size: 34, type: WidthType.PERCENTAGE }
-        }),
-        new TableCell({
-          children: [new Paragraph({ children: [new TextRun({ text: '位置', bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-          shading: { fill: 'F5EEE2' },
-          width: { size: 12, type: WidthType.PERCENTAGE }
-        }),
-        new TableCell({
-          children: [new Paragraph({ children: [new TextRun({ text: rightFileName.value, bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-          shading: { fill: 'F5EEE2' },
-          width: { size: 34, type: WidthType.PERCENTAGE }
-        }),
-        new TableCell({
-          children: [new Paragraph({ children: [new TextRun({ text: '位置', bold: true, size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-          shading: { fill: 'F5EEE2' },
-          width: { size: 12, type: WidthType.PERCENTAGE }
-        })
-      ]
-    })
-  ]
-
-  // 添加数据行（已忽略的不导出）
-  visibleSegments.value.forEach(segment => {
-    const leftRuns = includeHighlight ? parseHighlightedContent(segment.leftContent) : [new TextRun({ text: segment.leftContent.replace(/<[^>]*>/g, ''), size: 20, font: 'Microsoft YaHei' })]
-    const rightRuns = includeHighlight ? parseHighlightedContent(segment.rightContent) : [new TextRun({ text: segment.rightContent.replace(/<[^>]*>/g, ''), size: 20, font: 'Microsoft YaHei' })]
-
-    detailRows.push(
-      new TableRow({
-        children: [
-          new TableCell({
-            children: [new Paragraph({ children: [new TextRun({ text: segment.id.toString(), size: 20, font: 'Microsoft YaHei' })], alignment: AlignmentType.CENTER })],
-            width: { size: 8, type: WidthType.PERCENTAGE }
-          }),
-          new TableCell({
-            children: [new Paragraph({ children: leftRuns })],
-            width: { size: 34, type: WidthType.PERCENTAGE }
-          }),
-          new TableCell({
-            children: [new Paragraph({ children: [new TextRun({ text: segment.leftPage, size: 18, font: 'Microsoft YaHei', color: 'A67C52' })], alignment: AlignmentType.CENTER })],
-            width: { size: 12, type: WidthType.PERCENTAGE }
-          }),
-          new TableCell({
-            children: [new Paragraph({ children: rightRuns })],
-            width: { size: 34, type: WidthType.PERCENTAGE }
-          }),
-          new TableCell({
-            children: [new Paragraph({ children: [new TextRun({ text: segment.rightPage, size: 18, font: 'Microsoft YaHei', color: 'A67C52' })], alignment: AlignmentType.CENTER })],
-            width: { size: 12, type: WidthType.PERCENTAGE }
-          })
-        ]
-      })
-    )
-  })
-
-  children.push(
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: {
-        top: { style: BorderStyle.SINGLE, size: 1, color: 'E6D7BF' },
-        bottom: { style: BorderStyle.SINGLE, size: 1, color: 'E6D7BF' },
-        left: { style: BorderStyle.SINGLE, size: 1, color: 'E6D7BF' },
-        right: { style: BorderStyle.SINGLE, size: 1, color: 'E6D7BF' },
-        insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: 'E6D7BF' },
-        insideVertical: { style: BorderStyle.SINGLE, size: 1, color: 'E6D7BF' }
-      },
-      rows: detailRows
-    })
-  )
-
-  return new Document({
-    sections: [{
-      properties: {},
-      children
-    }]
-  })
 }
 
 const goToPage = (page: number) => {
