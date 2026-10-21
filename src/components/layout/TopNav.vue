@@ -21,20 +21,20 @@ const showSettingsModal = ref(false)
   <header class="top-nav">
     <div class="nav-left" @click="router.push('/')">
       <div class="tool-mark">
-        <RiTargetLine class="tool-logo" />
+        <RiTargetLine class="tool-logo" size="26" />
       </div>
       <span class="page-title">{{ title || BRAND_NAME }}</span>
     </div>
     <div class="nav-right">
       <div class="nav-btn-wrap" v-if="showBack">
         <button class="nav-btn" @click="router.back()">
-          <RiArrowLeftSLine class="icon" />
+          <RiArrowLeftSLine class="icon" size="18" />
         </button>
         <span class="nav-tip">返回</span>
       </div>
       <div class="nav-btn-wrap">
         <button class="nav-btn" @click="showSettingsModal = true">
-          <RiSettings3Line class="icon" />
+          <RiSettings3Line class="icon" size="18" />
         </button>
         <span class="nav-tip">设置</span>
       </div>
@@ -75,7 +75,6 @@ const showSettingsModal = ref(false)
 }
 
 .tool-logo {
-  font-size: 26px;
   line-height: 1;
   color: var(--color-primary, var(--color-cinnabar, #C0392B));
 }
@@ -87,10 +86,6 @@ const showSettingsModal = ref(false)
   font-family: var(--font-ui);
   line-height: 1.2;
   transition: color 0.25s ease;
-}
-
-.nav-left:hover .page-title {
-  color: var(--color-primary, var(--color-cinnabar, #C0392B));
 }
 
 .nav-right {
@@ -123,7 +118,6 @@ const showSettingsModal = ref(false)
 .nav-btn .icon {
   font-family: "remixicon", sans-serif;
   font-style: normal;
-  font-size: 14px;
   color: var(--color-text-secondary, var(--color-brown-muted, #6E6A60));
   transition: color 0.25s ease;
 }
@@ -191,10 +185,6 @@ const showSettingsModal = ref(false)
 
   .page-title {
     font-size: 16px;
-  }
-
-  .tool-logo {
-    font-size: 22px;
   }
 }
 </style>

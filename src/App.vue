@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useSettings } from './composables/useSettings'
-import ToastContainer from './components/ToastContainer.vue'
+import { applyTheme, applyStoredTheme } from './composables/useTheme'
 import TopNav from './components/layout/TopNav.vue'
 import PageFooter from './components/layout/PageFooter.vue'
 
@@ -11,8 +11,11 @@ const route = useRoute()
 
 const { settings } = useSettings()
 
+// 挂载前先把持久化主题写入 DOM，避免首屏闪烁
+applyStoredTheme()
+
 watch(() => settings.theme, (val) => {
-  document.documentElement.dataset.theme = val
+  applyTheme(val === 'dark' ? 'dark' : 'light')
 }, { immediate: true })
 
 const isResultPage = computed(() => {
@@ -47,8 +50,6 @@ const currentPageTitle = computed(() => {
 
     <PageFooter />
 
-    <!-- Toast 提示 -->
-    <ToastContainer />
   </div>
 </template>
 

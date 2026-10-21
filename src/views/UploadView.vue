@@ -7,7 +7,7 @@ import { RiArrowLeftRightLine, RiListSettingsLine } from '@remixicon/vue'
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useComparison } from '../composables/useComparison'
-import { useToast } from '../composables/useToast'
+import { ElMessage } from '../utils/toast'
 import { useRecentRecords } from '../composables/useRecentRecords'
 import { removeWatermarks } from '../utils/watermark'
 import { storeCompareResult, storePropertyCheckResult } from '../utils/compareResultStore'
@@ -19,7 +19,7 @@ import type { FileInfo } from '../utils/helpers'
 const router = useRouter()
 const { parseFile } = useFileParser()
 const { settings } = useSettings()
-const { error: showError } = useToast()
+
 const { addRecentRecord: addFcRecord } = useRecentRecords('fileCompare')
 const { addRecentRecord: addPcRecord } = useRecentRecords('propertyCheck')
 const {
@@ -162,17 +162,17 @@ async function handleCompare() {
     stepDone.value[2] = true
 
     if (!result) {
-      showError('对比被取消')
+      ElMessage.error('对比被取消')
       return
     }
 
     if (result.parseError) {
-      showError(result.parseError)
+      ElMessage.error(result.parseError)
       return
     }
 
     if (!result.segments || !Array.isArray(result.segments)) {
-      showError('对比结果异常，请重试')
+      ElMessage.error('对比结果异常，请重试')
       return
     }
 
@@ -207,9 +207,9 @@ async function handleCompare() {
     router.push({ path: `/file-compare-result/${resultId}` })
   } catch (error: any) {
     if (error.name === 'AbortError') {
-      showError('对比已取消')
+      ElMessage.error('对比已取消')
     } else {
-      showError(`对比失败: ${error.message}`)
+      ElMessage.error(`对比失败: ${error.message}`)
     }
   }
 }
@@ -240,7 +240,7 @@ async function handleCheck() {
     propertyDetails.value = buildPropertyDetails(leftSrc, rightSrc)
 
     if (!propertyDetails.value || !Array.isArray(propertyDetails.value)) {
-      showError('属性检查结果异常，请重试')
+      ElMessage.error('属性检查结果异常，请重试')
       return
     }
 
@@ -480,20 +480,6 @@ function handleReplace() {}
 .toolbar-nav-btn:hover .toolbar-tip {
   opacity: 1;
   transform: translateY(-50%) scale(1);
-}
-
-.toolbar-nav-btn.active {
-  background: var(--color-primary-soft, #FBE9E7);
-  color: var(--color-primary, #C0392B);
-}
-
-.toolbar-nav-btn.active .toolbar-icon {
-  color: var(--color-primary, #C0392B);
-}
-
-[data-theme="dark"] .toolbar-nav-btn:hover,
-[data-theme="dark"] .toolbar-nav-btn.active {
-  color: #FFFFFF;
 }
 
 @media (max-width: 1024px) {

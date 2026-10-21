@@ -12,7 +12,7 @@ import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
 import { useComparison } from '../composables/useComparison'
 import { generateWordReport, generateMarkdownReport, generatePdfReport, downloadBlob } from '../utils/exportReport'
-import { useToast } from '../composables/useToast'
+import { ElMessage } from '../utils/toast'
 import type { ComparisonSettings, SimilarSegment } from '../utils/textAlgorithms'
 import { htmlToMarkdown } from '../utils/sanitize'
 import { storeCompareResult, deleteCompareResult } from '../utils/compareResultStore'
@@ -29,8 +29,6 @@ import MultiCompareResult from './MultiCompareResult.vue'
 
 const router = useRouter()
 
-// 使用 Toast
-const { error: showError, success: showSuccess } = useToast()
 
 // 使用文件解析组合式函数
 const { parseFile } = useFileParser()
@@ -208,14 +206,14 @@ const handleFileUpload = (event: Event, side: 'left' | 'right') => {
     const file = input.files[0]
     // 文件大小限制 100MB
     if (file.size > 100 * 1024 * 1024) {
-      showError('文件大小超过 100MB 限制')
+      ElMessage.error('文件大小超过 100MB 限制')
       return
     }
     // 文件格式校验
     const ext = file.name.split('.').pop()?.toLowerCase() || ''
     const allowedExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt']
     if (!allowedExts.includes(ext)) {
-      showError(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
+      ElMessage.error(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
       return
     }
     const fileInfo = {
@@ -265,12 +263,12 @@ const handleDrop = (event: DragEvent, side: 'left' | 'right') => {
     const ext = file.name.split('.').pop()?.toLowerCase() || ''
     const allowedExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt']
     if (!allowedExts.includes(ext)) {
-      showError(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
+      ElMessage.error(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
       return
     }
     // 文件大小限制 100MB
     if (file.size > 100 * 1024 * 1024) {
-      showError('文件大小超过 100MB 限制')
+      ElMessage.error('文件大小超过 100MB 限制')
       return
     }
     const fileInfo = {
@@ -492,7 +490,7 @@ const runImageComparison = async (): Promise<ImageDuplicate[]> => {
   // 限制图片数量，防止 O(n²) 性能问题
   const MAX_COMPARE_IMAGES = 50
   if (leftImages.value.length > MAX_COMPARE_IMAGES || rightImages.value.length > MAX_COMPARE_IMAGES) {
-    showError(`图片数量超过 ${MAX_COMPARE_IMAGES} 张限制，仅对比前 ${MAX_COMPARE_IMAGES} 张`)
+    ElMessage.error(`图片数量超过 ${MAX_COMPARE_IMAGES} 张限制，仅对比前 ${MAX_COMPARE_IMAGES} 张`)
   }
   const leftImg = leftImages.value.slice(0, MAX_COMPARE_IMAGES)
   const rightImg = rightImages.value.slice(0, MAX_COMPARE_IMAGES)
@@ -612,7 +610,7 @@ const runOCRComparison = async () => {
     ocrResults.value = [...leftResults, ...rightResults]
     showOCRResult.value = true
   } catch (error) {
-    showError('OCR 对比失败，请重试')
+    ElMessage.error('OCR 对比失败，请重试')
   } finally {
     isOCRProcessing.value = false
     ocrProgress.value = 0

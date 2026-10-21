@@ -376,10 +376,6 @@ const formatTags = [
   border-color: var(--color-primary, var(--color-cinnabar, #C0392B));
   background-color: var(--color-primary-soft, #FBE9E7);
 }
-[data-theme="dark"] .replace-icon:hover {
-  color: #FFFFFF;
-  border-color: #FFFFFF;
-}
 
 .replace-icon-inner {
   font-size: 16px;

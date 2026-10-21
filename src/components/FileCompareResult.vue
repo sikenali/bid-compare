@@ -20,7 +20,7 @@ import {
 } from '@remixicon/vue'
 import { Packer } from 'docx'
 import { useSettings } from '../composables/useSettings'
-import { useToast } from '../composables/useToast'
+import { ElMessage } from '../utils/toast'
 import { getCompareResult, deleteCompareResult } from '../utils/compareResultStore'
 import { sanitizeHTML, sanitizeWithHighlight, htmlToMarkdown } from '../utils/sanitize'
 import { generateWordReport, generateMarkdownReport, generatePdfReport, downloadBlob } from '../utils/exportReport'
@@ -43,7 +43,7 @@ const md = new MarkdownIt({
 const route = useRoute()
 const router = useRouter()
 const { settings } = useSettings()
-const { error: showError, success: showToast } = useToast()
+
 
 // 数据
 const segments = ref<SimilarSegment[]>([])
@@ -413,7 +413,7 @@ const handleBack = () => {
 
 const handleExport = async () => {
   if (segments.value.length === 0) {
-    showError('没有可导出的对比数据')
+    ElMessage.error('没有可导出的对比数据')
     return
   }
 
@@ -444,10 +444,10 @@ const handleExport = async () => {
       downloadBlob(blob, `${leftName}vs${rightName}-文件对比报告.docx`)
     }
     
-    showToast('导出成功')
+    ElMessage.success('导出成功')
   } catch (error) {
     console.error('导出失败:', error)
-    showError('导出报告失败，请重试')
+    ElMessage.error('导出报告失败，请重试')
   }
 }
 

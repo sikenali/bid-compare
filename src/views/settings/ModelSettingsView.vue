@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useSettings } from '../../composables/useSettings'
-import { useToast } from '../../composables/useToast'
+import { ElMessage } from '../../utils/toast'
 import { deleteApiKey, toggleApiKey, testApiKey, updateApiKey, addApiKey, getApiKeyList } from '../../api/settings'
 import { UiSelect, UiInput, UiSelectCard, UiTip, UiModal, UiSwitch, type UiSelectOption } from '../../components/ui'
 
 const { settings, saveSettings } = useSettings()
-const { show: showToast } = useToast()
+
 
 const configTab = ref<'provider' | 'custom'>('provider')
 const keyInput = ref('')
@@ -100,7 +100,7 @@ async function handleSave() {
   const key = keyInput.value.trim()
   if (configTab.value === 'custom') {
     if (!customEndpoint.value.trim() || !customModelId.value.trim()) {
-      showToast('请填写自定义地址和模型 ID', 'warning')
+      ElMessage.warning('请填写自定义地址和模型 ID')
       return
     }
     const payload: any = {
@@ -113,21 +113,21 @@ async function handleSave() {
     try {
       if (editingId.value) {
         await updateApiKey(editingId.value, payload)
-        showToast('自定义配置已更新', 'success')
+        ElMessage.success('自定义配置已更新')
       } else {
-        if (!key) { showToast('请输入 API Key', 'warning'); return }
+        if (!key) { ElMessage.warning('请输入 API Key'); return }
         await addApiKey(payload)
-        showToast('自定义配置已保存', 'success')
+        ElMessage.success('自定义配置已保存')
       }
       syncToSettings({ provider: payload.provider, model: payload.model, api_key: key || undefined })
       resetForm()
       await loadKeys()
     } catch (err: any) {
-      showToast(err?.message || '保存失败', 'error')
+      ElMessage.error(err?.message || '保存失败')
     }
   } else {
     if (!selectedProvider.value || !selectedModelName.value) {
-      showToast('请选择服务商和模型', 'warning')
+      ElMessage.warning('请选择服务商和模型')
       return
     }
     const payload: any = {
@@ -139,17 +139,17 @@ async function handleSave() {
     try {
       if (editingId.value) {
         await updateApiKey(editingId.value, payload)
-        showToast(`「${selectedProvider.value}」配置已更新`, 'success')
+        ElMessage.success(`「${selectedProvider.value}」配置已更新`)
       } else {
-        if (!key) { showToast('请输入 API Key', 'warning'); return }
+        if (!key) { ElMessage.warning('请输入 API Key'); return }
         await addApiKey(payload)
-        showToast(`「${selectedProvider.value}」API Key 已保存`, 'success')
+        ElMessage.success(`「${selectedProvider.value}」API Key 已保存`)
       }
       syncToSettings({ provider: selectedProvider.value, model: selectedModelName.value, api_key: key || undefined })
       resetForm()
       await loadKeys()
     } catch (err: any) {
-      showToast(err?.message || '保存失败', 'error')
+      ElMessage.error(err?.message || '保存失败')
     }
   }
 }
@@ -174,10 +174,10 @@ async function confirmDelete() {
   try {
     await deleteApiKey(deletingId.value)
     showDeleteDialog.value = false
-    showToast('已删除', 'success')
+    ElMessage.success('已删除')
     if (editingId.value === deletingId.value) resetForm()
     await loadKeys()
-  } catch { showToast('删除失败', 'error') }
+  } catch { ElMessage.error('删除失败') }
 }
 
 async function handleToggle(key: SavedKey) {
@@ -188,7 +188,7 @@ async function handleToggle(key: SavedKey) {
       const storedKey = getApiKeyList().find(k => k.id === key.id)
       if (storedKey) syncToSettings({ provider: storedKey.provider, model: storedKey.model, api_key: storedKey.api_key })
     }
-  } catch { showToast('操作失败', 'error') }
+  } catch { ElMessage.error('操作失败') }
 }
 
 async function handleTest(key: SavedKey) {

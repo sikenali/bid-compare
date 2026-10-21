@@ -134,7 +134,6 @@ const biddingSites = [
   color: var(--color-primary, #C0392B);
   flex-shrink: 0;
 }
-[data-theme="dark"] .header-icon { color: #FFFFFF; }
 
 .header-text {
   display: flex;

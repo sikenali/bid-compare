@@ -6,7 +6,7 @@ import {
   RiRestartLine, RiDeleteBinLine,
 } from '@remixicon/vue'
 import { useSettings } from '../composables/useSettings'
-import { useToast } from '../composables/useToast'
+import { ElMessage } from '../utils/toast'
 import { computeImageHash, calculateImageSimilarity, loadImageAsDataUrl } from '../utils/imageCompare'
 import { recognizeImages, isOCRAvailable } from '../utils/ocr'
 import type { OCRResult } from '../utils/ocr'
@@ -14,7 +14,7 @@ import { UiSwitch } from '../components/ui'
 
 const router = useRouter()
 const { settings, saveSettings } = useSettings()
-const { show: showToast } = useToast()
+
 
 // 图片数据
 const leftImages = ref<Array<{ url: string; name: string }>>([])
@@ -95,7 +95,7 @@ const removeRightImage = (idx: number) => {
 // 图片对比
 const runImageComparison = async () => {
   if (leftImages.value.length === 0 || rightImages.value.length === 0) {
-    showToast('请上传至少左右各一张图片', 'warning')
+    ElMessage.warning('请上传至少左右各一张图片')
     return
   }
 
@@ -146,12 +146,12 @@ const runImageComparison = async () => {
     imageDuplicates.value.sort((a, b) => b.similarity - a.similarity)
     progress.value = 1
     if (imageDuplicates.value.length > 0) {
-      showToast(`发现 ${imageDuplicates.value.length} 组雷同图片`, 'success')
+      ElMessage.success(`发现 ${imageDuplicates.value.length} 组雷同图片`)
     } else {
-      showToast('未发现雷同图片', 'success')
+      ElMessage.success('未发现雷同图片')
     }
   } catch (error) {
-    showToast('图片对比失败', 'error')
+    ElMessage.error('图片对比失败')
   } finally {
     isProcessing.value = false
   }
@@ -187,7 +187,7 @@ const runOCR = async (images: Array<{ url: string; name: string }>, side: 'left'
 // OCR 文字对比
 const runOCRComparison = async () => {
   if (leftImages.value.length === 0 || rightImages.value.length === 0) {
-    showToast('请上传至少左右各一张图片', 'warning')
+    ElMessage.warning('请上传至少左右各一张图片')
     return
   }
 
@@ -217,9 +217,9 @@ const runOCRComparison = async () => {
     ocrCompareResult.value = { leftText, rightText, similarity }
     ocrResults.value = [...leftResults, ...rightResults]
     showOCRResult.value = true
-    showToast('OCR 文字识别对比完成', 'success')
+    ElMessage.success('OCR 文字识别对比完成')
   } catch (error) {
-    showToast('OCR 对比失败', 'error')
+    ElMessage.error('OCR 对比失败')
   } finally {
     isOCRProcessing.value = false
     ocrProgress.value = 0
@@ -237,7 +237,7 @@ const clearAllImages = () => {
   ocrCompareResult.value = null
   ocrResults.value = []
   showOCRResult.value = false
-  showToast('已清除所有图片', 'success')
+  ElMessage.success('已清除所有图片')
 }
 
 // 返回上传页面

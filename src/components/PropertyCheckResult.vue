@@ -11,7 +11,7 @@ import {
 } from '@remixicon/vue'
 import { Packer } from 'docx'
 import { getPropertyCheckResult, deletePropertyCheckResult } from '../utils/compareResultStore'
-import { useToast } from '../composables/useToast'
+import { ElMessage } from '../utils/toast'
 import { generatePropertyWordReport, generatePropertyPdfReport, downloadBlob } from '../utils/exportReport'
 
 interface PropertyDetail {
@@ -23,7 +23,7 @@ interface PropertyDetail {
 
 const route = useRoute()
 const router = useRouter()
-const { error: showError } = useToast()
+
 
 const propertyDetails = ref<PropertyDetail[]>([])
 const matchCount = ref(0)
@@ -93,7 +93,7 @@ const handleBack = () => {
 
 const handleExport = async () => {
   if (propertyDetails.value.length === 0) {
-    showError('没有可导出的对比数据')
+    ElMessage.error('没有可导出的对比数据')
     return
   }
 
@@ -117,10 +117,10 @@ const handleExport = async () => {
     const blob = await Packer.toBlob(doc)
     downloadBlob(blob, `${baseName}-属性对比报告.docx`)
 
-    showToast('导出成功')
+    ElMessage.success('导出成功')
   } catch (error) {
     console.error('导出失败:', error)
-    showError('导出报告失败，请重试')
+    ElMessage.error('导出报告失败，请重试')
   }
 }
 

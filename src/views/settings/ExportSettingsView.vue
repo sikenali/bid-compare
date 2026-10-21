@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useSettings } from '../../composables/useSettings'
-import { useToast } from '../../composables/useToast'
+import { ElMessage } from '../../utils/toast'
 import { getExportSettings, setExportSettings } from '../../api/settings'
 import { UiSwitch, UiSelectCard } from '../../components/ui'
 import { BRAND_NAME } from '../../constants/brand'
@@ -76,7 +76,7 @@ async function persist() {
       md_demote_heading: num(mdSettings.value.downgradeTitle),
     })
   } catch {
-    showToast('保存导出设置失败', 'error')
+    ElMessage.error('保存导出设置失败')
   }
 }
 
@@ -101,13 +101,13 @@ function applyLoaded(s: Record<string, any>) {
 }
 
 const { settings, saveSettings } = useSettings()
-const { show: showToast } = useToast()
+
 
 onMounted(async () => {
   try {
     applyLoaded(await getExportSettings())
   } catch {
-    showToast('后端服务不可用，导出设置暂用本地默认', 'warning')
+    ElMessage.warning('后端服务不可用，导出设置暂用本地默认')
   } finally {
     ready = true
     settings.exportFormat = mapFormatToSettings(selectedFormat.value)
@@ -135,7 +135,7 @@ async function resetAll() {
   })
   ready = true
   await persist()
-  showToast('已恢复默认导出设置', 'success')
+  ElMessage.success('已恢复默认导出设置')
 }
 </script>
 

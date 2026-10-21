@@ -2,7 +2,7 @@
   <footer class="page-footer">
     <!-- 左侧：logo + 文字 -->
     <div class="footer-brand">
-      <RiTargetLine class="tool-logo" />
+      <RiTargetLine class="tool-logo" size="20" />
       <span class="footer-brand-text">回旋标工具系列</span>
     </div>
 
@@ -10,13 +10,13 @@
     <div class="footer-actions">
       <div class="footer-icon-wrap">
         <div class="footer-icon-btn" @click="showCreditModal = true">
-          <RiShieldCheckLine class="footer-mark" />
+          <RiShieldCheckLine class="footer-mark" size="14" />
         </div>
         <span class="footer-tip">企业信用</span>
       </div>
       <div class="footer-icon-wrap">
         <div class="footer-icon-btn" @click="showBiddingModal = true">
-          <RiLinksLine class="footer-mark" />
+          <RiLinksLine class="footer-mark" size="14" />
         </div>
         <span class="footer-tip">招标网站</span>
       </div>
@@ -68,7 +68,6 @@ onMounted(() => { year.value = new Date().getFullYear() })
 .tool-logo {
   font-family: "remixicon", sans-serif;
   font-style: normal;
-  font-size: 20px;
   line-height: 1;
   color: var(--color-primary, var(--color-cinnabar, #C0392B));
   flex-shrink: 0;
@@ -116,7 +115,6 @@ onMounted(() => { year.value = new Date().getFullYear() })
 .footer-mark {
   font-family: "remixicon", sans-serif;
   font-style: normal;
-  font-size: 14px;
   color: inherit;
   transition: transform 0.25s ease;
 }

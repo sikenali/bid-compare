@@ -11,7 +11,7 @@ import {
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useComparison } from '../composables/useComparison'
-import { useToast } from '../composables/useToast'
+import { ElMessage } from '../utils/toast'
 import type { ComparisonSettings } from '../utils/textAlgorithms'
 import { removeWatermarks } from '../utils/watermark'
 import { UiSwitch } from '../components/ui'
@@ -20,7 +20,7 @@ import { formatFileSize } from '../utils/helpers'
 const router = useRouter()
 const { settings, saveSettings } = useSettings()
 const { parseFile } = useFileParser()
-const { show: showToast } = useToast()
+
 const {
   isProcessing,
   progress,
@@ -61,7 +61,7 @@ const handleFileSelect = (idx: number, event: Event) => {
   if (!input.files?.length) return
   const f = input.files[0]
   if (f.size > 100 * 1024 * 1024) {
-    showToast(`文件 ${f.name} 超过 100MB 大小限制`, 'error')
+    ElMessage.error(`文件 ${f.name} 超过 100MB 大小限制`)
     return
   }
   files.value[idx] = {
@@ -87,7 +87,7 @@ const canCompare = computed(() => validFiles.value.length >= 2)
 
 const handleBatchCompare = async () => {
   if (!canCompare.value) {
-    showToast('请至少上传2个文件', 'warning')
+    ElMessage.warning('请至少上传2个文件')
     return
   }
 
@@ -158,9 +158,9 @@ const handleBatchCompare = async () => {
     showResults.value = true
     progress.value = 1
     progressMessage.value = '对比完成'
-    showToast(`批量对比完成，共 ${results.length} 组对比`, 'success')
+    ElMessage.success(`批量对比完成，共 ${results.length} 组对比`)
   } catch (err) {
-    showToast((err as Error).message || '对比失败', 'error')
+    ElMessage.error((err as Error).message || '对比失败')
   } finally {
     isProcessing.value = false
   }
@@ -178,7 +178,7 @@ const clearAll = () => {
   ]
   batchResults.value = []
   showResults.value = false
-  showToast('已清除所有文件', 'success')
+  ElMessage.success('已清除所有文件')
 }
 
 const goBack = () => {

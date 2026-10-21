@@ -200,11 +200,11 @@ import {
 import { BorderBeam } from 'vue3-border-beam'
 import { htmlToMarkdown, sanitizeHTML } from '../utils/sanitize'
 import { useSettings } from '../composables/useSettings'
-import { useToast } from '../composables/useToast'
+import { ElMessage } from '../utils/toast'
 import { Packer } from 'docx'
 import { generateWordReport, generateMarkdownReport, generatePdfReport, downloadBlob } from '../utils/exportReport'
 
-const { error: showError } = useToast()
+
 
 // 安全渲染 HTML（消毒）
 const safeHtml = (html: string) => sanitizeHTML(html || '')
@@ -407,7 +407,7 @@ const handleMatrixCellClick = (rowIdx: number, colIdx: number) => {
 // 导出功能
 const handleExport = async () => {
   if (totalDuplicates.value === 0) {
-    showError('没有可导出的对比数据')
+    ElMessage.error('没有可导出的对比数据')
     return
   }
 

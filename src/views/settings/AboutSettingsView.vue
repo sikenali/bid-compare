@@ -119,7 +119,7 @@ const appVersion = 'V1.0.0'
 .badge-logo {
   font-size: 52px;
   line-height: 1;
-  color: #BE3B2E;
+  color: var(--color-primary, #C0392B);
 }
 .about-name {
   margin-top: 32px;

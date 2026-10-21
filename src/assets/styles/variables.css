@@ -4,6 +4,63 @@
  * ============================================ */
 
 :root {
+  /* ============================================
+   * AGENT/DESIGN 规范 Token（唯一权威来源）
+   * 对应 docs/DESIGN.md §5 颜色速查表 · Light (Parchment)
+   * 组件中的 var(--color-*) 引用一律指向此层，
+   * 下方文比猩遗留 Token 仅作为别名兼容保留。
+   * ============================================ */
+
+  /* --- 强调色 --- */
+  --color-primary: #C0392B;
+  --color-primary-soft: #FBE9E7;
+
+  /* --- 背景层级 --- */
+  --color-bg-main: #FAF7F2;
+  --color-bg-secondary: #F7F3EA;
+  --color-bg-card: #FCFBF8;
+  --color-bg-white: #FFFFFF;
+
+  /* --- 文本层级 --- */
+  --color-text-primary: #1F1D1A;
+  --color-text-body: #3A3A3A;
+  --color-text-secondary: #6E6A60;
+  --color-text-muted: #8A8578;
+  --color-text-faint: #A7A296;
+
+  /* --- 边框层级 --- */
+  --color-border: #E5DFD3;
+  --color-border-soft: #EDE9E0;
+  --color-border-hover: #D9D2C2;
+
+  /* --- 功能状态色（DESIGN.md §5 Light）--- */
+  --color-success: #4E9B7A;
+  --color-success-soft: #E8F2EC;
+  --color-info: #4A72A8;
+  --color-info-soft: #E8EEF6;
+  --color-warning: #F39C12;
+  --color-warning-soft: #FDF3E0;
+  --color-error: #E74C3C;
+  --color-error-soft: #FBEAE7;
+
+  /* --- 强调色预设（DESIGN.md §4.3 五色盘，供主题切换 JS 写入）--- */
+  --color-accent-vermilion: #C0392B;
+  --color-accent-gold: #D3A93F;
+  --color-accent-jade: #3E8C6E;
+  --color-accent-cloud: #4A72A8;
+  --color-accent-ink: #2F3640;
+
+  /* --- 字体族（AGENT.md §6.2 / DESIGN.md §1）
+     注意：index.html 实际加载的是 Noto Sans SC / Noto Serif SC（即 Source Han 的
+     Google Fonts 发行名），故栈首放已加载字体，规范名作为次选保留。 */
+  --font-family: 'Inter', 'Noto Sans SC', 'SourceHanSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-cn: 'Noto Sans SC', 'SourceHanSans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* --- 按钮高度（AGENT.md §6.3）--- */
+  --btn-height-sm: 36px;
+  --btn-height-md: 44px;
+  --btn-height-lg: 52px;
+
   /* ========== Colors — Canvas & Surfaces ========== */
   --color-parchment: #FDF6E3;
   --color-cream: #FBF7EF;
@@ -12,8 +69,11 @@
   --color-warm-gray: #EAE5D9;
   --color-white: #FFFFFF;
 
-  /* ========== Colors — Accents ========== */
-  --color-cinnabar: #C23B22;
+  /* ========== Colors — Accents（文比猩遗留名，收敛到规范 --color-primary）==========
+     说明：主题强调色切换（ThemeSettingsView）只写入 --color-primary，
+     若此处保留独立色值，71 处 --color-cinnabar 引用将不跟随切换。
+     迁移到 AGENT/DESIGN Token 后由别名统一收敛，无需逐处改调用点。 */
+  --color-cinnabar: var(--color-primary);
   --color-cinnabar-dark: #A83028;
   --color-gold: #D4AF37;
   --color-gold-dark: #C8A45C;
@@ -37,19 +97,17 @@
   --color-diff-red-bg: #FFF0ED;
   --color-diff-green-bg: #E8F0E0;
 
-  /* ========== Colors — Status ========== */
-  --color-success: #22C55E;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-  --color-info: #3B82F6;
+  /* ========== Colors — Status（别名，收敛到上方规范值）========== */
+  --color-danger: var(--color-error);
 
   /* ========== Colors — RGB variants (for rgba()) ========== */
   --rgb-parchment: 245, 239, 227;
   --rgb-cream: 251, 247, 239;
   --rgb-cream-dark: 245, 239, 224;
   --rgb-cream-darker: 240, 232, 213;
-  --rgb-cinnabar: 194, 59, 34;
+  --rgb-cinnabar: 192, 57, 43;
   --rgb-cinnabar-dark: 168, 48, 40;
+  --rgb-primary: 192, 57, 43;
   --rgb-gold: 212, 175, 55;
   --rgb-gold-dark: 200, 164, 92;
   --rgb-jade: 45, 139, 87;
@@ -68,9 +126,10 @@
   --font-calligraphy: 'Ma Shan Zheng', 'ZCOOL XiaoWei', 'Liu Jian Mao Cao', cursive;
   --font-xiaowei: 'ZCOOL XiaoWei', 'Ma Shan Zheng', cursive;
   --font-songti: 'Noto Serif SC', 'Source Han Serif SC', 'STSongti', 'SimSun', serif;
-  --font-sans: 'Noto Sans SC', 'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: var(--font-songti);
-  --font-ui: var(--font-sans);
+  --font-sans: var(--font-family-cn);
+  /* UI 文案走规范中文字体；正文阅读区保留宋体，维持文比猩书卷质感 */
+  --font-body: var(--font-family-cn);
+  --font-ui: var(--font-family-cn);
 
   /* ========== Typography — Type Scale ========== */
   --text-display: 30px;
@@ -104,25 +163,26 @@
   --spacing-lg: var(--spacing-6);
   --spacing-xl: var(--spacing-8);
 
-  /* ========== Border Radius ========== */
+  /* ========== Border Radius（DESIGN.md §1 / AGENT.md §6.3）========== */
   --radius-xs: 3px;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
   --radius-2xl: 24px;
   --radius-full: 9999px;
 
   /* Legacy radius aliases */
   --radius-pill: var(--radius-full);
 
-  /* ========== Shadows ========== */
+  /* ========== Shadows（DESIGN.md §1：xs→xl 五级，xl = 0 12px 40px rgba(0,0,0,0.2)）========== */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
   --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
-  --shadow-xl: 0 20px 60px rgba(0,0,0,0.15);
-  --shadow-cinnabar: 0 4px 20px rgba(194,59,34,0.2);
-  --shadow-cinnabar-hover: 0 6px 24px rgba(194,59,34,0.3);
+  --shadow-xl: 0 12px 40px rgba(0,0,0,0.2);
+  --shadow-cinnabar: 0 4px 20px rgba(192,57,43,0.2);
+  --shadow-cinnabar-hover: 0 6px 24px rgba(192,57,43,0.3);
 
   /* ========== Colors — Calicat Design Tokens ========== */
   --color-upload-bg: #F5EFE3;
@@ -146,144 +206,15 @@
   --element-gap: var(--spacing-4);
   --max-content-width: 800px;
 
+  /* ========== Z-index 层级 ========== */
+  --z-dropdown: 1000;
+  --z-tooltip: 1070;
+  --z-modal: 1200;
+
   /* ========== Transitions ========== */
   --transition-fast: 150ms ease;
   --transition-normal: 200ms ease;
   --transition-slow: 300ms ease;
-}
-
-/* ========== Dark Theme ========== */
-[data-theme="dark"] {
-  --color-parchment: #121212;
-  --color-cream: #1A1A1A;
-  --color-cream-dark: #242424;
-  --color-cream-darker: #2E2E2E;
-  --color-warm-gray: #1A1A1A;
-  --color-white: #333333;
-
-  --color-tan-border: #3D3D3D;
-  --color-tan-dark: #4A4A4A;
-  --color-tan-light: #3D3D3D;
-
-  --color-ink-black: #FFFFFF;
-  --color-brown-dark: #FFFFFF;
-  --color-brown: #F0F0F0;
-  --color-brown-muted: #CCCCCC;
-
-  --rgb-parchment: 18, 18, 18;
-  --rgb-cream: 26, 26, 26;
-  --rgb-cream-dark: 36, 36, 36;
-  --rgb-cream-darker: 46, 46, 46;
-  --rgb-white: 51, 51, 51;
-  --rgb-tan-border: 61, 61, 61;
-  --rgb-tan-light: 74, 74, 74;
-  --rgb-tan-dark: 74, 74, 74;
-  --rgb-ink-black: 255, 255, 255;
-  --rgb-brown-dark: 255, 255, 255;
-  --rgb-brown: 240, 240, 240;
-  --rgb-brown-muted: 204, 204, 204;
-  --color-blue-accent: #1E4D73;
-
-  --color-upload-bg: #1A1A1A;
-  --color-nav-bg: #1A1A1A;
-  --color-icon-bg: #2E2E2E;
-  --color-accent-red: #C43D3D;
-  --color-accent-red-dark: #A83028;
-  --color-cinnabar: #C23B22;
-  --color-cinnabar-dark: #A83028;
-  --color-gold: #D4AF37;
-  --color-gold-dark: #C8A45C;
-  --color-jade: #3DA06A;
-  --color-jade-light: #5B8C5A;
-  --color-jade-dark: #1A6B3A;
-  --color-cloud-blue: #5B7DB1;
-  --color-diff-added: #1A3A1A;
-  --color-diff-modified: #3A3A1A;
-  --color-diff-deleted: #3A1A1A;
-  --color-diff-added-border: #2D7A3A;
-  --color-diff-modified-border: #B07000;
-  --color-diff-deleted-border: #B03030;
-  --color-diff-red-bg: #3A1A1A;
-  --color-diff-green-bg: #1A3A1A;
-
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
-  --shadow-lg: 0 4px 20px rgba(0,0,0,0.5);
-  --shadow-xl: 0 20px 60px rgba(0,0,0,0.6);
-
-  /* Component-specific variables for dark theme */
-  --color-bg-main: #1A1A1A;
-  --color-bg-secondary: #242424;
-  --color-bg-card: #2E2E2E;
-  --color-bg-white: #333333;
-  --color-border: #3D3D3D;
-  --color-border-soft: #4A4A4A;
-  --color-border-hover: #5A5A5A;
-  --color-text-primary: #FFFFFF;
-  --color-text-body: #F0F0F0;
-  --color-text-secondary: #CCCCCC;
-  --color-text-muted: #AAAAAA;
-  --color-text-faint: #888888;
-  --color-primary: #C0392B;
-  --color-primary-soft: #8B4438;
-}
-
-/* ========== Paper Theme ========== */
-[data-theme="paper"] {
-  --color-parchment: #FFFFFF;
-  --color-cream: #F5EFE3;
-  --color-cream-dark: #F5F5F5;
-  --color-cream-darker: #EEEEEE;
-  --color-warm-gray: #F0F0F0;
-  --color-white: #FFFFFF;
-
-  --color-tan-border: #E0E0E0;
-  --color-tan-dark: #CCCCCC;
-  --color-tan-light: #EEEEEE;
-
-  --color-ink-black: #222222;
-  --color-brown-dark: #333333;
-  --color-brown: #555555;
-  --color-brown-muted: #999999;
-
-  --rgb-parchment: 255, 255, 255;
-  --rgb-cream: 250, 250, 250;
-  --rgb-cream-dark: 245, 245, 245;
-  --rgb-cream-darker: 238, 238, 238;
-  --rgb-white: 255, 255, 255;
-  --rgb-tan-border: 224, 224, 224;
-  --rgb-tan-light: 238, 238, 238;
-  --rgb-tan-dark: 204, 204, 204;
-  --rgb-ink-black: 34, 34, 34;
-  --rgb-brown-dark: 51, 51, 51;
-  --rgb-brown: 85, 85, 85;
-  --rgb-brown-muted: 153, 153, 153;
-  --color-blue-accent: #2D6A9F;
-
-  --color-upload-bg: #F5F5F5;
-  --color-nav-bg: #F5EFE3;
-  --color-icon-bg: #EEEEEE;
-  --color-accent-red: #C43D3D;
-  --color-accent-red-dark: #A83028;
-  --color-cinnabar: #C23B22;
-  --color-cinnabar-dark: #A83028;
-  --color-gold: #D4AF37;
-  --color-gold-dark: #C8A45C;
-  --color-jade: #2D8B57;
-  --color-jade-light: #5B8C5A;
-  --color-jade-dark: #1A6B3A;
-  --color-cloud-blue: #5B7DB1;
-  --color-diff-added: #E8F5E0;
-  --color-diff-modified: #FFF8E0;
-  --color-diff-deleted: #FFE8E0;
-  --color-diff-added-border: #4CAF50;
-  --color-diff-modified-border: #FF9800;
-  --color-diff-deleted-border: #F44336;
-
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
-  --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
-  --shadow-xl: 0 20px 60px rgba(0,0,0,0.15);
 }
 
 /* ============================================
@@ -294,9 +225,9 @@ body, html {
   padding: 0;
   overflow: hidden;
   height: 100%;
-  font-family: var(--font-body);
-  color: var(--color-brown);
-  background: var(--color-parchment);
+  font-family: var(--font-family-cn);
+  color: var(--color-text-body);
+  background: var(--color-bg-main);
 }
 
 * {

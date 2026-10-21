@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useSettings } from '../../composables/useSettings'
-import { useToast } from '../../composables/useToast'
+import { ElMessage } from '../../utils/toast'
 import { riToCompName } from '../../utils/icon'
 import { UiSwitch } from '../../components/ui'
 import { RiRestartLine } from '@remixicon/vue'
 
 const { settings, saveSettings } = useSettings()
-const { show: showToast } = useToast()
+
 
 const subTab = ref<'algorithm' | 'preprocess' | 'features'>('algorithm')
 
@@ -31,7 +31,7 @@ watch(
 
 function save() {
   saveSettings()
-  showToast('设置已保存', 'success')
+  ElMessage.success('设置已保存')
 }
 
 function reset() {
@@ -56,7 +56,7 @@ function reset() {
   settings.enableMultiFileCompare = false
   settings.maxMultiFileCount = 3
   saveSettings()
-  showToast('已恢复默认设置', 'success')
+  ElMessage.success('已恢复默认设置')
 }
 </script>
 
@@ -298,7 +298,6 @@ function reset() {
 .tab-btn { display:inline-flex; align-items:center; gap:7px; padding:9px 20px; border:none; border-radius:8px; background-color:transparent; font-size:14px; font-weight:500; color:var(--color-text-secondary,#6E6A60); cursor:pointer; font-family:var(--font-ui); transition:all .2s; }
 .tab-btn:hover { background-color:var(--color-bg-secondary,#F7F3EA); }
 .tab-btn.active { background-color:var(--color-primary-soft); color:var(--color-primary,#C0392B); }
-[data-theme="dark"] .tab-btn.active { color:#FFFFFF; }
 .tab-btn .icon { font-size:16px; }
 
 /* Section card */

@@ -5,7 +5,7 @@ import { RiExchangeLine, RiAddLine, RiArrowRightLine, RiDownload2Line } from '@r
 import { useFileParser } from '../composables/useFileParser'
 import { useSettings } from '../composables/useSettings'
 import { useRecentRecords } from '../composables/useRecentRecords'
-import { useToast } from '../composables/useToast'
+import { ElMessage } from '../utils/toast'
 import { Packer } from 'docx'
 import { generatePropertyWordReport, downloadBlob } from '../utils/exportReport'
 import { calculateTextSimilarity } from '../utils/textAlgorithms'
@@ -15,7 +15,7 @@ import { formatFileSize, getFileType, type FileInfo } from '../utils/helpers'
 import FileUpload from './FileUpload.vue'
 
 const router = useRouter()
-const { error: showError } = useToast()
+
 
 // 使用文件解析组合式函数
 const { parseFile } = useFileParser()
@@ -61,14 +61,14 @@ const handleFileUpload = (event: Event, side: 'left' | 'right') => {
     const file = input.files[0]
     // 文件大小限制 100MB
     if (file.size > 100 * 1024 * 1024) {
-      showError('文件大小超过 100MB 限制')
+      ElMessage.error('文件大小超过 100MB 限制')
       return
     }
     // 文件格式校验
     const ext = file.name.split('.').pop()?.toLowerCase() || ''
     const allowedExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt']
     if (!allowedExts.includes(ext)) {
-      showError(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
+      ElMessage.error(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
       return
     }
     const fileInfo = {
@@ -98,11 +98,11 @@ const handleDrop = (event: DragEvent, side: 'left' | 'right') => {
     const ext = file.name.split('.').pop()?.toLowerCase() || ''
     const allowedExts = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'txt']
     if (!allowedExts.includes(ext)) {
-      showError(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
+      ElMessage.error(`不支持的文件格式：.${ext}，请上传 PDF、Word、Excel、PPT 或 TXT 文件`)
       return
     }
     if (file.size > 100 * 1024 * 1024) {
-      showError('文件大小超过 100MB 限制')
+      ElMessage.error('文件大小超过 100MB 限制')
       return
     }
     const fileInfo = {
@@ -265,7 +265,7 @@ const handleExportReport = async () => {
     const blob = await Packer.toBlob(doc)
     downloadBlob(blob, `${fileName}.docx`)
   } catch (error) {
-    showError('导出报告失败，请重试')
+    ElMessage.error('导出报告失败，请重试')
   }
 }
 

@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useSettings } from '../../composables/useSettings'
+import {
+  applyTheme,
+  applyAccent,
+  getStoredAccent,
+  ACCENTS,
+  isAccent,
+  THEME_KEY,
+  ACCENT_KEY,
+  type AccentKey,
+} from '../../composables/useTheme'
 
 const { settings, saveSettings } = useSettings()
 
 interface ThemeOption {
-  type: string
+  type: 'light' | 'dark'
   name: string
   desc: string
   skin: string
@@ -35,54 +45,43 @@ const themes: ThemeOption[] = [
   },
 ]
 
-interface AccentOption {
-  key: string
-  name: string
-  color: string
-  varName: string
-}
-
-const accents: AccentOption[] = [
-  { key: 'vermilion', name: '朱红 · 默认', color: '#BE3B2E', varName: '--color-primary' },
-  { key: 'gold', name: '鎏金', color: '#D3A93F', varName: '--color-accent-gold' },
-  { key: 'jade', name: '玉绿', color: '#3E8C6E', varName: '--color-accent-jade' },
-  { key: 'cloud', name: '云蓝', color: '#4A72A8', varName: '--color-accent-cloud' },
-  { key: 'ink', name: '黛墨', color: '#2F3640', varName: '--color-accent-ink' },
-]
+/** 强调色选项直接由 useTheme 的 ACCENTS 派生，避免两处维护色值 */
+const accents = (Object.keys(ACCENTS) as AccentKey[]).map(key => ({
+  key,
+  name: ACCENTS[key].name,
+  color: ACCENTS[key].color,
+}))
 
 const layouts = [
   { key: 'topbar', name: '顶栏模式 · 居中导航', desc: '功能模块在顶栏居中排布，右上角统一为返回与设置' },
   { key: 'sidebar', name: '侧边栏模式 · 左侧导航', desc: '功能模块在左侧竖列居中，顶栏不显示图标文字' },
 ]
 
-const selectedTheme = ref('light')
-const selectedAccent = ref('vermilion')
+const selectedTheme = ref<'light' | 'dark'>('light')
+const selectedAccent = ref<AccentKey>('vermilion')
 const selectedLayout = ref('topbar')
 
 onMounted(() => {
-  const savedTheme = localStorage.getItem('bc_theme')
-  if (savedTheme && themes.some(t => t.type === savedTheme)) {
-    selectedTheme.value = savedTheme
-  }
-  selectedAccent.value = localStorage.getItem('bc_accent') || 'vermilion'
+  // settings.theme 是 App.vue 持久化的权威来源；bc_theme 作为历史兼容回退
+  const savedTheme = localStorage.getItem(THEME_KEY)
+  selectedTheme.value = savedTheme === 'dark' || settings.theme === 'dark' ? 'dark' : 'light'
+  selectedAccent.value = getStoredAccent()
   selectedLayout.value = localStorage.getItem('bc_layout') || 'topbar'
 })
 
-function selectTheme(type: string) {
+function selectTheme(type: 'light' | 'dark') {
   selectedTheme.value = type
   settings.theme = type
-  document.documentElement.dataset.theme = type
-  localStorage.setItem('bc_theme', type)
+  localStorage.setItem(THEME_KEY, type)
+  applyTheme(type)
   saveSettings()
 }
 
-function selectAccent(key: string) {
+function selectAccent(key: AccentKey) {
+  if (!isAccent(key)) return
   selectedAccent.value = key
-  const accent = accents.find(a => a.key === key)
-  if (!accent) return
-  document.documentElement.style.setProperty('--color-primary', accent.color)
-  document.documentElement.style.setProperty('--color-primary-soft', accent.color + '18')
-  localStorage.setItem('bc_accent', key)
+  localStorage.setItem(ACCENT_KEY, key)
+  applyAccent(key)
   saveSettings()
 }
 
@@ -98,12 +97,11 @@ function resetAll() {
   selectedAccent.value = 'vermilion'
   selectedLayout.value = 'topbar'
   settings.theme = 'light'
-  document.documentElement.dataset.theme = 'light'
-  document.documentElement.style.setProperty('--color-primary', '#BE3B2E')
-  document.documentElement.style.setProperty('--color-primary-soft', '#FBE9E7')
-  localStorage.setItem('bc_theme', 'light')
-  localStorage.setItem('bc_accent', 'vermilion')
+  localStorage.setItem(THEME_KEY, 'light')
+  localStorage.setItem(ACCENT_KEY, 'vermilion')
   localStorage.setItem('bc_layout', 'topbar')
+  applyTheme('light')
+  applyAccent('vermilion')
   saveSettings()
 }
 </script>
@@ -183,7 +181,7 @@ function resetAll() {
                     <span class="brand-text muted"></span>
                   </div>
                   <div class="mockup-modules">
-                    <span class="module-block" style="background:#BE3B2E"></span>
+                    <span class="module-block" style="background:#C0392B"></span>
                     <span class="module-block" style="background:#D3A93F"></span>
                     <span class="module-block" style="background:#3E8C6E"></span>
                     <span class="module-block" style="background:#4A72A8"></span>
@@ -203,7 +201,7 @@ function resetAll() {
               <div class="preview-mockup sidebar-mockup">
                 <div class="mockup-sidebar">
                   <span class="sidebar-mod" style="background:#D3A93F"></span>
-                  <span class="sidebar-mod" style="background:#BE3B2E"></span>
+                  <span class="sidebar-mod" style="background:#C0392B"></span>
                   <span class="sidebar-mod" style="background:#3E8C6E"></span>
                   <span class="sidebar-mod" style="background:#4A72A8"></span>
                 </div>
@@ -275,7 +273,7 @@ function resetAll() {
   background-color: var(--color-bg-white, #FFFFFF); border-radius: 14px; padding: 24px;
   cursor: pointer; display: flex; flex-direction: column; gap: 24px; transition: all 0.2s;
 }
-.theme-preview-card.active { background-color: var(--color-primary-soft); border-color: #E4CD8E; }
+.theme-preview-card.active { background-color: var(--color-primary-soft); border-color: var(--color-primary); }
 .preview-thumb { width: 100%; height: 128px; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; }
 .thumb-topbar { width: 100%; height: 28px; border-radius: 5px; }
 .thumb-content { width: 100%; height: 54px; border-radius: 6px; }
@@ -297,13 +295,13 @@ function resetAll() {
   background-color: var(--color-bg-white, #FFFFFF); border-radius: 14px; padding: 24px;
   cursor: pointer; display: flex; flex-direction: column; gap: 24px; transition: all 0.2s;
 }
-.layout-card.active { background-color: var(--color-primary-soft); border-color: #E4CD8E; }
+.layout-card.active { background-color: var(--color-primary-soft); border-color: var(--color-primary); }
 .layout-preview { width: 100%; height: 150px; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; }
 .preview-mockup { flex: 1; display: flex; flex-direction: column; }
 .topbar-mockup { background-color: rgba(255,255,255,1); border-radius: 8px; }
 .mockup-header { height: 32px; background-color: #fff; border-radius: 6px; padding: 0 12px; display: flex; align-items: center; gap: 8px; }
 .mockup-brand { display: flex; align-items: center; gap: 8px; }
-.brand-dot { width: 11px; height: 10px; border-radius: 50%; background-color: #BE3B2E; }
+.brand-dot { width: 11px; height: 10px; border-radius: 50%; background-color: #C0392B; }
 .brand-text { width: 25px; height: 6px; border-radius: 50%; background-color: #2F3640; }
 .brand-text.muted { width: 17px; background-color: #A7A296; }
 .mockup-modules { display: flex; gap: 8px; }
