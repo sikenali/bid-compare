@@ -9,8 +9,6 @@ import {
   RiEraserLine,
   RiDownload2Line,
   RiCheckLine,
-  RiArrowLeftSLine,
-  RiArrowRightSLine,
   RiSearchLine,
   RiFlagLine,
   RiExchangeLine,
@@ -29,6 +27,7 @@ import type { SimilarSegment } from '../utils/textAlgorithms'
 import { OpenFileViewer } from '@open-file-viewer/vue'
 import { pdfPlugin, officePlugin, textPlugin, imagePlugin } from '@open-file-viewer/core'
 import '@open-file-viewer/core/style.css'
+import Pagination from './Pagination.vue'
 
 const viewerPlugins = [pdfPlugin(), officePlugin(), imagePlugin(), textPlugin()]
 
@@ -261,24 +260,6 @@ const pageSegments = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   const end = start + pageSize.value
   return visibleSegments.value.slice(start, end)
-})
-
-// 页码列表
-const pageNumbers = computed(() => {
-  const pages: number[] = []
-  const total = totalPages.value
-  const current = currentPage.value
-
-  if (total <= 5) {
-    for (let i = 1; i <= total; i++) pages.push(i)
-  } else if (current <= 3) {
-    pages.push(1, 2, 3, 4, 5)
-  } else if (current >= total - 2) {
-    for (let i = total - 4; i <= total; i++) pages.push(i)
-  } else {
-    for (let i = current - 2; i <= current + 2; i++) pages.push(i)
-  }
-  return pages
 })
 
 // 格式化页码显示：将 "第1/10页" 转为 "P1/10"，"第3-5/10页" 转为 "P3-5/10"
@@ -896,16 +877,12 @@ const handlePreviewRightScroll = () => {
       </template>
 
       <div v-if="viewMode !== 'image'" class="pagination-container">
-        <span class="pagination-summary">共 {{ totalRecords }} 条数据</span>
-        <div class="pagination">
-          <button class="page-btn" :disabled="currentPage <= 1" @click="prevPage">
-            <RiArrowLeftSLine />
-          </button>
-          <button v-for="p in pageNumbers" :key="p" class="page-num" :class="{ active: p === currentPage }" @click="goToPage(p)">{{ p }}</button>
-          <button class="page-btn" :disabled="currentPage >= totalPages" @click="nextPage">
-            <RiArrowRightSLine />
-          </button>
-        </div>
+        <Pagination
+          :total="totalRecords"
+          :page-size="pageSize"
+          :current="currentPage"
+          @update:current="(p) => { currentPage = p; scrollToPage(p) }"
+        />
       </div>
     </div>
 
@@ -1630,67 +1607,6 @@ const handlePreviewRightScroll = () => {
   padding: 16px 0;
   margin-top: auto;
   gap: 16px;
-}
-
-.pagination-summary {
-  font-size: 15px;
-  color: #8A8578;
-}
-
-.pagination {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pagination .page-btn {
-  width: 36px;
-  height: 36px;
-  border: 0.7px solid #E5DFD3;
-  border-radius: 9999px;
-  background: #FCFBF8;
-  color: #3A3A3A;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  transition: all 0.15s;
-}
-
-.pagination .page-btn:hover:not(:disabled) {
-  background: #F7F3EA;
-}
-
-.pagination .page-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.page-num {
-  width: 36px;
-  height: 36px;
-  border: 0.7px solid #E5DFD3;
-  border-radius: 9999px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  font-weight: 500;
-  background: #FCFBF8;
-  color: #3A3A3A;
-  transition: all 0.15s;
-}
-
-.page-num:hover {
-  background: #F7F3EA;
-}
-
-.page-num.active {
-  background: #4E9B7A;
-  border-color: transparent;
-  color: #FFFFFF;
 }
 
 .modal-overlay {
