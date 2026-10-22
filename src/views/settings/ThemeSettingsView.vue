@@ -284,7 +284,7 @@ function resetAll() {
 .accent-group { display: flex; gap: 40px; margin-top: 24px; }
 .accent-item { display: flex; flex-direction: column; align-items: center; gap: 16px; cursor: pointer; }
 .accent-circle { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-.accent-circle .icon { font-size: 30px; color: #fff; }
+.accent-circle .icon { font-size: 20px; color: #fff; }
 .accent-name { font-size: 15px; color: var(--color-text-body, #3A3A3A); font-family: "SourceHanSans-Regular", var(--font-family-cn); }
 .accent-name.current { color: var(--color-text-primary, #1F1D1A); font-weight: 500; }
 

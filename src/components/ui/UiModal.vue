@@ -134,7 +134,7 @@ onUnmounted(() => { if (props.modelValue) lockScroll(false); });
   padding: 24px;
 }
 .ui-modal-panel {
-  max-width: calc(100vw - 48px);
+  max-width: 600px;
   max-height: 90vh;
   background: var(--color-bg-white, #FFFFFF);
   border-radius: 16px;
@@ -260,9 +260,9 @@ onUnmounted(() => { if (props.modelValue) lockScroll(false); });
 .spinning { animation: ui-modal-spin 1s linear infinite; display: inline-flex; }
 @keyframes ui-modal-spin { to { transform: rotate(360deg); } }
 
-.ui-modal-enter-active, .ui-modal-leave-active { transition: opacity 0.25s ease; }
+.ui-modal-enter-active, .ui-modal-leave-active { transition: opacity 0.3s ease; }
 .ui-modal-enter-active .ui-modal-panel, .ui-modal-leave-active .ui-modal-panel {
-  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.32, 0.72, 0.35, 1);
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.32, 0.72, 0.35, 1);
 }
 .ui-modal-enter-from, .ui-modal-leave-to { opacity: 0; }
 .ui-modal-enter-from .ui-modal-panel, .ui-modal-leave-to .ui-modal-panel {

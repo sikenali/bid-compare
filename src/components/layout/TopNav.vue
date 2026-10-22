@@ -28,7 +28,7 @@ const showSettingsModal = ref(false)
     <div class="nav-right">
       <div class="nav-btn-wrap" v-if="showBack">
         <button class="nav-btn" @click="router.back()">
-          <RiArrowLeftSLine class="icon" size="18" />
+          <RiArrowLeftSLine class="icon" size="14" />
         </button>
         <span class="nav-tip">返回</span>
       </div>

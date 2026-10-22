@@ -300,7 +300,7 @@ onUnmounted(() => {
 
 .extract-btn {
   width: 260px;
-  height: 54px;
+  height: 52px;
   border: none;
   border-radius: 12px;
   background-color: var(--color-primary, var(--color-cinnabar, #C0392B));

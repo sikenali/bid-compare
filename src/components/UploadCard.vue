@@ -135,8 +135,8 @@ function handleReplace(side: 'left' | 'right') {
 const formatTags = [
   { label: 'W', color: '#2B579A' },
   { label: 'X', color: '#217346' },
-  { label: 'P', color: '#C0392B' },
-  { label: 'PDF', color: '#B03A2E' },
+  { label: 'P', color: 'var(--color-primary)' },
+  { label: 'PDF', color: 'var(--color-primary)' },
   { label: 'MD', color: '#4A6FA5' },
   { label: 'TX', color: '#5A5750' },
 ];
@@ -279,8 +279,8 @@ const formatTags = [
 }
 
 .upload-card {
-  width: 520px;
-  height: 420px;
+  width: 420px;
+  height: 345px;
   flex-shrink: 0;
   background-color: var(--color-bg-white, #FFFFFF);
   border: 0.7px solid var(--color-border, var(--color-tan-border, #E5DFD3));
@@ -293,7 +293,7 @@ const formatTags = [
   position: relative;
   overflow: hidden;
   gap: 24px;
-  padding: 48px 36px;
+  padding: 40px 32px;
   cursor: pointer;
 }
 
@@ -307,8 +307,8 @@ const formatTags = [
 }
 
 .upload-icon-wrap {
-  width: 96px;
-  height: 96px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   background-color: var(--color-bg-secondary, var(--color-cream-dark, #F7F3EA));
   display: flex;
@@ -323,7 +323,7 @@ const formatTags = [
 
 .upload-hint {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 500;
   color: var(--color-text-primary, #1F1D1A);
   font-family: var(--font-ui);
@@ -357,8 +357,8 @@ const formatTags = [
   position: absolute;
   top: 12px;
   right: 12px;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 0.7px solid var(--color-border, var(--color-tan-border, #E5DFD3));
   background-color: var(--color-bg-white, #FFFFFF);
