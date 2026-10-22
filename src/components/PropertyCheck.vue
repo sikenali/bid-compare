@@ -387,7 +387,7 @@ const handleBack = () => {
 
     <!-- 页脚 -->
     <div class="app-footer">
-      <span>© {{ currentYear }} 文比猩</span>
+      <span>© {{ currentYear }} 文比星</span>
       <span class="footer-powered">Powered by LightOS</span>
     </div>
   </div>

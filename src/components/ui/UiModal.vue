@@ -8,6 +8,8 @@ const props = withDefaults(defineProps<{
   subtitle?: string;
   icon?: string;
   width?: number | string;
+  maxWidth?: number | string;
+  height?: string;
   closeOnClickOverlay?: boolean;
   closeOnEsc?: boolean;
   showClose?: boolean;
@@ -22,6 +24,8 @@ const props = withDefaults(defineProps<{
   subtitle: '',
   icon: 'ri-file-edit-line',
   width: 560,
+  maxWidth: 600,
+  height: 'calc(100vh - 40px)',
   closeOnClickOverlay: true,
   closeOnEsc: true,
   showClose: true,
@@ -68,9 +72,14 @@ onUnmounted(() => { if (props.modelValue) lockScroll(false); });
   <teleport to="body">
     <transition name="ui-modal">
       <div v-if="modelValue" class="ui-modal-overlay" @click.self="closeOnClickOverlay && close()">
-        <div
+          <div
           class="ui-modal-panel"
-          :style="{ width: typeof width === 'number' ? width + 'px' : width }"
+          :style="{
+            width: typeof width === 'number' ? width + 'px' : width,
+            maxWidth: typeof maxWidth === 'number' ? maxWidth + 'px' : maxWidth,
+            height: height,
+            maxHeight: height,
+          }"
           role="dialog"
           aria-modal="true"
         >
@@ -134,8 +143,6 @@ onUnmounted(() => { if (props.modelValue) lockScroll(false); });
   padding: 24px;
 }
 .ui-modal-panel {
-  max-width: 600px;
-  max-height: 90vh;
   background: var(--color-bg-white, #FFFFFF);
   border-radius: 16px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.1);

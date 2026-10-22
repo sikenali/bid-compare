@@ -1,11 +1,11 @@
-# 文比猩 — 文档智能对比平台
+# 文比星 — 文档智能对比平台
 
 <p align="center">
   <strong>精准识别文档差异 · AI 智能分析 · 跨平台桌面应用</strong>
 </p>
 
 <p align="center">
-  <img src="public/logo-icon.svg" width="120" height="120" alt="文比猩 Logo">
+  <img src="public/logo-icon.svg" width="120" height="120" alt="文比星 Logo">
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 
 ## 软件介绍
 
-文比猩是一款专业文档对比工具，专为招投标文件、合同审阅、版本文档差异检测等场景设计。基于 Vue 3 + TypeScript + Vite 构建，支持多种文档格式的精准对比分析，并集成 AI 大模型辅助差异解读。
+文比星是一款专业文档对比工具，专为招投标文件、合同审阅、版本文档差异检测等场景设计。基于 Vue 3 + TypeScript + Vite 构建，支持多种文档格式的精准对比分析，并集成 AI 大模型辅助差异解读。
 
 **核心功能**
 
@@ -30,114 +30,43 @@
 | AI 分析 | 集成 DeepSeek / 通义千问 / OpenAI，一键生成差异分析报告 |
 | OCR 识别 | Tesseract.js 浏览器端 OCR，识别图片中的文字内容 |
 
-## 代码架构
+## 技术实现
 
-```
-bid-compare/
-├── electron/
-│   ├── main.ts                 # Electron 主进程
-│   ├── preload.ts              # 预加载脚本
-│   └── tsconfig.json           # Electron TS 配置
-├── src/
-│   ├── main.ts                 # Vue 应用引导
-│   ├── App.vue                 # 根组件
-│   ├── router/index.js         # 路由配置
-│   ├── components/             # 功能组件
-│   │   ├── FileCompare.vue
-│   │   ├── FileCompareResult.vue
-│   │   ├── FileUpload.vue
-│   │   ├── PropertyCheck.vue
-│   │   ├── PropertyCheckResult.vue
-│   │   ├── ImageCompare.vue
-│   │   ├── BatchCompare.vue
-│   │   ├── MultiFileUpload.vue
-│   │   ├── MultiCompareResult.vue
-│   │   ├── SystemSettings.vue
-│   │   └── RecentRecords.vue
-│   ├── composables/            # 组合式函数
-│   │   ├── useFileParser.ts
-│   │   ├── useComparison.ts
-│   │   ├── useSettings.ts
-│   │   ├── useRecentRecords.ts
-│   │   ├── useAIModel.ts
-│   ├── utils/                  # 工具模块
-│   │   ├── textAlgorithms.ts
-│   │   ├── compareResultStore.ts
-│   │   ├── sanitize.ts
-│   │   ├── ocr.ts
-│   │   ├── imageCompare.ts
-│   │   ├── watermark.ts
-│   │   └── extractImages.ts
-│   ├── workers/comparison.worker.ts
-│   ├── directives/highlightTooltip.ts
-│   └── assets/styles/variables.css
-├── public/logo-icon.svg
-└── vite.config.ts
-```
+### 差异识别 → 相似度矩阵 → AI 解读
 
-## 部署说明
+系统采用纯前端计算模型：文本差异基于 LCS 与分块哈希，图像差异使用 dHash 感知哈希，属性差异通过 13 项元数据逐项比对。批量对比场景下，主线程负责 I/O 与 UI，`comparison.worker.ts` 独立执行差异计算，保证流畅交互。AI 分析在用户主动触发时才将结果摘要发送至用户配置的 API 端点。
 
-### Web 部署
+### 前端架构
 
-构建产物为纯静态文件，可部署到任意 Web 服务器。
+Vue 3 + TypeScript + Vite 单页应用，组件按功能拆分（FileCompare / PropertyCheck / ImageCompare / BatchCompare 等），配合 `composables/` 组织 `useFileParser`、`useComparison`、`useSettings`、`useAIModel` 等逻辑。样式基于 CSS 变量 + 主题系统，支持主题与强调色自定义。
+
+### 桌面客户端
+
+基于 Electron 构建 Windows / macOS / Linux 三平台原生应用。
 
 ```bash
+# 安装依赖
 npm install
-npm run build        # 产物输出到 dist/
+
+# 开发模式（启动 Vite + Electron，热更新）
+npm run electron:dev
+
+# 打包当前平台
+npm run electron:build
+
+# 仅打包 Windows (exe)
+npm run electron:build:win
+
+# 仅打包 macOS (dmg, x64+arm64)
+npm run electron:build:mac
+
+# 仅打包 Linux (AppImage)
+npm run electron:build:linux
 ```
 
-**Nginx 配置**
+产物输出至 `release/` 目录，构建完成后可通过 GitHub Actions 自动发布 Release。
 
-```nginx
-server {
-  listen 80;
-  server_name your-domain.com;
-  root /path/to/dist;
-  index index.html;
-
-  location / {
-    try_files $uri $uri/ /index.html;
-  }
-
-  location /assets {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-  }
-}
-```
-
-## 桌面客户端
-
-基于 Electron，支持 Windows、macOS、Linux 三平台打包发布。
-
-### 本地开发
-
-```bash
-npm install
-npm run electron:dev      # 启动开发模式（热更新）
-```
-
-### 本地打包
-
-```bash
-npm run electron:build    # 打包当前平台
-npm run electron:build:win    # 仅打包 Windows (exe)
-npm run electron:build:mac    # 仅打包 macOS (dmg, x64+arm64)
-npm run electron:build:linux  # 仅打包 Linux (deb)
-```
-
-产物输出至 `release/` 目录。
-
-### 自动生成 Release（GitHub Actions）
-
-推送 Git tag 自动触发 CI/CD，在三平台并行构建并发布到 GitHub Releases。
-
-```bash
-git tag -a v1.0.0 -m "Release v1.0.0"
-git push origin dev --tags
-```
-
-构建完成后自动发布，下载地址：https://github.com/sikenali/bid-compare/releases
+---
 
 ## 声明
 

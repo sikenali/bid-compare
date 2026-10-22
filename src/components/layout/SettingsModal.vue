@@ -47,8 +47,11 @@ function selectTab(key: string) {
     title="设置中心"
     subtitle="选择要进入的设置界面"
     icon="ri-settings-3-line"
-    width="1320"
+    width="92vw"
+    :max-width="1400"
+    height="92vh"
     :show-footer="false"
+    :close-on-click-overlay="false"
   >
     <div class="settings-body">
       <nav class="nav-list">
@@ -71,15 +74,6 @@ function selectTab(key: string) {
 </template>
 
 <style scoped>
-:deep(.ui-modal-panel) {
-  max-width: 94vw;
-  height: 86vh;
-  max-height: 900px;
-  background: var(--color-bg-secondary, #F7F3EA);
-  padding: 28px 32px;
-  overflow: hidden;
-}
-
 :deep(.ui-modal-body) {
   flex: 1;
   min-height: 0;

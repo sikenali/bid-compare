@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { RiTargetLine, RiArrowLeftSLine, RiSettings3Line } from '@remixicon/vue'
+import { RiBookOpenLine, RiArrowLeftSLine, RiSettings3Line } from '@remixicon/vue'
 import SettingsModal from './SettingsModal.vue'
-import { BRAND_NAME } from '../../constants/brand'
+import { BRAND_NAME, BRAND_PRODUCT } from '../../constants/brand'
 
 withDefaults(defineProps<{
   title?: string
@@ -21,14 +21,16 @@ const showSettingsModal = ref(false)
   <header class="top-nav">
     <div class="nav-left" @click="router.push('/')">
       <div class="tool-mark">
-        <RiTargetLine class="tool-logo" size="26" />
+        <RiBookOpenLine class="tool-logo" size="26" />
       </div>
-      <span class="page-title">{{ title || BRAND_NAME }}</span>
+      <span class="brand-cn">{{ brand || BRAND_NAME }}</span>
+      <span class="divider"></span>
+      <span class="page-title">{{ title || BRAND_PRODUCT }}</span>
     </div>
     <div class="nav-right">
       <div class="nav-btn-wrap" v-if="showBack">
         <button class="nav-btn" @click="router.back()">
-          <RiArrowLeftSLine class="icon" size="14" />
+          <RiArrowLeftSLine class="icon" size="18" />
         </button>
         <span class="nav-tip">返回</span>
       </div>
@@ -76,16 +78,34 @@ const showSettingsModal = ref(false)
 
 .tool-logo {
   line-height: 1;
-  color: var(--color-primary, var(--color-cinnabar, #C0392B));
+  color: var(--brand-red, var(--color-primary, var(--color-cinnabar, #C0392B)));
 }
 
-.page-title {
+.brand-cn {
   font-size: 20px;
   font-weight: 700;
   color: var(--color-text-primary, var(--color-brown-dark, #1F1D1A));
   font-family: var(--font-ui);
   line-height: 1.2;
   transition: color 0.25s ease;
+}
+
+.nav-left:hover .brand-cn {
+  color: var(--color-primary, var(--color-cinnabar, #C0392B));
+}
+
+.divider {
+  width: 2px;
+  height: 20px;
+  background-color: var(--color-border, #E5DFD3);
+}
+
+.page-title {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--color-text-secondary, var(--color-brown-muted, #6E6A60));
+  font-family: var(--font-ui);
+  line-height: 1.2;
 }
 
 .nav-right {
@@ -95,8 +115,8 @@ const showSettingsModal = ref(false)
 }
 
 .nav-btn {
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: none;
   background-color: var(--color-bg-white, #FFFFFF);

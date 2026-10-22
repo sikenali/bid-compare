@@ -120,7 +120,11 @@ function handleBatchCompareMode() {
 
 // 文件对比
 async function handleCompare() {
-  if (!bothReady.value || isProcessing.value) return
+  if (!bothReady.value) {
+    ElMessage.warning('请先上传文件')
+    return
+  }
+  if (isProcessing.value) return
 
   try {
     step.value = 0
@@ -216,7 +220,10 @@ async function handleCompare() {
 
 // 属性检查
 async function handleCheck() {
-  if (!leftFileInfo.value.file || !rightFileInfo.value.file) return
+  if (!leftFileInfo.value.file || !rightFileInfo.value.file) {
+    ElMessage.warning('请先上传文件')
+    return
+  }
 
   isParsing.value = true
   parseError.value = ''
@@ -320,7 +327,6 @@ function handleReplace() {}
           :steps="steps"
           :loading="isProcessing || isParsing"
           :button-label="btnLabel"
-          :disabled="!bothReady"
           @extract="handleExtract"
           @finished="onStepStripFinished"
         />
@@ -363,6 +369,7 @@ function handleReplace() {}
   flex: 1;
   display: flex;
   flex-direction: column;
+  position: relative;
   background-color: var(--color-bg-main, var(--color-cream, #FAF7F2));
 }
 
@@ -398,7 +405,7 @@ function handleReplace() {}
 
 /* Floating Toolbar */
 .floating-toolbar {
-  position: fixed;
+  position: absolute;
   right: 24px;
   top: 50%;
   transform: translateY(-50%);

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BRAND_NAME, BRAND_TITLE } from '../../constants/brand'
+import { BRAND_NAME, BRAND_PRODUCT, BRAND_TITLE } from '../../constants/brand'
 const currentYear = new Date().getFullYear()
 const appVersion = 'V1.0.0'
 </script>
@@ -27,7 +27,7 @@ const appVersion = 'V1.0.0'
         <RiTargetLine class="badge-logo" />
       </div>
       <div class="about-name">{{ BRAND_TITLE }}</div>
-      <div class="about-slogan">智能化文档对比工具</div>
+      <div class="about-slogan">{{ BRAND_PRODUCT }}</div>
       <div class="about-version">版本: {{ appVersion }}</div>
       <a class="about-repo" href="https://github.com/sikenali/bid-compare" target="_blank" rel="noopener noreferrer" title="访问 GitHub 仓库">
         <RiGithubLine class="icon" />

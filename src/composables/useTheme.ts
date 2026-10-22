@@ -32,7 +32,7 @@ type TokenMap = Record<string, string>
 
 /**
  * 浅色（Parchment）Token 集。
- * 规范颜色取自 DESIGN.md §5 Light 速查表；文比猩遗留 Token 保留原浅色值以兼容既有组件。
+ * 规范颜色取自 DESIGN.md §5 Light 速查表；文比星遗留 Token 保留原浅色值以兼容既有组件。
  */
 const LIGHT: TokenMap = {
   /* --- 规范层（DESIGN.md §5 Light）--- */
@@ -59,7 +59,7 @@ const LIGHT: TokenMap = {
   '--color-error': '#E74C3C',
   '--color-error-soft': '#FBEAE7',
 
-  /* --- 文比猩遗留层 --- */
+  /* --- 文比星遗留层 --- */
   '--color-parchment': '#FDF6E3',
   '--color-cream': '#FBF7EF',
   '--color-cream-dark': '#F5EFE0',
@@ -129,7 +129,7 @@ const LIGHT: TokenMap = {
 
 /**
  * 深色（墨夜）Token 集。
- * 规范颜色取自 DESIGN.md §5 Dark 速查表；文比猩遗留 Token 一并提供深色映射，
+ * 规范颜色取自 DESIGN.md §5 Dark 速查表；文比星遗留 Token 一并提供深色映射，
  * 避免深色下组件仍取到浅色值造成白字白底。
  */
 const DARK: TokenMap = {
@@ -157,7 +157,7 @@ const DARK: TokenMap = {
   '--color-error': '#E86A5A',
   '--color-error-soft': '#3A2320',
 
-  /* --- 文比猩遗留层 --- */
+  /* --- 文比星遗留层 --- */
   '--color-parchment': '#17171A',
   '--color-cream': '#1C1C1F',
   '--color-cream-dark': '#232324',

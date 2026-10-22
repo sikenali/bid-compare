@@ -945,6 +945,7 @@ const handlePreviewRightScroll = () => {
   flex-direction: column;
   gap: 0;
   padding: 20px 24px;
+  position: relative;
   font-family: var(--font-ui);
   color: var(--color-brown-dark);
 }
@@ -2245,8 +2246,8 @@ const handlePreviewRightScroll = () => {
 
 /* Floating Toolbar */
 .floating-toolbar {
-  position: fixed;
-  right: 16px;
+  position: absolute;
+  right: 24px;
   top: 50%;
   transform: translateY(-50%);
   width: 64px;

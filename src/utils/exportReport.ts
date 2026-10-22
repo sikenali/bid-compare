@@ -85,7 +85,7 @@ function sep(): Paragraph {
 
 /** 带水印章段落（灰色斜体） */
 function watermarkLine(): Paragraph {
-  return p('文比猩 · 内部对比报告', { color: C.muted, italics: true, size: 18, align: AlignmentType.CENTER })
+  return p('文比星 · 内部对比报告', { color: C.muted, italics: true, size: 18, align: AlignmentType.CENTER })
 }
 
 function makeCell(label: string, value: string, labelBg = C.headerBg): TableCell {
@@ -183,7 +183,7 @@ export function generateWordReport(data: ExportData, opts: ExportOptions = {}): 
 
   // ── 封面 ──────────────────────────────────────────────────────────────
   children.push(new Paragraph({ children: [], spacing: { before: 600 } }))
-  children.push(p('文比猩', { color: C.red, bold: true, size: 44, align: AlignmentType.CENTER }))
+  children.push(p('文比星', { color: C.red, bold: true, size: 44, align: AlignmentType.CENTER }))
   children.push(p('文件对比报告', { color: C.red, bold: true, size: 56, align: AlignmentType.CENTER }))
   children.push(p('Bid Comparison Report', { color: C.muted, size: 24, align: AlignmentType.CENTER, italics: true }))
   children.push(brk())
@@ -281,7 +281,7 @@ export function generateWordReport(data: ExportData, opts: ExportOptions = {}): 
 
   // ── 页脚 ────────────────────────────────────────────────────────────
   children.push(brk())
-  children.push(p(`报告由 文比猩 生成于 ${now}`, { color: C.muted, size: 16, align: AlignmentType.CENTER, italics: true }))
+  children.push(p(`报告由 文比星 生成于 ${now}`, { color: C.muted, size: 16, align: AlignmentType.CENTER, italics: true }))
 
   return new Document({
     styles: {
@@ -305,7 +305,7 @@ export function generateWordReport(data: ExportData, opts: ExportOptions = {}): 
       headers: {
         default: new Paragraph({
           children: [
-            new TextRun({ text: '文比猩  文件对比报告', size: 16, color: C.muted, font: F.body }),
+            new TextRun({ text: '文比星  文件对比报告', size: 16, color: C.muted, font: F.body }),
             new TextRun({ text: '  ·  ', size: 16, color: C.muted }),
             new TextRun({ text: '第 ', size: 16, color: C.muted }),
             new TextRun({ children: [PageNumber.CURRENT], size: 16, color: C.muted }),
@@ -318,7 +318,7 @@ export function generateWordReport(data: ExportData, opts: ExportOptions = {}): 
       footers: {
         default: new Paragraph({
           children: [
-            new TextRun({ text: '本报告由 文比猩 自动生成  ·  ', size: 16, color: C.muted }),
+            new TextRun({ text: '本报告由 文比星 自动生成  ·  ', size: 16, color: C.muted }),
             new TextRun({ text: '第 ', size: 16, color: C.muted }),
             new TextRun({ children: [PageNumber.CURRENT], size: 16, color: C.muted }),
             new TextRun({ text: ' 页 / 共 ', size: 16, color: C.muted }),
@@ -389,7 +389,7 @@ export function generateMarkdownReport(data: ExportData, _opts: ExportOptions = 
 
   add('# 文件对比报告')
   add('')
-  add(`> **文比猩** 文件对比工具  ·  ${fmtDate()}`)
+  add(`> **文比星** 文件对比工具  ·  ${fmtDate()}`)
   add('')
   add('---')
   add('')
@@ -450,7 +450,7 @@ export function generateMarkdownReport(data: ExportData, _opts: ExportOptions = 
     add('')
   }
 
-  add('*报告由 **文比猩** 自动生成于 ' + fmtDate() + '*')
+  add('*报告由 **文比星** 自动生成于 ' + fmtDate() + '*')
   return lines.join('\n')
 }
 
@@ -546,7 +546,7 @@ export async function generatePdfReport(data: ExportData, opts: ExportOptions = 
   pdf.text('文件对比报告', pw / 2, ph / 2 - 30, { align: 'center' })
   pdf.setFontSize(11)
   pdf.setTextColor(0x8A, 0x85, 0x78)
-  pdf.text(`文比猩  ·  ${now}`, pw / 2, ph / 2, { align: 'center' })
+  pdf.text(`文比星  ·  ${now}`, pw / 2, ph / 2, { align: 'center' })
   pdf.text('Bid Comparison Report', pw / 2, ph / 2 + 12, { align: 'center' })
 
   // ── 一、基本信息 ────────────────────────────────────────────────────
@@ -597,7 +597,7 @@ export async function generatePdfReport(data: ExportData, opts: ExportOptions = 
   addPageIfNeed(lineH * 2)
   pdf.setTextColor(0x8A, 0x85, 0x78)
   pdf.setFontSize(8)
-  pdf.text(`报告由 文比猩 生成于 ${now}`, pw / 2, y, { align: 'center' })
+  pdf.text(`报告由 文比星 生成于 ${now}`, pw / 2, y, { align: 'center' })
 
   return pdf.output('blob')
 }
@@ -636,7 +636,7 @@ export function generatePropertyWordReport(data: PropertyExportData): Document {
 
   // ── 封面 ──
   children.push(new Paragraph({ children: [], spacing: { before: 400 } }))
-  children.push(p('文比猩', { color: C.red, bold: true, size: 40, align: AlignmentType.CENTER }))
+  children.push(p('文比星', { color: C.red, bold: true, size: 40, align: AlignmentType.CENTER }))
   children.push(p('属性对比报告', { color: C.red, bold: true, size: 52, align: AlignmentType.CENTER }))
   children.push(p('Property Check Report', { color: C.muted, size: 22, align: AlignmentType.CENTER, italics: true }))
   children.push(brk())
@@ -699,7 +699,7 @@ export function generatePropertyWordReport(data: PropertyExportData): Document {
 
   // ── 页脚 ──
   children.push(brk())
-  children.push(p(`报告由 文比猩 生成于 ${now}`, { color: C.muted, size: 16, align: AlignmentType.CENTER, italics: true }))
+  children.push(p(`报告由 文比星 生成于 ${now}`, { color: C.muted, size: 16, align: AlignmentType.CENTER, italics: true }))
 
   return new Document({
     styles: {
@@ -717,7 +717,7 @@ export function generatePropertyWordReport(data: PropertyExportData): Document {
       headers: {
         default: new Paragraph({
           children: [
-            new TextRun({ text: '文比猩  ·  属性对比报告', size: 16, color: C.muted, font: F.body }),
+            new TextRun({ text: '文比星  ·  属性对比报告', size: 16, color: C.muted, font: F.body }),
             new TextRun({ text: '  ·  ', size: 16, color: C.muted }),
             new TextRun({ text: '第 ', size: 16, color: C.muted }),
             new TextRun({ children: [PageNumber.CURRENT], size: 16, color: C.muted }),
@@ -730,7 +730,7 @@ export function generatePropertyWordReport(data: PropertyExportData): Document {
       footers: {
         default: new Paragraph({
           children: [
-            new TextRun({ text: '本报告由 文比猩 自动生成  ·  ', size: 16, color: C.muted }),
+            new TextRun({ text: '本报告由 文比星 自动生成  ·  ', size: 16, color: C.muted }),
             new TextRun({ text: '第 ', size: 16, color: C.muted }),
             new TextRun({ children: [PageNumber.CURRENT], size: 16, color: C.muted }),
             new TextRun({ text: ' 页 / 共 ', size: 16, color: C.muted }),
@@ -804,7 +804,7 @@ export async function generatePropertyPdfReport(data: PropertyExportData): Promi
   pdf.text('属性对比报告', pw / 2, ph / 2 - 20, { align: 'center' })
   pdf.setFontSize(11)
   pdf.setTextColor(0x8A, 0x85, 0x78)
-  pdf.text(`文比猩  ·  ${now}`, pw / 2, ph / 2 + 6, { align: 'center' })
+  pdf.text(`文比星  ·  ${now}`, pw / 2, ph / 2 + 6, { align: 'center' })
 
   // 第一页后继续
   pdf.addPage()
@@ -836,7 +836,7 @@ export async function generatePropertyPdfReport(data: PropertyExportData): Promi
   addPageIfNeed(lineH * 2)
   pdf.setTextColor(0x8A, 0x85, 0x78)
   pdf.setFontSize(8)
-  pdf.text(`报告由 文比猩 生成于 ${now}`, pw / 2, y, { align: 'center' })
+  pdf.text(`报告由 文比星 生成于 ${now}`, pw / 2, y, { align: 'center' })
 
   return pdf.output('blob')
 }

@@ -1,5 +1,5 @@
 /* ============================================
- * 文比猩 — Design Token System
+ * 文比星 — Design Token System
  * Chinese imperial study theme
  * ============================================ */
 
@@ -8,7 +8,7 @@
    * AGENT/DESIGN 规范 Token（唯一权威来源）
    * 对应 docs/DESIGN.md §5 颜色速查表 · Light (Parchment)
    * 组件中的 var(--color-*) 引用一律指向此层，
-   * 下方文比猩遗留 Token 仅作为别名兼容保留。
+   * 下方文比星遗留 Token 仅作为别名兼容保留。
    * ============================================ */
 
   /* --- 强调色 --- */
@@ -69,7 +69,7 @@
   --color-warm-gray: #EAE5D9;
   --color-white: #FFFFFF;
 
-  /* ========== Colors — Accents（文比猩遗留名，收敛到规范 --color-primary）==========
+  /* ========== Colors — Accents（文比星遗留名，收敛到规范 --color-primary）==========
      说明：主题强调色切换（ThemeSettingsView）只写入 --color-primary，
      若此处保留独立色值，71 处 --color-cinnabar 引用将不跟随切换。
      迁移到 AGENT/DESIGN Token 后由别名统一收敛，无需逐处改调用点。 */
@@ -127,7 +127,7 @@
   --font-xiaowei: 'ZCOOL XiaoWei', 'Ma Shan Zheng', cursive;
   --font-songti: 'Noto Serif SC', 'Source Han Serif SC', 'STSongti', 'SimSun', serif;
   --font-sans: var(--font-family-cn);
-  /* UI 文案走规范中文字体；正文阅读区保留宋体，维持文比猩书卷质感 */
+  /* UI 文案走规范中文字体；正文阅读区保留宋体，维持文比星书卷质感 */
   --font-body: var(--font-family-cn);
   --font-ui: var(--font-family-cn);
 
